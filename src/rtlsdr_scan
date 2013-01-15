@@ -40,8 +40,8 @@ import wx
 import wx.lib.masked as masked
 
 
-F_MIN = 50
-F_MAX = 2200
+F_MIN = 0
+F_MAX = 9999
 GAIN = 0
 SAMPLE_RATE = 2e6
 OFFSET = 250e3
@@ -92,6 +92,7 @@ class Settings():
         self.stop = None
         self.cal = None
         self.calFreq = None
+        self.lo = None
 
         self.load()
 
@@ -101,12 +102,14 @@ class Settings():
         self.stop = self.cfg.ReadInt('stop', 108)
         self.cal = self.cfg.ReadFloat('cal', 0)
         self.calFreq = self.cfg.ReadFloat('calFreq', 1575.42)
+        self.lo = self.cfg.ReadInt('lo', 0)
 
     def save(self):
         self.cfg.WriteInt('start', self.start)
         self.cfg.WriteInt('stop', self.stop)
         self.cfg.WriteFloat('cal', self.cal)
         self.cfg.WriteFloat('calFreq', self.calFreq)
+        self.cfg.WriteInt('lo', self.lo)
 
 
 class Status():
@@ -133,11 +136,12 @@ class EventThreadStatus(wx.PyEvent):
 
 
 class ThreadScan(threading.Thread):
-    def __init__(self, notify, start, stop, samples, isCal):
+    def __init__(self, notify, start, stop, lo, samples, isCal):
         threading.Thread.__init__(self)
         self.notify = notify
         self.fstart = start
         self.fstop = stop
+        self.lo = lo
         self.samples = samples
         self.isCal = isCal
         self.cancel = False
@@ -199,7 +203,7 @@ class ThreadScan(threading.Thread):
         return sdr
 
     def scan(self, sdr, freq):
-        sdr.set_center_freq(freq)
+        sdr.set_center_freq(freq + self.lo)
         capture = sdr.read_samples(self.samples)
 
         return capture
@@ -314,7 +318,7 @@ class DialogAutoCal(wx.Dialog):
 
 
 class DialogPrefs(wx.Dialog):
-    def __init__(self, parent, cal):
+    def __init__(self, parent, cal, lo):
         wx.Dialog.__init__(self, parent=parent, title="Preferences",
                            size=(230, 120))
 
@@ -324,19 +328,32 @@ class DialogPrefs(wx.Dialog):
                                             signedForegroundColour='Black')
 
         ppm = wx.BoxSizer(wx.HORIZONTAL)
-        ppm.Add(textPpm, 0, wx.ALL, 10)
-        ppm.Add(self.numCtrlPpm, 0, wx.ALL, 5)
+        ppm.Add(textPpm, 1, wx.ALL, 10)
+        ppm.Add(self.numCtrlPpm, 1, wx.ALL, 5)
+
+        textLo = wx.StaticText(self, label="LO Offset (MHz)")
+        self.numCtrlLo = masked.NumCtrl(self, value=lo, fractionWidth=0,
+                                            allowNegative=True,
+                                            signedForegroundColour='Black')
+
+        lo = wx.BoxSizer(wx.HORIZONTAL)
+        lo.Add(textLo, 1, wx.ALL, 10)
+        lo.Add(self.numCtrlLo, 1, wx.ALL, 5)
 
         buttons = self.CreateButtonSizer(wx.OK | wx.CANCEL)
 
         vbox = wx.BoxSizer(wx.VERTICAL)
         vbox.Add(ppm, 1, wx.ALL | wx.EXPAND, 10)
+        vbox.Add(lo, 1, wx.ALL | wx.EXPAND, 10)
         vbox.Add(buttons, 0, wx.ALL | wx.EXPAND, 10)
 
         self.SetSizerAndFit(vbox)
 
     def get_cal(self):
-        return self.numCtrlPpm.GetValue()
+        return float(self.numCtrlPpm.GetValue())
+
+    def get_lo(self):
+        return int(self.numCtrlLo.GetValue())
 
 
 class DialogSaveWarn(wx.Dialog):
@@ -683,10 +700,11 @@ class FrameMain(wx.Frame):
         self.Close(True)
 
     def on_pref(self, _event):
-        dlg = DialogPrefs(self, self.settings.cal)
+        dlg = DialogPrefs(self, self.settings.cal, self.settings.lo)
         if dlg.ShowModal() == wx.ID_OK:
             self.calOld = self.settings.cal
-            self.settings.cal = float(dlg.get_cal())
+            self.settings.cal = dlg.get_cal()
+            self.settings.lo = dlg.get_lo()
         dlg.Destroy()
 
     def on_cal(self, _event):
@@ -703,7 +721,7 @@ class FrameMain(wx.Frame):
         control = event.GetEventObject()
         if control == self.spinCtrlStart:
             self.spinCtrlStop.SetRange(self.spinCtrlStart.GetValue() + 1,
-                                          2200)
+                                          F_MAX)
 
     def on_start(self, _event):
         self.scan_start(False)
@@ -845,6 +863,7 @@ class FrameMain(wx.Frame):
             self.status.SetStatusText("", 1)
             self.thread = ThreadScan(self, self.settings.start * 1e6,
                                      self.settings.stop * 1e6,
+                                     self.settings.lo * 1e6,
                                      samples,
                                      isCal)
             self.filename = "Scan {:.1f}-{:.1f}MHz".format(self.settings.start,

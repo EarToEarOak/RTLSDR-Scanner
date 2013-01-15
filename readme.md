@@ -51,7 +51,7 @@ Windows 64 bit modules can be found [here](http://www.lfd.uci.edu/~gohlke/python
 
 **View Menu**
 
-- **Preferences** - Set dongle calibration
+- **Preferences** - Set dongle calibration and Local Oscillator offset
 
 **Tools Menu**
 
