@@ -93,6 +93,7 @@ class Settings():
         self.cal = None
         self.calFreq = None
         self.lo = None
+        self.device = None
 
         self.load()
 
@@ -103,6 +104,7 @@ class Settings():
         self.cal = self.cfg.ReadFloat('cal', 0)
         self.calFreq = self.cfg.ReadFloat('calFreq', 1575.42)
         self.lo = self.cfg.ReadInt('lo', 0)
+        self.device = self.cfg.ReadInt('device', 0)
 
     def save(self):
         self.cfg.WriteInt('start', self.start)
@@ -110,6 +112,7 @@ class Settings():
         self.cfg.WriteFloat('cal', self.cal)
         self.cfg.WriteFloat('calFreq', self.calFreq)
         self.cfg.WriteInt('lo', self.lo)
+        self.cfg.WriteInt('device', self.device)
 
 
 class Status():
@@ -136,9 +139,10 @@ class EventThreadStatus(wx.PyEvent):
 
 
 class ThreadScan(threading.Thread):
-    def __init__(self, notify, start, stop, lo, samples, isCal):
+    def __init__(self, notify, device, start, stop, lo, samples, isCal):
         threading.Thread.__init__(self)
         self.notify = notify
+        self.device = device
         self.fstart = start
         self.fstop = stop
         self.lo = lo
@@ -193,7 +197,7 @@ class ThreadScan(threading.Thread):
     def rtl_setup(self):
         sdr = None
         try:
-            sdr = rtlsdr.RtlSdr()
+            sdr = rtlsdr.RtlSdr(self.device)
             sdr.set_sample_rate(SAMPLE_RATE)
             sdr.set_gain(GAIN)
         except IOError as error:
@@ -318,9 +322,18 @@ class DialogAutoCal(wx.Dialog):
 
 
 class DialogPrefs(wx.Dialog):
-    def __init__(self, parent, cal, lo):
+    def __init__(self, parent, dev, cal, lo):
         wx.Dialog.__init__(self, parent=parent, title="Preferences",
                            size=(230, 120))
+
+        textDev = wx.StaticText(self, label="Device")
+        self.numCtrlDev = masked.NumCtrl(self, value=dev, fractionWidth=0,
+                                            allowNegative=False,
+                                            signedForegroundColour='Black')
+
+        dev = wx.BoxSizer(wx.HORIZONTAL)
+        dev.Add(textDev, 1, wx.ALL, 10)
+        dev.Add(self.numCtrlDev, 1, wx.ALL, 5)
 
         textPpm = wx.StaticText(self, label="Calibration (ppm)")
         self.numCtrlPpm = masked.NumCtrl(self, value=cal, fractionWidth=3,
@@ -343,6 +356,7 @@ class DialogPrefs(wx.Dialog):
         buttons = self.CreateButtonSizer(wx.OK | wx.CANCEL)
 
         vbox = wx.BoxSizer(wx.VERTICAL)
+        vbox.Add(dev, 1, wx.ALL | wx.EXPAND, 10)
         vbox.Add(ppm, 1, wx.ALL | wx.EXPAND, 10)
         vbox.Add(lo, 1, wx.ALL | wx.EXPAND, 10)
         vbox.Add(buttons, 0, wx.ALL | wx.EXPAND, 10)
@@ -354,6 +368,9 @@ class DialogPrefs(wx.Dialog):
 
     def get_lo(self):
         return int(self.numCtrlLo.GetValue())
+
+    def get_dev(self):
+        return int(self.numCtrlDev.GetValue())
 
 
 class DialogSaveWarn(wx.Dialog):
@@ -700,11 +717,13 @@ class FrameMain(wx.Frame):
         self.Close(True)
 
     def on_pref(self, _event):
-        dlg = DialogPrefs(self, self.settings.cal, self.settings.lo)
+        dlg = DialogPrefs(self, self.settings.device, self.settings.cal,
+                          self.settings.lo)
         if dlg.ShowModal() == wx.ID_OK:
             self.calOld = self.settings.cal
             self.settings.cal = dlg.get_cal()
             self.settings.lo = dlg.get_lo()
+            self.settings.device = dlg.get_dev()
         dlg.Destroy()
 
     def on_cal(self, _event):
@@ -861,7 +880,8 @@ class FrameMain(wx.Frame):
             samples = next_2_to_pow(int(samples))
             self.spectrum = {}
             self.status.SetStatusText("", 1)
-            self.thread = ThreadScan(self, self.settings.start * 1e6,
+            self.thread = ThreadScan(self, self.settings.device,
+                                     self.settings.start * 1e6,
                                      self.settings.stop * 1e6,
                                      self.settings.lo * 1e6,
                                      samples,
