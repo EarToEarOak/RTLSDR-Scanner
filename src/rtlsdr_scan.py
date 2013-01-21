@@ -114,7 +114,6 @@ class Settings():
         self.cfg.WriteInt('lo', self.lo)
         self.cfg.WriteInt('device', self.device)
 
-
 class Status():
     def __init__(self, status, freq, data):
         self.status = status
@@ -327,13 +326,15 @@ class DialogPrefs(wx.Dialog):
                            size=(230, 120))
 
         textDev = wx.StaticText(self, label="Device")
-        self.numCtrlDev = masked.NumCtrl(self, value=dev, fractionWidth=0,
-                                            allowNegative=False,
-                                            signedForegroundColour='Black')
+        devices = list_devices()
+        self.choiceDev = wx.Choice(self, choices=devices)
+        if len(devices) < dev:
+            dev = len(devices)
+        self.choiceDev.SetSelection(dev)
 
         dev = wx.BoxSizer(wx.HORIZONTAL)
         dev.Add(textDev, 1, wx.ALL, 10)
-        dev.Add(self.numCtrlDev, 1, wx.ALL, 5)
+        dev.Add(self.choiceDev, 1, wx.ALL, 5)
 
         textPpm = wx.StaticText(self, label="Calibration (ppm)")
         self.numCtrlPpm = masked.NumCtrl(self, value=cal, fractionWidth=3,
@@ -370,7 +371,7 @@ class DialogPrefs(wx.Dialog):
         return int(self.numCtrlLo.GetValue())
 
     def get_dev(self):
-        return int(self.numCtrlDev.GetValue())
+        return self.choiceDev.GetSelection()
 
 
 class DialogSaveWarn(wx.Dialog):
@@ -964,6 +965,16 @@ class FrameMain(wx.Frame):
         self.settings.start = self.spinCtrlStart.GetValue()
         self.settings.stop = self.spinCtrlStop.GetValue()
 
+
+def list_devices():
+
+    devices = []
+    count = rtlsdr.librtlsdr.rtlsdr_get_device_count()
+
+    for dev in range(0, count):
+        devices.append(rtlsdr.librtlsdr.rtlsdr_get_device_name(dev))
+
+    return devices
 
 def thread_event_handler(win, event, function):
     win.Connect(-1, -1, event, function)
