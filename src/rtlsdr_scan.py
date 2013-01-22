@@ -38,6 +38,8 @@ import rtlsdr
 import threading
 import wx
 import wx.lib.masked as masked
+import wx.lib.mixins.listctrl as listmix
+import wx.grid as grid
 
 
 F_MIN = 0
@@ -85,15 +87,21 @@ WINDOW = matplotlib.numpy.hamming(NFFT)
 EVT_THREAD_STATUS = wx.NewId()
 
 
+class Device():
+    def __init__(self):
+        self.index = None
+        self.name = None
+        self.calibration = None
+        self.lo = None
+
 class Settings():
     def __init__(self):
         self.cfg = None
         self.start = None
         self.stop = None
-        self.cal = None
         self.calFreq = None
-        self.lo = None
-        self.device = None
+        self.devices = []
+        self.index = None
 
         self.load()
 
@@ -101,18 +109,32 @@ class Settings():
         self.cfg = wx.Config('rtlsdr-scanner')
         self.start = self.cfg.ReadInt('start', 87)
         self.stop = self.cfg.ReadInt('stop', 108)
-        self.cal = self.cfg.ReadFloat('cal', 0)
         self.calFreq = self.cfg.ReadFloat('calFreq', 1575.42)
-        self.lo = self.cfg.ReadInt('lo', 0)
-        self.device = self.cfg.ReadInt('device', 0)
+        self.index = self.cfg.ReadInt('index', 0)
+        self.cfg.SetPath("/Devices")
+        group = self.cfg.GetFirstGroup()
+        while group[0]:
+            self.cfg.SetPath("/Devices/" + group[1])
+            device = Device()
+            device.name = group[1]
+            device.calibration = self.cfg.ReadFloat('calibration', 0)
+            device.lo = self.cfg.ReadFloat('lo', 0)
+            self.devices.append(device)
+            self.cfg.SetPath("/Devices")
+            group = self.cfg.GetNextGroup(group[2])
+
 
     def save(self):
+        self.cfg.SetPath("/")
         self.cfg.WriteInt('start', self.start)
         self.cfg.WriteInt('stop', self.stop)
-        self.cfg.WriteFloat('cal', self.cal)
         self.cfg.WriteFloat('calFreq', self.calFreq)
-        self.cfg.WriteInt('lo', self.lo)
-        self.cfg.WriteInt('device', self.device)
+        self.cfg.WriteInt('index', self.index)
+        if self.devices:
+            for device in self.devices:
+                self.cfg.SetPath("/Devices/" + format_device_name(device.name))
+                self.cfg.WriteFloat('lo', device.lo)
+                self.cfg.WriteFloat('calibration', device.calibration)
 
 class Status():
     def __init__(self, status, freq, data):
@@ -138,15 +160,15 @@ class EventThreadStatus(wx.PyEvent):
 
 
 class ThreadScan(threading.Thread):
-    def __init__(self, notify, device, start, stop, lo, samples, isCal):
+    def __init__(self, notify, settings, devices, samples, isCal):
         threading.Thread.__init__(self)
         self.notify = notify
-        self.device = device
-        self.fstart = start
-        self.fstop = stop
-        self.lo = lo
+        self.index = settings.index
+        self.fstart = settings.start * 1e6
+        self.fstop = settings.stop * 1e6
         self.samples = samples
         self.isCal = isCal
+        self.lo = devices[self.index].lo * 1e6
         self.cancel = False
         wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_STARTING,
                                                     None, None))
@@ -196,7 +218,7 @@ class ThreadScan(threading.Thread):
     def rtl_setup(self):
         sdr = None
         try:
-            sdr = rtlsdr.RtlSdr(self.device)
+            sdr = rtlsdr.RtlSdr(self.index)
             sdr.set_sample_rate(SAMPLE_RATE)
             sdr.set_gain(GAIN)
         except IOError as error:
@@ -213,12 +235,12 @@ class ThreadScan(threading.Thread):
 
 
 class ThreadProcess(threading.Thread):
-    def __init__(self, notify, freq, data, cal):
+    def __init__(self, notify, freq, data, settings, devices):
         threading.Thread.__init__(self)
         self.notify = notify
         self.freq = freq
         self.data = data
-        self.cal = cal
+        self.cal = devices[settings.index].calibration
 
         self.start()
 
@@ -235,6 +257,12 @@ class ThreadProcess(threading.Thread):
             scan[xr] = freq
         wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_PROCESSED,
                                                             self.freq, scan))
+
+class DeviceList(wx.ListCtrl, listmix.TextEditMixin):
+    def __init__(self, parent, ID=wx.ID_ANY, pos=wx.DefaultPosition,
+                 size=wx.DefaultSize, style=0):
+        wx.ListCtrl.__init__(self, parent, ID, pos, size, style)
+        listmix.TextEditMixin.__init__(self)
 
 
 class DialogAutoCal(wx.Dialog):
@@ -308,7 +336,7 @@ class DialogAutoCal(wx.Dialog):
     def set_cal(self, cal):
         self.cal = cal
         self.enable_controls()
-        self.textResult.SetLabel("Correction (ppm): {:.4f}".format(cal))
+        self.textResult.SetLabel("Correction (ppm): {:.3f}".format(cal))
 
     def get_cal(self):
         return self.cal
@@ -319,59 +347,110 @@ class DialogAutoCal(wx.Dialog):
     def get_freq(self):
         return self.textFreq.GetValue()
 
+class CellRenderer(grid.PyGridCellRenderer):
+    def __init__(self):
+        grid.PyGridCellRenderer.__init__(self)
+
+    def Draw(self, grid, attr, dc, rect, row, col, _isSelected):
+        dc.SetBrush(wx.Brush(attr.GetBackgroundColour()))
+        dc.DrawRectangleRect(rect)
+        if grid.GetCellValue(row, col) == "1":
+            dc.SetBrush(wx.Brush(attr.GetTextColour()))
+            dc.DrawCircle(rect.x + (rect.width / 2), rect.y + (rect.height / 2),
+                          rect.height / 4)
+
+
 
 class DialogPrefs(wx.Dialog):
-    def __init__(self, parent, dev, cal, lo):
-        wx.Dialog.__init__(self, parent=parent, title="Preferences",
-                           size=(230, 120))
+    def __init__(self, parent, devices, settings):
+        self.index = 0
 
-        textDev = wx.StaticText(self, label="Device")
-        devices = list_devices()
-        self.choiceDev = wx.Choice(self, choices=devices)
-        if len(devices) < dev:
-            dev = len(devices)
-        self.choiceDev.SetSelection(dev)
+        wx.Dialog.__init__(self, parent=parent, title="Preferences")
 
-        dev = wx.BoxSizer(wx.HORIZONTAL)
-        dev.Add(textDev, 1, wx.ALL, 10)
-        dev.Add(self.choiceDev, 1, wx.ALL, 5)
+        title = wx.StaticText(self, label="Select a device")
+        font = title.GetFont()
+        font.SetPointSize(font.GetPointSize() + 2)
+        title.SetFont(font)
 
-        textPpm = wx.StaticText(self, label="Calibration (ppm)")
-        self.numCtrlPpm = masked.NumCtrl(self, value=cal, fractionWidth=3,
-                                            allowNegative=True,
-                                            signedForegroundColour='Black')
+        self.devices = devices
+        self.gridDev = grid.Grid(self)
+        self.gridDev.CreateGrid(len(self.devices), 5)
+        self.gridDev.SetRowLabelSize(0)
+        self.gridDev.SetColLabelValue(0, "Select")
+        self.gridDev.SetColLabelValue(1, "Device")
+        self.gridDev.SetColLabelValue(2, "Index")
+        self.gridDev.SetColLabelValue(3, "Calibration\n(ppm)")
+        self.gridDev.SetColLabelValue(4, "LO\n(MHz)")
+        self.gridDev.SetColFormatFloat(3, -1, 3)
+        self.gridDev.SetColFormatFloat(4, -1, 3)
 
-        ppm = wx.BoxSizer(wx.HORIZONTAL)
-        ppm.Add(textPpm, 1, wx.ALL, 10)
-        ppm.Add(self.numCtrlPpm, 1, wx.ALL, 5)
+        attributes = grid.GridCellAttr()
+        attributes.SetBackgroundColour(self.gridDev.GetLabelBackgroundColour())
+        self.gridDev.SetColAttr(1, attributes)
+        self.gridDev.SetColAttr(2, attributes)
 
-        textLo = wx.StaticText(self, label="LO Offset (MHz)")
-        self.numCtrlLo = masked.NumCtrl(self, value=lo, fractionWidth=0,
-                                            allowNegative=True,
-                                            signedForegroundColour='Black')
+        i = 0
+        for device in self.devices:
+            self.gridDev.SetReadOnly(i, 0, True)
+            self.gridDev.SetReadOnly(i, 1, True)
+            self.gridDev.SetReadOnly(i, 2, True)
+            self.gridDev.SetCellRenderer(i, 0, CellRenderer())
+            self.gridDev.SetCellEditor(i, 3, grid.GridCellFloatEditor(-1, 3))
+            self.gridDev.SetCellEditor(i, 4, grid.GridCellFloatEditor(-1, 3))
+            self.gridDev.SetCellValue(i, 1, device.name)
+            self.gridDev.SetCellValue(i, 2, str(i))
+            self.gridDev.SetCellValue(i, 3, str(device.calibration))
+            self.gridDev.SetCellValue(i, 4, str(device.lo))
+            i += 1
 
-        lo = wx.BoxSizer(wx.HORIZONTAL)
-        lo.Add(textLo, 1, wx.ALL, 10)
-        lo.Add(self.numCtrlLo, 1, wx.ALL, 5)
+        if settings.index > len(self.devices):
+            settings.index = len(self.devices)
+        self.select_row(settings.index)
 
-        buttons = self.CreateButtonSizer(wx.OK | wx.CANCEL)
+        self.gridDev.AutoSize()
+
+        self.Bind(grid.EVT_GRID_CELL_LEFT_CLICK, self.on_click)
+
+        sizerButtons = wx.StdDialogButtonSizer()
+        buttonOk = wx.Button(self, wx.ID_OK)
+        buttonCancel = wx.Button(self, wx.ID_CANCEL)
+        sizerButtons.AddButton(buttonOk)
+        sizerButtons.AddButton(buttonCancel)
+        sizerButtons.Realize()
+        self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
 
         vbox = wx.BoxSizer(wx.VERTICAL)
-        vbox.Add(dev, 1, wx.ALL | wx.EXPAND, 10)
-        vbox.Add(ppm, 1, wx.ALL | wx.EXPAND, 10)
-        vbox.Add(lo, 1, wx.ALL | wx.EXPAND, 10)
-        vbox.Add(buttons, 0, wx.ALL | wx.EXPAND, 10)
+        vbox.Add(title, 0, wx.ALL | wx.EXPAND, 10)
+        vbox.Add(self.gridDev, 0, wx.ALL | wx.EXPAND, 10)
+        vbox.Add(sizerButtons, 0, wx.ALL | wx.EXPAND, 10)
 
         self.SetSizerAndFit(vbox)
 
-    def get_cal(self):
-        return float(self.numCtrlPpm.GetValue())
+    def on_click(self, event):
+        if(event.GetCol() == 0):
+            self.index = event.GetRow()
+            self.select_row(self.index)
+        event.Skip()
 
-    def get_lo(self):
-        return int(self.numCtrlLo.GetValue())
+    def on_ok(self, _event):
+        for i in range(0, self.gridDev.GetNumberRows()):
+            self.devices[i].calibration = float(self.gridDev.GetCellValue(i, 3))
+            self.devices[i].lo = float(self.gridDev.GetCellValue(i, 4))
 
-    def get_dev(self):
-        return self.choiceDev.GetSelection()
+        self.EndModal(wx.ID_OK)
+
+    def select_row(self, index):
+        for i in range(0, self.gridDev.GetNumberRows()):
+            tick = "0"
+            if i == index:
+                tick = "1"
+            self.gridDev.SetCellValue(i, 0, tick)
+
+    def get_index(self):
+        return self.index
+
+    def get_devices(self):
+        return self.devices
 
 
 class DialogSaveWarn(wx.Dialog):
@@ -382,7 +461,7 @@ class DialogSaveWarn(wx.Dialog):
                            size=(300, 125), style=wx.ICON_EXCLAMATION)
 
         prompt = ["scanning again", "opening a file", "exiting"][warnType]
-        text = wx.StaticText(self, label="Save scan before {}?".format(prompt))
+        text = wx.StaticText(self, label="Save plot before {}?".format(prompt))
         icon = wx.StaticBitmap(self, wx.ID_ANY,
                                wx.ArtProvider.GetBitmap(wx.ART_INFORMATION,
                                                         wx.ART_MESSAGE_BOX))
@@ -516,7 +595,8 @@ class FrameMain(wx.Frame):
         self.isSaved = True
 
         self.settings = Settings()
-        self.calOld = self.settings.cal
+        self.devices = self.get_devices()
+        self.oldCal = 0
 
         displaySize = wx.DisplaySize()
         wx.Frame.__init__(self, None, title=title, size=(displaySize[0] / 1.5,
@@ -714,17 +794,15 @@ class FrameMain(wx.Frame):
             self.Bind(wx.EVT_CLOSE, self.on_exit)
             return
         self.get_range()
+        self.settings.devices = self.devices
         self.settings.save()
         self.Close(True)
 
     def on_pref(self, _event):
-        dlg = DialogPrefs(self, self.settings.device, self.settings.cal,
-                          self.settings.lo)
+        dlg = DialogPrefs(self, self.devices, self.settings)
         if dlg.ShowModal() == wx.ID_OK:
-            self.calOld = self.settings.cal
-            self.settings.cal = dlg.get_cal()
-            self.settings.lo = dlg.get_lo()
-            self.settings.device = dlg.get_dev()
+            self.devices = dlg.get_devices()
+            self.settings.index = dlg.get_index()
         dlg.Destroy()
 
     def on_cal(self, _event):
@@ -790,10 +868,9 @@ class FrameMain(wx.Frame):
             if self.dlgCal is not None:
                 self.dlgCal.Destroy()
                 self.dlgCal = None
-                self.settings.cal = self.calOld
         elif status == THREAD_STATUS_DATA:
             self.isSaved = False
-            ThreadProcess(self, freq, data, self.settings.cal)
+            ThreadProcess(self, freq, data, self.settings, self.devices)
         elif status == THREAD_STATUS_PROCESSED:
             self.update_scan(freq, data)
             if self.update:
@@ -838,20 +915,20 @@ class FrameMain(wx.Frame):
             if status == CAL_START:
                 self.spinCtrlStart.SetValue(freq - 1)
                 self.spinCtrlStop.SetValue(freq + 1)
-                self.calOld = self.settings.cal
-                self.settings.cal = 0
+                self.oldCal = self.devices[self.settings.index].calibration
+                self.devices[self.settings.index].calibration = 0
                 if not self.scan_start(True):
                     self.dlgCal.reset_cal()
             elif status == CAL_DONE:
                 ppm = self.calc_ppm(freq)
                 self.dlgCal.set_cal(ppm)
             elif status == CAL_OK:
-                self.settings.cal = self.dlgCal.get_cal()
+                self.devices[self.settings.index].calibration = self.dlgCal.get_cal()
                 self.settings.calFreq = freq
                 self.dlgCal = None
             elif status == CAL_CANCEL:
-                self.settings.cal = self.calOld
                 self.dlgCal = None
+                self.devices[self.settings.index].calibration = self.oldCal
 
     def calc_ppm(self, freq):
         spectrum = self.spectrum.copy()
@@ -881,19 +958,14 @@ class FrameMain(wx.Frame):
             samples = next_2_to_pow(int(samples))
             self.spectrum = {}
             self.status.SetStatusText("", 1)
-            self.thread = ThreadScan(self, self.settings.device,
-                                     self.settings.start * 1e6,
-                                     self.settings.stop * 1e6,
-                                     self.settings.lo * 1e6,
-                                     samples,
-                                     isCal)
+            self.thread = ThreadScan(self, self.settings, self.devices,
+                                     samples, isCal)
             self.filename = "Scan {:.1f}-{:.1f}MHz".format(self.settings.start,
                                                             self.settings.stop)
 
             return True
 
     def update_scan(self, freqCentre, scan):
-
         upperStart = freqCentre + OFFSET
         upperEnd = freqCentre + OFFSET + BANDWIDTH / 2
         lowerStart = freqCentre - OFFSET - BANDWIDTH / 2
@@ -966,15 +1038,33 @@ class FrameMain(wx.Frame):
         self.settings.stop = self.spinCtrlStop.GetValue()
 
 
-def list_devices():
+    def get_devices(self):
+        devices = []
+        count = rtlsdr.librtlsdr.rtlsdr_get_device_count()
 
-    devices = []
-    count = rtlsdr.librtlsdr.rtlsdr_get_device_count()
+        for dev in range(0, count):
+            device = Device()
+            device.index = dev
+            device.name = format_device_name(rtlsdr.librtlsdr.rtlsdr_get_device_name(dev))
+            device.calibration = 0.0
+            device.lo = 0.0
+            for conf in self.settings.devices:
+                # TODO: better matching than just name?
+                if device.name == conf.name:
+                    device.calibration = conf.calibration
+                    device.lo = conf.lo
+                    break
 
-    for dev in range(0, count):
-        devices.append(rtlsdr.librtlsdr.rtlsdr_get_device_name(dev))
+            devices.append(device)
 
-    return devices
+        return devices
+
+def format_device_name(name):
+    remove = ["/", "\\"]
+    for char in remove:
+        name = name.replace(char, " ")
+
+    return name
 
 def thread_event_handler(win, event, function):
     win.Connect(-1, -1, event, function)
