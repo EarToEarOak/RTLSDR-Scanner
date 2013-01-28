@@ -12,6 +12,7 @@ Tested on:
 - Windows 7 (x86 and x64)
 - Ubuntu 12.04 (x86)
 - Ubuntu 12.10 (x64)
+- OS X Snow Leopard
 
 ## Requirements ##
 
@@ -23,6 +24,8 @@ Tested on:
 - [pyrtlsdr](https://github.com/roger-/pyrtlsdr)
 
 Windows 64 bit modules can be found [here](http://www.lfd.uci.edu/~gohlke/pythonlibs/)
+
+OS X users report success using [Homebrew](http://mxcl.github.com/homebrew/), if you have problems with imports [this page](http://stackoverflow.com/questions/5121574/wxpython-import-error) may help (thanks @edy555).
 
 ## Usage ##
 
