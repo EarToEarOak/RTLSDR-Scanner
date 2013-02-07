@@ -942,6 +942,12 @@ class FrameMain(wx.Frame):
     def scan_start(self, isCal):
         if self.save_warn(WARN_SCAN):
             return False
+        
+        self.devices = self.get_devices()
+        if(len(self.devices) == 0):
+            wx.MessageBox('No devices found',
+                          'Error', wx.OK | wx.ICON_ERROR)
+            return
 
         self.get_range()
         if self.settings.start >= self.settings.stop:
@@ -952,6 +958,7 @@ class FrameMain(wx.Frame):
         choice = self.choiceDwell.GetSelection()
 
         if not self.thread or not self.thread.is_alive():
+
             self.set_controls(False)
             dwell = DWELL[1::2][choice]
             samples = dwell * SAMPLE_RATE
