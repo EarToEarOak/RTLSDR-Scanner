@@ -3,6 +3,8 @@
 #
 # rtlsdr_scan
 #
+# http://eartoearoak.com/software/rtlsdr-scanner
+#
 # Copyright 2012, 2013 Al Brown
 #
 # A frequency scanning GUI for the OsmoSDR rtl-sdr library at
