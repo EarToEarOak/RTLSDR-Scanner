@@ -338,7 +338,7 @@ class DialogAutoCal(wx.Dialog):
     def set_cal(self, cal):
         self.cal = cal
         self.enable_controls()
-        self.textResult.SetLabel("Correction (ppm): {:.3f}".format(cal))
+        self.textResult.SetLabel("Correction (ppm): {0:.3f}".format(cal))
 
     def get_cal(self):
         return self.cal
@@ -463,7 +463,7 @@ class DialogSaveWarn(wx.Dialog):
                            size=(300, 125), style=wx.ICON_EXCLAMATION)
 
         prompt = ["scanning again", "opening a file", "exiting"][warnType]
-        text = wx.StaticText(self, label="Save plot before {}?".format(prompt))
+        text = wx.StaticText(self, label="Save plot before {0}?".format(prompt))
         icon = wx.StaticBitmap(self, wx.ID_ANY,
                                wx.ArtProvider.GetBitmap(wx.ART_INFORMATION,
                                                         wx.ART_MESSAGE_BOX))
@@ -547,7 +547,7 @@ class PanelGraph(wx.Panel):
             if len(spectrum) > 0:
                 xpos = min(spectrum.keys(), key=lambda freq: abs(freq - xpos))
                 ypos = spectrum[xpos]
-                text = "f = {:.3f}MHz, p = {:.2f}dB".format(xpos, ypos)
+                text = "f = {0:.3f}MHz, p = {1:.2f}dB".format(xpos, ypos)
 
         self.main.status.SetStatusText(text, 1)
 
@@ -785,7 +785,7 @@ class FrameMain(wx.Frame):
             handle = open(os.path.join(self.dirname, self.filename), 'wb')
             handle.write("Frequency (MHz),Level (dB)\n")
             for freq, pwr in self.spectrum.iteritems():
-                handle.write("{},{}\n".format(freq, pwr))
+                handle.write("{0},{1}\n".format(freq, pwr))
             handle.close()
             self.status.SetStatusText("Finished", 0)
         dlg.Destroy()
@@ -864,7 +864,7 @@ class FrameMain(wx.Frame):
                 self.auto_cal(CAL_DONE)
         elif status == THREAD_STATUS_ERROR:
             self.statusProgress.Hide()
-            self.status.SetStatusText("Dongle error: {}".format(data), 0)
+            self.status.SetStatusText("Dongle error: {0}".format(data), 0)
             self.thread = None
             self.set_controls(True)
             if self.dlgCal is not None:
@@ -887,7 +887,7 @@ class FrameMain(wx.Frame):
     def open(self, dirname, filename):
         self.filename = filename
         self.dirname = dirname
-        self.status.SetStatusText("Opening: {}".format(filename), 0)
+        self.status.SetStatusText("Opening: {0}".format(filename), 0)
         try:
             handle = open(os.path.join(dirname, filename), 'rb')
             header = cPickle.load(handle)
@@ -969,7 +969,7 @@ class FrameMain(wx.Frame):
             self.status.SetStatusText("", 1)
             self.thread = ThreadScan(self, self.settings, self.devices,
                                      samples, isCal)
-            self.filename = "Scan {:.1f}-{:.1f}MHz".format(self.settings.start,
+            self.filename = "Scan {0:.1f}-{1:.1f}MHz".format(self.settings.start,
                                                             self.settings.stop)
 
             return True
@@ -1012,7 +1012,7 @@ class FrameMain(wx.Frame):
             freqs.sort()
             powers = map(self.spectrum.get, freqs)
             axes.clear()
-            axes.set_title("Frequency Scan\n{} - {} MHz".format(self.settings.start,
+            axes.set_title("Frequency Scan\n{0} - {1} MHz".format(self.settings.start,
                                                                 self.settings.stop))
             axes.set_xlabel("Frequency (MHz)")
             axes.set_ylabel('Level (dB)')
