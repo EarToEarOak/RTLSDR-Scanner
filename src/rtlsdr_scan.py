@@ -104,8 +104,8 @@ class Settings():
         self.stop = None
         self.calFreq = None
         self.yAuto = True
-        self.yMax = 0
-        self.yMin = 1
+        self.yMax = 1
+        self.yMin = 0
         self.devices = []
         self.index = None
 
