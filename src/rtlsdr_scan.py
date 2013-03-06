@@ -30,7 +30,8 @@ matplotlib.interactive(True)
 matplotlib.use('WXAgg')
 from matplotlib.backends.backend_wxagg import \
     FigureCanvasWxAgg as FigureCanvas, \
-    NavigationToolbar2WxAgg as NavigationToolbar
+    NavigationToolbar2WxAgg
+from matplotlib.backends.backend_wx import _load_bitmap
 import argparse
 import cPickle
 import itertools
@@ -102,6 +103,9 @@ class Settings():
         self.start = None
         self.stop = None
         self.calFreq = None
+        self.yAuto = True
+        self.yMax = 1
+        self.yMin = 0
         self.devices = []
         self.index = None
 
@@ -260,6 +264,17 @@ class ThreadProcess(threading.Thread):
         wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_PROCESSED,
                                                             self.freq, scan))
 
+class DropTarget(wx.FileDropTarget):
+    def __init__(self, window):
+        wx.FileDropTarget.__init__(self)
+        self.window = window
+
+    def OnDropFiles(self, _xPos, _yPos, filenames):
+        filename = filenames[0]
+        if os.path.splitext(filename)[1].lower() == ".rfs":
+            self.window.dirname, self.window.filename = os.path.split(filename)
+            self.window.open()
+
 class DeviceList(wx.ListCtrl, listmix.TextEditMixin):
     def __init__(self, parent, ID=wx.ID_ANY, pos=wx.DefaultPosition,
                  size=wx.DefaultSize, style=0):
@@ -361,8 +376,6 @@ class CellRenderer(grid.PyGridCellRenderer):
             dc.DrawCircle(rect.x + (rect.width / 2), rect.y + (rect.height / 2),
                           rect.height / 4)
 
-
-
 class DialogPrefs(wx.Dialog):
     def __init__(self, parent, devices, settings):
         self.index = 0
@@ -460,7 +473,7 @@ class DialogSaveWarn(wx.Dialog):
         self.code = -1
 
         wx.Dialog.__init__(self, parent=parent, title="Warning",
-                           size=(300, 125), style=wx.ICON_EXCLAMATION)
+                           style=wx.ICON_EXCLAMATION)
 
         prompt = ["scanning again", "opening a file", "exiting"][warnType]
         text = wx.StaticText(self, label="Save plot before {0}?".format(prompt))
@@ -501,17 +514,79 @@ class DialogSaveWarn(wx.Dialog):
     def get_code(self):
         return self.code
 
+class DialogRange(wx.Dialog):
+    def __init__(self, parent, main):
+        self.main = main
+        
+        wx.Dialog.__init__(self, parent=parent, title="Plot Range")
 
-class DropTarget(wx.FileDropTarget):
-    def __init__(self, window):
-        wx.FileDropTarget.__init__(self)
-        self.window = window
+        self.checkAuto = wx.CheckBox(self, wx.ID_ANY, "Auto Range")
+        self.checkAuto.SetValue(self.main.settings.yAuto)
+        self.Bind(wx.EVT_CHECKBOX, self.on_auto, self.checkAuto)
 
-    def OnDropFiles(self, _xPos, _yPos, filenames):
-        filename = filenames[0]
-        if os.path.splitext(filename)[1].lower() == ".rfs":
-            self.window.dirname, self.window.filename = os.path.split(filename)
-            self.window.open()
+        textMax = wx.StaticText(self, label="Maximum (dB)")
+        self.yMax = masked.NumCtrl(self, value=int(self.main.settings.yMax),
+                                    fractionWidth=0, min= -100, max=20)
+        textMin = wx.StaticText(self, label="Minimum (dB)")
+        self.yMin = masked.NumCtrl(self, value=int(self.main.settings.yMin),
+                                    fractionWidth=0, min= -100, max=20)
+        self.set_enabled(not self.main.settings.yAuto)
+
+        sizerButtons = wx.StdDialogButtonSizer()
+        buttonOk = wx.Button(self, wx.ID_OK)
+        buttonCancel = wx.Button(self, wx.ID_CANCEL)
+        sizerButtons.AddButton(buttonOk)
+        sizerButtons.AddButton(buttonCancel)
+        sizerButtons.Realize()
+        self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
+
+
+        sizer = wx.GridBagSizer(10, 10)
+        sizer.Add(self.checkAuto, pos=(0, 0), span=(1, 1),
+                  flag=wx.ALIGN_CENTER | wx.ALL, border=10)
+        sizer.Add(textMax, pos=(1, 0), span=(1, 1),
+                  flag=wx.ALIGN_CENTER | wx.ALL, border=10)
+        sizer.Add(self.yMax, pos=(1, 1), span=(1, 1),
+                  flag=wx.ALIGN_CENTER | wx.ALL, border=10)
+        sizer.Add(textMin, pos=(2, 0), span=(1, 1),
+                  flag=wx.ALIGN_CENTER | wx.ALL, border=10)
+        sizer.Add(self.yMin, pos=(2, 1), span=(1, 1),
+                  flag=wx.ALIGN_CENTER | wx.ALL, border=10)
+        sizer.Add(sizerButtons, pos=(3, 0), span=(1, 2),
+                  flag=wx.ALIGN_CENTER | wx.ALL, border=10)
+
+        self.SetSizerAndFit(sizer)
+
+    def on_auto(self, _event):
+        self.set_enabled(not self.checkAuto.GetValue())
+
+    def on_ok(self, _event):
+        self.main.settings.yAuto = self.checkAuto.GetValue()
+        self.main.settings.yMin = self.yMin.GetValue()
+        self.main.settings.yMax = self.yMax.GetValue()
+        self.EndModal(wx.ID_OK)
+
+    def set_enabled(self, isEnabled):
+        self.yMax.Enable(isEnabled)
+        self.yMin.Enable(isEnabled)
+
+class NavigationToolbar(NavigationToolbar2WxAgg):
+    def __init__(self, canvas, main):
+        self.main = main
+
+        navId = wx.NewId()
+        NavigationToolbar2WxAgg.__init__(self, canvas)
+        self.AddSimpleTool(navId, _load_bitmap('subplots.png'),
+                           'Range', 'Set plot range')
+        wx.EVT_TOOL(self, navId, self.on_range)
+
+    def on_range(self, _event):
+
+        dlg = DialogRange(self, self.main)
+        dlg.ShowModal()
+        dlg.Destroy()
+        self.canvas.draw()
+        self.main.draw_plot()
 
 
 class PanelGraph(wx.Panel):
@@ -524,7 +599,8 @@ class PanelGraph(wx.Panel):
         self.axes = self.figure.add_subplot(111)
         self.canvas = FigureCanvas(self, -1, self.figure)
         self.canvas.mpl_connect('motion_notify_event', self.on_motion)
-        self.toolbar = NavigationToolbar(self.canvas)
+        self.toolbar = NavigationToolbar(self.canvas, self.main)
+        self.toolbar.Realize()
         self.toolbar.DeleteToolByPos(1)
         self.toolbar.DeleteToolByPos(1)
         self.toolbar.DeleteToolByPos(4)
@@ -944,7 +1020,7 @@ class FrameMain(wx.Frame):
     def scan_start(self, isCal):
         if self.save_warn(WARN_SCAN):
             return False
-        
+
         self.devices = self.get_devices()
         if(len(self.devices) == 0):
             wx.MessageBox('No devices found',
@@ -1019,6 +1095,11 @@ class FrameMain(wx.Frame):
             axes.plot(freqs, powers, linewidth=0.4)
             self.graph.get_toolbar().update()
         axes.grid(self.grid)
+        if(self.settings.yAuto):
+            axes.set_ylim(auto=True)
+            self.settings.yMin, self.settings.yMax = axes.get_ylim()
+        else:
+            axes.set_ylim(self.settings.yMin, self.settings.yMax)
         self.graph.get_canvas().draw()
 
     def save_warn(self, warnType):
