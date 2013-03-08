@@ -25,6 +25,8 @@ Tested on:
 - [rtlsdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)
 - [pyrtlsdr](https://github.com/roger-/pyrtlsdr)
 
+To test for missing libraries run `rtlsdr_scan_diag.py`
+
 Windows 64 bit modules can be found [here](http://www.lfd.uci.edu/~gohlke/pythonlibs/)
 
 OS X users report success using [Homebrew](http://mxcl.github.com/homebrew/), if you have problems with imports [this page](http://stackoverflow.com/questions/5121574/wxpython-import-error) may help (thanks @edy555).
