@@ -49,7 +49,6 @@ F_MIN = 0
 F_MAX = 9999
 GAIN = 0
 SAMPLE_RATE = 2e6
-OFFSET = 250e3
 BANDWIDTH = 500e3
 NFFT = 1024
 
@@ -96,6 +95,7 @@ class Device():
         self.name = None
         self.calibration = None
         self.lo = None
+        self.offset = 250e3
 
 class Settings():
     def __init__(self):
@@ -125,6 +125,7 @@ class Settings():
             device.name = group[1]
             device.calibration = self.cfg.ReadFloat('calibration', 0)
             device.lo = self.cfg.ReadFloat('lo', 0)
+            device.offset = self.cfg.ReadInt('offset', 250e3)
             self.devices.append(device)
             self.cfg.SetPath("/Devices")
             group = self.cfg.GetNextGroup(group[2])
@@ -141,6 +142,7 @@ class Settings():
                 self.cfg.SetPath("/Devices/" + format_device_name(device.name))
                 self.cfg.WriteFloat('lo', device.lo)
                 self.cfg.WriteFloat('calibration', device.calibration)
+                self.cfg.WriteInt('offset', device.offset)
 
 class Status():
     def __init__(self, status, freq, data):
@@ -175,6 +177,7 @@ class ThreadScan(threading.Thread):
         self.samples = samples
         self.isCal = isCal
         self.lo = devices[self.index].lo * 1e6
+        self.offset = devices[self.index].offset
         self.cancel = False
         wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_STARTING,
                                                     None, None))
@@ -184,9 +187,9 @@ class ThreadScan(threading.Thread):
         sdr = self.rtl_setup()
         if sdr is None:
             return
-        freq = self.fstart - OFFSET
+        freq = self.fstart - self.offset
 
-        while freq <= self.fstop + OFFSET:
+        while freq <= self.fstop + self.offset:
             if self.cancel:
                 wx.PostEvent(self.notify,
                              EventThreadStatus(THREAD_STATUS_STOPPED,
@@ -194,7 +197,7 @@ class ThreadScan(threading.Thread):
                 sdr.close()
                 return
             try:
-                progress = ((freq - self.fstart + OFFSET) /
+                progress = ((freq - self.fstart + self.offset) /
                              (self.fstop - self.fstart + BANDWIDTH)) * 100
                 wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_SCAN,
                                                             None, progress))
@@ -1051,10 +1054,11 @@ class FrameMain(wx.Frame):
             return True
 
     def update_scan(self, freqCentre, scan):
-        upperStart = freqCentre + OFFSET
-        upperEnd = freqCentre + OFFSET + BANDWIDTH / 2
-        lowerStart = freqCentre - OFFSET - BANDWIDTH / 2
-        lowerEnd = freqCentre - OFFSET
+        offset = self.settings.devices[self.settings.index].offset
+        upperStart = freqCentre + offset
+        upperEnd = freqCentre + offset + BANDWIDTH / 2
+        lowerStart = freqCentre - offset - BANDWIDTH / 2
+        lowerEnd = freqCentre - offset
 
         for freq in scan:
             if self.settings.start < freq < self.settings.stop:
