@@ -58,7 +58,7 @@ OS X users report success using [Homebrew](http://mxcl.github.com/homebrew/), if
 
 **View Menu**
 
-- **Preferences** - Set dongle calibration and Local Oscillator offset
+- **Preferences** - Set dongle gain, calibration, Local Oscillator and the sample bands to use
 
 **Tools Menu**
 
