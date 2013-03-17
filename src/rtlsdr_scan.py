@@ -36,6 +36,7 @@ import argparse
 import cPickle
 import itertools
 import math
+import numpy
 import os.path
 import rtlsdr
 import threading
@@ -125,7 +126,7 @@ class Settings():
             device.name = group[1]
             device.calibration = self.cfg.ReadFloat('calibration', 0)
             device.lo = self.cfg.ReadFloat('lo', 0)
-            device.offset = self.cfg.ReadInt('offset', 250e3)
+            device.offset = self.cfg.ReadFloat('offset', 250e3)
             self.devices.append(device)
             self.cfg.SetPath("/Devices")
             group = self.cfg.GetNextGroup(group[2])
@@ -142,7 +143,7 @@ class Settings():
                 self.cfg.SetPath("/Devices/" + format_device_name(device.name))
                 self.cfg.WriteFloat('lo', device.lo)
                 self.cfg.WriteFloat('calibration', device.calibration)
-                self.cfg.WriteInt('offset', device.offset)
+                self.cfg.WriteFloat('offset', device.offset)
 
 class Status():
     def __init__(self, status, freq, data):
@@ -197,7 +198,7 @@ class ThreadScan(threading.Thread):
                 sdr.close()
                 return
             try:
-                progress = ((freq - self.fstart + self.offset) /
+                progress = ((freq - self.fstart + self.offset) / 
                              (self.fstop - self.fstart + BANDWIDTH)) * 100
                 wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_SCAN,
                                                             None, progress))
@@ -283,7 +284,18 @@ class DeviceList(wx.ListCtrl, listmix.TextEditMixin):
                  size=wx.DefaultSize, style=0):
         wx.ListCtrl.__init__(self, parent, ID, pos, size, style)
         listmix.TextEditMixin.__init__(self)
+        
+class CellRenderer(grid.PyGridCellRenderer):
+    def __init__(self):
+        grid.PyGridCellRenderer.__init__(self)
 
+    def Draw(self, grid, attr, dc, rect, row, col, _isSelected):
+        dc.SetBrush(wx.Brush(attr.GetBackgroundColour()))
+        dc.DrawRectangleRect(rect)
+        if grid.GetCellValue(row, col) == "1":
+            dc.SetBrush(wx.Brush(attr.GetTextColour()))
+            dc.DrawCircle(rect.x + (rect.width / 2), rect.y + (rect.height / 2),
+                          rect.height / 4)
 
 class DialogAutoCal(wx.Dialog):
     def __init__(self, parent, freq, callback):
@@ -367,20 +379,121 @@ class DialogAutoCal(wx.Dialog):
     def get_freq(self):
         return self.textFreq.GetValue()
 
-class CellRenderer(grid.PyGridCellRenderer):
-    def __init__(self):
-        grid.PyGridCellRenderer.__init__(self)
+class DialogOffset(wx.Dialog):
+    def __init__(self, parent, index, offset):
+        self.index = index
+        self.offset = offset
+        self.band1 = None
+        self.band2 = None
+        
+        wx.Dialog.__init__(self, parent=parent, title="Scan Offset")
+        
+        figure = matplotlib.figure.Figure(facecolor='white')
+        self.axes = figure.add_subplot(111)
+        self.canvas = FigureCanvas(self, -1, figure)
+        
+        textHelp = wx.StaticText(self, label="Remove the aerial and press refresh, adjust the offset so the shaded areas overlay the flattest parts of the plot.")
+        
+        textFreq = wx.StaticText(self, label="Test frequency (MHz)")
+        self.spinFreq = wx.SpinCtrl(self)
+        self.spinFreq.SetRange(F_MIN, F_MAX)
+        self.spinFreq.SetValue(200)
+        
+        refresh = wx.Button(self, wx.ID_ANY, 'Refresh')
+        self.Bind(wx.EVT_BUTTON, self.on_refresh, refresh)
+        
+        textOffset = wx.StaticText(self, label="Offset (kHz)")
+        self.spinOffset = wx.SpinCtrl(self)
+        self.spinOffset.SetRange(0, (SAMPLE_RATE - BANDWIDTH) / 1e3)
+        self.spinOffset.SetValue(offset)
+        self.Bind(wx.EVT_SPINCTRL, self.on_spin, self.spinOffset)
+        
+        sizerButtons = wx.StdDialogButtonSizer()
+        buttonOk = wx.Button(self, wx.ID_OK)
+        buttonCancel = wx.Button(self, wx.ID_CANCEL)
+        sizerButtons.AddButton(buttonOk)
+        sizerButtons.AddButton(buttonCancel)
+        sizerButtons.Realize()
+        self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
+        
+        boxSizer1 = wx.BoxSizer(wx.HORIZONTAL)
+        boxSizer1.Add(textFreq, border=5)
+        boxSizer1.Add(self.spinFreq, border=5)
+        
+        boxSizer2 = wx.BoxSizer(wx.HORIZONTAL)
+        boxSizer2.Add(textOffset, border=5)
+        boxSizer2.Add(self.spinOffset, border=5)
+        
+        gridSizer = wx.GridBagSizer(5, 5)
+        gridSizer.Add(self.canvas, pos=(0, 0), span=(1, 2),
+                  flag=wx.ALIGN_CENTER | wx.ALL)
+        gridSizer.Add(textHelp, pos=(1, 0), span=(1, 2),
+                  flag=wx.ALIGN_CENTER | wx.ALL)
+        gridSizer.Add(boxSizer1, pos=(2, 0), span=(1, 2),
+                  flag=wx.ALIGN_CENTER | wx.ALL)
+        gridSizer.Add(refresh, pos=(3, 0), span=(1, 2),
+                  flag=wx.ALIGN_CENTER | wx.ALL)
+        gridSizer.Add(boxSizer2, pos=(4, 0), span=(1, 2),
+                  flag=wx.ALIGN_CENTER | wx.ALL)
+        gridSizer.Add(sizerButtons, pos=(5, 1), span=(1, 1),
+                  flag=wx.ALIGN_RIGHT | wx.ALL)
+        
+        self.SetSizerAndFit(gridSizer)
+        self.draw_limits()
+        
+    def on_ok(self, _event):
 
-    def Draw(self, grid, attr, dc, rect, row, col, _isSelected):
-        dc.SetBrush(wx.Brush(attr.GetBackgroundColour()))
-        dc.DrawRectangleRect(rect)
-        if grid.GetCellValue(row, col) == "1":
-            dc.SetBrush(wx.Brush(attr.GetTextColour()))
-            dc.DrawCircle(rect.x + (rect.width / 2), rect.y + (rect.height / 2),
-                          rect.height / 4)
+        self.EndModal(wx.ID_OK)
+        
+    def on_refresh(self, _event):
+        plot = []
+        sdr = rtlsdr.RtlSdr(int(self.index))
+        sdr.set_sample_rate(SAMPLE_RATE)
+        sdr.set_center_freq(self.spinFreq.GetValue() * 1e6)
+        sdr.set_gain(GAIN)
+        capture = sdr.read_samples(2 ** 18)
+        powers, freqs = matplotlib.mlab.psd(capture,
+                         NFFT=NFFT,
+                         Fs=SAMPLE_RATE / 1e6,
+                         window=WINDOW)
+        
+        for x, y in itertools.izip(freqs, powers):
+            x = x * SAMPLE_RATE / 2e6
+            plot.append((x, y))
+        plot.sort()   
+        x, y = numpy.transpose(plot)
+        
+        self.axes.clear()
+        self.band1 = None
+        self.band2 = None
+        self.axes.set_xlabel("Frequency (MHz)")
+        self.axes.set_ylabel('Level (dB)')
+        self.axes.set_yscale('log')
+        self.axes.plot(x, y, linewidth=0.4)
+        self.draw_limits()
+        
+    def on_spin(self, _event):
+        self.offset = self.spinOffset.GetValue();
+        self.draw_limits()
+        
+    def draw_limits(self):
+        limit1 = self.offset / 1e3
+        limit2 = limit1 + BANDWIDTH / 1e6
+        if(self.band1 is not None):
+            self.band1.remove()
+        if(self.band2 is not None):
+            self.band2.remove()
+        self.band1 = self.axes.axvspan(limit1, limit2, color='g', alpha=0.25)
+        self.band2 = self.axes.axvspan(-limit1, -limit2, color='g', alpha=0.25)
+        self.canvas.draw()
+        
+    def get_offset(self):
+        return self.offset
 
+    
 class DialogPrefs(wx.Dialog):
     def __init__(self, parent, devices, settings):
+        self.settings = settings
         self.index = 0
 
         wx.Dialog.__init__(self, parent=parent, title="Preferences")
@@ -392,15 +505,17 @@ class DialogPrefs(wx.Dialog):
 
         self.devices = devices
         self.gridDev = grid.Grid(self)
-        self.gridDev.CreateGrid(len(self.devices), 5)
+        self.gridDev.CreateGrid(len(self.devices), 6)
         self.gridDev.SetRowLabelSize(0)
         self.gridDev.SetColLabelValue(0, "Select")
         self.gridDev.SetColLabelValue(1, "Device")
         self.gridDev.SetColLabelValue(2, "Index")
         self.gridDev.SetColLabelValue(3, "Calibration\n(ppm)")
         self.gridDev.SetColLabelValue(4, "LO\n(MHz)")
+        self.gridDev.SetColLabelValue(5, "Band Offset\n(kHz)")
         self.gridDev.SetColFormatFloat(3, -1, 3)
         self.gridDev.SetColFormatFloat(4, -1, 3)
+        self.gridDev.SetColFormatFloat(5, -1, 0)
 
         attributes = grid.GridCellAttr()
         attributes.SetBackgroundColour(self.gridDev.GetLabelBackgroundColour())
@@ -419,6 +534,7 @@ class DialogPrefs(wx.Dialog):
             self.gridDev.SetCellValue(i, 2, str(i))
             self.gridDev.SetCellValue(i, 3, str(device.calibration))
             self.gridDev.SetCellValue(i, 4, str(device.lo))
+            self.gridDev.SetCellValue(i, 5, str(device.offset / 1e3))
             i += 1
 
         if settings.index > len(self.devices):
@@ -445,15 +561,23 @@ class DialogPrefs(wx.Dialog):
         self.SetSizerAndFit(vbox)
 
     def on_click(self, event):
-        if(event.GetCol() == 0):
+        col = event.GetCol()
+        index = event.GetRow()
+        if(col == 0):
             self.index = event.GetRow()
-            self.select_row(self.index)
+            self.select_row(index)
+        elif(col == 5):
+            dlg = DialogOffset(self, index, float(self.gridDev.GetCellValue(index, 5)))
+            if dlg.ShowModal() == wx.ID_OK:
+                self.gridDev.SetCellValue(index, 5, str(dlg.get_offset()))
+            dlg.Destroy()
         event.Skip()
 
     def on_ok(self, _event):
         for i in range(0, self.gridDev.GetNumberRows()):
             self.devices[i].calibration = float(self.gridDev.GetCellValue(i, 3))
             self.devices[i].lo = float(self.gridDev.GetCellValue(i, 4))
+            self.devices[i].offset = float(self.gridDev.GetCellValue(i, 5)) * 1e3
 
         self.EndModal(wx.ID_OK)
 
@@ -751,7 +875,7 @@ class FrameMain(wx.Frame):
         self.checkGrid.SetValue(self.grid)
         self.Bind(wx.EVT_CHECKBOX, self.on_check_grid, self.checkGrid)
 
-        grid = wx.GridBagSizer(hgap=5, vgap=5)
+        grid = wx.GridBagSizer(5, 5)
 
         grid.Add(self.buttonStart, pos=(0, 0), span=(2, 1),
                  flag=wx.ALIGN_CENTER)
@@ -880,6 +1004,7 @@ class FrameMain(wx.Frame):
         self.Close(True)
 
     def on_pref(self, _event):
+        self.devices = self.refresh_devices()
         dlg = DialogPrefs(self, self.devices, self.settings)
         if dlg.ShowModal() == wx.ID_OK:
             self.devices = dlg.get_devices()
@@ -1024,7 +1149,7 @@ class FrameMain(wx.Frame):
         if self.save_warn(WARN_SCAN):
             return False
 
-        self.devices = self.get_devices()
+        self.devices = self.refresh_devices()
         if(len(self.devices) == 0):
             wx.MessageBox('No devices found',
                           'Error', wx.OK | wx.ICON_ERROR)
@@ -1131,6 +1256,10 @@ class FrameMain(wx.Frame):
         self.settings.start = self.spinCtrlStart.GetValue()
         self.settings.stop = self.spinCtrlStop.GetValue()
 
+    def refresh_devices(self):
+        self.settings.devices = self.devices
+        self.settings.save()
+        return self.get_devices()
 
     def get_devices(self):
         devices = []
@@ -1147,6 +1276,7 @@ class FrameMain(wx.Frame):
                 if device.name == conf.name:
                     device.calibration = conf.calibration
                     device.lo = conf.lo
+                    device.offset = conf.offset
                     break
 
             devices.append(device)
