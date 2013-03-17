@@ -94,6 +94,7 @@ class Device():
     def __init__(self):
         self.index = None
         self.name = None
+        self.gain = 0
         self.calibration = None
         self.lo = None
         self.offset = 250e3
@@ -124,6 +125,7 @@ class Settings():
             self.cfg.SetPath("/Devices/" + group[1])
             device = Device()
             device.name = group[1]
+            device.gain = self.cfg.ReadFloat('gain', 0)
             device.calibration = self.cfg.ReadFloat('calibration', 0)
             device.lo = self.cfg.ReadFloat('lo', 0)
             device.offset = self.cfg.ReadFloat('offset', 250e3)
@@ -141,6 +143,7 @@ class Settings():
         if self.devices:
             for device in self.devices:
                 self.cfg.SetPath("/Devices/" + format_device_name(device.name))
+                self.cfg.WriteFloat('gain', device.gain)
                 self.cfg.WriteFloat('lo', device.lo)
                 self.cfg.WriteFloat('calibration', device.calibration)
                 self.cfg.WriteFloat('offset', device.offset)
@@ -177,6 +180,7 @@ class ThreadScan(threading.Thread):
         self.fstop = settings.stop * 1e6
         self.samples = samples
         self.isCal = isCal
+        self.gain = devices[self.index].gain
         self.lo = devices[self.index].lo * 1e6
         self.offset = devices[self.index].offset
         self.cancel = False
@@ -230,7 +234,7 @@ class ThreadScan(threading.Thread):
         try:
             sdr = rtlsdr.RtlSdr(self.index)
             sdr.set_sample_rate(SAMPLE_RATE)
-            sdr.set_gain(GAIN)
+            sdr.set_gain(self.gain)
         except IOError as error:
             wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_ERROR,
                                                         None, error.message))
@@ -399,6 +403,11 @@ class DialogOffset(wx.Dialog):
         self.spinFreq.SetRange(F_MIN, F_MAX)
         self.spinFreq.SetValue(200)
         
+        textGain = wx.StaticText(self, label="Test gain (dB)")
+        self.spinGain = wx.SpinCtrl(self)
+        self.spinGain.SetRange(-100, 200)
+        self.spinGain.SetValue(200)
+        
         refresh = wx.Button(self, wx.ID_ANY, 'Refresh')
         self.Bind(wx.EVT_BUTTON, self.on_refresh, refresh)
         
@@ -419,6 +428,8 @@ class DialogOffset(wx.Dialog):
         boxSizer1 = wx.BoxSizer(wx.HORIZONTAL)
         boxSizer1.Add(textFreq, border=5)
         boxSizer1.Add(self.spinFreq, border=5)
+        boxSizer1.Add(textGain, border=5)
+        boxSizer1.Add(self.spinGain, border=5)
         
         boxSizer2 = wx.BoxSizer(wx.HORIZONTAL)
         boxSizer2.Add(textOffset, border=5)
@@ -450,7 +461,7 @@ class DialogOffset(wx.Dialog):
         sdr = rtlsdr.RtlSdr(int(self.index))
         sdr.set_sample_rate(SAMPLE_RATE)
         sdr.set_center_freq(self.spinFreq.GetValue() * 1e6)
-        sdr.set_gain(GAIN)
+        sdr.set_gain(self.spinGain.GetValue())
         capture = sdr.read_samples(2 ** 18)
         powers, freqs = matplotlib.mlab.psd(capture,
                          NFFT=NFFT,
@@ -505,17 +516,19 @@ class DialogPrefs(wx.Dialog):
 
         self.devices = devices
         self.gridDev = grid.Grid(self)
-        self.gridDev.CreateGrid(len(self.devices), 6)
+        self.gridDev.CreateGrid(len(self.devices), 7)
         self.gridDev.SetRowLabelSize(0)
         self.gridDev.SetColLabelValue(0, "Select")
         self.gridDev.SetColLabelValue(1, "Device")
         self.gridDev.SetColLabelValue(2, "Index")
-        self.gridDev.SetColLabelValue(3, "Calibration\n(ppm)")
-        self.gridDev.SetColLabelValue(4, "LO\n(MHz)")
-        self.gridDev.SetColLabelValue(5, "Band Offset\n(kHz)")
-        self.gridDev.SetColFormatFloat(3, -1, 3)
+        self.gridDev.SetColLabelValue(3, "Gain\n(dB)")
+        self.gridDev.SetColLabelValue(4, "Calibration\n(ppm)")
+        self.gridDev.SetColLabelValue(5, "LO\n(MHz)")
+        self.gridDev.SetColLabelValue(6, "Band Offset\n(kHz)")
+        self.gridDev.SetColFormatFloat(3, -1, 1)
         self.gridDev.SetColFormatFloat(4, -1, 3)
-        self.gridDev.SetColFormatFloat(5, -1, 0)
+        self.gridDev.SetColFormatFloat(5, -1, 3)
+        self.gridDev.SetColFormatFloat(6, -1, 0)
 
         attributes = grid.GridCellAttr()
         attributes.SetBackgroundColour(self.gridDev.GetLabelBackgroundColour())
@@ -528,13 +541,15 @@ class DialogPrefs(wx.Dialog):
             self.gridDev.SetReadOnly(i, 1, True)
             self.gridDev.SetReadOnly(i, 2, True)
             self.gridDev.SetCellRenderer(i, 0, CellRenderer())
-            self.gridDev.SetCellEditor(i, 3, grid.GridCellFloatEditor(-1, 3))
+            self.gridDev.SetCellEditor(i, 3, grid.GridCellFloatEditor(-1, 1))
             self.gridDev.SetCellEditor(i, 4, grid.GridCellFloatEditor(-1, 3))
+            self.gridDev.SetCellEditor(i, 5, grid.GridCellFloatEditor(-1, 3))
             self.gridDev.SetCellValue(i, 1, device.name)
             self.gridDev.SetCellValue(i, 2, str(i))
-            self.gridDev.SetCellValue(i, 3, str(device.calibration))
-            self.gridDev.SetCellValue(i, 4, str(device.lo))
-            self.gridDev.SetCellValue(i, 5, str(device.offset / 1e3))
+            self.gridDev.SetCellValue(i, 3, str(device.gain))
+            self.gridDev.SetCellValue(i, 4, str(device.calibration))
+            self.gridDev.SetCellValue(i, 5, str(device.lo))
+            self.gridDev.SetCellValue(i, 6, str(device.offset / 1e3))
             i += 1
 
         if settings.index > len(self.devices):
@@ -566,18 +581,19 @@ class DialogPrefs(wx.Dialog):
         if(col == 0):
             self.index = event.GetRow()
             self.select_row(index)
-        elif(col == 5):
-            dlg = DialogOffset(self, index, float(self.gridDev.GetCellValue(index, 5)))
+        elif(col == 6):
+            dlg = DialogOffset(self, index, float(self.gridDev.GetCellValue(index, 6)))
             if dlg.ShowModal() == wx.ID_OK:
-                self.gridDev.SetCellValue(index, 5, str(dlg.get_offset()))
+                self.gridDev.SetCellValue(index, 6, str(dlg.get_offset()))
             dlg.Destroy()
         event.Skip()
 
     def on_ok(self, _event):
         for i in range(0, self.gridDev.GetNumberRows()):
-            self.devices[i].calibration = float(self.gridDev.GetCellValue(i, 3))
-            self.devices[i].lo = float(self.gridDev.GetCellValue(i, 4))
-            self.devices[i].offset = float(self.gridDev.GetCellValue(i, 5)) * 1e3
+            self.devices[i].gain = float(self.gridDev.GetCellValue(i, 3))
+            self.devices[i].calibration = float(self.gridDev.GetCellValue(i, 4))
+            self.devices[i].lo = float(self.gridDev.GetCellValue(i, 5))
+            self.devices[i].offset = float(self.gridDev.GetCellValue(i, 6)) * 1e3
 
         self.EndModal(wx.ID_OK)
 
@@ -1212,13 +1228,14 @@ class FrameMain(wx.Frame):
 
     def draw_plot(self):
         axes = self.graph.get_axes()
+        gain = self.settings.devices[self.settings.index].gain
         if len(self.spectrum) > 0:
             freqs = self.spectrum.keys()
             freqs.sort()
             powers = map(self.spectrum.get, freqs)
             axes.clear()
-            axes.set_title("Frequency Scan\n{0} - {1} MHz".format(self.settings.start,
-                                                                self.settings.stop))
+            axes.set_title("Frequency Scan\n{0} - {1} MHz, gain = {2}".format(self.settings.start,
+                                                                self.settings.stop, gain))
             axes.set_xlabel("Frequency (MHz)")
             axes.set_ylabel('Level (dB)')
             axes.plot(freqs, powers, linewidth=0.4)
@@ -1274,6 +1291,7 @@ class FrameMain(wx.Frame):
             for conf in self.settings.devices:
                 # TODO: better matching than just name?
                 if device.name == conf.name:
+                    device.gain = conf.gain
                     device.calibration = conf.calibration
                     device.lo = conf.lo
                     device.offset = conf.offset
