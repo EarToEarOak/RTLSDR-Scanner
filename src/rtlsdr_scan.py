@@ -25,25 +25,36 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import matplotlib
-matplotlib.interactive(True)
-matplotlib.use('WXAgg')
-from matplotlib.backends.backend_wxagg import \
-    FigureCanvasWxAgg as FigureCanvas, \
-    NavigationToolbar2WxAgg
-from matplotlib.backends.backend_wx import _load_bitmap
-import argparse
-import cPickle
-import itertools
-import math
-import numpy
-import os.path
-import rtlsdr
-import threading
-import wx
-import wx.lib.masked as masked
-import wx.lib.mixins.listctrl as listmix
-import wx.grid as grid
+try:
+    input = raw_input
+except:
+    pass
+
+try:
+    import matplotlib
+    matplotlib.interactive(True)
+    matplotlib.use('WXAgg')
+    from matplotlib.backends.backend_wxagg import \
+        FigureCanvasWxAgg as FigureCanvas, \
+        NavigationToolbar2WxAgg
+    from matplotlib.backends.backend_wx import _load_bitmap
+    import argparse
+    import cPickle
+    import itertools
+    import math
+    import numpy
+    import os.path
+    import rtlsdr
+    import threading
+    import wx
+    import wx.lib.masked as masked
+    import wx.lib.mixins.listctrl as listmix
+    import wx.grid as grid
+except ImportError as e:
+    print('Import error: {0}'.format(e))
+    input('\nError importing libraries\nPress [Return] to exit')
+    exit(1)
+    
 
 
 F_MIN = 0
