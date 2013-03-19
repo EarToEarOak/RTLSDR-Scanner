@@ -407,7 +407,8 @@ class DialogOffset(wx.Dialog):
         self.axes = figure.add_subplot(111)
         self.canvas = FigureCanvas(self, -1, figure)
         
-        textHelp = wx.StaticText(self, label="Remove the aerial and press refresh, adjust the offset so the shaded areas overlay the flattest parts of the plot.")
+        textHelp = wx.StaticText(self,
+                                 label="Remove the aerial and press refresh, adjust the offset so the shaded areas overlay the flattest parts of the plot.")
         
         textFreq = wx.StaticText(self, label="Test frequency (MHz)")
         self.spinFreq = wx.SpinCtrl(self)
@@ -469,11 +470,25 @@ class DialogOffset(wx.Dialog):
         
     def on_refresh(self, _event):
         plot = []
-        sdr = rtlsdr.RtlSdr(int(self.index))
-        sdr.set_sample_rate(SAMPLE_RATE)
-        sdr.set_center_freq(self.spinFreq.GetValue() * 1e6)
-        sdr.set_gain(self.spinGain.GetValue())
-        capture = sdr.read_samples(2 ** 18)
+        
+        dlg = wx.BusyInfo('Please wait...')
+
+        try:       
+            sdr = rtlsdr.RtlSdr(int(self.index))
+            sdr.set_sample_rate(SAMPLE_RATE)
+            sdr.set_center_freq(self.spinFreq.GetValue() * 1e6)
+            sdr.set_gain(self.spinGain.GetValue())
+            capture = sdr.read_samples(2 ** 18)
+        except IOError as e:
+            dlg.Destroy()
+            dlg = wx.MessageDialog(self,
+                                   'Capture failed:\n{0}'.format(e.message),
+                                   'Error',
+                                   wx.OK | wx.ICON_ERROR)
+            dlg.ShowModal()
+            dlg.Destroy()
+            return
+        
         powers, freqs = matplotlib.mlab.psd(capture,
                          NFFT=NFFT,
                          Fs=SAMPLE_RATE / 1e6,
@@ -494,8 +509,10 @@ class DialogOffset(wx.Dialog):
         self.axes.plot(x, y, linewidth=0.4)
         self.draw_limits()
         
+        dlg.Destroy()
+        
     def on_spin(self, _event):
-        self.offset = self.spinOffset.GetValue();
+        self.offset = self.spinOffset.GetValue()
         self.draw_limits()
         
     def draw_limits(self):
@@ -1044,7 +1061,8 @@ class FrameMain(wx.Frame):
 
     def on_about(self, _event):
         dlg = wx.MessageDialog(self, "RTLSDR Scanner",
-                               "About", wx.OK)
+                               "A tool for scanning frequency ranges with an RTL-SDR compatible USB dongle",
+                               wx.OK)
         dlg.ShowModal()
         dlg.Destroy()
 
