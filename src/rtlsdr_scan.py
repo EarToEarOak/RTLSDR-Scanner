@@ -294,11 +294,13 @@ class DropTarget(wx.FileDropTarget):
             self.window.dirname, self.window.filename = os.path.split(filename)
             self.window.open()
 
+
 class DeviceList(wx.ListCtrl, listmix.TextEditMixin):
     def __init__(self, parent, ID=wx.ID_ANY, pos=wx.DefaultPosition,
                  size=wx.DefaultSize, style=0):
         wx.ListCtrl.__init__(self, parent, ID, pos, size, style)
         listmix.TextEditMixin.__init__(self)
+
 
 class CellRenderer(grid.PyGridCellRenderer):
     def __init__(self):
@@ -311,6 +313,73 @@ class CellRenderer(grid.PyGridCellRenderer):
             dc.SetBrush(wx.Brush(attr.GetTextColour()))
             dc.DrawCircle(rect.x + (rect.width / 2), rect.y + (rect.height / 2),
                           rect.height / 4)
+
+
+class NavigationToolbar(NavigationToolbar2WxAgg):
+    def __init__(self, canvas, main):
+        self.main = main
+
+        navId = wx.NewId()
+        NavigationToolbar2WxAgg.__init__(self, canvas)
+        self.AddSimpleTool(navId, _load_bitmap('subplots.png'),
+                           'Range', 'Set plot range')
+        wx.EVT_TOOL(self, navId, self.on_range)
+
+    def on_range(self, _event):
+
+        dlg = DialogRange(self, self.main)
+        dlg.ShowModal()
+        dlg.Destroy()
+        self.canvas.draw()
+        self.main.draw_plot()
+
+
+class PanelGraph(wx.Panel):
+    def __init__(self, parent, main):
+        self.main = main
+
+        wx.Panel.__init__(self, parent)
+
+        self.figure = matplotlib.figure.Figure(facecolor='white')
+        self.axes = self.figure.add_subplot(111)
+        self.canvas = FigureCanvas(self, -1, self.figure)
+        self.canvas.mpl_connect('motion_notify_event', self.on_motion)
+        self.toolbar = NavigationToolbar(self.canvas, self.main)
+        self.toolbar.Realize()
+        self.toolbar.DeleteToolByPos(1)
+        self.toolbar.DeleteToolByPos(1)
+        self.toolbar.DeleteToolByPos(4)
+
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        vbox.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
+        vbox.Add(self.toolbar, 0, wx.EXPAND)
+
+        self.SetSizer(vbox)
+        vbox.Fit(self)
+
+    def on_motion(self, event):
+        if self.main.thread:
+            return
+        xpos = event.xdata
+        ypos = event.ydata
+        text = ""
+        if xpos is not None:
+            spectrum = self.main.spectrum
+            if len(spectrum) > 0:
+                xpos = min(spectrum.keys(), key=lambda freq: abs(freq - xpos))
+                ypos = spectrum[xpos]
+                text = "f = {0:.3f}MHz, p = {1:.2f}dB".format(xpos, ypos)
+
+        self.main.status.SetStatusText(text, 1)
+
+    def get_canvas(self):
+        return self.canvas
+
+    def get_axes(self):
+        return self.axes
+
+    def get_toolbar(self):
+        return self.toolbar
 
 class DialogAutoCal(wx.Dialog):
     def __init__(self, parent, freq, callback):
@@ -740,72 +809,6 @@ class DialogRange(wx.Dialog):
     def set_enabled(self, isEnabled):
         self.yMax.Enable(isEnabled)
         self.yMin.Enable(isEnabled)
-
-class NavigationToolbar(NavigationToolbar2WxAgg):
-    def __init__(self, canvas, main):
-        self.main = main
-
-        navId = wx.NewId()
-        NavigationToolbar2WxAgg.__init__(self, canvas)
-        self.AddSimpleTool(navId, _load_bitmap('subplots.png'),
-                           'Range', 'Set plot range')
-        wx.EVT_TOOL(self, navId, self.on_range)
-
-    def on_range(self, _event):
-
-        dlg = DialogRange(self, self.main)
-        dlg.ShowModal()
-        dlg.Destroy()
-        self.canvas.draw()
-        self.main.draw_plot()
-
-
-class PanelGraph(wx.Panel):
-    def __init__(self, parent, main):
-        self.main = main
-
-        wx.Panel.__init__(self, parent)
-
-        self.figure = matplotlib.figure.Figure(facecolor='white')
-        self.axes = self.figure.add_subplot(111)
-        self.canvas = FigureCanvas(self, -1, self.figure)
-        self.canvas.mpl_connect('motion_notify_event', self.on_motion)
-        self.toolbar = NavigationToolbar(self.canvas, self.main)
-        self.toolbar.Realize()
-        self.toolbar.DeleteToolByPos(1)
-        self.toolbar.DeleteToolByPos(1)
-        self.toolbar.DeleteToolByPos(4)
-
-        vbox = wx.BoxSizer(wx.VERTICAL)
-        vbox.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
-        vbox.Add(self.toolbar, 0, wx.EXPAND)
-
-        self.SetSizer(vbox)
-        vbox.Fit(self)
-
-    def on_motion(self, event):
-        if self.main.thread:
-            return
-        xpos = event.xdata
-        ypos = event.ydata
-        text = ""
-        if xpos is not None:
-            spectrum = self.main.spectrum
-            if len(spectrum) > 0:
-                xpos = min(spectrum.keys(), key=lambda freq: abs(freq - xpos))
-                ypos = spectrum[xpos]
-                text = "f = {0:.3f}MHz, p = {1:.2f}dB".format(xpos, ypos)
-
-        self.main.status.SetStatusText(text, 1)
-
-    def get_canvas(self):
-        return self.canvas
-
-    def get_axes(self):
-        return self.axes
-
-    def get_toolbar(self):
-        return self.toolbar
 
 
 class FrameMain(wx.Frame):
