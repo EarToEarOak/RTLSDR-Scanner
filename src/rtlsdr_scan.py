@@ -381,6 +381,7 @@ class PanelGraph(wx.Panel):
     def get_toolbar(self):
         return self.toolbar
 
+
 class DialogAutoCal(wx.Dialog):
     def __init__(self, parent, freq, callback):
         self.callback = callback
@@ -399,6 +400,8 @@ class DialogAutoCal(wx.Dialog):
                                         min=F_MIN, max=F_MAX)
 
         self.buttonCal = wx.Button(self, label="Calibrate")
+        if len(parent.devices) == 0:
+            self.buttonCal.Disable();
         self.buttonCal.Bind(wx.EVT_BUTTON, self.on_cal)
         self.textResult = wx.StaticText(self)
 
@@ -766,10 +769,10 @@ class DialogRange(wx.Dialog):
 
         textMax = wx.StaticText(self, label="Maximum (dB)")
         self.yMax = masked.NumCtrl(self, value=int(self.main.settings.yMax),
-                                    fractionWidth=0, min= -100, max=20)
+                                    fractionWidth=0, min=-100, max=20)
         textMin = wx.StaticText(self, label="Minimum (dB)")
         self.yMin = masked.NumCtrl(self, value=int(self.main.settings.yMin),
-                                    fractionWidth=0, min= -100, max=20)
+                                    fractionWidth=0, min=-100, max=20)
         self.set_enabled(not self.main.settings.yAuto)
 
         sizerButtons = wx.StdDialogButtonSizer()
@@ -1182,7 +1185,8 @@ class FrameMain(wx.Frame):
                 self.dlgCal = None
             elif status == CAL_CANCEL:
                 self.dlgCal = None
-                self.devices[self.settings.index].calibration = self.oldCal
+                if len(self.devices) > 0:
+                    self.devices[self.settings.index].calibration = self.oldCal
 
     def calc_ppm(self, freq):
         spectrum = self.spectrum.copy()
