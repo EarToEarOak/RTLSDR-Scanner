@@ -35,35 +35,35 @@ LIBS = [('wx', 'wxPython', 'http://www.wxpython.org/download.php#stable', True, 
 
 
 def try_import(library):
-        try:
-            __import__(library)
-        except:
-            return False
-        
-        return True
-          
+    try:
+        __import__(library)
+    except:
+        return False
+
+    return True
+
 if __name__ == '__main__':
-    
+
     try:
         input = raw_input
     except:
         pass
-    
+
     print('rtlsdr_scan_diag\n')
     print('Tests for missing libraries\n')
-    
+
     version = sys.version_info
     if(version < (2, 6)):
-        print('Warning unsupported version, please use Python 2.6 or greater') 
-     
-    problem = False  
-    
+        print('Warning unsupported version, please use Python 2.6 or greater')
+
+    problem = False
+
     if not find_library('rtlsdr') and not find_library('librtlsdr'):
         print('librtlsdr not found in path')
         print("Download from 'http://sdr.osmocom.org/trac/wiki/rtl-sdr'")
         print('')
     else:
-        platform = sys.platform  
+        platform = sys.platform
         for lib, name, url, package, homebrew in LIBS:
             if not try_import(lib):
                 problem = True
@@ -72,7 +72,7 @@ if __name__ == '__main__':
                     if package:
                         print("\tInstall using the system package manager or download from '{0}'".format(url))
                     else:
-                        print("\tDownload from '{0}'".format(url))   
+                        print("\tDownload from '{0}'".format(url))
                 elif platform == 'darwin':
                     if homebrew:
                         print("\tInstall using Homebrew or download from '{0}'".format(url))
@@ -80,14 +80,14 @@ if __name__ == '__main__':
                         print("\tDownload from '{0}'".format(url))
                 else:
                     print("\tDownload from '{0}'".format(url))
-    
-                print('')  
-      
+
+                print('')
+
         if problem:
             print('Problems found, please install the libraries for Python {0}.{1}'.format(version[0], version[1]))
         else:
             print('No problems found')
-        
+
     input('\nPress [Return]')
-        
-    
+
+
