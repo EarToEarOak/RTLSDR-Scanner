@@ -647,7 +647,7 @@ class DialogOffset(wx.Dialog):
         self.canvas = FigureCanvas(self, -1, figure)
 
         textHelp = wx.StaticText(self,
-                                 label="Remove the aerial and press refresh, adjust the offset so the shaded areas overlay the flattest parts of the plot.")
+            label="Remove the aerial and press refresh, adjust the offset so the shaded areas overlay the flattest parts of the plot.")
 
         textFreq = wx.StaticText(self, label="Test frequency (MHz)")
         self.spinFreq = wx.SpinCtrl(self)
@@ -1143,7 +1143,8 @@ class FrameMain(wx.Frame):
                                    "Preferences")
 
         menuTools = wx.Menu()
-        self.menuCompare = menuTools.Append(wx.ID_ANY, "&Compare...", "Compare plots")
+        self.menuCompare = menuTools.Append(wx.ID_ANY, "&Compare...",
+                                            "Compare plots")
         self.menuCal = menuTools.Append(wx.ID_ANY, "&Auto Calibration...",
                                "Automatically calibrate to a known frequency")
 
@@ -1242,8 +1243,8 @@ class FrameMain(wx.Frame):
 
     def on_about(self, _event):
         dlg = wx.MessageDialog(self, "RTLSDR Scanner",
-                               "A tool for scanning frequency ranges with an RTL-SDR compatible USB dongle",
-                               wx.OK)
+            "A tool for scanning frequency ranges with an RTL-SDR compatible USB dongle",
+            wx.OK)
         dlg.ShowModal()
         dlg.Destroy()
 
