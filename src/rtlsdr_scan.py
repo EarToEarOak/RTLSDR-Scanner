@@ -397,36 +397,43 @@ class PanelGraphCompare(wx.Panel):
 
         figure = matplotlib.figure.Figure(facecolor='white')
 
-        self.axes1 = figure.add_subplot(111)
-        self.axes2 = self.axes1.twinx()
-        self.plot1, = self.axes1.plot([], [], 'b-', linewidth=0.4)
-        self.plot2, = self.axes1.plot([], [], 'g-', linewidth=0.4)
-        self.plot3, = self.axes2.plot([], [], 'r-', linewidth=0.4)
-        self.axes1.set_ylim(auto=True)
-        self.axes2.set_ylim(auto=True)
+        self.axesScan = figure.add_subplot(111)
+        self.axesDiff = self.axesScan.twinx()
+        self.plotScan1, = self.axesScan.plot([], [], 'b-',
+                                                     linewidth=0.4)
+        self.plotScan2, = self.axesScan.plot([], [], 'g-',
+                                                     linewidth=0.4)
+        self.plotDiff, = self.axesDiff.plot([], [], 'r-', linewidth=0.4)
+        self.axesScan.set_ylim(auto=True)
+        self.axesDiff.set_ylim(auto=True)
 
-        self.axes1.set_title("Level Comparison")
-        self.axes1.set_xlabel("Frequency (MHz)")
-        self.axes1.set_ylabel('Level (dB)')
-        self.axes2.set_ylabel('Difference (db)')
+        self.axesScan.set_title("Level Comparison")
+        self.axesScan.set_xlabel("Frequency (MHz)")
+        self.axesScan.set_ylabel('Level (dB)')
+        self.axesDiff.set_ylabel('Difference (db)')
 
         self.canvas = FigureCanvas(self, -1, figure)
 
-        self.check1 = wx.CheckBox(self, wx.ID_ANY, "Plot 1")
-        self.check2 = wx.CheckBox(self, wx.ID_ANY, "Plot 2")
-        self.check3 = wx.CheckBox(self, wx.ID_ANY, "Difference")
+        self.check1 = wx.CheckBox(self, wx.ID_ANY, "Scan 1")
+        self.check2 = wx.CheckBox(self, wx.ID_ANY, "Scan 2")
+        self.checkDiff = wx.CheckBox(self, wx.ID_ANY, "Difference")
+        self.checkGrid = wx.CheckBox(self, wx.ID_ANY, "Grid")
         self.check1.SetValue(True)
         self.check2.SetValue(True)
-        self.check3.SetValue(True)
+        self.checkDiff.SetValue(True)
+        self.checkGrid.SetValue(False)
         self.Bind(wx.EVT_CHECKBOX, self.on_check1, self.check1)
         self.Bind(wx.EVT_CHECKBOX, self.on_check2, self.check2)
-        self.Bind(wx.EVT_CHECKBOX, self.on_check3, self.check3)
+        self.Bind(wx.EVT_CHECKBOX, self.on_check_diff, self.checkDiff)
+        self.Bind(wx.EVT_CHECKBOX, self.on_check_grid, self.checkGrid)
 
         grid = wx.GridBagSizer(5, 5)
         grid.Add(self.check1, pos=(0, 0), flag=wx.ALIGN_CENTER)
         grid.Add(self.check2, pos=(0, 1), flag=wx.ALIGN_CENTER)
         grid.Add((20, 1), pos=(0, 2))
-        grid.Add(self.check3, pos=(0, 3), flag=wx.ALIGN_CENTER)
+        grid.Add(self.checkDiff, pos=(0, 3), flag=wx.ALIGN_CENTER)
+        grid.Add((20, 1), pos=(0, 4))
+        grid.Add(self.checkGrid, pos=(0, 5), flag=wx.ALIGN_CENTER)
 
         toolbar = NavigationToolbarCompare(self.canvas)
         toolbar.Realize()
@@ -440,15 +447,19 @@ class PanelGraphCompare(wx.Panel):
         vbox.Fit(self)
 
     def on_check1(self, _event):
-        self.plot1.set_visible(self.check1.GetValue())
+        self.plotScan1.set_visible(self.check1.GetValue())
         self.canvas.draw()
 
     def on_check2(self, _event):
-        self.plot2.set_visible(self.check2.GetValue())
+        self.plotScan2.set_visible(self.check2.GetValue())
         self.canvas.draw()
 
-    def on_check3(self, _event):
-        self.plot3.set_visible(self.check3.GetValue())
+    def on_check_diff(self, _event):
+        self.plotDiff.set_visible(self.checkDiff.GetValue())
+        self.canvas.draw()
+
+    def on_check_grid(self, _event):
+        self.axesDiff.grid(self.checkGrid.GetValue())
         self.canvas.draw()
 
     def plot_diff(self):
@@ -461,38 +472,38 @@ class PanelGraphCompare(wx.Panel):
             for freq in intersect:
                 diff[freq] = self.spectrum1[freq] - self.spectrum2[freq]
             freqs, powers = split_spectrum(diff)
-            self.plot3.set_xdata(freqs)
-            self.plot3.set_ydata(powers)
+            self.plotDiff.set_xdata(freqs)
+            self.plotDiff.set_ydata(powers)
         elif self.spectrum1 is None:
             freqs, powers = split_spectrum(self.spectrum2)
-            self.plot3.set_xdata(freqs)
-            self.plot3.set_ydata([0] * len(freqs))
+            self.plotDiff.set_xdata(freqs)
+            self.plotDiff.set_ydata([0] * len(freqs))
         else:
             freqs, powers = split_spectrum(self.spectrum1)
-            self.plot3.set_xdata(freqs)
-            self.plot3.set_ydata([0] * len(freqs))
+            self.plotDiff.set_xdata(freqs)
+            self.plotDiff.set_ydata([0] * len(freqs))
 
-        self.axes2.relim()
-        self.axes2.autoscale_view()
+        self.axesDiff.relim()
+        self.axesDiff.autoscale_view()
 
     def set_spectrum1(self, spectrum):
         self.spectrum1 = spectrum
         freqs, powers = split_spectrum(spectrum)
-        self.plot1.set_xdata(freqs)
-        self.plot1.set_ydata(powers)
+        self.plotScan1.set_xdata(freqs)
+        self.plotScan1.set_ydata(powers)
         self.plot_diff()
-        self.axes1.relim()
-        self.axes1.autoscale_view()
+        self.axesScan.relim()
+        self.axesScan.autoscale_view()
         self.canvas.draw()
 
     def set_spectrum2(self, spectrum):
         self.spectrum2 = spectrum
         freqs, powers = split_spectrum(spectrum)
-        self.plot2.set_xdata(freqs)
-        self.plot2.set_ydata(powers)
+        self.plotScan2.set_xdata(freqs)
+        self.plotScan2.set_ydata(powers)
         self.plot_diff()
-        self.axes1.relim()
-        self.axes1.autoscale_view()
+        self.axesScan.relim()
+        self.axesScan.autoscale_view()
         self.canvas.draw()
 
 
