@@ -54,7 +54,7 @@ except ImportError as e:
     print('Import error: {0}'.format(e))
     input('\nError importing libraries\nPress [Return] to exit')
     exit(1)
-    
+
 
 
 F_MIN = 0
@@ -213,7 +213,7 @@ class ThreadScan(threading.Thread):
                 sdr.close()
                 return
             try:
-                progress = ((freq - self.fstart + self.offset) / 
+                progress = ((freq - self.fstart + self.offset) /
                              (self.fstop - self.fstart + BANDWIDTH)) * 100
                 wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_SCAN,
                                                             None, progress))
@@ -275,11 +275,11 @@ class ThreadProcess(threading.Thread):
                          NFFT=NFFT,
                          Fs=SAMPLE_RATE / 1e6,
                          window=WINDOW)
-        for pwr, freq in itertools.izip(freqs, powers):
-            xr = pwr + (self.freq / 1e6)
+        for freq, pwr in itertools.izip(freqs, powers):
+            xr = freq + (self.freq / 1e6)
             xr = xr + (xr * self.cal / 1e6)
             xr = int((xr * 5e4) + 0.5) / 5e4
-            scan[xr] = freq
+            scan[xr] = pwr
         wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_PROCESSED,
                                                             self.freq, scan))
 
@@ -294,12 +294,14 @@ class DropTarget(wx.FileDropTarget):
             self.window.dirname, self.window.filename = os.path.split(filename)
             self.window.open()
 
+
 class DeviceList(wx.ListCtrl, listmix.TextEditMixin):
     def __init__(self, parent, ID=wx.ID_ANY, pos=wx.DefaultPosition,
                  size=wx.DefaultSize, style=0):
         wx.ListCtrl.__init__(self, parent, ID, pos, size, style)
         listmix.TextEditMixin.__init__(self)
-        
+
+
 class CellRenderer(grid.PyGridCellRenderer):
     def __init__(self):
         grid.PyGridCellRenderer.__init__(self)
@@ -311,6 +313,252 @@ class CellRenderer(grid.PyGridCellRenderer):
             dc.SetBrush(wx.Brush(attr.GetTextColour()))
             dc.DrawCircle(rect.x + (rect.width / 2), rect.y + (rect.height / 2),
                           rect.height / 4)
+
+
+class NavigationToolbar(NavigationToolbar2WxAgg):
+    def __init__(self, canvas, main):
+        self.main = main
+
+        navId = wx.NewId()
+        NavigationToolbar2WxAgg.__init__(self, canvas)
+        self.AddSimpleTool(navId, _load_bitmap('subplots.png'),
+                           'Range', 'Set plot range')
+        wx.EVT_TOOL(self, navId, self.on_range)
+
+    def on_range(self, _event):
+
+        dlg = DialogRange(self, self.main)
+        dlg.ShowModal()
+        dlg.Destroy()
+        self.canvas.draw()
+        self.main.draw_plot()
+
+
+class NavigationToolbarCompare(NavigationToolbar2WxAgg):
+    def __init__(self, canvas):
+        NavigationToolbar2WxAgg.__init__(self, canvas)
+
+
+class PanelGraph(wx.Panel):
+    def __init__(self, parent, main):
+        self.main = main
+
+        wx.Panel.__init__(self, parent)
+
+        self.figure = matplotlib.figure.Figure(facecolor='white')
+        self.axes = self.figure.add_subplot(111)
+        self.canvas = FigureCanvas(self, -1, self.figure)
+        self.canvas.mpl_connect('motion_notify_event', self.on_motion)
+        self.toolbar = NavigationToolbar(self.canvas, self.main)
+        self.toolbar.Realize()
+        self.toolbar.DeleteToolByPos(1)
+        self.toolbar.DeleteToolByPos(1)
+        self.toolbar.DeleteToolByPos(4)
+
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        vbox.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
+        vbox.Add(self.toolbar, 0, wx.EXPAND)
+
+        self.SetSizer(vbox)
+        vbox.Fit(self)
+
+    def on_motion(self, event):
+        if self.main.thread:
+            return
+        xpos = event.xdata
+        ypos = event.ydata
+        text = ""
+        if xpos is not None:
+            spectrum = self.main.spectrum
+            if len(spectrum) > 0:
+                xpos = min(spectrum.keys(), key=lambda freq: abs(freq - xpos))
+                ypos = spectrum[xpos]
+                text = "f = {0:.3f}MHz, p = {1:.2f}dB".format(xpos, ypos)
+
+        self.main.status.SetStatusText(text, 1)
+
+    def get_canvas(self):
+        return self.canvas
+
+    def get_axes(self):
+        return self.axes
+
+    def get_toolbar(self):
+        return self.toolbar
+
+
+class PanelGraphCompare(wx.Panel):
+    def __init__(self, parent):
+
+        self.spectrum1 = None
+        self.spectrum2 = None
+
+        wx.Panel.__init__(self, parent)
+
+        figure = matplotlib.figure.Figure(facecolor='white')
+
+        self.axesScan = figure.add_subplot(111)
+        self.axesDiff = self.axesScan.twinx()
+        self.plotScan1, = self.axesScan.plot([], [], 'b-',
+                                                     linewidth=0.4)
+        self.plotScan2, = self.axesScan.plot([], [], 'g-',
+                                                     linewidth=0.4)
+        self.plotDiff, = self.axesDiff.plot([], [], 'r-', linewidth=0.4)
+        self.axesScan.set_ylim(auto=True)
+        self.axesDiff.set_ylim(auto=True)
+
+        self.axesScan.set_title("Level Comparison")
+        self.axesScan.set_xlabel("Frequency (MHz)")
+        self.axesScan.set_ylabel('Level (dB)')
+        self.axesDiff.set_ylabel('Difference (db)')
+
+        self.canvas = FigureCanvas(self, -1, figure)
+
+        self.check1 = wx.CheckBox(self, wx.ID_ANY, "Scan 1")
+        self.check2 = wx.CheckBox(self, wx.ID_ANY, "Scan 2")
+        self.checkDiff = wx.CheckBox(self, wx.ID_ANY, "Difference")
+        self.checkGrid = wx.CheckBox(self, wx.ID_ANY, "Grid")
+        self.check1.SetValue(True)
+        self.check2.SetValue(True)
+        self.checkDiff.SetValue(True)
+        self.checkGrid.SetValue(False)
+        self.Bind(wx.EVT_CHECKBOX, self.on_check1, self.check1)
+        self.Bind(wx.EVT_CHECKBOX, self.on_check2, self.check2)
+        self.Bind(wx.EVT_CHECKBOX, self.on_check_diff, self.checkDiff)
+        self.Bind(wx.EVT_CHECKBOX, self.on_check_grid, self.checkGrid)
+
+        grid = wx.GridBagSizer(5, 5)
+        grid.Add(self.check1, pos=(0, 0), flag=wx.ALIGN_CENTER)
+        grid.Add(self.check2, pos=(0, 1), flag=wx.ALIGN_CENTER)
+        grid.Add((20, 1), pos=(0, 2))
+        grid.Add(self.checkDiff, pos=(0, 3), flag=wx.ALIGN_CENTER)
+        grid.Add((20, 1), pos=(0, 4))
+        grid.Add(self.checkGrid, pos=(0, 5), flag=wx.ALIGN_CENTER)
+
+        toolbar = NavigationToolbarCompare(self.canvas)
+        toolbar.Realize()
+
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        vbox.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
+        vbox.Add(grid, 0, wx.ALIGN_CENTRE | wx.ALL, border=5)
+        vbox.Add(toolbar, 0, wx.EXPAND)
+
+        self.SetSizer(vbox)
+        vbox.Fit(self)
+
+    def on_check1(self, _event):
+        self.plotScan1.set_visible(self.check1.GetValue())
+        self.canvas.draw()
+
+    def on_check2(self, _event):
+        self.plotScan2.set_visible(self.check2.GetValue())
+        self.canvas.draw()
+
+    def on_check_diff(self, _event):
+        self.plotDiff.set_visible(self.checkDiff.GetValue())
+        self.canvas.draw()
+
+    def on_check_grid(self, _event):
+        self.axesDiff.grid(self.checkGrid.GetValue())
+        self.canvas.draw()
+
+    def plot_diff(self):
+        diff = {}
+
+        if self.spectrum1 is not None and self.spectrum2 is not None :
+            set1 = set(self.spectrum1)
+            set2 = set(self.spectrum2)
+            intersect = set1.intersection(set2)
+            for freq in intersect:
+                diff[freq] = self.spectrum1[freq] - self.spectrum2[freq]
+            freqs, powers = split_spectrum(diff)
+            self.plotDiff.set_xdata(freqs)
+            self.plotDiff.set_ydata(powers)
+        elif self.spectrum1 is None:
+            freqs, powers = split_spectrum(self.spectrum2)
+            self.plotDiff.set_xdata(freqs)
+            self.plotDiff.set_ydata([0] * len(freqs))
+        else:
+            freqs, powers = split_spectrum(self.spectrum1)
+            self.plotDiff.set_xdata(freqs)
+            self.plotDiff.set_ydata([0] * len(freqs))
+
+        self.axesDiff.relim()
+        self.axesDiff.autoscale_view()
+
+    def set_spectrum1(self, spectrum):
+        self.spectrum1 = spectrum
+        freqs, powers = split_spectrum(spectrum)
+        self.plotScan1.set_xdata(freqs)
+        self.plotScan1.set_ydata(powers)
+        self.plot_diff()
+        self.axesScan.relim()
+        self.axesScan.autoscale_view()
+        self.canvas.draw()
+
+    def set_spectrum2(self, spectrum):
+        self.spectrum2 = spectrum
+        freqs, powers = split_spectrum(spectrum)
+        self.plotScan2.set_xdata(freqs)
+        self.plotScan2.set_ydata(powers)
+        self.plot_diff()
+        self.axesScan.relim()
+        self.axesScan.autoscale_view()
+        self.canvas.draw()
+
+
+class DialogCompare(wx.Dialog):
+    def __init__(self, parent, dirname, filename):
+
+        self.dirname = dirname
+        self.filename = filename
+
+        wx.Dialog.__init__(self, parent=parent, title="Compare plots",
+            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.MAXIMIZE_BOX)
+
+        self.graph = PanelGraphCompare(self)
+
+        self.buttonPlot1 = wx.Button(self, wx.ID_ANY, 'Load plot #1')
+        self.buttonPlot2 = wx.Button(self, wx.ID_ANY, 'Load plot #2')
+        self.Bind(wx.EVT_BUTTON, self.on_load_plot, self.buttonPlot1)
+        self.Bind(wx.EVT_BUTTON, self.on_load_plot, self.buttonPlot2)
+        self.textPlot1 = wx.StaticText(self, label="<None>")
+        self.textPlot2 = wx.StaticText(self, label="<None>")
+
+        buttonClose = wx.Button(self, wx.ID_CLOSE, 'Close')
+        self.Bind(wx.EVT_BUTTON, self.on_close, buttonClose)
+
+        grid = wx.GridBagSizer(5, 5)
+        grid.AddGrowableCol(2, 0)
+        grid.Add(self.buttonPlot1, pos=(0, 0), flag=wx.ALIGN_CENTER)
+        grid.Add(self.textPlot1, pos=(0, 1), span=(1, 2))
+        grid.Add(self.buttonPlot2, pos=(1, 0), flag=wx.ALIGN_CENTER)
+        grid.Add(self.textPlot2, pos=(1, 1), span=(1, 2))
+        grid.Add(buttonClose, pos=(2, 3), flag=wx.ALIGN_RIGHT)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.graph, 1, wx.EXPAND)
+        sizer.Add(grid, 0, wx.EXPAND | wx.ALL, border=5)
+        self.SetSizerAndFit(sizer)
+
+    def on_load_plot(self, event):
+        dlg = wx.FileDialog(self, "Open a scan", self.dirname, self.filename,
+                            FILE_RFS, wx.OPEN)
+        if dlg.ShowModal() == wx.ID_OK:
+            _start, _stop, spectrum = open_plot(dlg.GetDirectory(),
+                                                dlg.GetFilename())
+            if(event.EventObject == self.buttonPlot1):
+                self.textPlot1.SetLabel(dlg.GetFilename())
+                self.graph.set_spectrum1(spectrum)
+            else:
+                self.textPlot2.SetLabel(dlg.GetFilename())
+                self.graph.set_spectrum2(spectrum)
+        dlg.Destroy()
+
+    def on_close(self, _event):
+        self.EndModal(wx.ID_CLOSE)
+        return
+
 
 class DialogAutoCal(wx.Dialog):
     def __init__(self, parent, freq, callback):
@@ -330,6 +578,8 @@ class DialogAutoCal(wx.Dialog):
                                         min=F_MIN, max=F_MAX)
 
         self.buttonCal = wx.Button(self, label="Calibrate")
+        if len(parent.devices) == 0:
+            self.buttonCal.Disable()
         self.buttonCal.Bind(wx.EVT_BUTTON, self.on_cal)
         self.textResult = wx.StaticText(self)
 
@@ -400,34 +650,35 @@ class DialogOffset(wx.Dialog):
         self.offset = offset
         self.band1 = None
         self.band2 = None
-        
+
         wx.Dialog.__init__(self, parent=parent, title="Scan Offset")
-        
+
         figure = matplotlib.figure.Figure(facecolor='white')
         self.axes = figure.add_subplot(111)
         self.canvas = FigureCanvas(self, -1, figure)
-        
-        textHelp = wx.StaticText(self, label="Remove the aerial and press refresh, adjust the offset so the shaded areas overlay the flattest parts of the plot.")
-        
+
+        textHelp = wx.StaticText(self,
+            label="Remove the aerial and press refresh, adjust the offset so the shaded areas overlay the flattest parts of the plot.")
+
         textFreq = wx.StaticText(self, label="Test frequency (MHz)")
         self.spinFreq = wx.SpinCtrl(self)
         self.spinFreq.SetRange(F_MIN, F_MAX)
         self.spinFreq.SetValue(200)
-        
+
         textGain = wx.StaticText(self, label="Test gain (dB)")
         self.spinGain = wx.SpinCtrl(self)
         self.spinGain.SetRange(-100, 200)
         self.spinGain.SetValue(200)
-        
+
         refresh = wx.Button(self, wx.ID_ANY, 'Refresh')
         self.Bind(wx.EVT_BUTTON, self.on_refresh, refresh)
-        
+
         textOffset = wx.StaticText(self, label="Offset (kHz)")
         self.spinOffset = wx.SpinCtrl(self)
         self.spinOffset.SetRange(0, (SAMPLE_RATE - BANDWIDTH) / 1e3)
         self.spinOffset.SetValue(offset)
         self.Bind(wx.EVT_SPINCTRL, self.on_spin, self.spinOffset)
-        
+
         sizerButtons = wx.StdDialogButtonSizer()
         buttonOk = wx.Button(self, wx.ID_OK)
         buttonCancel = wx.Button(self, wx.ID_CANCEL)
@@ -435,17 +686,17 @@ class DialogOffset(wx.Dialog):
         sizerButtons.AddButton(buttonCancel)
         sizerButtons.Realize()
         self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
-        
+
         boxSizer1 = wx.BoxSizer(wx.HORIZONTAL)
         boxSizer1.Add(textFreq, border=5)
         boxSizer1.Add(self.spinFreq, border=5)
         boxSizer1.Add(textGain, border=5)
         boxSizer1.Add(self.spinGain, border=5)
-        
+
         boxSizer2 = wx.BoxSizer(wx.HORIZONTAL)
         boxSizer2.Add(textOffset, border=5)
         boxSizer2.Add(self.spinOffset, border=5)
-        
+
         gridSizer = wx.GridBagSizer(5, 5)
         gridSizer.Add(self.canvas, pos=(0, 0), span=(1, 2),
                   flag=wx.ALIGN_CENTER | wx.ALL)
@@ -459,32 +710,46 @@ class DialogOffset(wx.Dialog):
                   flag=wx.ALIGN_CENTER | wx.ALL)
         gridSizer.Add(sizerButtons, pos=(5, 1), span=(1, 1),
                   flag=wx.ALIGN_RIGHT | wx.ALL)
-        
+
         self.SetSizerAndFit(gridSizer)
         self.draw_limits()
-        
+
     def on_ok(self, _event):
 
         self.EndModal(wx.ID_OK)
-        
+
     def on_refresh(self, _event):
         plot = []
-        sdr = rtlsdr.RtlSdr(int(self.index))
-        sdr.set_sample_rate(SAMPLE_RATE)
-        sdr.set_center_freq(self.spinFreq.GetValue() * 1e6)
-        sdr.set_gain(self.spinGain.GetValue())
-        capture = sdr.read_samples(2 ** 18)
+
+        dlg = wx.BusyInfo('Please wait...')
+
+        try:
+            sdr = rtlsdr.RtlSdr(int(self.index))
+            sdr.set_sample_rate(SAMPLE_RATE)
+            sdr.set_center_freq(self.spinFreq.GetValue() * 1e6)
+            sdr.set_gain(self.spinGain.GetValue())
+            capture = sdr.read_samples(2 ** 18)
+        except IOError as e:
+            dlg.Destroy()
+            dlg = wx.MessageDialog(self,
+                                   'Capture failed:\n{0}'.format(e.message),
+                                   'Error',
+                                   wx.OK | wx.ICON_ERROR)
+            dlg.ShowModal()
+            dlg.Destroy()
+            return
+
         powers, freqs = matplotlib.mlab.psd(capture,
                          NFFT=NFFT,
                          Fs=SAMPLE_RATE / 1e6,
                          window=WINDOW)
-        
+
         for x, y in itertools.izip(freqs, powers):
             x = x * SAMPLE_RATE / 2e6
             plot.append((x, y))
-        plot.sort()   
+        plot.sort()
         x, y = numpy.transpose(plot)
-        
+
         self.axes.clear()
         self.band1 = None
         self.band2 = None
@@ -493,11 +758,13 @@ class DialogOffset(wx.Dialog):
         self.axes.set_yscale('log')
         self.axes.plot(x, y, linewidth=0.4)
         self.draw_limits()
-        
+
+        dlg.Destroy()
+
     def on_spin(self, _event):
-        self.offset = self.spinOffset.GetValue();
+        self.offset = self.spinOffset.GetValue()
         self.draw_limits()
-        
+
     def draw_limits(self):
         limit1 = self.offset / 1e3
         limit2 = limit1 + BANDWIDTH / 1e6
@@ -508,11 +775,11 @@ class DialogOffset(wx.Dialog):
         self.band1 = self.axes.axvspan(limit1, limit2, color='g', alpha=0.25)
         self.band2 = self.axes.axvspan(-limit1, -limit2, color='g', alpha=0.25)
         self.canvas.draw()
-        
+
     def get_offset(self):
         return self.offset
 
-    
+
 class DialogPrefs(wx.Dialog):
     def __init__(self, parent, devices, settings):
         self.settings = settings
@@ -671,7 +938,7 @@ class DialogSaveWarn(wx.Dialog):
 class DialogRange(wx.Dialog):
     def __init__(self, parent, main):
         self.main = main
-        
+
         wx.Dialog.__init__(self, parent=parent, title="Plot Range")
 
         self.checkAuto = wx.CheckBox(self, wx.ID_ANY, "Auto Range")
@@ -680,10 +947,10 @@ class DialogRange(wx.Dialog):
 
         textMax = wx.StaticText(self, label="Maximum (dB)")
         self.yMax = masked.NumCtrl(self, value=int(self.main.settings.yMax),
-                                    fractionWidth=0, min= -100, max=20)
+                                    fractionWidth=0, min=-100, max=20)
         textMin = wx.StaticText(self, label="Minimum (dB)")
         self.yMin = masked.NumCtrl(self, value=int(self.main.settings.yMin),
-                                    fractionWidth=0, min= -100, max=20)
+                                    fractionWidth=0, min=-100, max=20)
         self.set_enabled(not self.main.settings.yAuto)
 
         sizerButtons = wx.StdDialogButtonSizer()
@@ -724,72 +991,6 @@ class DialogRange(wx.Dialog):
         self.yMax.Enable(isEnabled)
         self.yMin.Enable(isEnabled)
 
-class NavigationToolbar(NavigationToolbar2WxAgg):
-    def __init__(self, canvas, main):
-        self.main = main
-
-        navId = wx.NewId()
-        NavigationToolbar2WxAgg.__init__(self, canvas)
-        self.AddSimpleTool(navId, _load_bitmap('subplots.png'),
-                           'Range', 'Set plot range')
-        wx.EVT_TOOL(self, navId, self.on_range)
-
-    def on_range(self, _event):
-
-        dlg = DialogRange(self, self.main)
-        dlg.ShowModal()
-        dlg.Destroy()
-        self.canvas.draw()
-        self.main.draw_plot()
-
-
-class PanelGraph(wx.Panel):
-    def __init__(self, parent, main):
-        self.main = main
-
-        wx.Panel.__init__(self, parent)
-
-        self.figure = matplotlib.figure.Figure(facecolor='white')
-        self.axes = self.figure.add_subplot(111)
-        self.canvas = FigureCanvas(self, -1, self.figure)
-        self.canvas.mpl_connect('motion_notify_event', self.on_motion)
-        self.toolbar = NavigationToolbar(self.canvas, self.main)
-        self.toolbar.Realize()
-        self.toolbar.DeleteToolByPos(1)
-        self.toolbar.DeleteToolByPos(1)
-        self.toolbar.DeleteToolByPos(4)
-
-        vbox = wx.BoxSizer(wx.VERTICAL)
-        vbox.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
-        vbox.Add(self.toolbar, 0, wx.EXPAND)
-
-        self.SetSizer(vbox)
-        vbox.Fit(self)
-
-    def on_motion(self, event):
-        if self.main.thread:
-            return
-        xpos = event.xdata
-        ypos = event.ydata
-        text = ""
-        if xpos is not None:
-            spectrum = self.main.spectrum
-            if len(spectrum) > 0:
-                xpos = min(spectrum.keys(), key=lambda freq: abs(freq - xpos))
-                ypos = spectrum[xpos]
-                text = "f = {0:.3f}MHz, p = {1:.2f}dB".format(xpos, ypos)
-
-        self.main.status.SetStatusText(text, 1)
-
-    def get_canvas(self):
-        return self.canvas
-
-    def get_axes(self):
-        return self.axes
-
-    def get_toolbar(self):
-        return self.toolbar
-
 
 class FrameMain(wx.Frame):
     def __init__(self, title):
@@ -807,6 +1008,7 @@ class FrameMain(wx.Frame):
         self.menuStart = None
         self.menuStop = None
         self.menuPref = None
+        self.menuCompare = None
         self.menuCal = None
 
         self.panel = None
@@ -952,6 +1154,8 @@ class FrameMain(wx.Frame):
                                    "Preferences")
 
         menuTools = wx.Menu()
+        self.menuCompare = menuTools.Append(wx.ID_ANY, "&Compare...",
+                                            "Compare plots")
         self.menuCal = menuTools.Append(wx.ID_ANY, "&Auto Calibration...",
                                "Automatically calibrate to a known frequency")
 
@@ -974,6 +1178,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_start, self.menuStart)
         self.Bind(wx.EVT_MENU, self.on_stop, self.menuStop)
         self.Bind(wx.EVT_MENU, self.on_pref, self.menuPref)
+        self.Bind(wx.EVT_MENU, self.on_compare, self.menuCompare)
         self.Bind(wx.EVT_MENU, self.on_cal, self.menuCal)
         self.Bind(wx.EVT_MENU, self.on_about, menuAbout)
 
@@ -1038,13 +1243,19 @@ class FrameMain(wx.Frame):
             self.settings.index = dlg.get_index()
         dlg.Destroy()
 
+    def on_compare(self, _event):
+        dlg = DialogCompare(self, self.dirname, self.filename)
+        dlg.ShowModal()
+        dlg.Destroy()
+
     def on_cal(self, _event):
         self.dlgCal = DialogAutoCal(self, self.settings.calFreq, self.auto_cal)
         self.dlgCal.ShowModal()
 
     def on_about(self, _event):
         dlg = wx.MessageDialog(self, "RTLSDR Scanner",
-                               "About", wx.OK)
+            "A tool for scanning frequency ranges with an RTL-SDR compatible USB dongle",
+            wx.OK)
         dlg.ShowModal()
         dlg.Destroy()
 
@@ -1119,28 +1330,19 @@ class FrameMain(wx.Frame):
         self.filename = filename
         self.dirname = dirname
         self.status.SetStatusText("Opening: {0}".format(filename), 0)
-        try:
-            handle = open(os.path.join(dirname, filename), 'rb')
-            header = cPickle.load(handle)
-            if header != FILE_HEADER:
-                wx.MessageBox('Invalid or corrupted file', 'Warning',
-                          wx.OK | wx.ICON_WARNING)
-                self.status.SetStatusText("Open failed", 0)
-                return
-            _version = cPickle.load(handle)
-            self.settings.start = cPickle.load(handle)
-            self.settings.stop = cPickle.load(handle)
-            self.spectrum = cPickle.load(handle)
-        except:
-            wx.MessageBox('File could not be opened', 'Warning',
-                          wx.OK | wx.ICON_WARNING)
+
+        start, stop, spectrum = open_plot(dirname, filename)
+
+        if len(spectrum) > 0:
+            self.settings.start = start
+            self.settings.stop = stop
+            self.spectrum = spectrum
+            self.isSaved = True
+            self.set_range()
+            self.draw_plot()
+            self.status.SetStatusText("Finished", 0)
+        else:
             self.status.SetStatusText("Open failed", 0)
-            return
-        self.isSaved = True
-        self.set_range()
-        self.draw_plot()
-        handle.close()
-        self.status.SetStatusText("Finished", 0)
 
     def auto_cal(self, status):
         freq = self.dlgCal.get_freq()
@@ -1161,7 +1363,8 @@ class FrameMain(wx.Frame):
                 self.dlgCal = None
             elif status == CAL_CANCEL:
                 self.dlgCal = None
-                self.devices[self.settings.index].calibration = self.oldCal
+                if len(self.devices) > 0:
+                    self.devices[self.settings.index].calibration = self.oldCal
 
     def calc_ppm(self, freq):
         spectrum = self.spectrum.copy()
@@ -1241,9 +1444,7 @@ class FrameMain(wx.Frame):
         axes = self.graph.get_axes()
         gain = self.settings.devices[self.settings.index].gain
         if len(self.spectrum) > 0:
-            freqs = self.spectrum.keys()
-            freqs.sort()
-            powers = map(self.spectrum.get, freqs)
+            freqs, powers = split_spectrum(self.spectrum)
             axes.clear()
             axes.set_title("Frequency Scan\n{0} - {1} MHz, gain = {2}".format(self.settings.start,
                                                                 self.settings.stop, gain))
@@ -1345,6 +1546,30 @@ def arguments():
 
     return directory, filename
 
+def open_plot(dirname, filename):
+    try:
+        handle = open(os.path.join(dirname, filename), 'rb')
+        header = cPickle.load(handle)
+        if header != FILE_HEADER:
+            wx.MessageBox('Invalid or corrupted file', 'Warning',
+                      wx.OK | wx.ICON_WARNING)
+            return
+        _version = cPickle.load(handle)
+        start = cPickle.load(handle)
+        stop = cPickle.load(handle)
+        spectrum = cPickle.load(handle)
+    except:
+        wx.MessageBox('File could not be opened', 'Warning',
+                      wx.OK | wx.ICON_WARNING)
+
+    return start, stop, spectrum
+
+def split_spectrum(spectrum):
+    freqs = spectrum.keys()
+    freqs.sort()
+    powers = map(spectrum.get, freqs)
+
+    return freqs, powers
 
 if __name__ == '__main__':
     app = wx.App(False)
