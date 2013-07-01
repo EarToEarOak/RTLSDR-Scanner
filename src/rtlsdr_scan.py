@@ -1339,6 +1339,7 @@ class FrameMain(wx.Frame):
             self.spectrum = spectrum
             self.isSaved = True
             self.set_range()
+            self.set_controls(True)
             self.draw_plot()
             self.status.SetStatusText("Finished", 0)
         else:
