@@ -63,6 +63,15 @@ GAIN = 0
 SAMPLE_RATE = 2e6
 BANDWIDTH = 500e3
 NFFT = 1024
+SEL_NFFT = ["128", 128,
+		 "512", 512,
+         "1024", 1024,
+         "2048", 2048,
+         "4096", 4096,
+         "8192", 8192,
+         "16384", 16384,
+         "32768", 32768]
+
 
 DWELL = ["10 ms", 0.01,
          "25 ms", 0.025,
@@ -260,21 +269,23 @@ class ThreadScan(threading.Thread):
 
 
 class ThreadProcess(threading.Thread):
-    def __init__(self, notify, freq, data, settings, devices):
+    def __init__(self, notify, freq, data, settings, devices, NFFT):
         threading.Thread.__init__(self)
         self.notify = notify
         self.freq = freq
         self.data = data
         self.cal = devices[settings.index].calibration
+        self.NFFT = NFFT
+        self.WINDOW = matplotlib.numpy.hamming(self.NFFT)
 
         self.start()
 
     def run(self):
         scan = {}
         powers, freqs = matplotlib.mlab.psd(self.data,
-                         NFFT=NFFT,
+                         NFFT=self.NFFT,
                          Fs=SAMPLE_RATE / 1e6,
-                         window=WINDOW)
+                         window=self.WINDOW)
         for freq, pwr in itertools.izip(freqs, powers):
             xr = freq + (self.freq / 1e6)
             xr = xr + (xr * self.cal / 1e6)
@@ -1017,6 +1028,7 @@ class FrameMain(wx.Frame):
         self.buttonStart = None
         self.buttonStop = None
         self.choiceDwell = None
+        self.choiceNFFT = None
         self.spinCtrlStart = None
         self.spinCtrlStop = None
         self.checkUpdate = None
@@ -1093,6 +1105,11 @@ class FrameMain(wx.Frame):
         self.choiceDwell.SetToolTip(wx.ToolTip('Scan time per step'))
         self.choiceDwell.SetSelection(DWELL[1::2].index(0.1))
 
+        textNFFT = wx.StaticText(self.panel, label="FFT size")
+        self.choiceNFFT = wx.Choice(self.panel, choices=SEL_NFFT[::2])
+        self.choiceNFFT.SetToolTip(wx.ToolTip('Scan time per step'))
+        self.choiceNFFT.SetSelection(SEL_NFFT[1::2].index(1024))
+
         self.checkUpdate = wx.CheckBox(self.panel, wx.ID_ANY,
                                         "Continuous update")
         self.checkUpdate.SetToolTip(wx.ToolTip('Very slow, not recommended'))
@@ -1124,10 +1141,13 @@ class FrameMain(wx.Frame):
         grid.Add(textDwell, pos=(0, 8), flag=wx.ALIGN_CENTER)
         grid.Add(self.choiceDwell, pos=(1, 8), flag=wx.ALIGN_CENTER)
 
-        grid.Add((20, 1), pos=(0, 9))
+        grid.Add(textNFFT, pos=(0, 9), flag=wx.ALIGN_CENTER)
+        grid.Add(self.choiceNFFT, pos=(1, 9), flag=wx.ALIGN_CENTER)
 
-        grid.Add(self.checkUpdate, pos=(0, 10))
-        grid.Add(self.checkGrid, pos=(1, 10))
+        grid.Add((20, 1), pos=(0, 10))
+
+        grid.Add(self.checkUpdate, pos=(0, 11))
+        grid.Add(self.checkGrid, pos=(1, 11))
 
         self.panel.SetSizer(grid)
 
@@ -1314,7 +1334,9 @@ class FrameMain(wx.Frame):
                 self.dlgCal = None
         elif status == THREAD_STATUS_DATA:
             self.isSaved = False
-            ThreadProcess(self, freq, data, self.settings, self.devices)
+            fft_choice = self.choiceNFFT.GetSelection()
+            NFFT = SEL_NFFT[1::2][fft_choice]
+            ThreadProcess(self, freq, data, self.settings, self.devices, NFFT)
         elif status == THREAD_STATUS_PROCESSED:
             self.update_scan(freq, data)
             if self.update:
@@ -1431,6 +1453,7 @@ class FrameMain(wx.Frame):
         self.spinCtrlStart.Enable(state)
         self.spinCtrlStop.Enable(state)
         self.choiceDwell.Enable(state)
+        self.choiceNFFT.Enable(state)
         self.buttonStart.Enable(state)
         self.buttonStop.Enable(not state)
         self.menuOpen.Enable(state)
