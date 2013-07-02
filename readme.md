@@ -16,6 +16,9 @@ Tested on:
 - Ubuntu 12.10 (x64)
 - OS X Snow Leopard
 
+## Binaries ##
+Test binaries can be found on [SourceForge](http://sourceforge.net/projects/rtlsdrscanner/files/)
+
 ## Requirements ##
 
 - [Python 2.6](http://www.python.org) or greater
