@@ -45,7 +45,8 @@ OS X users report success using [Homebrew](http://mxcl.github.com/homebrew/), if
 - **Start** - Scan start frequency
 - **Stop** - Scan stop frequency
 - **Dwell** - Sampling time spent on each step
-- **Continous update** - Update the display on each step (caution only use with small scans and low dwell times)
+- **FFT Size** - FFT size, greater values result in higher analysis precision (with higher sizes dwell should be increased)
+- **Continuous update** - Update the display on each step (caution only use with small scans and low dwell times)
 - **Grid** - Show a grid on the scan
 
 **File Menu**
@@ -65,7 +66,8 @@ OS X users report success using [Homebrew](http://mxcl.github.com/homebrew/), if
 
 **Tools Menu**
 
-- **Auto Calibration** - Perform a crude calibration of the dongle to a known signal (this should be a continous, unwavering signal)
+- **Compare** - Compare two previously saved scans
+- **Auto Calibration** - Perform a crude calibration of the dongle to a known signal (this should be a continuous, unwavering signal)
 
 ## License ##
 
