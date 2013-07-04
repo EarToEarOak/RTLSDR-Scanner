@@ -1107,7 +1107,7 @@ class FrameMain(wx.Frame):
 
         textNFFT = wx.StaticText(self.panel, label="FFT size")
         self.choiceNFFT = wx.Choice(self.panel, choices=SEL_NFFT[::2])
-        self.choiceNFFT.SetToolTip(wx.ToolTip('Scan time per step'))
+        self.choiceNFFT.SetToolTip(wx.ToolTip('Higher values for greater precision'))
         self.choiceNFFT.SetSelection(SEL_NFFT[1::2].index(1024))
 
         self.checkUpdate = wx.CheckBox(self.panel, wx.ID_ANY,
