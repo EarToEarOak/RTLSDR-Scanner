@@ -50,11 +50,10 @@ try:
     import wx.lib.masked as masked
     import wx.lib.mixins.listctrl as listmix
     import wx.grid as grid
-except ImportError as e:
-    print('Import error: {0}'.format(e))
+except ImportError as error:
+    print('Import error: {0}'.format(error))
     input('\nError importing libraries\nPress [Return] to exit')
     exit(1)
-
 
 
 F_MIN = 0
@@ -62,16 +61,14 @@ F_MAX = 9999
 GAIN = 0
 SAMPLE_RATE = 2e6
 BANDWIDTH = 500e3
-NFFT = 1024
-SEL_NFFT = ["128", 128,
-		 "512", 512,
-         "1024", 1024,
-         "2048", 2048,
-         "4096", 4096,
-         "8192", 8192,
-         "16384", 16384,
-         "32768", 32768]
-
+NFFT = [128,
+        512,
+        1024,
+        2048,
+        4096,
+        8192,
+        16384,
+        32768]
 
 DWELL = ["10 ms", 0.01,
          "25 ms", 0.025,
@@ -105,8 +102,6 @@ FILE_CSV = "CSV table (*.csv)|*.csv"
 FILE_HEADER = "RTLSDR Scanner"
 FILE_VERSION = 1
 
-WINDOW = matplotlib.numpy.hamming(NFFT)
-
 EVT_THREAD_STATUS = wx.NewId()
 
 
@@ -124,6 +119,8 @@ class Settings():
         self.cfg = None
         self.start = None
         self.stop = None
+        self.dwell = 0.0
+        self.nfft = 0
         self.calFreq = None
         self.yAuto = True
         self.yMax = 1
@@ -137,6 +134,8 @@ class Settings():
         self.cfg = wx.Config('rtlsdr-scanner')
         self.start = self.cfg.ReadInt('start', 87)
         self.stop = self.cfg.ReadInt('stop', 108)
+        self.dwell = self.cfg.ReadFloat('dwell', 0.1)
+        self.nfft = int(self.cfg.Read('nfft', '1024'))
         self.calFreq = self.cfg.ReadFloat('calFreq', 1575.42)
         self.index = self.cfg.ReadInt('index', 0)
         self.cfg.SetPath("/Devices")
@@ -158,6 +157,8 @@ class Settings():
         self.cfg.SetPath("/")
         self.cfg.WriteInt('start', self.start)
         self.cfg.WriteInt('stop', self.stop)
+        self.cfg.WriteFloat('dwell', self.dwell)
+        self.cfg.Write('nfft', str(self.nfft))
         self.cfg.WriteFloat('calFreq', self.calFreq)
         self.cfg.WriteInt('index', self.index)
         if self.devices:
@@ -269,23 +270,23 @@ class ThreadScan(threading.Thread):
 
 
 class ThreadProcess(threading.Thread):
-    def __init__(self, notify, freq, data, settings, devices, NFFT):
+    def __init__(self, notify, freq, data, settings, devices, nfft):
         threading.Thread.__init__(self)
         self.notify = notify
         self.freq = freq
         self.data = data
         self.cal = devices[settings.index].calibration
-        self.NFFT = NFFT
-        self.WINDOW = matplotlib.numpy.hamming(self.NFFT)
+        self.nfft = nfft
+        self.window = matplotlib.numpy.hamming(nfft)
 
         self.start()
 
     def run(self):
         scan = {}
         powers, freqs = matplotlib.mlab.psd(self.data,
-                         NFFT=self.NFFT,
+                         NFFT=self.nfft,
                          Fs=SAMPLE_RATE / 1e6,
-                         window=self.WINDOW)
+                         window=self.window)
         for freq, pwr in itertools.izip(freqs, powers):
             xr = freq + (self.freq / 1e6)
             xr = xr + (xr * self.cal / 1e6)
@@ -740,10 +741,10 @@ class DialogOffset(wx.Dialog):
             sdr.set_center_freq(self.spinFreq.GetValue() * 1e6)
             sdr.set_gain(self.spinGain.GetValue())
             capture = sdr.read_samples(2 ** 18)
-        except IOError as e:
+        except IOError as error:
             dlg.Destroy()
             dlg = wx.MessageDialog(self,
-                                   'Capture failed:\n{0}'.format(e.message),
+                                   'Capture failed:\n{0}'.format(error.message),
                                    'Error',
                                    wx.OK | wx.ICON_ERROR)
             dlg.ShowModal()
@@ -751,9 +752,9 @@ class DialogOffset(wx.Dialog):
             return
 
         powers, freqs = matplotlib.mlab.psd(capture,
-                         NFFT=NFFT,
+                         NFFT=1024,
                          Fs=SAMPLE_RATE / 1e6,
-                         window=WINDOW)
+                         window=matplotlib.numpy.hamming(1024))
 
         for x, y in itertools.izip(freqs, powers):
             x = x * SAMPLE_RATE / 2e6
@@ -871,7 +872,8 @@ class DialogPrefs(wx.Dialog):
             self.index = event.GetRow()
             self.select_row(index)
         elif(col == 6):
-            dlg = DialogOffset(self, index, float(self.gridDev.GetCellValue(index, 6)))
+            dlg = DialogOffset(self, index,
+                               float(self.gridDev.GetCellValue(index, 6)))
             if dlg.ShowModal() == wx.ID_OK:
                 self.gridDev.SetCellValue(index, 6, str(dlg.get_offset()))
             dlg.Destroy()
@@ -1028,7 +1030,7 @@ class FrameMain(wx.Frame):
         self.buttonStart = None
         self.buttonStop = None
         self.choiceDwell = None
-        self.choiceNFFT = None
+        self.choiceNfft = None
         self.spinCtrlStart = None
         self.spinCtrlStop = None
         self.checkUpdate = None
@@ -1103,12 +1105,12 @@ class FrameMain(wx.Frame):
         textDwell = wx.StaticText(self.panel, label="Dwell")
         self.choiceDwell = wx.Choice(self.panel, choices=DWELL[::2])
         self.choiceDwell.SetToolTip(wx.ToolTip('Scan time per step'))
-        self.choiceDwell.SetSelection(DWELL[1::2].index(0.1))
+        self.choiceDwell.SetSelection(DWELL[1::2].index(self.settings.dwell))
 
-        textNFFT = wx.StaticText(self.panel, label="FFT size")
-        self.choiceNFFT = wx.Choice(self.panel, choices=SEL_NFFT[::2])
-        self.choiceNFFT.SetToolTip(wx.ToolTip('Higher values for greater precision'))
-        self.choiceNFFT.SetSelection(SEL_NFFT[1::2].index(1024))
+        textNfft = wx.StaticText(self.panel, label="FFT size")
+        self.choiceNfft = wx.Choice(self.panel, choices=map(str, NFFT))
+        self.choiceNfft.SetToolTip(wx.ToolTip('Higher values for greater precision'))
+        self.choiceNfft.SetSelection(NFFT.index(self.settings.nfft))
 
         self.checkUpdate = wx.CheckBox(self.panel, wx.ID_ANY,
                                         "Continuous update")
@@ -1141,8 +1143,8 @@ class FrameMain(wx.Frame):
         grid.Add(textDwell, pos=(0, 8), flag=wx.ALIGN_CENTER)
         grid.Add(self.choiceDwell, pos=(1, 8), flag=wx.ALIGN_CENTER)
 
-        grid.Add(textNFFT, pos=(0, 9), flag=wx.ALIGN_CENTER)
-        grid.Add(self.choiceNFFT, pos=(1, 9), flag=wx.ALIGN_CENTER)
+        grid.Add(textNfft, pos=(0, 9), flag=wx.ALIGN_CENTER)
+        grid.Add(self.choiceNfft, pos=(1, 9), flag=wx.ALIGN_CENTER)
 
         grid.Add((20, 1), pos=(0, 10))
 
@@ -1251,6 +1253,8 @@ class FrameMain(wx.Frame):
             self.Bind(wx.EVT_CLOSE, self.on_exit)
             return
         self.get_range()
+        self.settings.dwell = DWELL[1::2][self.choiceDwell.GetSelection()]
+        self.settings.nfft = NFFT[self.choiceNfft.GetSelection()]
         self.settings.devices = self.devices
         self.settings.save()
         self.Close(True)
@@ -1334,9 +1338,9 @@ class FrameMain(wx.Frame):
                 self.dlgCal = None
         elif status == THREAD_STATUS_DATA:
             self.isSaved = False
-            fft_choice = self.choiceNFFT.GetSelection()
-            NFFT = SEL_NFFT[1::2][fft_choice]
-            ThreadProcess(self, freq, data, self.settings, self.devices, NFFT)
+            fftChoice = self.choiceNfft.GetSelection()
+            nfft = NFFT[fftChoice]
+            ThreadProcess(self, freq, data, self.settings, self.devices, nfft)
         elif status == THREAD_STATUS_PROCESSED:
             self.update_scan(freq, data)
             if self.update:
@@ -1453,7 +1457,7 @@ class FrameMain(wx.Frame):
         self.spinCtrlStart.Enable(state)
         self.spinCtrlStop.Enable(state)
         self.choiceDwell.Enable(state)
-        self.choiceNFFT.Enable(state)
+        self.choiceNfft.Enable(state)
         self.buttonStart.Enable(state)
         self.buttonStop.Enable(not state)
         self.menuOpen.Enable(state)
