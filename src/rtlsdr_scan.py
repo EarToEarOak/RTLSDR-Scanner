@@ -114,6 +114,7 @@ class Device():
         self.lo = None
         self.offset = 250e3
 
+
 class Settings():
     def __init__(self):
         self.cfg = None
@@ -152,7 +153,6 @@ class Settings():
             self.cfg.SetPath("/Devices")
             group = self.cfg.GetNextGroup(group[2])
 
-
     def save(self):
         self.cfg.SetPath("/")
         self.cfg.WriteInt('start', self.start)
@@ -168,6 +168,7 @@ class Settings():
                 self.cfg.WriteFloat('lo', device.lo)
                 self.cfg.WriteFloat('calibration', device.calibration)
                 self.cfg.WriteFloat('offset', device.offset)
+
 
 class Status():
     def __init__(self, status, freq, data):
@@ -223,7 +224,7 @@ class ThreadScan(threading.Thread):
                 sdr.close()
                 return
             try:
-                progress = ((freq - self.fstart + self.offset) / 
+                progress = ((freq - self.fstart + self.offset) /
                              (self.fstop - self.fstart + BANDWIDTH)) * 100
                 wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_SCAN,
                                                             None, progress))
@@ -294,6 +295,7 @@ class ThreadProcess(threading.Thread):
             scan[xr] = pwr
         wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_PROCESSED,
                                                             self.freq, scan))
+
 
 class DropTarget(wx.FileDropTarget):
     def __init__(self, window):
@@ -477,7 +479,7 @@ class PanelGraphCompare(wx.Panel):
     def plot_diff(self):
         diff = {}
 
-        if self.spectrum1 is not None and self.spectrum2 is not None :
+        if self.spectrum1 is not None and self.spectrum2 is not None:
             set1 = set(self.spectrum1)
             set2 = set(self.spectrum2)
             intersect = set1.intersection(set2)
@@ -655,6 +657,7 @@ class DialogAutoCal(wx.Dialog):
 
     def get_freq(self):
         return self.textFreq.GetValue()
+
 
 class DialogOffset(wx.Dialog):
     def __init__(self, parent, index, offset):
@@ -948,6 +951,7 @@ class DialogSaveWarn(wx.Dialog):
     def get_code(self):
         return self.code
 
+
 class DialogRange(wx.Dialog):
     def __init__(self, parent, main):
         self.main = main
@@ -973,7 +977,6 @@ class DialogRange(wx.Dialog):
         sizerButtons.AddButton(buttonCancel)
         sizerButtons.Realize()
         self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
-
 
         sizer = wx.GridBagSizer(10, 10)
         sizer.Add(self.checkAuto, pos=(0, 0), span=(1, 1),
@@ -1542,12 +1545,14 @@ class FrameMain(wx.Frame):
 
         return devices
 
+
 def format_device_name(name):
     remove = ["/", "\\"]
     for char in remove:
         name = name.replace(char, " ")
 
     return name
+
 
 def thread_event_handler(win, event, function):
     win.Connect(-1, -1, event, function)
@@ -1575,6 +1580,7 @@ def arguments():
 
     return directory, filename
 
+
 def open_plot(dirname, filename):
     try:
         handle = open(os.path.join(dirname, filename), 'rb')
@@ -1592,6 +1598,7 @@ def open_plot(dirname, filename):
                       wx.OK | wx.ICON_WARNING)
 
     return start, stop, spectrum
+
 
 def split_spectrum(spectrum):
     freqs = spectrum.keys()
