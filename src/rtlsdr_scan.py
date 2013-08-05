@@ -223,7 +223,7 @@ class ThreadScan(threading.Thread):
                 sdr.close()
                 return
             try:
-                progress = ((freq - self.fstart + self.offset) /
+                progress = ((freq - self.fstart + self.offset) / 
                              (self.fstop - self.fstart + BANDWIDTH)) * 100
                 wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_SCAN,
                                                             None, progress))
@@ -1277,8 +1277,9 @@ class FrameMain(wx.Frame):
         self.dlgCal.ShowModal()
 
     def on_about(self, _event):
-        dlg = wx.MessageDialog(self, "RTLSDR Scanner",
+        dlg = wx.MessageDialog(self,
             "A tool for scanning frequency ranges with an RTL-SDR compatible USB dongle",
+            "RTLSDR Scanner",
             wx.OK)
         dlg.ShowModal()
         dlg.Destroy()
