@@ -61,6 +61,8 @@ F_MAX = 9999
 GAIN = 0
 SAMPLE_RATE = 2e6
 BANDWIDTH = 500e3
+MODE = ["Single", 0,
+        "Continuous", 1]
 NFFT = [128,
         512,
         1024,
@@ -69,7 +71,6 @@ NFFT = [128,
         8192,
         16384,
         32768]
-
 DWELL = ["10 ms", 0.01,
          "25 ms", 0.025,
          "50 ms", 0.05,
@@ -120,6 +121,7 @@ class Settings():
         self.cfg = None
         self.start = None
         self.stop = None
+        self.mode = 0
         self.dwell = 0.0
         self.nfft = 0
         self.calFreq = None
@@ -135,6 +137,7 @@ class Settings():
         self.cfg = wx.Config('rtlsdr-scanner')
         self.start = self.cfg.ReadInt('start', 87)
         self.stop = self.cfg.ReadInt('stop', 108)
+        self.mode = self.cfg.ReadInt('mode', 0)
         self.dwell = self.cfg.ReadFloat('dwell', 0.1)
         self.nfft = int(self.cfg.Read('nfft', '1024'))
         self.calFreq = self.cfg.ReadFloat('calFreq', 1575.42)
@@ -157,6 +160,7 @@ class Settings():
         self.cfg.SetPath("/")
         self.cfg.WriteInt('start', self.start)
         self.cfg.WriteInt('stop', self.stop)
+        self.cfg.WriteInt('mode', self.mode)
         self.cfg.WriteFloat('dwell', self.dwell)
         self.cfg.Write('nfft', str(self.nfft))
         self.cfg.WriteFloat('calFreq', self.calFreq)
@@ -214,8 +218,8 @@ class ThreadScan(threading.Thread):
         sdr = self.rtl_setup()
         if sdr is None:
             return
-        freq = self.fstart - self.offset
 
+        freq = self.fstart - self.offset
         while freq <= self.fstop + self.offset:
             if self.cancel:
                 wx.PostEvent(self.notify,
@@ -226,11 +230,13 @@ class ThreadScan(threading.Thread):
             try:
                 progress = ((freq - self.fstart + self.offset) /
                              (self.fstop - self.fstart + BANDWIDTH)) * 100
-                wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_SCAN,
-                                                            None, progress))
+                wx.PostEvent(self.notify,
+                             EventThreadStatus(THREAD_STATUS_SCAN,
+                                               None, progress))
                 scan = self.scan(sdr, freq)
-                wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_DATA,
-                                                            freq, scan))
+                wx.PostEvent(self.notify,
+                             EventThreadStatus(THREAD_STATUS_DATA, freq,
+                                               scan))
             except (IOError, WindowsError):
                 if sdr is not None:
                     sdr.close()
@@ -325,7 +331,8 @@ class CellRenderer(grid.PyGridCellRenderer):
         dc.DrawRectangleRect(rect)
         if grid.GetCellValue(row, col) == "1":
             dc.SetBrush(wx.Brush(attr.GetTextColour()))
-            dc.DrawCircle(rect.x + (rect.width / 2), rect.y + (rect.height / 2),
+            dc.DrawCircle(rect.x + (rect.width / 2),
+                          rect.y + (rect.height / 2),
                           rect.height / 4)
 
 
@@ -1032,6 +1039,7 @@ class FrameMain(wx.Frame):
         self.canvas = None
         self.buttonStart = None
         self.buttonStop = None
+        self.choiceMode = None
         self.choiceDwell = None
         self.choiceNfft = None
         self.spinCtrlStart = None
@@ -1105,6 +1113,11 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_SPINCTRL, self.on_spin, self.spinCtrlStart)
         self.Bind(wx.EVT_SPINCTRL, self.on_spin, self.spinCtrlStop)
 
+        textMode = wx.StaticText(self.panel, label="Mode")
+        self.choiceMode = wx.Choice(self.panel, choices=MODE[::2])
+        self.choiceMode.SetToolTip(wx.ToolTip('Scanning mode'))
+        self.choiceMode.SetSelection(MODE[1::2].index(self.settings.mode))
+
         textDwell = wx.StaticText(self.panel, label="Dwell")
         self.choiceDwell = wx.Choice(self.panel, choices=DWELL[::2])
         self.choiceDwell.SetToolTip(wx.ToolTip('Scan time per step'))
@@ -1143,16 +1156,19 @@ class FrameMain(wx.Frame):
 
         grid.Add((20, 1), pos=(0, 7))
 
-        grid.Add(textDwell, pos=(0, 8), flag=wx.ALIGN_CENTER)
-        grid.Add(self.choiceDwell, pos=(1, 8), flag=wx.ALIGN_CENTER)
+        grid.Add(textMode, pos=(0, 8), flag=wx.ALIGN_CENTER)
+        grid.Add(self.choiceMode, pos=(1, 8), flag=wx.ALIGN_CENTER)
 
-        grid.Add(textNfft, pos=(0, 9), flag=wx.ALIGN_CENTER)
-        grid.Add(self.choiceNfft, pos=(1, 9), flag=wx.ALIGN_CENTER)
+        grid.Add(textDwell, pos=(0, 9), flag=wx.ALIGN_CENTER)
+        grid.Add(self.choiceDwell, pos=(1, 9), flag=wx.ALIGN_CENTER)
 
-        grid.Add((20, 1), pos=(0, 10))
+        grid.Add(textNfft, pos=(0, 10), flag=wx.ALIGN_CENTER)
+        grid.Add(self.choiceNfft, pos=(1, 10), flag=wx.ALIGN_CENTER)
 
-        grid.Add(self.checkUpdate, pos=(0, 11))
-        grid.Add(self.checkGrid, pos=(1, 11))
+        grid.Add((20, 1), pos=(0, 11))
+
+        grid.Add(self.checkUpdate, pos=(0, 12))
+        grid.Add(self.checkGrid, pos=(1, 12))
 
         self.panel.SetSizer(grid)
 
@@ -1318,12 +1334,11 @@ class FrameMain(wx.Frame):
             self.status.SetStatusText("Scanning", 0)
             self.statusProgress.Show()
             self.statusProgress.SetValue(data)
-        elif status == THREAD_STATUS_STOPPED:
-            self.statusProgress.Hide()
-            self.status.SetStatusText("Stopped", 0)
-            self.thread = None
-            self.set_controls(True)
-            self.draw_plot()
+        elif status == THREAD_STATUS_DATA:
+            self.isSaved = False
+            fftChoice = self.choiceNfft.GetSelection()
+            nfft = NFFT[fftChoice]
+            ThreadProcess(self, freq, data, self.settings, self.devices, nfft)
         elif status == THREAD_STATUS_FINISHED:
             self.statusProgress.Hide()
             self.status.SetStatusText("Finished", 0)
@@ -1332,6 +1347,15 @@ class FrameMain(wx.Frame):
             self.draw_plot()
             if data:
                 self.auto_cal(CAL_DONE)
+            elif self.settings.mode == 1:
+                self.isSaved = True
+                self.scan_start(False)
+        elif status == THREAD_STATUS_STOPPED:
+            self.statusProgress.Hide()
+            self.status.SetStatusText("Stopped", 0)
+            self.thread = None
+            self.set_controls(True)
+            self.draw_plot()
         elif status == THREAD_STATUS_ERROR:
             self.statusProgress.Hide()
             self.status.SetStatusText("Dongle error: {0}".format(data), 0)
@@ -1340,11 +1364,6 @@ class FrameMain(wx.Frame):
             if self.dlgCal is not None:
                 self.dlgCal.Destroy()
                 self.dlgCal = None
-        elif status == THREAD_STATUS_DATA:
-            self.isSaved = False
-            fftChoice = self.choiceNfft.GetSelection()
-            nfft = NFFT[fftChoice]
-            ThreadProcess(self, freq, data, self.settings, self.devices, nfft)
         elif status == THREAD_STATUS_PROCESSED:
             self.update_scan(freq, data)
             if self.update:
@@ -1422,12 +1441,12 @@ class FrameMain(wx.Frame):
                           'Warning', wx.OK | wx.ICON_WARNING)
             return
 
-        choice = self.choiceDwell.GetSelection()
+        choiceDwell = self.choiceDwell.GetSelection()
 
         if not self.thread or not self.thread.is_alive():
 
             self.set_controls(False)
-            dwell = DWELL[1::2][choice]
+            dwell = DWELL[1::2][choiceDwell]
             samples = dwell * SAMPLE_RATE
             samples = next_2_to_pow(int(samples))
             self.spectrum = {}
@@ -1460,6 +1479,7 @@ class FrameMain(wx.Frame):
     def set_controls(self, state):
         self.spinCtrlStart.Enable(state)
         self.spinCtrlStop.Enable(state)
+        self.choiceMode.Enable(state)
         self.choiceDwell.Enable(state)
         self.choiceNfft.Enable(state)
         self.buttonStart.Enable(state)
@@ -1514,6 +1534,9 @@ class FrameMain(wx.Frame):
         self.spinCtrlStop.SetValue(self.settings.stop)
 
     def get_range(self):
+        choiceMode = self.choiceMode.GetSelection()
+
+        self.settings.mode = MODE[1::2][choiceMode]
         self.settings.start = self.spinCtrlStart.GetValue()
         self.settings.stop = self.spinCtrlStop.GetValue()
 
