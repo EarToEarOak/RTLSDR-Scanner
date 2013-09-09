@@ -23,7 +23,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-
 try:
     input = raw_input
 except:
@@ -37,6 +36,7 @@ try:
         FigureCanvasWxAgg as FigureCanvas, \
         NavigationToolbar2WxAgg
     from matplotlib.backends.backend_wx import _load_bitmap
+    from matplotlib.ticker import AutoMinorLocator
     import argparse
     import cPickle
     import itertools
@@ -119,6 +119,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
 
         navId = wx.NewId()
         NavigationToolbar2WxAgg.__init__(self, canvas)
+        self.DeleteToolByPos(3)
         self.AddSimpleTool(navId, _load_bitmap('subplots.png'),
                            'Range', 'Set plot range')
         wx.EVT_TOOL(self, navId, self.on_range)
@@ -796,7 +797,7 @@ class FrameMain(wx.Frame):
     def __init__(self, title):
 
         self.update = False
-        self.grid = False
+        self.grid = True
 
         self.thread = None
 
@@ -867,6 +868,7 @@ class FrameMain(wx.Frame):
 
         self.panel = wx.Panel(panel)
         self.graph = PanelGraph(panel, self)
+        self.setup_plot()
 
         self.buttonStart = wx.Button(self.panel, wx.ID_ANY, 'Start')
         self.buttonStop = wx.Button(self.panel, wx.ID_ANY, 'Stop')
@@ -1269,24 +1271,35 @@ class FrameMain(wx.Frame):
         self.menuPref.Enable(state)
         self.menuCal.Enable(state)
 
-    def draw_plot(self):
+    def setup_plot(self):
         axes = self.graph.get_axes()
         gain = self.settings.devices[self.settings.index].gain
-        if len(self.spectrum) > 0:
-            freqs, powers = split_spectrum(self.spectrum)
-            axes.clear()
-            axes.set_title("Frequency Scan\n{0} - {1} MHz, gain = {2}".format(self.settings.start,
-                                                                self.settings.stop, gain))
-            axes.set_xlabel("Frequency (MHz)")
-            axes.set_ylabel('Level (dB)')
-            axes.plot(freqs, powers, linewidth=0.4)
-            self.graph.get_toolbar().update()
+
+        axes.set_title("Frequency Scan\n{0} - {1} MHz, gain = {2}".format(self.settings.start,
+                                                                          self.settings.stop, gain))
+        axes.set_xlabel("Frequency (MHz)")
+        axes.set_ylabel('Level (dB)')
+        axes.xaxis.set_minor_locator(AutoMinorLocator(10))
+        axes.yaxis.set_minor_locator(AutoMinorLocator(10))
         axes.grid(self.grid)
+
+        axes.set_xlim(self.settings.start, self.settings.stop)
         if(self.settings.yAuto):
             axes.set_ylim(auto=True)
             self.settings.yMin, self.settings.yMax = axes.get_ylim()
         else:
             axes.set_ylim(self.settings.yMin, self.settings.yMax)
+
+    def draw_plot(self):
+        axes = self.graph.get_axes()
+        axes.clear()
+        self.setup_plot()
+
+        if len(self.spectrum) > 0:
+            freqs, powers = split_spectrum(self.spectrum)
+            axes.plot(freqs, powers, linewidth=0.4)
+
+        self.graph.get_toolbar().update()
         self.graph.get_canvas().draw()
 
     def save_warn(self, warnType):
