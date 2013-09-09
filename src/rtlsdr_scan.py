@@ -23,6 +23,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+
 try:
     input = raw_input
 except:
@@ -43,7 +44,6 @@ try:
     import numpy
     import os.path
     import rtlsdr
-    import threading
     import wx
     import wx.lib.masked as masked
     import wx.lib.mixins.listctrl as listmix
@@ -54,6 +54,10 @@ except ImportError as error:
     exit(1)
 
 from constants import *
+from misc import split_spectrum, open_plot, format_device_name
+from scan import EVT_THREAD_STATUS, ThreadProcess, ThreadScan
+from settings import Settings, Device
+
 
 MODE = ["Single", 0,
         "Continuous", 1]
@@ -74,205 +78,6 @@ DWELL = ["10 ms", 0.01,
          "1 s", 1,
          "2 s", 2,
          "5 s", 5]
-
-EVT_THREAD_STATUS = wx.NewId()
-
-
-class Device():
-    def __init__(self):
-        self.index = None
-        self.name = None
-        self.gain = 0
-        self.calibration = None
-        self.lo = None
-        self.offset = 250e3
-
-
-class Settings():
-    def __init__(self):
-        self.cfg = None
-        self.start = None
-        self.stop = None
-        self.mode = 0
-        self.dwell = 0.0
-        self.nfft = 0
-        self.calFreq = None
-        self.yAuto = True
-        self.yMax = 1
-        self.yMin = 0
-        self.devices = []
-        self.index = None
-
-        self.load()
-
-    def load(self):
-        self.cfg = wx.Config('rtlsdr-scanner')
-        self.start = self.cfg.ReadInt('start', 87)
-        self.stop = self.cfg.ReadInt('stop', 108)
-        self.mode = self.cfg.ReadInt('mode', 0)
-        self.dwell = self.cfg.ReadFloat('dwell', 0.1)
-        self.nfft = int(self.cfg.Read('nfft', '1024'))
-        self.calFreq = self.cfg.ReadFloat('calFreq', 1575.42)
-        self.index = self.cfg.ReadInt('index', 0)
-        self.cfg.SetPath("/Devices")
-        group = self.cfg.GetFirstGroup()
-        while group[0]:
-            self.cfg.SetPath("/Devices/" + group[1])
-            device = Device()
-            device.name = group[1]
-            device.gain = self.cfg.ReadFloat('gain', 0)
-            device.calibration = self.cfg.ReadFloat('calibration', 0)
-            device.lo = self.cfg.ReadFloat('lo', 0)
-            device.offset = self.cfg.ReadFloat('offset', 250e3)
-            self.devices.append(device)
-            self.cfg.SetPath("/Devices")
-            group = self.cfg.GetNextGroup(group[2])
-
-    def save(self):
-        self.cfg.SetPath("/")
-        self.cfg.WriteInt('start', self.start)
-        self.cfg.WriteInt('stop', self.stop)
-        self.cfg.WriteInt('mode', self.mode)
-        self.cfg.WriteFloat('dwell', self.dwell)
-        self.cfg.Write('nfft', str(self.nfft))
-        self.cfg.WriteFloat('calFreq', self.calFreq)
-        self.cfg.WriteInt('index', self.index)
-        if self.devices:
-            for device in self.devices:
-                self.cfg.SetPath("/Devices/" + format_device_name(device.name))
-                self.cfg.WriteFloat('gain', device.gain)
-                self.cfg.WriteFloat('lo', device.lo)
-                self.cfg.WriteFloat('calibration', device.calibration)
-                self.cfg.WriteFloat('offset', device.offset)
-
-
-class Status():
-    def __init__(self, status, freq, data):
-        self.status = status
-        self.freq = freq
-        self.data = data
-
-    def get_status(self):
-        return self.status
-
-    def get_freq(self):
-        return self.freq
-
-    def get_data(self):
-        return self.data
-
-
-class EventThreadStatus(wx.PyEvent):
-    def __init__(self, status, freq, data):
-        wx.PyEvent.__init__(self)
-        self.SetEventType(EVT_THREAD_STATUS)
-        self.data = Status(status, freq, data)
-
-
-class ThreadScan(threading.Thread):
-    def __init__(self, notify, settings, devices, samples, isCal):
-        threading.Thread.__init__(self)
-        self.notify = notify
-        self.index = settings.index
-        self.fstart = settings.start * 1e6
-        self.fstop = settings.stop * 1e6
-        self.samples = samples
-        self.isCal = isCal
-        self.gain = devices[self.index].gain
-        self.lo = devices[self.index].lo * 1e6
-        self.offset = devices[self.index].offset
-        self.cancel = False
-        wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_STARTING,
-                                                    None, None))
-        self.start()
-
-    def run(self):
-        sdr = self.rtl_setup()
-        if sdr is None:
-            return
-
-        freq = self.fstart - self.offset
-        while freq <= self.fstop + self.offset:
-            if self.cancel:
-                wx.PostEvent(self.notify,
-                             EventThreadStatus(THREAD_STATUS_STOPPED,
-                                               None, None))
-                sdr.close()
-                return
-            try:
-                progress = ((freq - self.fstart + self.offset) /
-                             (self.fstop - self.fstart + BANDWIDTH)) * 100
-                wx.PostEvent(self.notify,
-                             EventThreadStatus(THREAD_STATUS_SCAN,
-                                               None, progress))
-                scan = self.scan(sdr, freq)
-                wx.PostEvent(self.notify,
-                             EventThreadStatus(THREAD_STATUS_DATA, freq,
-                                               scan))
-            except (IOError, WindowsError):
-                if sdr is not None:
-                    sdr.close()
-                sdr = self.rtl_setup()
-            except (TypeError, AttributeError) as error:
-                if self.notify:
-                    wx.PostEvent(self.notify,
-                             EventThreadStatus(THREAD_STATUS_ERROR,
-                                               None, error.message))
-                return
-
-            freq += BANDWIDTH / 2
-
-        sdr.close()
-        wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_FINISHED,
-                                                    None, self.isCal))
-
-    def abort(self):
-        self.cancel = True
-
-    def rtl_setup(self):
-        sdr = None
-        try:
-            sdr = rtlsdr.RtlSdr(self.index)
-            sdr.set_sample_rate(SAMPLE_RATE)
-            sdr.set_gain(self.gain)
-        except IOError as error:
-            wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_ERROR,
-                                                        None, error.message))
-
-        return sdr
-
-    def scan(self, sdr, freq):
-        sdr.set_center_freq(freq + self.lo)
-        capture = sdr.read_samples(self.samples)
-
-        return capture
-
-
-class ThreadProcess(threading.Thread):
-    def __init__(self, notify, freq, data, settings, devices, nfft):
-        threading.Thread.__init__(self)
-        self.notify = notify
-        self.freq = freq
-        self.data = data
-        self.cal = devices[settings.index].calibration
-        self.nfft = nfft
-        self.window = matplotlib.numpy.hamming(nfft)
-
-        self.start()
-
-    def run(self):
-        scan = {}
-        powers, freqs = matplotlib.mlab.psd(self.data,
-                         NFFT=self.nfft,
-                         Fs=SAMPLE_RATE / 1e6,
-                         window=self.window)
-        for freq, pwr in itertools.izip(freqs, powers):
-            xr = freq + (self.freq / 1e6)
-            xr = xr + (xr * self.cal / 1e6)
-            xr = int((xr * 5e4) + 0.5) / 5e4
-            scan[xr] = pwr
-        wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_PROCESSED,
-                                                            self.freq, scan))
 
 
 class DropTarget(wx.FileDropTarget):
@@ -1541,14 +1346,6 @@ class FrameMain(wx.Frame):
         return devices
 
 
-def format_device_name(name):
-    remove = ["/", "\\"]
-    for char in remove:
-        name = name.replace(char, " ")
-
-    return name
-
-
 def thread_event_handler(win, event, function):
     win.Connect(-1, -1, event, function)
 
@@ -1575,32 +1372,6 @@ def arguments():
 
     return directory, filename
 
-
-def open_plot(dirname, filename):
-    try:
-        handle = open(os.path.join(dirname, filename), 'rb')
-        header = cPickle.load(handle)
-        if header != FILE_HEADER:
-            wx.MessageBox('Invalid or corrupted file', 'Warning',
-                      wx.OK | wx.ICON_WARNING)
-            return
-        _version = cPickle.load(handle)
-        start = cPickle.load(handle)
-        stop = cPickle.load(handle)
-        spectrum = cPickle.load(handle)
-    except:
-        wx.MessageBox('File could not be opened', 'Warning',
-                      wx.OK | wx.ICON_WARNING)
-
-    return start, stop, spectrum
-
-
-def split_spectrum(spectrum):
-    freqs = spectrum.keys()
-    freqs.sort()
-    powers = map(spectrum.get, freqs)
-
-    return freqs, powers
 
 if __name__ == '__main__':
     app = wx.App(False)
