@@ -36,7 +36,6 @@ try:
         FigureCanvasWxAgg as FigureCanvas, \
         NavigationToolbar2WxAgg
     from matplotlib.backends.backend_wx import _load_bitmap
-    from matplotlib.ticker import AutoMinorLocator
     import argparse
     import cPickle
     import itertools
@@ -54,9 +53,9 @@ except ImportError as error:
     exit(1)
 
 from constants import *
-from misc import split_spectrum, open_plot, format_device_name
-from scan import EVT_THREAD_STATUS, ThreadProcess, ThreadScan
+from misc import split_spectrum, open_plot, format_device_name, setup_plot
 from settings import Settings, Device
+from threads import EVT_THREAD_STATUS, ThreadProcess, ThreadScan, ThreadPlot
 
 
 MODE = ["Single", 0,
@@ -130,7 +129,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         dlg.ShowModal()
         dlg.Destroy()
         self.canvas.draw()
-        self.main.update_plot()
+        self.main.draw_plot()
 
 
 class NavigationToolbarCompare(NavigationToolbar2WxAgg):
@@ -458,7 +457,9 @@ class DialogOffset(wx.Dialog):
         self.canvas = FigureCanvas(self, -1, figure)
 
         textHelp = wx.StaticText(self,
-            label="Remove the aerial and press refresh, adjust the offset so the shaded areas overlay the flattest parts of the plot.")
+            label="Remove the aerial and press refresh, "
+            "adjust the offset so the shaded areas overlay the flattest parts"
+            "of the plot.")
 
         textFreq = wx.StaticText(self, label="Test frequency (MHz)")
         self.spinFreq = wx.SpinCtrl(self)
@@ -670,7 +671,7 @@ class DialogPrefs(wx.Dialog):
     def on_ok(self, _event):
         for i in range(0, self.gridDev.GetNumberRows()):
             self.devices[i].gain = float(self.gridDev.GetCellValue(i, 3))
-            self.devices[i].calibration = float(self.gridDev.GetCellValue(i, 4))
+            self.devices[i].calibration = float(self.gridDev.GetCellValue(i,4))
             self.devices[i].lo = float(self.gridDev.GetCellValue(i, 5))
             self.devices[i].offset = float(self.gridDev.GetCellValue(i, 6)) * 1e3
 
@@ -800,6 +801,8 @@ class FrameMain(wx.Frame):
         self.grid = True
 
         self.threadScan = None
+        self.threadPlot = None
+        self.pendingPlot = False
 
         self.dlgCal = None
 
@@ -868,7 +871,7 @@ class FrameMain(wx.Frame):
 
         self.panel = wx.Panel(panel)
         self.graph = PanelGraph(panel, self)
-        self.setup_plot()
+        setup_plot(self.graph, self.settings, self.grid)
 
         self.buttonStart = wx.Button(self.panel, wx.ID_ANY, 'Start')
         self.buttonStop = wx.Button(self.panel, wx.ID_ANY, 'Stop')
@@ -908,8 +911,8 @@ class FrameMain(wx.Frame):
         self.choiceNfft.SetSelection(NFFT.index(self.settings.nfft))
 
         self.checkUpdate = wx.CheckBox(self.panel, wx.ID_ANY,
-                                        "Continuous update")
-        self.checkUpdate.SetToolTip(wx.ToolTip('Very slow, not recommended'))
+                                        "Live update")
+        self.checkUpdate.SetToolTip(wx.ToolTip('Update plot with live samples'))
         self.checkUpdate.SetValue(self.update)
         self.Bind(wx.EVT_CHECKBOX, self.on_check_update, self.checkUpdate)
 
@@ -1076,7 +1079,8 @@ class FrameMain(wx.Frame):
 
     def on_about(self, _event):
         dlg = wx.MessageDialog(self,
-            "A tool for scanning frequency ranges with an RTL-SDR compatible USB dongle",
+            "A tool for scanning frequency ranges "
+            "with an RTL-SDR compatible USB dongle",
             "RTLSDR Scanner",
             wx.OK)
         dlg.ShowModal()
@@ -1101,7 +1105,7 @@ class FrameMain(wx.Frame):
 
     def on_check_grid(self, _event):
         self.grid = self.checkGrid.GetValue()
-        self.update_plot()
+        self.draw_plot()
 
     def on_thread_status(self, event):
         status = event.data.get_status()
@@ -1131,7 +1135,7 @@ class FrameMain(wx.Frame):
             self.status.SetStatusText("Stopped", 0)
             self.threadScan = None
             self.set_controls(True)
-            self.update_plot()
+            self.draw_plot()
         elif status == THREAD_STATUS_ERROR:
             self.statusProgress.Hide()
             self.status.SetStatusText("Dongle error: {0}".format(data), 0)
@@ -1143,10 +1147,16 @@ class FrameMain(wx.Frame):
         elif status == THREAD_STATUS_PROCESSED:
             self.update_scan(freq, data)
             if self.update or freq > self.settings.stop * 1e6:
-                self.update_plot()
+                self.draw_plot()
             if self.settings.mode == 1 and freq > self.settings.stop * 1e6:
+                if self.dlgCal is None:
+                    self.draw_plot(True)
                     self.isSaved = True
                     self.scan_start(False)
+        elif status == THREAD_STATUS_PLOTTED:
+            self.threadPlot = None
+            if self.pendingPlot:
+                self.draw_plot()
 
     def on_size(self, event):
         rect = self.status.GetFieldRect(1)
@@ -1168,7 +1178,7 @@ class FrameMain(wx.Frame):
             self.isSaved = True
             self.set_range()
             self.set_controls(True)
-            self.update_plot()
+            self.draw_plot()
             self.status.SetStatusText("Finished", 0)
         else:
             self.status.SetStatusText("Open failed", 0)
@@ -1228,7 +1238,7 @@ class FrameMain(wx.Frame):
             dwell = DWELL[1::2][choiceDwell]
             samples = dwell * SAMPLE_RATE
             samples = next_2_to_pow(int(samples))
-            self.spectrum = {}
+            self.spectrum.clear()
             self.scanFinished = False
             self.status.SetStatusText("", 1)
             self.threadScan = ThreadScan(self, self.settings, self.devices,
@@ -1272,36 +1282,19 @@ class FrameMain(wx.Frame):
         self.menuPref.Enable(state)
         self.menuCal.Enable(state)
 
-    def setup_plot(self):
-        axes = self.graph.get_axes()
-        gain = self.settings.devices[self.settings.index].gain
-
-        axes.set_title("Frequency Scan\n{0} - {1} MHz, gain = {2}".format(self.settings.start,
-                                                                          self.settings.stop, gain))
-        axes.set_xlabel("Frequency (MHz)")
-        axes.set_ylabel('Level (dB)')
-        axes.xaxis.set_minor_locator(AutoMinorLocator(10))
-        axes.yaxis.set_minor_locator(AutoMinorLocator(10))
-        axes.grid(self.grid)
-
-        axes.set_xlim(self.settings.start, self.settings.stop)
-        if(self.settings.yAuto):
-            axes.set_ylim(auto=True)
-            self.settings.yMin, self.settings.yMax = axes.get_ylim()
-        else:
-            axes.set_ylim(self.settings.yMin, self.settings.yMax)
-
-    def update_plot(self):
-        axes = self.graph.get_axes()
-        axes.clear()
-        self.setup_plot()
+    def draw_plot(self, blocking=False):
 
         if len(self.spectrum) > 0:
-            freqs, powers = split_spectrum(self.spectrum)
-            axes.plot(freqs, powers, linewidth=0.4)
+            if blocking and self.threadPlot is None:
+                self.threadPlot.join()
+                self.threadPlot = None
 
-        self.graph.get_toolbar().update()
-        self.graph.get_canvas().draw()
+            if self.threadPlot is None:
+                self.threadPlot = ThreadPlot(self, self.graph, self.spectrum,
+                                             self.settings, self.grid)
+                self.pendingPlot = False
+            else:
+                self.pendingPlot = True
 
     def save_warn(self, warnType):
         if not self.isSaved:

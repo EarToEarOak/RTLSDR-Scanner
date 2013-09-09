@@ -26,9 +26,31 @@
 import cPickle
 import os
 
+from matplotlib.ticker import AutoMinorLocator
 import wx
 
 from constants import FILE_HEADER
+
+
+def setup_plot(graph, settings, grid):
+        axes = graph.get_axes()
+        gain = settings.devices[settings.index].gain
+
+        axes.set_title("Frequency Scan\n{0} - {1} MHz,"
+                       " gain = {2}".format(settings.start,
+                                            settings.stop, gain))
+        axes.set_xlabel("Frequency (MHz)")
+        axes.set_ylabel('Level (dB)')
+        axes.xaxis.set_minor_locator(AutoMinorLocator(10))
+        axes.yaxis.set_minor_locator(AutoMinorLocator(10))
+        axes.grid(grid)
+
+        axes.set_xlim(settings.start, settings.stop)
+        if(settings.yAuto):
+            axes.set_ylim(auto=True)
+            settings.yMin, settings.yMax = axes.get_ylim()
+        else:
+            axes.set_ylim(settings.yMin, settings.yMax)
 
 
 def open_plot(dirname, filename):

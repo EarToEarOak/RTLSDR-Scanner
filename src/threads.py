@@ -31,6 +31,7 @@ import rtlsdr
 import wx
 
 from constants import *
+from misc import split_spectrum, setup_plot
 
 
 EVT_THREAD_STATUS = wx.NewId()
@@ -162,4 +163,28 @@ class ThreadProcess(threading.Thread):
             xr = int((xr * 5e4) + 0.5) / 5e4
             scan[xr] = pwr
         wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_PROCESSED,
-                                                            self.freq, scan))
+                                                    self.freq, scan))
+
+
+class ThreadPlot(threading.Thread):
+    def __init__(self, notify, graph, spectrum, settings, grid):
+        threading.Thread.__init__(self)
+        self.notify = notify
+        self.graph = graph
+        self.spectrum = spectrum
+        self.settings = settings
+        self.grid = grid
+
+        self.start()
+
+    def run(self):
+        axes = self.graph.get_axes()
+        axes.clear()
+        setup_plot(self.graph, self.settings, self.grid)
+
+        freqs, powers = split_spectrum(self.spectrum)
+        axes.plot(freqs, powers, linewidth=0.4)
+
+        self.graph.get_canvas().draw()
+        wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_PLOTTED,
+                                                        None, None))
