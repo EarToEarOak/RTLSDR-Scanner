@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-
 #
 # rtlsdr_scan
 #
@@ -24,7 +23,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-
 try:
     input = raw_input
 except:
@@ -55,12 +53,8 @@ except ImportError as error:
     input('\nError importing libraries\nPress [Return] to exit')
     exit(1)
 
+from constants import *
 
-F_MIN = 0
-F_MAX = 9999
-GAIN = 0
-SAMPLE_RATE = 2e6
-BANDWIDTH = 500e3
 MODE = ["Single", 0,
         "Continuous", 1]
 NFFT = [128,
@@ -80,28 +74,6 @@ DWELL = ["10 ms", 0.01,
          "1 s", 1,
          "2 s", 2,
          "5 s", 5]
-
-THREAD_STATUS_STARTING = 0
-THREAD_STATUS_SCAN = 1
-THREAD_STATUS_DATA = 2
-THREAD_STATUS_FINISHED = 3
-THREAD_STATUS_STOPPED = 4
-THREAD_STATUS_ERROR = 5
-THREAD_STATUS_PROCESSED = 6
-
-WARN_SCAN = 0
-WARN_OPEN = 1
-WARN_EXIT = 2
-
-CAL_START = 0
-CAL_DONE = 1
-CAL_OK = 2
-CAL_CANCEL = 3
-
-FILE_RFS = "RTLSDR frequency scan (*.rfs)|*.rfs"
-FILE_CSV = "CSV table (*.csv)|*.csv"
-FILE_HEADER = "RTLSDR Scanner"
-FILE_VERSION = 1
 
 EVT_THREAD_STATUS = wx.NewId()
 
