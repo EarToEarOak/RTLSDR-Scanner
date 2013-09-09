@@ -130,7 +130,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         dlg.ShowModal()
         dlg.Destroy()
         self.canvas.draw()
-        self.main.draw_plot()
+        self.main.update_plot()
 
 
 class NavigationToolbarCompare(NavigationToolbar2WxAgg):
@@ -162,7 +162,7 @@ class PanelGraph(wx.Panel):
         vbox.Fit(self)
 
     def on_motion(self, event):
-        if self.main.thread:
+        if self.main.threadScan:
             return
         xpos = event.xdata
         ypos = event.ydata
@@ -799,7 +799,7 @@ class FrameMain(wx.Frame):
         self.update = False
         self.grid = True
 
-        self.thread = None
+        self.threadScan = None
 
         self.dlgCal = None
 
@@ -1092,16 +1092,16 @@ class FrameMain(wx.Frame):
         self.scan_start(False)
 
     def on_stop(self, _event):
-        if self.thread:
+        if self.threadScan:
             self.status.SetStatusText("Stopping", 0)
-            self.thread.abort()
+            self.threadScan.abort()
 
     def on_check_update(self, _event):
         self.update = self.checkUpdate.GetValue()
 
     def on_check_grid(self, _event):
         self.grid = self.checkGrid.GetValue()
-        self.draw_plot()
+        self.update_plot()
 
     def on_thread_status(self, event):
         status = event.data.get_status()
@@ -1121,32 +1121,32 @@ class FrameMain(wx.Frame):
         elif status == THREAD_STATUS_FINISHED:
             self.statusProgress.Hide()
             self.status.SetStatusText("Finished", 0)
-            self.thread = None
+            self.threadScan = None
+            self.scanFinished = True
             self.set_controls(True)
-            self.draw_plot()
             if data:
                 self.auto_cal(CAL_DONE)
-            elif self.settings.mode == 1:
-                self.isSaved = True
-                self.scan_start(False)
         elif status == THREAD_STATUS_STOPPED:
             self.statusProgress.Hide()
             self.status.SetStatusText("Stopped", 0)
-            self.thread = None
+            self.threadScan = None
             self.set_controls(True)
-            self.draw_plot()
+            self.update_plot()
         elif status == THREAD_STATUS_ERROR:
             self.statusProgress.Hide()
             self.status.SetStatusText("Dongle error: {0}".format(data), 0)
-            self.thread = None
+            self.threadScan = None
             self.set_controls(True)
             if self.dlgCal is not None:
                 self.dlgCal.Destroy()
                 self.dlgCal = None
         elif status == THREAD_STATUS_PROCESSED:
             self.update_scan(freq, data)
-            if self.update:
-                self.draw_plot()
+            if self.update or freq > self.settings.stop * 1e6:
+                self.update_plot()
+            if self.settings.mode == 1 and freq > self.settings.stop * 1e6:
+                    self.isSaved = True
+                    self.scan_start(False)
 
     def on_size(self, event):
         rect = self.status.GetFieldRect(1)
@@ -1168,7 +1168,7 @@ class FrameMain(wx.Frame):
             self.isSaved = True
             self.set_range()
             self.set_controls(True)
-            self.draw_plot()
+            self.update_plot()
             self.status.SetStatusText("Finished", 0)
         else:
             self.status.SetStatusText("Open failed", 0)
@@ -1222,15 +1222,16 @@ class FrameMain(wx.Frame):
 
         choiceDwell = self.choiceDwell.GetSelection()
 
-        if not self.thread or not self.thread.is_alive():
+        if not self.threadScan or not self.threadScan.is_alive():
 
             self.set_controls(False)
             dwell = DWELL[1::2][choiceDwell]
             samples = dwell * SAMPLE_RATE
             samples = next_2_to_pow(int(samples))
             self.spectrum = {}
+            self.scanFinished = False
             self.status.SetStatusText("", 1)
-            self.thread = ThreadScan(self, self.settings, self.devices,
+            self.threadScan = ThreadScan(self, self.settings, self.devices,
                                      samples, isCal)
             self.filename = "Scan {0:.1f}-{1:.1f}MHz".format(self.settings.start,
                                                             self.settings.stop)
@@ -1290,7 +1291,7 @@ class FrameMain(wx.Frame):
         else:
             axes.set_ylim(self.settings.yMin, self.settings.yMax)
 
-    def draw_plot(self):
+    def update_plot(self):
         axes = self.graph.get_axes()
         axes.clear()
         self.setup_plot()
