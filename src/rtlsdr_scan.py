@@ -36,6 +36,7 @@ try:
         FigureCanvasWxAgg as FigureCanvas, \
         NavigationToolbar2WxAgg
     from matplotlib.backends.backend_wx import _load_bitmap
+    from matplotlib.ticker import AutoMinorLocator
     import argparse
     import cPickle
     import itertools
@@ -196,7 +197,10 @@ class PanelGraphCompare(wx.Panel):
         figure = matplotlib.figure.Figure(facecolor='white')
 
         self.axesScan = figure.add_subplot(111)
+        self.axesScan.xaxis.set_minor_locator(AutoMinorLocator(10))
+        self.axesScan.yaxis.set_minor_locator(AutoMinorLocator(10))
         self.axesDiff = self.axesScan.twinx()
+        self.axesDiff.yaxis.set_minor_locator(AutoMinorLocator(10))
         self.plotScan1, = self.axesScan.plot([], [], 'b-',
                                                      linewidth=0.4)
         self.plotScan2, = self.axesScan.plot([], [], 'g-',
@@ -558,6 +562,7 @@ class DialogOffset(wx.Dialog):
         self.axes.set_ylabel('Level (dB)')
         self.axes.set_yscale('log')
         self.axes.plot(x, y, linewidth=0.4)
+        self.axes.grid(True)
         self.draw_limits()
 
         dlg.Destroy()
@@ -671,7 +676,7 @@ class DialogPrefs(wx.Dialog):
     def on_ok(self, _event):
         for i in range(0, self.gridDev.GetNumberRows()):
             self.devices[i].gain = float(self.gridDev.GetCellValue(i, 3))
-            self.devices[i].calibration = float(self.gridDev.GetCellValue(i,4))
+            self.devices[i].calibration = float(self.gridDev.GetCellValue(i, 4))
             self.devices[i].lo = float(self.gridDev.GetCellValue(i, 5))
             self.devices[i].offset = float(self.gridDev.GetCellValue(i, 6)) * 1e3
 
