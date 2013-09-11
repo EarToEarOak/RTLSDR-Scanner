@@ -462,7 +462,7 @@ class DialogOffset(wx.Dialog):
 
         textHelp = wx.StaticText(self,
             label="Remove the aerial and press refresh, "
-            "adjust the offset so the shaded areas overlay the flattest parts"
+            "adjust the offset so the shaded areas overlay the flattest parts "
             "of the plot.")
 
         textFreq = wx.StaticText(self, label="Test frequency (MHz)")
