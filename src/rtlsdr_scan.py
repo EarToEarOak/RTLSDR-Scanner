@@ -480,7 +480,7 @@ class DialogOffset(wx.Dialog):
 
         textOffset = wx.StaticText(self, label="Offset (kHz)")
         self.spinOffset = wx.SpinCtrl(self)
-        self.spinOffset.SetRange(0, (SAMPLE_RATE - BANDWIDTH) / 1e3)
+        self.spinOffset.SetRange(0, ((SAMPLE_RATE / 2) - BANDWIDTH) / 1e3)
         self.spinOffset.SetValue(offset)
         self.Bind(wx.EVT_SPINCTRL, self.on_spin, self.spinOffset)
 
