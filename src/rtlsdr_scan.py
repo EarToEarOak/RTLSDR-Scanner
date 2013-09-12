@@ -54,7 +54,8 @@ except ImportError as error:
     exit(1)
 
 from constants import *
-from misc import split_spectrum, open_plot, format_device_name, setup_plot
+from misc import split_spectrum, open_plot, format_device_name, setup_plot, \
+    scale_plot
 from settings import Settings, Device
 from threads import EVT_THREAD_STATUS, ThreadProcess, ThreadScan, ThreadPlot
 
@@ -1098,6 +1099,8 @@ class FrameMain(wx.Frame):
                                           F_MAX)
 
     def on_start(self, _event):
+        self.get_range()
+        scale_plot(self.graph, self.settings)
         self.scan_start(False)
 
     def on_stop(self, _event):
@@ -1229,7 +1232,6 @@ class FrameMain(wx.Frame):
                           'Error', wx.OK | wx.ICON_ERROR)
             return
 
-        self.get_range()
         if self.settings.start >= self.settings.stop:
             wx.MessageBox('Stop frequency must be greater that start',
                           'Warning', wx.OK | wx.ICON_WARNING)

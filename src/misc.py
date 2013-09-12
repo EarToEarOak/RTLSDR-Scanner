@@ -45,6 +45,9 @@ def setup_plot(graph, settings, grid):
         axes.yaxis.set_minor_locator(AutoMinorLocator(10))
         axes.grid(grid)
 
+
+def scale_plot(graph, settings):
+        axes = graph.get_axes()
         axes.set_xlim(settings.start, settings.stop)
         if(settings.yAuto):
             axes.set_ylim(auto=True)

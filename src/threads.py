@@ -179,11 +179,13 @@ class ThreadPlot(threading.Thread):
 
     def run(self):
         axes = self.graph.get_axes()
-        axes.clear()
+
+        if len(axes.get_lines()) > 0:
+            axes.lines.pop(0)
         setup_plot(self.graph, self.settings, self.grid)
 
         freqs, powers = split_spectrum(self.spectrum)
-        axes.plot(freqs, powers, linewidth=0.4)
+        axes.plot(freqs, powers, linewidth=0.4, color='b')
 
         self.graph.get_canvas().draw()
         wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_PLOTTED,
