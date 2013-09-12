@@ -26,7 +26,7 @@
 import cPickle
 import os
 
-from matplotlib.ticker import AutoMinorLocator
+from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
 import wx
 
 from constants import FILE_HEADER
@@ -35,12 +35,15 @@ from constants import FILE_HEADER
 def setup_plot(graph, settings, grid):
         axes = graph.get_axes()
         gain = settings.devices[settings.index].gain
+        formatter = ScalarFormatter(useOffset=False)
 
         axes.set_title("Frequency Scan\n{0} - {1} MHz,"
                        " gain = {2}".format(settings.start,
                                             settings.stop, gain))
         axes.set_xlabel("Frequency (MHz)")
         axes.set_ylabel('Level (dB)')
+        axes.xaxis.set_major_formatter(formatter)
+        axes.yaxis.set_major_formatter(formatter)
         axes.xaxis.set_minor_locator(AutoMinorLocator(10))
         axes.yaxis.set_minor_locator(AutoMinorLocator(10))
         axes.grid(grid)

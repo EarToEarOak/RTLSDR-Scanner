@@ -23,6 +23,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+
 try:
     input = raw_input
 except:
@@ -36,7 +37,7 @@ try:
         FigureCanvasWxAgg as FigureCanvas, \
         NavigationToolbar2WxAgg
     from matplotlib.backends.backend_wx import _load_bitmap
-    from matplotlib.ticker import AutoMinorLocator
+    from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
     import argparse
     import cPickle
     import itertools
@@ -193,6 +194,8 @@ class PanelGraphCompare(wx.Panel):
         self.spectrum1 = None
         self.spectrum2 = None
 
+        formatter = ScalarFormatter(useOffset=False)
+
         wx.Panel.__init__(self, parent)
 
         figure = matplotlib.figure.Figure(facecolor='white')
@@ -200,6 +203,8 @@ class PanelGraphCompare(wx.Panel):
         self.axesScan = figure.add_subplot(111)
         self.axesScan.xaxis.set_minor_locator(AutoMinorLocator(10))
         self.axesScan.yaxis.set_minor_locator(AutoMinorLocator(10))
+        self.axesScan.xaxis.set_major_formatter(formatter)
+        self.axesScan.yaxis.set_major_formatter(formatter)
         self.axesDiff = self.axesScan.twinx()
         self.axesDiff.yaxis.set_minor_locator(AutoMinorLocator(10))
         self.plotScan1, = self.axesScan.plot([], [], 'b-',
