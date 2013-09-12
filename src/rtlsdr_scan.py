@@ -23,6 +23,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from matplotlib.widgets import Cursor
+
+from constants import *
+from misc import split_spectrum, open_plot, format_device_name, setup_plot, \
+    scale_plot
+from settings import Settings, Device
+from threads import EVT_THREAD_STATUS, ThreadProcess, ThreadScan, ThreadPlot
+
 
 try:
     input = raw_input
@@ -54,11 +62,6 @@ except ImportError as error:
     input('\nError importing libraries\nPress [Return] to exit')
     exit(1)
 
-from constants import *
-from misc import split_spectrum, open_plot, format_device_name, setup_plot, \
-    scale_plot
-from settings import Settings, Device
-from threads import EVT_THREAD_STATUS, ThreadProcess, ThreadScan, ThreadPlot
 
 
 MODE = ["Single", 0,
@@ -150,6 +153,7 @@ class PanelGraph(wx.Panel):
         self.axes = self.figure.add_subplot(111)
         self.canvas = FigureCanvas(self, -1, self.figure)
         self.canvas.mpl_connect('motion_notify_event', self.on_motion)
+        self.canvas.Bind(wx.EVT_ENTER_WINDOW, self.on_enter)
         self.toolbar = NavigationToolbar(self.canvas, self.main)
         self.toolbar.Realize()
         self.toolbar.DeleteToolByPos(1)
@@ -177,6 +181,9 @@ class PanelGraph(wx.Panel):
                 text = "f = {0:.3f}MHz, p = {1:.2f}dB".format(xpos, ypos)
 
         self.main.status.SetStatusText(text, 1)
+
+    def on_enter(self, _event):
+        self.canvas.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
 
     def get_canvas(self):
         return self.canvas
@@ -221,6 +228,7 @@ class PanelGraphCompare(wx.Panel):
         self.axesDiff.set_ylabel('Difference (db)')
 
         self.canvas = FigureCanvas(self, -1, figure)
+        self.canvas.Bind(wx.EVT_ENTER_WINDOW, self.on_enter)
 
         self.check1 = wx.CheckBox(self, wx.ID_ANY, "Scan 1")
         self.check2 = wx.CheckBox(self, wx.ID_ANY, "Scan 2")
@@ -253,6 +261,9 @@ class PanelGraphCompare(wx.Panel):
 
         self.SetSizer(vbox)
         vbox.Fit(self)
+
+    def on_enter(self, _event):
+        self.canvas.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
 
     def on_check1(self, _event):
         self.plotScan1.set_visible(self.check1.GetValue())
@@ -465,6 +476,7 @@ class DialogOffset(wx.Dialog):
         figure = matplotlib.figure.Figure(facecolor='white')
         self.axes = figure.add_subplot(111)
         self.canvas = FigureCanvas(self, -1, figure)
+        self.canvas.Bind(wx.EVT_ENTER_WINDOW, self.on_enter)
 
         textHelp = wx.StaticText(self,
             label="Remove the aerial and press refresh, "
@@ -524,6 +536,9 @@ class DialogOffset(wx.Dialog):
 
         self.SetSizerAndFit(gridSizer)
         self.draw_limits()
+
+    def on_enter(self, _event):
+        self.canvas.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
 
     def on_ok(self, _event):
 
