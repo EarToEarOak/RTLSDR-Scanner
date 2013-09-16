@@ -34,7 +34,10 @@ from constants import FILE_HEADER
 
 def setup_plot(graph, settings, grid):
         axes = graph.get_axes()
-        gain = settings.devices[settings.index].gain
+        if len(settings.devices) > 0:
+            gain = settings.devices[settings.index].gain
+        else:
+            gain = 0
         formatter = ScalarFormatter(useOffset=False)
 
         axes.set_title("Frequency Scan\n{0} - {1} MHz,"
