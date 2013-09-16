@@ -12,8 +12,10 @@ Full details can be found [here](http://eartoearoak.com/software/rtlsdr-scanner)
 Tested on:
 
 - Windows 7 (x86 and x64)
+- Windows XP (x86)
 - Ubuntu 12.04 (x86)
 - Ubuntu 12.10 (x64)
+- Ubuntu 13.04 (x64)
 - OS X Snow Leopard
 
 ## Binaries ##
