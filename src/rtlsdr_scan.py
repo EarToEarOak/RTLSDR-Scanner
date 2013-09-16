@@ -23,6 +23,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import webbrowser
+
 from matplotlib.widgets import Cursor
 
 from constants import *
@@ -1009,6 +1011,8 @@ class FrameMain(wx.Frame):
                                "Automatically calibrate to a known frequency")
 
         menuHelp = wx.Menu()
+        menuHelpLink = menuHelp.Append(wx.ID_HELP, "&Help...",
+                                            "Link to help")
         menuAbout = menuHelp.Append(wx.ID_ABOUT, "&About...",
                                             "Information about this program")
 
@@ -1030,6 +1034,12 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_compare, self.menuCompare)
         self.Bind(wx.EVT_MENU, self.on_cal, self.menuCal)
         self.Bind(wx.EVT_MENU, self.on_about, menuAbout)
+        self.Bind(wx.EVT_MENU, self.on_help, menuHelpLink)
+
+        idF1 = wx.wx.NewId()
+        self.Bind(wx.EVT_MENU, self.on_help, id=idF1)
+        accelTable = wx.AcceleratorTable([(wx.ACCEL_NORMAL, wx.WXK_F1, idF1)])
+        self.SetAcceleratorTable(accelTable)
 
     def on_open(self, _event):
         if self.save_warn(WARN_OPEN):
@@ -1111,6 +1121,9 @@ class FrameMain(wx.Frame):
             wx.OK)
         dlg.ShowModal()
         dlg.Destroy()
+
+    def on_help(self, _event):
+        webbrowser.open("http://eartoearoak.com/software/rtlsdr-scanner")
 
     def on_spin(self, event):
         control = event.GetEventObject()
