@@ -887,7 +887,7 @@ class FrameMain(wx.Frame):
         size[1] += displaySize[1] / 4
         self.SetMinSize(size)
 
-        thread_event_handler(self, EVT_THREAD_STATUS, self.on_thread_status)
+        self.Connect(-1, -1, EVT_THREAD_STATUS, self.on_thread_status)
 
         self.SetDropTarget(DropTarget(self))
 
@@ -1331,7 +1331,7 @@ class FrameMain(wx.Frame):
     def draw_plot(self, blocking=False):
 
         if len(self.spectrum) > 0:
-            if blocking and self.threadPlot is None:
+            if blocking and self.threadPlot is not None:
                 self.threadPlot.join()
                 self.threadPlot = None
 
@@ -1360,17 +1360,16 @@ class FrameMain(wx.Frame):
         return False
 
     def wait_threads(self):
+        self.Disconnect(-1, -1, EVT_THREAD_STATUS, self.on_thread_status)
         if self.threadScan:
             self.threadScan.join()
             self.threadScan = None
-            self.wait_threads()
-        elif self.threadPlot:
+        if self.threadPlot:
             self.threadPlot.join()
             self.threadPlot = None
-            self.wait_threads()
-
-        for thread in self.threadProcess:
-            thread.join()
+        if len(self.threadProcess) > 0:
+            for thread in self.threadProcess:
+                thread.join()
 
     def set_range(self):
         self.spinCtrlStart.SetValue(self.settings.start)
@@ -1410,10 +1409,6 @@ class FrameMain(wx.Frame):
             devices.append(device)
 
         return devices
-
-
-def thread_event_handler(win, event, function):
-    win.Connect(-1, -1, event, function)
 
 
 def next_2_to_pow(val):
