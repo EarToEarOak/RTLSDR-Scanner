@@ -23,16 +23,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-import webbrowser
-
-from matplotlib.widgets import Cursor
-
-from constants import *
-from misc import split_spectrum, open_plot, format_device_name, setup_plot, \
-    scale_plot
-from settings import Settings, Device
-from threads import EVT_THREAD_STATUS, ThreadProcess, ThreadScan, ThreadPlot
-
 
 try:
     input = raw_input
@@ -55,6 +45,7 @@ try:
     import numpy
     import os.path
     import rtlsdr
+    import webbrowser
     import wx
     import wx.lib.masked as masked
     import wx.lib.mixins.listctrl as listmix
@@ -64,6 +55,11 @@ except ImportError as error:
     input('\nError importing libraries\nPress [Return] to exit')
     exit(1)
 
+from constants import *
+from misc import split_spectrum, open_plot, format_device_name, setup_plot, \
+    scale_plot
+from settings import Settings, Device
+from threads import EVT_THREAD_STATUS, ThreadProcess, ThreadScan, ThreadPlot
 
 
 MODE = ["Single", 0,
