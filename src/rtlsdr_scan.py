@@ -829,6 +829,7 @@ class FrameMain(wx.Frame):
         self.grid = True
 
         self.threadScan = None
+        self.threadProcess = []
         self.threadPlot = None
         self.pendingPlot = False
 
@@ -1089,6 +1090,8 @@ class FrameMain(wx.Frame):
         if self.save_warn(WARN_EXIT):
             self.Bind(wx.EVT_CLOSE, self.on_exit)
             return
+        self.stop_scan()
+        self.wait_threads()
         self.get_range()
         self.settings.dwell = DWELL[1::2][self.choiceDwell.GetSelection()]
         self.settings.nfft = NFFT[self.choiceNfft.GetSelection()]
@@ -1137,9 +1140,7 @@ class FrameMain(wx.Frame):
         self.scan_start(False)
 
     def on_stop(self, _event):
-        if self.threadScan:
-            self.status.SetStatusText("Stopping", 0)
-            self.threadScan.abort()
+        self.stop_scan()
 
     def on_check_update(self, _event):
         self.update = self.checkUpdate.GetValue()
@@ -1152,6 +1153,7 @@ class FrameMain(wx.Frame):
         status = event.data.get_status()
         freq = event.data.get_freq()
         data = event.data.get_data()
+        thread = event.data.get_thread()
         if status == THREAD_STATUS_STARTING:
             self.status.SetStatusText("Starting", 0)
         elif status == THREAD_STATUS_SCAN:
@@ -1162,7 +1164,9 @@ class FrameMain(wx.Frame):
             self.isSaved = False
             fftChoice = self.choiceNfft.GetSelection()
             nfft = NFFT[fftChoice]
-            ThreadProcess(self, freq, data, self.settings, self.devices, nfft)
+            self.threadProcess.append(ThreadProcess(self, freq, data,
+                                                    self.settings,
+                                                    self.devices, nfft))
         elif status == THREAD_STATUS_FINISHED:
             self.statusProgress.Hide()
             self.status.SetStatusText("Finished", 0)
@@ -1186,6 +1190,7 @@ class FrameMain(wx.Frame):
                 self.dlgCal.Destroy()
                 self.dlgCal = None
         elif status == THREAD_STATUS_PROCESSED:
+            self.threadProcess.remove(thread)
             self.update_scan(freq, data)
             if self.update or freq > self.settings.stop * 1e6:
                 self.draw_plot()
@@ -1288,6 +1293,11 @@ class FrameMain(wx.Frame):
 
             return True
 
+    def stop_scan(self):
+        if self.threadScan and self.threadScan.isAlive():
+            self.status.SetStatusText("Stopping", 0)
+            self.threadScan.abort()
+
     def update_scan(self, freqCentre, scan):
         offset = self.settings.devices[self.settings.index].offset
         upperStart = freqCentre + offset
@@ -1352,6 +1362,19 @@ class FrameMain(wx.Frame):
                 return True
 
         return False
+
+    def wait_threads(self):
+        if self.threadScan:
+            self.threadScan.join()
+            self.threadScan = None
+            self.wait_threads()
+        elif self.threadPlot:
+            self.threadPlot.join()
+            self.threadPlot = None
+            self.wait_threads()
+
+        for thread in self.threadProcess:
+            thread.join()
 
     def set_range(self):
         self.spinCtrlStart.SetValue(self.settings.start)

@@ -38,10 +38,11 @@ EVT_THREAD_STATUS = wx.NewId()
 
 
 class Status():
-    def __init__(self, status, freq, data):
+    def __init__(self, status, freq, data, thread):
         self.status = status
         self.freq = freq
         self.data = data
+        self.thread = thread
 
     def get_status(self):
         return self.status
@@ -52,17 +53,21 @@ class Status():
     def get_data(self):
         return self.data
 
+    def get_thread(self):
+        return self.thread
+
 
 class EventThreadStatus(wx.PyEvent):
-    def __init__(self, status, freq, data):
+    def __init__(self, status, freq, data, thread):
         wx.PyEvent.__init__(self)
         self.SetEventType(EVT_THREAD_STATUS)
-        self.data = Status(status, freq, data)
+        self.data = Status(status, freq, data, thread)
 
 
 class ThreadScan(threading.Thread):
     def __init__(self, notify, settings, devices, samples, isCal):
         threading.Thread.__init__(self)
+        self.name = 'ThreadScan'
         self.notify = notify
         self.index = settings.index
         self.fstart = settings.start * 1e6
@@ -74,7 +79,7 @@ class ThreadScan(threading.Thread):
         self.offset = devices[self.index].offset
         self.cancel = False
         wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_STARTING,
-                                                    None, None))
+                                                    None, None, None))
         self.start()
 
     def run(self):
@@ -87,7 +92,7 @@ class ThreadScan(threading.Thread):
             if self.cancel:
                 wx.PostEvent(self.notify,
                              EventThreadStatus(THREAD_STATUS_STOPPED,
-                                               None, None))
+                                               None, None, None))
                 sdr.close()
                 return
             try:
@@ -95,11 +100,11 @@ class ThreadScan(threading.Thread):
                              (self.fstop - self.fstart + BANDWIDTH)) * 100
                 wx.PostEvent(self.notify,
                              EventThreadStatus(THREAD_STATUS_SCAN,
-                                               None, progress))
+                                               None, progress, None))
                 scan = self.scan(sdr, freq)
                 wx.PostEvent(self.notify,
                              EventThreadStatus(THREAD_STATUS_DATA, freq,
-                                               scan))
+                                               scan, None))
             except (IOError, WindowsError):
                 if sdr is not None:
                     sdr.close()
@@ -108,14 +113,14 @@ class ThreadScan(threading.Thread):
                 if self.notify:
                     wx.PostEvent(self.notify,
                              EventThreadStatus(THREAD_STATUS_ERROR,
-                                               None, error.message))
+                                               None, error.message, None))
                 return
 
             freq += BANDWIDTH / 2
 
         sdr.close()
         wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_FINISHED,
-                                                    None, self.isCal))
+                                                    None, self.isCal, None))
 
     def abort(self):
         self.cancel = True
@@ -128,7 +133,8 @@ class ThreadScan(threading.Thread):
             sdr.set_gain(self.gain)
         except IOError as error:
             wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_ERROR,
-                                                        None, error.message))
+                                                        None, error.message,
+                                                        None))
 
         return sdr
 
@@ -142,6 +148,7 @@ class ThreadScan(threading.Thread):
 class ThreadProcess(threading.Thread):
     def __init__(self, notify, freq, data, settings, devices, nfft):
         threading.Thread.__init__(self)
+        self.name = 'ThreadProcess'
         self.notify = notify
         self.freq = freq
         self.data = data
@@ -162,13 +169,15 @@ class ThreadProcess(threading.Thread):
             xr = xr + (xr * self.cal / 1e6)
             xr = int((xr * 5e4) + 0.5) / 5e4
             scan[xr] = pwr
+        thread = threading.current_thread()
         wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_PROCESSED,
-                                                    self.freq, scan))
+                                                    self.freq, scan, thread))
 
 
 class ThreadPlot(threading.Thread):
     def __init__(self, notify, graph, spectrum, settings, grid):
         threading.Thread.__init__(self)
+        self.name = 'ThreadPlot'
         self.notify = notify
         self.graph = graph
         self.spectrum = spectrum
@@ -189,4 +198,4 @@ class ThreadPlot(threading.Thread):
 
         self.graph.get_canvas().draw()
         wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_PLOTTED,
-                                                        None, None))
+                                                        None, None, None))
