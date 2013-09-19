@@ -617,6 +617,17 @@ class DialogPrefs(wx.Dialog):
         self.checkSaved.SetValue(self.settings.saveWarn)
         self.checkSaved.SetToolTip(wx.ToolTip('Prompt to save scan on exit'))
 
+        self.checkRetain = wx.CheckBox(self, wx.ID_ANY,
+                                      "Display previous scans*")
+        self.checkRetain.SetToolTip(wx.ToolTip('Can be slow'))
+        self.checkRetain.SetValue(self.settings.retainScans)
+        self.Bind(wx.EVT_CHECKBOX, self.on_check, self.checkRetain)
+        self.checkFade = wx.CheckBox(self, wx.ID_ANY,
+                                      "Fade previous scans")
+        self.checkFade.SetValue(self.settings.fadeScans)
+        self.on_check(None)
+        textWarn = wx.StaticText(self, label="*Only the most recent scan is saved")
+
         self.devices = devices
         self.gridDev = grid.Grid(self)
         self.gridDev.CreateGrid(len(self.devices), 7)
@@ -671,9 +682,15 @@ class DialogPrefs(wx.Dialog):
         sizerButtons.Realize()
         self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
 
-        optbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Options"),
+        optbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "General"),
                                      wx.VERTICAL)
         optbox.Add(self.checkSaved, 0, wx.ALL | wx.EXPAND, 10)
+
+        conbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Continuous scans"),
+                                     wx.HORIZONTAL)
+        conbox.Add(self.checkRetain, 0, wx.ALL | wx.EXPAND, 10)
+        conbox.Add(self.checkFade, 0, wx.ALL | wx.EXPAND, 10)
+        conbox.Add(textWarn, 0, wx.ALL | wx.EXPAND, 10)
 
         devbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Devices"),
                                      wx.VERTICAL)
@@ -681,10 +698,15 @@ class DialogPrefs(wx.Dialog):
 
         vbox = wx.BoxSizer(wx.VERTICAL)
         vbox.Add(optbox, 0, wx.ALL | wx.EXPAND, 10)
+        vbox.Add(conbox, 0, wx.ALL | wx.EXPAND, 10)
         vbox.Add(devbox, 0, wx.ALL | wx.EXPAND, 10)
         vbox.Add(sizerButtons, 0, wx.ALL | wx.EXPAND, 10)
 
         self.SetSizerAndFit(vbox)
+
+    def on_check(self, _event):
+
+        self.checkFade.Enable(self.checkRetain.GetValue())
 
     def on_click(self, event):
         col = event.GetCol()
@@ -702,6 +724,8 @@ class DialogPrefs(wx.Dialog):
 
     def on_ok(self, _event):
         self.settings.saveWarn = self.checkSaved.GetValue()
+        self.settings.retainScans = self.checkRetain.GetValue()
+        self.settings.fadeScans = self.checkFade.GetValue()
         for i in range(0, self.gridDev.GetNumberRows()):
             self.devices[i].gain = float(self.gridDev.GetCellValue(i, 3))
             self.devices[i].calibration = float(self.gridDev.GetCellValue(i, 4))
@@ -1141,6 +1165,7 @@ class FrameMain(wx.Frame):
 
     def on_start(self, _event):
         self.get_range()
+        self.graph.get_axes().clear()
         scale_plot(self.graph, self.settings)
         self.scan_start(False)
 
@@ -1336,16 +1361,16 @@ class FrameMain(wx.Frame):
         self.menuPref.Enable(state)
         self.menuCal.Enable(state)
 
-    def draw_plot(self, blocking=False):
+    def draw_plot(self, full=False):
 
         if len(self.spectrum) > 0:
-            if blocking and self.threadPlot is not None:
+            if full and self.threadPlot is not None:
                 self.threadPlot.join()
                 self.threadPlot = None
 
             if self.threadPlot is None:
                 self.threadPlot = ThreadPlot(self, self.graph, self.spectrum,
-                                             self.settings, self.grid)
+                                             self.settings, self.grid, full)
                 self.pendingPlot = False
             else:
                 self.pendingPlot = True

@@ -172,7 +172,7 @@ class ThreadProcess(threading.Thread):
 
 
 class ThreadPlot(threading.Thread):
-    def __init__(self, notify, graph, spectrum, settings, grid):
+    def __init__(self, notify, graph, spectrum, settings, grid, full):
         threading.Thread.__init__(self)
         self.name = 'ThreadPlot'
         self.notify = notify
@@ -180,18 +180,34 @@ class ThreadPlot(threading.Thread):
         self.spectrum = spectrum
         self.settings = settings
         self.grid = grid
+        self.full = full
 
         self.start()
 
     def run(self):
-        axes = self.graph.get_axes()
-
-        if len(axes.get_lines()) > 0:
-            axes.lines.pop(0)
         setup_plot(self.graph, self.settings, self.grid)
 
+        axes = self.graph.get_axes()
+        self.retain_plot(axes)
+
         freqs, powers = split_spectrum(self.spectrum)
-        axes.plot(freqs, powers, linewidth=0.4, color='b')
+        axes.plot(freqs, powers, linewidth=0.4, color='b', alpha=1)
 
         self.graph.get_canvas().draw()
         wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_PLOTTED))
+
+    def retain_plot(self, axes):
+        lines = axes.get_lines()
+        if not self.settings.retainScans:
+            if len(lines) > 0:
+                axes.lines.pop(0)
+        else:
+            if not self.full:
+                if len(lines) > 0:
+                    axes.lines.pop(len(lines) - 1)
+            else:
+                if len(lines) >= self.settings.maxScans:
+                    axes.lines.pop(0)
+                if self.settings.fadeScans:
+                    for line in lines:
+                        line.set_alpha(line.get_alpha() / 1.4)

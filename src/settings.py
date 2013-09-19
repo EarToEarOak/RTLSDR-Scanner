@@ -44,6 +44,10 @@ class Settings():
 
         self.saveWarn = True
 
+        self.retainScans = False
+        self.fadeScans = True
+        self.maxScans = 5
+
         self.start = None
         self.stop = None
         self.mode = 0
@@ -62,6 +66,8 @@ class Settings():
     def load(self):
         self.cfg = wx.Config('rtlsdr-scanner')
         self.saveWarn = self.cfg.ReadBool('saveWarn', True)
+        self.retainScans = self.cfg.ReadBool('retainScans', False)
+        self.fadeScans = self.cfg.ReadBool('fadeScans', True)
         self.start = self.cfg.ReadInt('start', 87)
         self.stop = self.cfg.ReadInt('stop', 108)
         self.mode = self.cfg.ReadInt('mode', 0)
@@ -86,6 +92,8 @@ class Settings():
     def save(self):
         self.cfg.SetPath("/")
         self.cfg.WriteBool('saveWarn', self.saveWarn)
+        self.cfg.WriteBool('retainScans', self.retainScans)
+        self.cfg.WriteBool('fadeScans', self.fadeScans)
         self.cfg.WriteInt('start', self.start)
         self.cfg.WriteInt('stop', self.stop)
         self.cfg.WriteInt('mode', self.mode)
