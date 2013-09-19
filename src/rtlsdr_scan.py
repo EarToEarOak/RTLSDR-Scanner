@@ -1202,7 +1202,8 @@ class FrameMain(wx.Frame):
             self.status.SetStatusText("Finished", 0)
             self.threadScan = None
             self.scanFinished = True
-            self.set_controls(True)
+            if self.settings.mode != 1:
+                self.set_controls(True)
             if data:
                 self.auto_cal(CAL_DONE)
         elif status == THREAD_STATUS_STOPPED:
