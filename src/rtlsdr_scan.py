@@ -612,10 +612,10 @@ class DialogPrefs(wx.Dialog):
 
         wx.Dialog.__init__(self, parent=parent, title="Preferences")
 
-        title = wx.StaticText(self, label="Select a device")
-        font = title.GetFont()
-        font.SetPointSize(font.GetPointSize() + 2)
-        title.SetFont(font)
+        self.checkSaved = wx.CheckBox(self, wx.ID_ANY,
+                                      "Save warning")
+        self.checkSaved.SetValue(self.settings.saveWarn)
+        self.checkSaved.SetToolTip(wx.ToolTip('Prompt to save scan on exit'))
 
         self.devices = devices
         self.gridDev = grid.Grid(self)
@@ -671,9 +671,17 @@ class DialogPrefs(wx.Dialog):
         sizerButtons.Realize()
         self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
 
+        optbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Options"),
+                                     wx.VERTICAL)
+        optbox.Add(self.checkSaved, 0, wx.ALL | wx.EXPAND, 10)
+
+        devbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Devices"),
+                                     wx.VERTICAL)
+        devbox.Add(self.gridDev, 0, wx.ALL | wx.EXPAND, 10)
+
         vbox = wx.BoxSizer(wx.VERTICAL)
-        vbox.Add(title, 0, wx.ALL | wx.EXPAND, 10)
-        vbox.Add(self.gridDev, 0, wx.ALL | wx.EXPAND, 10)
+        vbox.Add(optbox, 0, wx.ALL | wx.EXPAND, 10)
+        vbox.Add(devbox, 0, wx.ALL | wx.EXPAND, 10)
         vbox.Add(sizerButtons, 0, wx.ALL | wx.EXPAND, 10)
 
         self.SetSizerAndFit(vbox)
@@ -693,6 +701,7 @@ class DialogPrefs(wx.Dialog):
         event.Skip()
 
     def on_ok(self, _event):
+        self.settings.saveWarn = self.checkSaved.GetValue()
         for i in range(0, self.gridDev.GetNumberRows()):
             self.devices[i].gain = float(self.gridDev.GetCellValue(i, 3))
             self.devices[i].calibration = float(self.gridDev.GetCellValue(i, 4))
@@ -1342,7 +1351,7 @@ class FrameMain(wx.Frame):
                 self.pendingPlot = True
 
     def save_warn(self, warnType):
-        if not self.isSaved:
+        if self.settings.saveWarn and not self.isSaved:
             dlg = DialogSaveWarn(self, warnType)
             code = dlg.ShowModal()
             if code == wx.ID_YES:

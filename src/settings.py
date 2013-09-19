@@ -41,6 +41,9 @@ class Device():
 class Settings():
     def __init__(self):
         self.cfg = None
+
+        self.saveWarn = True
+
         self.start = None
         self.stop = None
         self.mode = 0
@@ -50,6 +53,7 @@ class Settings():
         self.yAuto = True
         self.yMax = 1
         self.yMin = 0
+
         self.devices = []
         self.index = None
 
@@ -57,6 +61,7 @@ class Settings():
 
     def load(self):
         self.cfg = wx.Config('rtlsdr-scanner')
+        self.saveWarn = self.cfg.ReadBool('saveWarn', True)
         self.start = self.cfg.ReadInt('start', 87)
         self.stop = self.cfg.ReadInt('stop', 108)
         self.mode = self.cfg.ReadInt('mode', 0)
@@ -80,6 +85,7 @@ class Settings():
 
     def save(self):
         self.cfg.SetPath("/")
+        self.cfg.WriteBool('saveWarn', self.saveWarn)
         self.cfg.WriteInt('start', self.start)
         self.cfg.WriteInt('stop', self.stop)
         self.cfg.WriteInt('mode', self.mode)
