@@ -1193,7 +1193,6 @@ class FrameMain(wx.Frame):
             if self.settings.mode == 1 and freq > self.settings.stop * 1e6:
                 if self.dlgCal is None:
                     self.draw_plot(True)
-                    self.isSaved = True
                     self.scan_start(False)
         elif status == THREAD_STATUS_PLOTTED:
             self.threadPlot = None
