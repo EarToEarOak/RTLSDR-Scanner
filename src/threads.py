@@ -58,7 +58,7 @@ class Status():
 
 
 class EventThreadStatus(wx.PyEvent):
-    def __init__(self, status, freq, data, thread):
+    def __init__(self, status, freq=None, data=None, thread=None):
         wx.PyEvent.__init__(self)
         self.SetEventType(EVT_THREAD_STATUS)
         self.data = Status(status, freq, data, thread)
@@ -78,8 +78,7 @@ class ThreadScan(threading.Thread):
         self.lo = devices[self.index].lo * 1e6
         self.offset = devices[self.index].offset
         self.cancel = False
-        wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_STARTING,
-                                                    None, None, None))
+        wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_STARTING))
         self.start()
 
     def run(self):
@@ -91,8 +90,7 @@ class ThreadScan(threading.Thread):
         while freq <= self.fstop + self.offset:
             if self.cancel:
                 wx.PostEvent(self.notify,
-                             EventThreadStatus(THREAD_STATUS_STOPPED,
-                                               None, None, None))
+                             EventThreadStatus(THREAD_STATUS_STOPPED))
                 sdr.close()
                 return
             try:
@@ -100,11 +98,11 @@ class ThreadScan(threading.Thread):
                              (self.fstop - self.fstart + BANDWIDTH)) * 100
                 wx.PostEvent(self.notify,
                              EventThreadStatus(THREAD_STATUS_SCAN,
-                                               None, progress, None))
+                                               0, progress))
                 scan = self.scan(sdr, freq)
                 wx.PostEvent(self.notify,
                              EventThreadStatus(THREAD_STATUS_DATA, freq,
-                                               scan, None))
+                                               scan))
             except (IOError, WindowsError):
                 if sdr is not None:
                     sdr.close()
@@ -113,14 +111,14 @@ class ThreadScan(threading.Thread):
                 if self.notify:
                     wx.PostEvent(self.notify,
                              EventThreadStatus(THREAD_STATUS_ERROR,
-                                               None, error.message, None))
+                                               0, error.message))
                 return
 
             freq += BANDWIDTH / 2
 
         sdr.close()
         wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_FINISHED,
-                                                    None, self.isCal, None))
+                                                    0, self.isCal))
 
     def abort(self):
         self.cancel = True
@@ -133,8 +131,7 @@ class ThreadScan(threading.Thread):
             sdr.set_gain(self.gain)
         except IOError as error:
             wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_ERROR,
-                                                        None, error.message,
-                                                        None))
+                                                        0, error.message))
 
         return sdr
 
@@ -197,5 +194,4 @@ class ThreadPlot(threading.Thread):
         axes.plot(freqs, powers, linewidth=0.4, color='b')
 
         self.graph.get_canvas().draw()
-        wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_PLOTTED,
-                                                        None, None, None))
+        wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_PLOTTED))
