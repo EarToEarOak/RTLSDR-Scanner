@@ -166,17 +166,18 @@ class PanelGraph(wx.Panel):
         vbox.Fit(self)
 
     def on_motion(self, event):
-        if self.main.threadScan:
-            return
         xpos = event.xdata
         ypos = event.ydata
         text = ""
-        if xpos is not None:
+        if xpos is not None and ypos is not None:
             spectrum = self.main.spectrum
             if len(spectrum) > 0:
-                xpos = min(spectrum.keys(), key=lambda freq: abs(freq - xpos))
-                ypos = spectrum[xpos]
-                text = "f = {0:.3f}MHz, p = {1:.2f}dB".format(xpos, ypos)
+                x = min(spectrum.keys(), key=lambda freq: abs(freq - xpos))
+                if(xpos <= max(spectrum.keys(), key=float)):
+                    y = spectrum[x]
+                    text = "f = {0:.3f}MHz, p = {1:.2f}dB".format(x, y)
+                else:
+                    text = "f = {0:.3f}MHz".format(xpos)
 
         self.main.status.SetStatusText(text, 1)
 
@@ -904,7 +905,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_CLOSE, self.on_exit)
 
         self.status = self.CreateStatusBar()
-        self.status.SetFieldsCount(2)
+        self.status.SetFieldsCount(3)
         self.statusProgress = wx.Gauge(self.status, -1,
                                         style=wx.GA_HORIZONTAL | wx.GA_SMOOTH)
         self.statusProgress.Hide()
@@ -1235,7 +1236,7 @@ class FrameMain(wx.Frame):
                 self.draw_plot()
 
     def on_size(self, event):
-        rect = self.status.GetFieldRect(1)
+        rect = self.status.GetFieldRect(2)
         self.statusProgress.SetPosition((rect.x + 10, rect.y + 2))
         self.statusProgress.SetSize((rect.width - 20, rect.height - 4))
         event.Skip()
