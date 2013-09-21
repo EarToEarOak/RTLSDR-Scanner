@@ -617,6 +617,10 @@ class DialogPrefs(wx.Dialog):
                                       "Save warning")
         self.checkSaved.SetValue(self.settings.saveWarn)
         self.checkSaved.SetToolTip(wx.ToolTip('Prompt to save scan on exit'))
+        self.checkAnnotate = wx.CheckBox(self, wx.ID_ANY,
+                                      "Label peak level")
+        self.checkAnnotate.SetValue(self.settings.annotate)
+        self.checkAnnotate.SetToolTip(wx.ToolTip('Annotate scan peak value'))
 
         self.checkRetain = wx.CheckBox(self, wx.ID_ANY,
                                       "Display previous scans*")
@@ -686,6 +690,7 @@ class DialogPrefs(wx.Dialog):
         optbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "General"),
                                      wx.VERTICAL)
         optbox.Add(self.checkSaved, 0, wx.ALL | wx.EXPAND, 10)
+        optbox.Add(self.checkAnnotate, 0, wx.ALL | wx.EXPAND, 10)
 
         conbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Continuous scans"),
                                      wx.HORIZONTAL)
@@ -725,6 +730,7 @@ class DialogPrefs(wx.Dialog):
 
     def on_ok(self, _event):
         self.settings.saveWarn = self.checkSaved.GetValue()
+        self.settings.annotate = self.checkAnnotate.GetValue()
         self.settings.retainScans = self.checkRetain.GetValue()
         self.settings.fadeScans = self.checkFade.GetValue()
         for i in range(0, self.gridDev.GetNumberRows()):

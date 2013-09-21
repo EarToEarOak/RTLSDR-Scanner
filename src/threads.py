@@ -23,10 +23,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import heapq
 import itertools
 import threading
 
 import matplotlib
+from matplotlib.artist import ArtistInspector
+from matplotlib.lines import Line2D
+from matplotlib.text import Annotation
 import rtlsdr
 import wx
 
@@ -188,10 +192,20 @@ class ThreadPlot(threading.Thread):
         setup_plot(self.graph, self.settings, self.grid)
 
         axes = self.graph.get_axes()
+
+        children = axes.get_children()
+        for child in children:
+            if isinstance(child, Annotation):
+                child.remove()
+            elif child.get_gid() is not None and child.get_gid() == 'peak':
+                child.remove()
+
         self.retain_plot(axes)
 
         freqs, powers = split_spectrum(self.spectrum)
         axes.plot(freqs, powers, linewidth=0.4, color='b', alpha=1)
+
+        self.annotate(axes)
 
         self.graph.get_canvas().draw()
         wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_PLOTTED))
@@ -211,3 +225,19 @@ class ThreadPlot(threading.Thread):
                 if self.settings.fadeScans:
                     for line in lines:
                         line.set_alpha(line.get_alpha() / 1.4)
+
+    def annotate(self, axes):
+        if self.settings.annotate:
+            try:
+                freq = max(self.spectrum.iterkeys(),
+                           key=(lambda key: self.spectrum[key]))
+                power = self.spectrum[freq]
+                textX = ((self.settings.stop - self.settings.start) / 50.0) + freq
+                axes.annotate('{0:.3f}MHz\n{1:.2f}dB'.format(freq, power),
+                              xy=(freq, power), xytext=(textX, power),
+                              ha='left', va='top', size='small')
+                axes.plot(freq, power, marker='x', markersize=10, color='r',
+                          gid='peak')
+            except RuntimeError:
+                pass
+
