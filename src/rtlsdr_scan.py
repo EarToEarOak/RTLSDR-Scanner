@@ -132,8 +132,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         dlg = DialogRange(self, self.main)
         dlg.ShowModal()
         dlg.Destroy()
-        self.canvas.draw()
-        self.main.draw_plot()
+        self.main.draw_plot(True)
 
 
 class NavigationToolbarCompare(NavigationToolbar2WxAgg):
@@ -1371,6 +1370,8 @@ class FrameMain(wx.Frame):
         self.menuCal.Enable(state)
 
     def draw_plot(self, full=False):
+
+        scale_plot(self.graph, self.settings)
 
         if len(self.spectrum) > 0:
             if full and self.threadPlot is not None:
