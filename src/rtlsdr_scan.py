@@ -862,7 +862,6 @@ class DialogRange(wx.Dialog):
 class FrameMain(wx.Frame):
     def __init__(self, title):
 
-        self.update = False
         self.grid = True
 
         self.threadScan = None
@@ -979,7 +978,7 @@ class FrameMain(wx.Frame):
         self.checkUpdate = wx.CheckBox(self.panel, wx.ID_ANY,
                                         "Live update")
         self.checkUpdate.SetToolTip(wx.ToolTip('Update plot with live samples'))
-        self.checkUpdate.SetValue(self.update)
+        self.checkUpdate.SetValue(self.settings.liveUpdate)
         self.Bind(wx.EVT_CHECKBOX, self.on_check_update, self.checkUpdate)
 
         self.checkGrid = wx.CheckBox(self.panel, wx.ID_ANY, "Grid")
@@ -1181,7 +1180,7 @@ class FrameMain(wx.Frame):
         self.stop_scan()
 
     def on_check_update(self, _event):
-        self.update = self.checkUpdate.GetValue()
+        self.settings.liveUpdate = self.checkUpdate.GetValue()
 
     def on_check_grid(self, _event):
         self.grid = self.checkGrid.GetValue()
@@ -1231,7 +1230,7 @@ class FrameMain(wx.Frame):
         elif status == THREAD_STATUS_PROCESSED:
             self.threadProcess.remove(thread)
             self.update_scan(freq, data)
-            if self.update or freq > self.settings.stop * 1e6:
+            if self.settings.liveUpdate or freq > self.settings.stop * 1e6:
                 self.draw_plot()
             if self.settings.mode == 1 and freq > self.settings.stop * 1e6:
                 if self.dlgCal is None:

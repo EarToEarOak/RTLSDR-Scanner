@@ -55,6 +55,7 @@ class Settings():
         self.mode = 0
         self.dwell = 0.0
         self.nfft = 0
+        self.liveUpdate = False
         self.calFreq = None
         self.yAuto = True
         self.yMax = 1
@@ -76,6 +77,7 @@ class Settings():
         self.mode = self.cfg.ReadInt('mode', 0)
         self.dwell = self.cfg.ReadFloat('dwell', 0.1)
         self.nfft = int(self.cfg.Read('nfft', '1024'))
+        self.liveUpdate = self.cfg.ReadBool('liveUpdate', False)
         self.calFreq = self.cfg.ReadFloat('calFreq', 1575.42)
         self.index = self.cfg.ReadInt('index', 0)
         self.cfg.SetPath("/Devices")
@@ -103,6 +105,7 @@ class Settings():
         self.cfg.WriteInt('mode', self.mode)
         self.cfg.WriteFloat('dwell', self.dwell)
         self.cfg.Write('nfft', str(self.nfft))
+        self.cfg.WriteBool('liveUpdate', self.liveUpdate)
         self.cfg.WriteFloat('calFreq', self.calFreq)
         self.cfg.WriteInt('index', self.index)
         if self.devices:
