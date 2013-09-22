@@ -1208,6 +1208,7 @@ class FrameMain(wx.Frame):
         self.scan_start(False)
 
     def on_stop(self, _event):
+        self.stopScan = False
         self.stop_scan()
 
     def on_stop_end(self, _event):
