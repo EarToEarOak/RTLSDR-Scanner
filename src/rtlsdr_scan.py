@@ -867,6 +867,7 @@ class FrameMain(wx.Frame):
         self.threadProcess = []
         self.threadPlot = None
         self.pendingPlot = False
+        self.stopScan = False
 
         self.dlgCal = None
 
@@ -1034,7 +1035,10 @@ class FrameMain(wx.Frame):
 
         menuScan = wx.Menu()
         self.menuStart = menuScan.Append(wx.ID_ANY, "&Start", "Start scan")
-        self.menuStop = menuScan.Append(wx.ID_ANY, "S&top", "Stop scan")
+        self.menuStop = menuScan.Append(wx.ID_ANY, "S&top",
+                                        "Stop scan immediately")
+        self.menuStopEnd = menuScan.Append(wx.ID_ANY, "Stop at &end",
+                                           "Complete current sweep before stopping")
 
         menuView = wx.Menu()
         self.menuPref = menuView.Append(wx.ID_ANY, "&Preferences...",
@@ -1066,6 +1070,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_exit, menuExit)
         self.Bind(wx.EVT_MENU, self.on_start, self.menuStart)
         self.Bind(wx.EVT_MENU, self.on_stop, self.menuStop)
+        self.Bind(wx.EVT_MENU, self.on_stop_end, self.menuStopEnd)
         self.Bind(wx.EVT_MENU, self.on_pref, self.menuPref)
         self.Bind(wx.EVT_MENU, self.on_compare, self.menuCompare)
         self.Bind(wx.EVT_MENU, self.on_cal, self.menuCal)
@@ -1178,6 +1183,9 @@ class FrameMain(wx.Frame):
     def on_stop(self, _event):
         self.stop_scan()
 
+    def on_stop_end(self, _event):
+        self.stopScan = True
+
     def on_check_update(self, _event):
         self.settings.liveUpdate = self.checkUpdate.GetValue()
 
@@ -1193,7 +1201,10 @@ class FrameMain(wx.Frame):
         if status == THREAD_STATUS_STARTING:
             self.status.SetStatusText("Starting", 0)
         elif status == THREAD_STATUS_SCAN:
-            self.status.SetStatusText("Scanning", 0)
+            if self.stopScan:
+                self.status.SetStatusText("Stopping", 0)
+            else:
+                self.status.SetStatusText("Scanning", 0)
             self.statusProgress.Show()
             self.statusProgress.SetValue(data)
         elif status == THREAD_STATUS_DATA:
@@ -1232,9 +1243,12 @@ class FrameMain(wx.Frame):
             if self.settings.liveUpdate or freq > self.settings.stop * 1e6:
                 self.draw_plot()
             if self.settings.mode == 1 and freq > self.settings.stop * 1e6:
-                if self.dlgCal is None:
+                if self.dlgCal is None and not self.stopScan:
                     self.draw_plot(True)
                     self.scan_start(False)
+                else:
+                    self.stopScan = False
+                    self.set_controls(True)
         elif status == THREAD_STATUS_PLOTTED:
             self.threadPlot = None
             if self.pendingPlot:
@@ -1366,6 +1380,10 @@ class FrameMain(wx.Frame):
         self.menuExport.Enable(state)
         self.menuStart.Enable(state)
         self.menuStop.Enable(not state)
+        if self.settings.mode == 1:
+            self.menuStopEnd.Enable(not state)
+        else:
+            self.menuStopEnd.Enable(False)
         self.menuPref.Enable(state)
         self.menuCal.Enable(state)
 
