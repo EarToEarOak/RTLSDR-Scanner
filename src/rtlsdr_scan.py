@@ -1280,6 +1280,7 @@ class FrameMain(wx.Frame):
             elif status == CAL_DONE:
                 ppm = self.calc_ppm(freq)
                 self.dlgCal.set_cal(ppm)
+                self.set_controls(True)
             elif status == CAL_OK:
                 self.devices[self.settings.index].calibration = self.dlgCal.get_cal()
                 self.settings.calFreq = freq
