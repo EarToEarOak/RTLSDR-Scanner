@@ -876,9 +876,15 @@ class FrameMain(wx.Frame):
         self.menuExport = None
         self.menuStart = None
         self.menuStop = None
+        self.menuStopEnd = None
         self.menuPref = None
         self.menuCompare = None
         self.menuCal = None
+
+        self.popupMenu = None
+        self.popupMenuStart = None
+        self.popupMenuStop = None
+        self.popupMenuStopEnd = None
 
         self.panel = None
         self.graph = None
@@ -918,6 +924,7 @@ class FrameMain(wx.Frame):
 
         self.create_widgets()
         self.create_menu()
+        self.create_popup_menu()
         self.set_controls(True)
         self.menuSave.Enable(False)
         self.menuExport.Enable(False)
@@ -1081,6 +1088,26 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_help, id=idF1)
         accelTable = wx.AcceleratorTable([(wx.ACCEL_NORMAL, wx.WXK_F1, idF1)])
         self.SetAcceleratorTable(accelTable)
+
+    def create_popup_menu(self):
+        self.popupMenu = wx.Menu()
+        self.popupMenuStart = self.popupMenu.Append(wx.ID_ANY, "&Start",
+                                                    "Start scan")
+        self.popupMenuStop = self.popupMenu.Append(wx.ID_ANY, "S&top",
+                                                   "Stop scan immediately")
+        self.popupMenuStopEnd = self.popupMenu.Append(wx.ID_ANY, "Stop at &end",
+                                                      "Complete current sweep before stopping")
+
+        self.Bind(wx.EVT_MENU, self.on_start, self.popupMenuStart)
+        self.Bind(wx.EVT_MENU, self.on_stop, self.popupMenuStop)
+        self.Bind(wx.EVT_MENU, self.on_stop_end, self.popupMenuStopEnd)
+
+        self.Bind(wx.EVT_CONTEXT_MENU, self.on_popup_menu)
+
+    def on_popup_menu(self, event):
+        pos = event.GetPosition()
+        pos = self.ScreenToClient(pos)
+        self.PopupMenu(self.popupMenu, pos)
 
     def on_open(self, _event):
         if self.save_warn(WARN_OPEN):
@@ -1379,11 +1406,15 @@ class FrameMain(wx.Frame):
         self.menuSave.Enable(state)
         self.menuExport.Enable(state)
         self.menuStart.Enable(state)
+        self.popupMenuStart.Enable(state)
         self.menuStop.Enable(not state)
+        self.popupMenuStop.Enable(not state)
         if self.settings.mode == 1:
             self.menuStopEnd.Enable(not state)
+            self.popupMenuStopEnd.Enable(not state)
         else:
             self.menuStopEnd.Enable(False)
+            self.popupMenuStopEnd.Enable(False)
         self.menuPref.Enable(state)
         self.menuCal.Enable(state)
 
