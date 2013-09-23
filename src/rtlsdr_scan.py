@@ -623,15 +623,23 @@ class DialogPrefs(wx.Dialog):
         self.checkAnnotate.SetToolTip(wx.ToolTip('Annotate scan peak value'))
 
         self.checkRetain = wx.CheckBox(self, wx.ID_ANY,
-                                      "Display previous scans*")
+                                      "Display previous scans")
         self.checkRetain.SetToolTip(wx.ToolTip('Can be slow'))
         self.checkRetain.SetValue(self.settings.retainScans)
         self.Bind(wx.EVT_CHECKBOX, self.on_check, self.checkRetain)
         self.checkFade = wx.CheckBox(self, wx.ID_ANY,
                                       "Fade previous scans")
         self.checkFade.SetValue(self.settings.fadeScans)
+        textMaxScans = wx.StaticText(self,
+                                 label="Max scans")
+        self.spinCtrlMaxScans = wx.SpinCtrl(self)
+        self.spinCtrlMaxScans.SetValue(self.settings.maxScans)
+        self.spinCtrlMaxScans.SetToolTip(wx.ToolTip('Maximum previous scans to display'))
+        self.spinCtrlMaxScans.SetRange(2, 200)
+
         self.on_check(None)
-        textWarn = wx.StaticText(self, label="*Only the most recent scan is saved")
+        textWarn = wx.StaticText(self,
+                                 label="(Only the most recent scan is saved)")
 
         self.devices = devices
         self.gridDev = grid.Grid(self)
@@ -692,11 +700,17 @@ class DialogPrefs(wx.Dialog):
         optbox.Add(self.checkSaved, 0, wx.ALL | wx.EXPAND, 10)
         optbox.Add(self.checkAnnotate, 0, wx.ALL | wx.EXPAND, 10)
 
-        conbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Continuous scans"),
-                                     wx.HORIZONTAL)
-        conbox.Add(self.checkRetain, 0, wx.ALL | wx.EXPAND, 10)
-        conbox.Add(self.checkFade, 0, wx.ALL | wx.EXPAND, 10)
-        conbox.Add(textWarn, 0, wx.ALL | wx.EXPAND, 10)
+        congrid = wx.GridBagSizer(10, 10)
+        congrid.Add(self.checkRetain, pos=(0, 0), flag=wx.ALL)
+        congrid.Add(textWarn, pos=(0, 1), flag=wx.ALL)
+        congrid.Add(self.checkFade, pos=(1, 0), flag=wx.ALL)
+        congrid.Add(textMaxScans, pos=(2, 0), flag=wx.ALL)
+        congrid.Add(self.spinCtrlMaxScans, pos=(2, 1), flag=wx.ALL)
+
+        conbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY,
+                                                "Continuous scans"),
+                                   wx.VERTICAL)
+        conbox.Add(congrid, 0, wx.ALL | wx.EXPAND, 10)
 
         devbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Devices"),
                                      wx.VERTICAL)
@@ -711,8 +725,9 @@ class DialogPrefs(wx.Dialog):
         self.SetSizerAndFit(vbox)
 
     def on_check(self, _event):
-
-        self.checkFade.Enable(self.checkRetain.GetValue())
+        enabled = self.checkRetain.GetValue()
+        self.checkFade.Enable(enabled)
+        self.spinCtrlMaxScans.Enable(enabled)
 
     def on_click(self, event):
         col = event.GetCol()
@@ -733,6 +748,7 @@ class DialogPrefs(wx.Dialog):
         self.settings.annotate = self.checkAnnotate.GetValue()
         self.settings.retainScans = self.checkRetain.GetValue()
         self.settings.fadeScans = self.checkFade.GetValue()
+        self.settings.maxScans = self.spinCtrlMaxScans.GetValue()
         for i in range(0, self.gridDev.GetNumberRows()):
             self.devices[i].gain = float(self.gridDev.GetCellValue(i, 3))
             self.devices[i].calibration = float(self.gridDev.GetCellValue(i, 4))

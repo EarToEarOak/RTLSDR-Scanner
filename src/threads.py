@@ -224,7 +224,7 @@ class ThreadPlot(threading.Thread):
                     axes.lines.pop(0)
                 if self.settings.fadeScans:
                     for line in lines:
-                        line.set_alpha(line.get_alpha() / 1.4)
+                        line.set_alpha(line.get_alpha() - 1 / self.settings.maxScans)
 
     def annotate(self, axes):
         if self.settings.annotate:
