@@ -57,7 +57,7 @@ class Settings():
         self.nfft = 0
         self.liveUpdate = False
         self.calFreq = None
-        self.yAuto = True
+        self.autoScale = True
         self.yMax = 1
         self.yMin = 0
 

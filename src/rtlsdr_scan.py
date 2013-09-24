@@ -122,13 +122,14 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
 
         navId = wx.NewId()
         NavigationToolbar2WxAgg.__init__(self, canvas)
-        self.DeleteToolByPos(3)
+        self.DeleteTool(self.wx_ids['Back'])
+        self.DeleteTool(self.wx_ids['Forward'])
+        self.DeleteTool(self.wx_ids['Subplots'])
         self.AddSimpleTool(navId, _load_bitmap('subplots.png'),
                            'Range', 'Set plot range')
         wx.EVT_TOOL(self, navId, self.on_range)
 
     def on_range(self, _event):
-
         dlg = DialogRange(self, self.main)
         dlg.ShowModal()
         dlg.Destroy()
@@ -153,9 +154,6 @@ class PanelGraph(wx.Panel):
         self.canvas.Bind(wx.EVT_ENTER_WINDOW, self.on_enter)
         self.toolbar = NavigationToolbar(self.canvas, self.main)
         self.toolbar.Realize()
-        self.toolbar.DeleteToolByPos(1)
-        self.toolbar.DeleteToolByPos(1)
-        self.toolbar.DeleteToolByPos(4)
 
         vbox = wx.BoxSizer(wx.VERTICAL)
         vbox.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
@@ -824,8 +822,8 @@ class DialogRange(wx.Dialog):
 
         wx.Dialog.__init__(self, parent=parent, title="Plot Range")
 
-        self.checkAuto = wx.CheckBox(self, wx.ID_ANY, "Auto Range")
-        self.checkAuto.SetValue(self.main.settings.yAuto)
+        self.checkAuto = wx.CheckBox(self, wx.ID_ANY, "Auto range")
+        self.checkAuto.SetValue(self.main.settings.autoScale)
         self.Bind(wx.EVT_CHECKBOX, self.on_auto, self.checkAuto)
 
         textMax = wx.StaticText(self, label="Maximum (dB)")
@@ -834,7 +832,7 @@ class DialogRange(wx.Dialog):
         textMin = wx.StaticText(self, label="Minimum (dB)")
         self.yMin = masked.NumCtrl(self, value=int(self.main.settings.yMin),
                                     fractionWidth=0, min=-100, max=20)
-        self.set_enabled(not self.main.settings.yAuto)
+        self.set_enabled(not self.main.settings.autoScale)
 
         sizerButtons = wx.StdDialogButtonSizer()
         buttonOk = wx.Button(self, wx.ID_OK)
@@ -861,10 +859,12 @@ class DialogRange(wx.Dialog):
         self.SetSizerAndFit(sizer)
 
     def on_auto(self, _event):
-        self.set_enabled(not self.checkAuto.GetValue())
+        state = self.checkAuto.GetValue()
+        self.set_enabled(not state)
+        self.main.checkAuto.SetValue(state)
 
     def on_ok(self, _event):
-        self.main.settings.yAuto = self.checkAuto.GetValue()
+        self.main.settings.autoScale = self.checkAuto.GetValue()
         self.main.settings.yMin = self.yMin.GetValue()
         self.main.settings.yMax = self.yMax.GetValue()
         self.EndModal(wx.ID_OK)
@@ -998,6 +998,12 @@ class FrameMain(wx.Frame):
         self.choiceNfft.SetToolTip(wx.ToolTip('Higher values for greater precision'))
         self.choiceNfft.SetSelection(NFFT.index(self.settings.nfft))
 
+        self.checkAuto = wx.CheckBox(self.panel, wx.ID_ANY,
+                                        "Auto range")
+        self.checkAuto.SetToolTip(wx.ToolTip('Scale the axes to fit all data'))
+        self.checkAuto.SetValue(self.settings.autoScale)
+        self.Bind(wx.EVT_CHECKBOX, self.on_check_auto, self.checkAuto)
+
         self.checkUpdate = wx.CheckBox(self.panel, wx.ID_ANY,
                                         "Live update")
         self.checkUpdate.SetToolTip(wx.ToolTip('Update plot with live samples'))
@@ -1011,9 +1017,9 @@ class FrameMain(wx.Frame):
 
         grid = wx.GridBagSizer(5, 5)
 
-        grid.Add(self.buttonStart, pos=(0, 0), span=(2, 1),
+        grid.Add(self.buttonStart, pos=(0, 0), span=(3, 1),
                  flag=wx.ALIGN_CENTER)
-        grid.Add(self.buttonStop, pos=(0, 1), span=(2, 1),
+        grid.Add(self.buttonStop, pos=(0, 1), span=(3, 1),
                  flag=wx.ALIGN_CENTER)
 
         grid.Add((20, 1), pos=(0, 2))
@@ -1037,8 +1043,9 @@ class FrameMain(wx.Frame):
 
         grid.Add((20, 1), pos=(0, 11))
 
-        grid.Add(self.checkUpdate, pos=(0, 12))
-        grid.Add(self.checkGrid, pos=(1, 12))
+        grid.Add(self.checkAuto, pos=(0, 12), flag=wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(self.checkUpdate, pos=(1, 12), flag=wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(self.checkGrid, pos=(2, 12), flag=wx.ALIGN_CENTER_VERTICAL)
 
         self.panel.SetSizer(grid)
 
@@ -1229,6 +1236,9 @@ class FrameMain(wx.Frame):
 
     def on_stop_end(self, _event):
         self.stopScan = True
+
+    def on_check_auto(self, _event):
+        self.settings.autoScale = self.checkAuto.GetValue()
 
     def on_check_update(self, _event):
         self.settings.liveUpdate = self.checkUpdate.GetValue()
