@@ -53,13 +53,11 @@ def setup_plot(graph, settings, grid):
 
 
 def scale_plot(graph, settings):
-    axes = graph.get_axes()
     if settings.autoScale:
+        axes = graph.get_axes()
         axes.set_xlim(settings.start, settings.stop)
         axes.set_ylim(auto=True)
         settings.yMin, settings.yMax = axes.get_ylim()
-    else:
-        axes.set_ylim(settings.yMin, settings.yMax)
 
 
 def open_plot(dirname, filename):

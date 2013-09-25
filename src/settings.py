@@ -58,8 +58,8 @@ class Settings():
         self.liveUpdate = False
         self.calFreq = None
         self.autoScale = True
-        self.yMax = 1
-        self.yMin = 0
+        self.yMax = 20
+        self.yMin = -60
 
         self.devices = []
         self.index = None

@@ -960,6 +960,9 @@ class FrameMain(wx.Frame):
         self.panel = wx.Panel(panel)
         self.graph = PanelGraph(panel, self)
         setup_plot(self.graph, self.settings, self.grid)
+        axes = self.graph.get_axes()
+        axes.set_xlim(self.settings.start, self.settings.stop)
+        axes.set_ylim(self.settings.yMin, self.settings.yMax)
 
         self.buttonStart = wx.Button(self.panel, wx.ID_ANY, 'Start')
         self.buttonStop = wx.Button(self.panel, wx.ID_ANY, 'Stop')
