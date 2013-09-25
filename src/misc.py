@@ -52,7 +52,7 @@ def setup_plot(graph, settings, grid):
     axes.grid(grid)
 
 
-def scale_plot(graph, settings):
+def scale_plot(graph, settings, updateScale=False):
     axes = graph.get_axes()
     if settings.autoScale:
         axes.set_ylim(auto=True)
@@ -61,6 +61,8 @@ def scale_plot(graph, settings):
     else:
         axes.set_ylim(auto=False)
         axes.set_xlim(auto=False)
+        if updateScale:
+            axes.set_ylim(settings.yMin, settings.yMax)
 
 
 def open_plot(dirname, filename):

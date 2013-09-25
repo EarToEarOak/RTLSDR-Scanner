@@ -131,9 +131,9 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
 
     def on_range(self, _event):
         dlg = DialogRange(self, self.main)
-        dlg.ShowModal()
+        if dlg.ShowModal() == wx.ID_OK:
+            self.main.draw_plot(True, True)
         dlg.Destroy()
-        self.main.draw_plot(True)
 
 
 class NavigationToolbarCompare(NavigationToolbar2WxAgg):
@@ -1448,21 +1448,20 @@ class FrameMain(wx.Frame):
         self.menuPref.Enable(state)
         self.menuCal.Enable(state)
 
-    def draw_plot(self, full=False):
+    def draw_plot(self, full=False, updateScale=False):
 
-        scale_plot(self.graph, self.settings)
+        scale_plot(self.graph, self.settings, updateScale)
 
-        if len(self.spectrum) > 0:
-            if full and self.threadPlot is not None:
-                self.threadPlot.join()
-                self.threadPlot = None
+        if full and self.threadPlot is not None:
+            self.threadPlot.join()
+            self.threadPlot = None
 
-            if self.threadPlot is None:
-                self.threadPlot = ThreadPlot(self, self.graph, self.spectrum,
-                                             self.settings, self.grid, full)
-                self.pendingPlot = False
-            else:
-                self.pendingPlot = True
+        if self.threadPlot is None:
+            self.threadPlot = ThreadPlot(self, self.graph, self.spectrum,
+                                         self.settings, self.grid, full)
+            self.pendingPlot = False
+        else:
+            self.pendingPlot = True
 
     def save_warn(self, warnType):
         if self.settings.saveWarn and not self.isSaved:

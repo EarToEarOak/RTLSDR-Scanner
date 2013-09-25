@@ -227,7 +227,7 @@ class ThreadPlot(threading.Thread):
                         line.set_alpha(line.get_alpha() - 1.0 / self.settings.maxScans)
 
     def annotate(self, axes):
-        if self.settings.annotate:
+        if self.settings.annotate and len(self.spectrum) > 0:
             try:
                 freq = max(self.spectrum.iterkeys(),
                            key=(lambda key: self.spectrum[key]))
