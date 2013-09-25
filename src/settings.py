@@ -50,37 +50,40 @@ class Settings():
         self.fadeScans = True
         self.maxScans = 5
 
-        self.start = None
-        self.stop = None
+        self.start = 87
+        self.stop = 108
         self.mode = 0
-        self.dwell = 0.0
-        self.nfft = 0
+        self.dwell = 0.1
+        self.nfft = 1024
         self.liveUpdate = False
-        self.calFreq = None
+        self.calFreq = 1575.42
         self.autoScale = True
         self.yMax = 20
         self.yMin = -60
 
         self.devices = []
-        self.index = None
+        self.index = 0
 
         self.load()
 
     def load(self):
         self.cfg = wx.Config('rtlsdr-scanner')
-        self.saveWarn = self.cfg.ReadBool('saveWarn', True)
-        self.annotate = self.cfg.ReadBool('annotate', True)
-        self.retainScans = self.cfg.ReadBool('retainScans', False)
-        self.fadeScans = self.cfg.ReadBool('fadeScans', True)
-        self.maxScans = self.cfg.ReadInt('maxScans', 5)
-        self.start = self.cfg.ReadInt('start', 87)
-        self.stop = self.cfg.ReadInt('stop', 108)
-        self.mode = self.cfg.ReadInt('mode', 0)
-        self.dwell = self.cfg.ReadFloat('dwell', 0.1)
-        self.nfft = int(self.cfg.Read('nfft', '1024'))
-        self.liveUpdate = self.cfg.ReadBool('liveUpdate', False)
-        self.calFreq = self.cfg.ReadFloat('calFreq', 1575.42)
-        self.index = self.cfg.ReadInt('index', 0)
+        self.saveWarn = self.cfg.ReadBool('saveWarn', self.saveWarn)
+        self.annotate = self.cfg.ReadBool('annotate', self.annotate)
+        self.retainScans = self.cfg.ReadBool('retainScans', self.retainScans)
+        self.fadeScans = self.cfg.ReadBool('fadeScans', self.fadeScans)
+        self.maxScans = self.cfg.ReadInt('maxScans', self.maxScans)
+        self.start = self.cfg.ReadInt('start', self.start)
+        self.stop = self.cfg.ReadInt('stop', self.stop)
+        self.mode = self.cfg.ReadInt('mode', self.mode)
+        self.dwell = self.cfg.ReadFloat('dwell', self.dwell)
+        self.nfft = self.cfg.ReadInt('nfft', self.nfft)
+        self.liveUpdate = self.cfg.ReadBool('liveUpdate', self.liveUpdate)
+        self.calFreq = self.cfg.ReadFloat('calFreq', self.calFreq)
+        self.autoScale = self.cfg.ReadBool('autoScale', self.autoScale)
+        self.yMax = self.cfg.ReadInt('yMax', self.yMax)
+        self.yMin = self.cfg.ReadInt('yMin', self.yMin)
+        self.index = self.cfg.ReadInt('index', self.index)
         self.cfg.SetPath("/Devices")
         group = self.cfg.GetFirstGroup()
         while group[0]:
@@ -106,9 +109,12 @@ class Settings():
         self.cfg.WriteInt('stop', self.stop)
         self.cfg.WriteInt('mode', self.mode)
         self.cfg.WriteFloat('dwell', self.dwell)
-        self.cfg.Write('nfft', str(self.nfft))
+        self.cfg.WriteInt('nfft', self.nfft)
         self.cfg.WriteBool('liveUpdate', self.liveUpdate)
         self.cfg.WriteFloat('calFreq', self.calFreq)
+        self.cfg.WriteBool('autoScale', self.autoScale)
+        self.cfg.WriteInt('yMax', self.yMax)
+        self.cfg.WriteInt('yMin', self.yMin)
         self.cfg.WriteInt('index', self.index)
         if self.devices:
             for device in self.devices:
