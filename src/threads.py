@@ -87,7 +87,7 @@ class ThreadScan(threading.Thread):
         if sdr is None:
             return
 
-        freq = self.fstart - self.offset
+        freq = self.fstart - self.offset - BANDWIDTH
         while freq <= self.fstop + self.offset:
             if self.cancel:
                 wx.PostEvent(self.notify,
