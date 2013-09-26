@@ -74,6 +74,8 @@ def scale_plot(graph, settings, updateScale=False):
         axes.set_ylim(auto=False)
         axes.set_xlim(auto=False)
         if updateScale:
+            if settings.yMin == settings.yMax:
+                settings.yMax += 1
             axes.set_ylim(settings.yMin, settings.yMax)
 
 
