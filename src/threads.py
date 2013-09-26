@@ -23,14 +23,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import heapq
 import itertools
 import multiprocessing
 import threading
 
 import matplotlib
-from matplotlib.artist import ArtistInspector
-from matplotlib.lines import Line2D
 from matplotlib.text import Annotation
 import rtlsdr
 import wx
@@ -91,7 +88,7 @@ class ThreadScan(threading.Thread):
         if sdr is None:
             return
 
-        freq = self.fstart - self.offset
+        freq = self.fstart - self.offset - BANDWIDTH
         while freq <= self.fstop + self.offset:
             if self.cancel:
                 wx.PostEvent(self.notify,
@@ -254,4 +251,3 @@ class ThreadPlot(threading.Thread):
                           gid='peak')
             except RuntimeError:
                 pass
-
