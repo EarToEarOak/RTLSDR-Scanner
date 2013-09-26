@@ -210,7 +210,8 @@ class FrameMain(wx.Frame):
 
         self.checkUpdate = wx.CheckBox(self.panel, wx.ID_ANY,
                                         "Live update")
-        self.checkUpdate.SetToolTip(wx.ToolTip('Update plot with live samples'))
+        self.checkUpdate.SetToolTip(wx.ToolTip('Update plot with live samples '
+                                               '(Can be slow)'))
         self.checkUpdate.SetValue(self.settings.liveUpdate)
         self.Bind(wx.EVT_CHECKBOX, self.on_check_update, self.checkUpdate)
 
@@ -659,13 +660,13 @@ class FrameMain(wx.Frame):
         if full:
             dlg = DialogRefresh(self)
             self.delay_dialog(dlg, self.threadPlot)
-            self.threadPlot = ThreadPlot(self, self.graph, self.spectrum,
+            self.threadPlot = ThreadPlot(self.graph, self.spectrum,
                                          self.settings, self.grid, True)
             self.delay_dialog(dlg, self.threadPlot)
             dlg.Destroy()
         else:
             if self.threadPlot is None:
-                self.threadPlot = ThreadPlot(self, self.graph, self.spectrum,
+                self.threadPlot = ThreadPlot(self.graph, self.spectrum,
                                              self.settings, self.grid, False)
                 self.pendingPlot = False
             else:

@@ -1,6 +1,5 @@
 import itertools
 
-
 import matplotlib
 from matplotlib.backends.backend_wx import _load_bitmap
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas, \
@@ -12,6 +11,7 @@ import wx
 
 from constants import *
 from misc import split_spectrum, open_plot
+from threads import EventThreadStatus
 import wx.grid as grid
 import wx.lib.masked as masked
 
@@ -61,14 +61,16 @@ class NavigationToolbarCompare(NavigationToolbar2WxAgg):
 
 class PanelGraph(wx.Panel):
     def __init__(self, parent, main):
+        self.parent = parent
         self.main = main
 
-        wx.Panel.__init__(self, parent)
+        wx.Panel.__init__(self, self.parent)
 
         self.figure = matplotlib.figure.Figure(facecolor='white')
         self.axes = self.figure.add_subplot(111)
         self.canvas = FigureCanvas(self, -1, self.figure)
         self.canvas.mpl_connect('motion_notify_event', self.on_motion)
+        self.canvas.mpl_connect('draw_event', self.on_draw)
         self.canvas.Bind(wx.EVT_ENTER_WINDOW, self.on_enter)
         self.toolbar = NavigationToolbar(self.canvas, self.main)
         self.toolbar.Realize()
@@ -95,6 +97,9 @@ class PanelGraph(wx.Panel):
                     text = "f = {0:.3f}MHz".format(xpos)
 
         self.main.status.SetStatusText(text, 1)
+
+    def on_draw(self, _event):
+        wx.PostEvent(self.main, EventThreadStatus(THREAD_STATUS_PLOTTED))
 
     def on_enter(self, _event):
         self.canvas.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))

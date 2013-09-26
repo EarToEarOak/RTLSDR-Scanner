@@ -187,10 +187,9 @@ def process_data(queue, freq, data, cal, nfft):
 
 
 class ThreadPlot(threading.Thread):
-    def __init__(self, notify, graph, spectrum, settings, grid, full):
+    def __init__(self, graph, spectrum, settings, grid, full):
         threading.Thread.__init__(self)
         self.name = 'ThreadPlot'
-        self.notify = notify
         self.graph = graph
         self.spectrum = spectrum
         self.settings = settings
@@ -219,7 +218,6 @@ class ThreadPlot(threading.Thread):
         self.annotate(axes)
 
         self.graph.get_canvas().draw()
-        wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_PLOTTED))
 
     def retain_plot(self, axes):
         lines = axes.get_lines()
