@@ -545,6 +545,8 @@ class FrameMain(wx.Frame):
                 self.spinCtrlStop.SetValue(freq + 1)
                 self.oldCal = self.devices[self.settings.index].calibration
                 self.devices[self.settings.index].calibration = 0
+                self.get_range()
+                self.graph.get_axes().clear()
                 if not self.scan_start(True):
                     self.dlgCal.reset_cal()
             elif status == CAL_DONE:
