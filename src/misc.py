@@ -32,6 +32,18 @@ import wx
 from constants import FILE_HEADER
 
 
+class DropTarget(wx.FileDropTarget):
+    def __init__(self, window):
+        wx.FileDropTarget.__init__(self)
+        self.window = window
+
+    def OnDropFiles(self, _xPos, _yPos, filenames):
+        filename = filenames[0]
+        if os.path.splitext(filename)[1].lower() == ".rfs":
+            self.window.dirname, self.window.filename = os.path.split(filename)
+            self.window.open()
+
+
 def setup_plot(graph, settings, grid):
     axes = graph.get_axes()
     if len(settings.devices) > 0:
