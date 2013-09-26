@@ -23,13 +23,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import heapq
 import itertools
 import threading
 
 import matplotlib
-from matplotlib.artist import ArtistInspector
-from matplotlib.lines import Line2D
 from matplotlib.text import Annotation
 import rtlsdr
 import wx
@@ -155,16 +152,16 @@ class ThreadProcess(threading.Thread):
         self.data = data
         self.cal = devices[settings.index].calibration
         self.nfft = nfft
-        self.window = matplotlib.numpy.hamming(nfft)
 
         self.start()
 
     def run(self):
         scan = {}
+        window = matplotlib.numpy.hamming(self.nfft)
         powers, freqs = matplotlib.mlab.psd(self.data,
                          NFFT=self.nfft,
                          Fs=SAMPLE_RATE / 1e6,
-                         window=self.window)
+                         window=window)
         for freq, pwr in itertools.izip(freqs, powers):
             xr = freq + (self.freq / 1e6)
             xr = xr + (xr * self.cal / 1e6)
@@ -240,4 +237,3 @@ class ThreadPlot(threading.Thread):
                           gid='peak')
             except RuntimeError:
                 pass
-
