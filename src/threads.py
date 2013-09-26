@@ -25,6 +25,7 @@
 
 import heapq
 import itertools
+import multiprocessing
 import threading
 
 import matplotlib
@@ -153,26 +154,39 @@ class ThreadProcess(threading.Thread):
         self.notify = notify
         self.freq = freq
         self.data = data
-        self.cal = devices[settings.index].calibration
         self.nfft = nfft
-        self.window = matplotlib.numpy.hamming(nfft)
+        self.cal = devices[settings.index].calibration
 
         self.start()
 
     def run(self):
-        scan = {}
-        powers, freqs = matplotlib.mlab.psd(self.data,
-                         NFFT=self.nfft,
-                         Fs=SAMPLE_RATE / 1e6,
-                         window=self.window)
-        for freq, pwr in itertools.izip(freqs, powers):
-            xr = freq + (self.freq / 1e6)
-            xr = xr + (xr * self.cal / 1e6)
-            xr = int((xr * 5e4) + 0.5) / 5e4
-            scan[xr] = pwr
+        queue = multiprocessing.Queue()
+        process = multiprocessing.Process(target=process_data,
+                                          args=(queue, self.freq, self.data,
+                                                self.cal, self.nfft))
+        process.start()
+        scan = queue.get()
+        process.join()
+
         thread = threading.current_thread()
         wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_PROCESSED,
                                                     self.freq, scan, thread))
+
+
+def process_data(queue, freq, data, cal, nfft):
+    scan = {}
+    window = matplotlib.numpy.hamming(nfft)
+    powers, freqs = matplotlib.mlab.psd(data,
+                     NFFT=nfft,
+                     Fs=SAMPLE_RATE / 1e6,
+                     window=window)
+    for freqPsd, pwr in itertools.izip(freqs, powers):
+        xr = freqPsd + (freq / 1e6)
+        xr = xr + (xr * cal / 1e6)
+        xr = int((xr * 5e4) + 0.5) / 5e4
+        scan[xr] = pwr
+
+    queue.put(scan)
 
 
 class ThreadPlot(threading.Thread):
