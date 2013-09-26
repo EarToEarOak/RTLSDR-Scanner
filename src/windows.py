@@ -549,9 +549,9 @@ class DialogPrefs(wx.Dialog):
         textMaxScans = wx.StaticText(self,
                                  label="Max scans")
         self.spinCtrlMaxScans = wx.SpinCtrl(self)
+        self.spinCtrlMaxScans.SetRange(2, 500)
         self.spinCtrlMaxScans.SetValue(self.settings.maxScans)
         self.spinCtrlMaxScans.SetToolTip(wx.ToolTip('Maximum previous scans to display'))
-        self.spinCtrlMaxScans.SetRange(2, 200)
 
         self.on_check(None)
         textWarn = wx.StaticText(self,
