@@ -84,7 +84,7 @@ class FrameMain(wx.Frame):
         self.threadProcess = []
         self.threadPlot = None
         self.pendingPlot = False
-        self.stopScan = False
+        self.stopAtEnd = False
 
         self.dlgCal = None
 
@@ -435,11 +435,11 @@ class FrameMain(wx.Frame):
         self.scan_start(False)
 
     def on_stop(self, _event):
-        self.stopScan = False
+        self.stopAtEnd = False
         self.stop_scan()
 
     def on_stop_end(self, _event):
-        self.stopScan = True
+        self.stopAtEnd = True
 
     def on_check_auto(self, _event):
         self.settings.autoScale = self.checkAuto.GetValue()
@@ -459,7 +459,7 @@ class FrameMain(wx.Frame):
         if status == THREAD_STATUS_STARTING:
             self.status.SetStatusText("Starting", 0)
         elif status == THREAD_STATUS_SCAN:
-            if self.stopScan:
+            if self.stopAtEnd:
                 self.status.SetStatusText("Stopping", 0)
             else:
                 self.status.SetStatusText("Scanning", 0)
@@ -503,10 +503,10 @@ class FrameMain(wx.Frame):
             elif self.settings.liveUpdate:
                 self.draw_plot()
             if self.settings.mode == 1 and freq > self.settings.stop * 1e6:
-                if self.dlgCal is None and not self.stopScan:
+                if self.dlgCal is None and not self.stopAtEnd:
                     self.scan_start(False)
                 else:
-                    self.stopScan = False
+                    self.stopAtEnd = False
                     self.set_controls(True)
         elif status == THREAD_STATUS_PLOTTED:
             self.threadPlot = None
