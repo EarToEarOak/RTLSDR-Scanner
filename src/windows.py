@@ -790,3 +790,21 @@ class DialogRange(wx.Dialog):
     def set_enabled(self, isEnabled):
         self.yMax.Enable(isEnabled)
         self.yMin.Enable(isEnabled)
+
+
+class DialogRefresh(wx.Dialog):
+    def __init__(self, parent):
+
+        wx.Dialog.__init__(self, parent=parent, style=0)
+
+        text = wx.StaticText(self, label="Refreshing plot, please wait...")
+        icon = wx.StaticBitmap(self, wx.ID_ANY,
+                               wx.ArtProvider.GetBitmap(wx.ART_INFORMATION,
+                                                        wx.ART_MESSAGE_BOX))
+
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        box.Add(icon, flag=wx.ALIGN_CENTER | wx.ALL, border=10)
+        box.Add(text, flag=wx.ALIGN_CENTER | wx.ALL, border=10)
+
+        self.SetSizerAndFit(box)
+        self.Centre()

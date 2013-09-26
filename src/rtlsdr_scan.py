@@ -24,6 +24,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+
 try:
     input = raw_input
 except:
@@ -46,13 +47,12 @@ except ImportError as error:
     exit(1)
 
 from constants import *
-from windows import PanelGraph, DialogPrefs, DialogCompare, DialogAutoCal, \
-    DialogSaveWarn
 from misc import open_plot, format_device_name, setup_plot, scale_plot, \
     DropTarget
 from settings import Settings, Device
 from threads import EVT_THREAD_STATUS, ThreadProcess, ThreadScan, ThreadPlot
-
+from windows import PanelGraph, DialogPrefs, DialogCompare, DialogAutoCal, \
+    DialogSaveWarn, DialogRefresh
 
 MODE = ["Single", 0,
         "Continuous", 1]
@@ -498,11 +498,12 @@ class FrameMain(wx.Frame):
         elif status == THREAD_STATUS_PROCESSED:
             self.threadProcess.remove(thread)
             self.update_scan(freq, data)
-            if self.settings.liveUpdate or freq > self.settings.stop * 1e6:
+            if freq > self.settings.stop * 1e6:
+                self.draw_plot(True)
+            elif self.settings.liveUpdate:
                 self.draw_plot()
             if self.settings.mode == 1 and freq > self.settings.stop * 1e6:
                 if self.dlgCal is None and not self.stopScan:
-                    self.draw_plot(True)
                     self.scan_start(False)
                 else:
                     self.stopScan = False
@@ -588,13 +589,14 @@ class FrameMain(wx.Frame):
 
         choiceDwell = self.choiceDwell.GetSelection()
 
-        if not self.threadScan or not self.threadScan.is_alive():
+        if not self.threadScan or not self.threadScan.isAlive():
 
             self.set_controls(False)
             dwell = DWELL[1::2][choiceDwell]
             samples = dwell * SAMPLE_RATE
             samples = next_2_to_pow(int(samples))
             self.spectrum.clear()
+            self.draw_plot(True)
             self.scanFinished = False
             self.status.SetStatusText("", 1)
             self.threadScan = ThreadScan(self, self.settings, self.devices,
@@ -652,19 +654,22 @@ class FrameMain(wx.Frame):
         self.menuCal.Enable(state)
 
     def draw_plot(self, full=False, updateScale=False):
-
         scale_plot(self.graph, self.settings, updateScale)
 
-        if full and self.threadPlot is not None:
-            self.threadPlot.join()
-            self.threadPlot = None
-
-        if self.threadPlot is None:
+        if full:
+            dlg = DialogRefresh(self)
+            self.delay_dialog(dlg, self.threadPlot)
             self.threadPlot = ThreadPlot(self, self.graph, self.spectrum,
-                                         self.settings, self.grid, full)
-            self.pendingPlot = False
+                                         self.settings, self.grid, True)
+            self.delay_dialog(dlg, self.threadPlot)
+            dlg.Destroy()
         else:
-            self.pendingPlot = True
+            if self.threadPlot is None:
+                self.threadPlot = ThreadPlot(self, self.graph, self.spectrum,
+                                             self.settings, self.grid, False)
+                self.pendingPlot = False
+            else:
+                self.pendingPlot = True
 
     def save_warn(self, warnType):
         if self.settings.saveWarn and not self.isSaved:
@@ -682,6 +687,14 @@ class FrameMain(wx.Frame):
                 return True
 
         return False
+
+    def delay_dialog(self, dialog, thread):
+        if thread is not None:
+                thread.join(0.5)
+                if self.threadPlot.isAlive():
+                    dialog.Show()
+                    wx.YieldIfNeeded()
+                    thread.join()
 
     def wait_threads(self):
         self.Disconnect(-1, -1, EVT_THREAD_STATUS, self.on_thread_status)
