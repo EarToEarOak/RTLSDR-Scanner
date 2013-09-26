@@ -691,8 +691,7 @@ class DialogSaveWarn(wx.Dialog):
     def __init__(self, parent, warnType):
         self.code = -1
 
-        wx.Dialog.__init__(self, parent=parent, title="Warning",
-                           style=wx.ICON_EXCLAMATION)
+        wx.Dialog.__init__(self, parent=parent, title="Warning")
 
         prompt = ["scanning again", "opening a file", "exiting"][warnType]
         text = wx.StaticText(self, label="Save plot before {0}?".format(prompt))
