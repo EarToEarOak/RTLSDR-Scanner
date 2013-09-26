@@ -607,7 +607,7 @@ class FrameMain(wx.Frame):
             return True
 
     def stop_scan(self):
-        if self.threadScan and self.threadScan.isAlive():
+        if self.threadScan:
             self.status.SetStatusText("Stopping", 0)
             self.threadScan.abort()
 
