@@ -389,7 +389,7 @@ class FrameMain(wx.Frame):
             self.Bind(wx.EVT_CLOSE, self.on_exit)
             return
         self.stop_scan()
-        self.wait_threads()
+        self.wait_background()
         self.get_range()
         self.settings.dwell = DWELL[1::2][self.choiceDwell.GetSelection()]
         self.settings.nfft = NFFT[self.choiceNfft.GetSelection()]
@@ -718,7 +718,7 @@ class FrameMain(wx.Frame):
                     wx.YieldIfNeeded()
                     thread.join()
 
-    def wait_threads(self):
+    def wait_background(self):
         self.Disconnect(-1, -1, EVT_THREAD_STATUS, self.on_thread_status)
         if self.threadScan:
             self.threadScan.join()
@@ -726,6 +726,8 @@ class FrameMain(wx.Frame):
         if self.threadPlot:
             self.threadPlot.join()
             self.threadPlot = None
+        self.pool.close()
+        self.pool.join()
 
     def set_range(self):
         self.spinCtrlStart.SetValue(self.settings.start)
