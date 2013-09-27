@@ -197,7 +197,8 @@ class ThreadPlot(threading.Thread):
                 freq = max(self.spectrum.iterkeys(),
                            key=(lambda key: self.spectrum[key]))
                 power = self.spectrum[freq]
-                textX = ((self.settings.stop - self.settings.start) / 50.0) + freq
+                start, stop = axes.get_xlim()
+                textX = ((stop - start) / 50.0) + freq
                 axes.annotate('{0:.3f}MHz\n{1:.2f}dB'.format(freq, power),
                               xy=(freq, power), xytext=(textX, power),
                               ha='left', va='top', size='small')
