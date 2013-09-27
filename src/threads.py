@@ -23,16 +23,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import itertools
 import threading
 
-import matplotlib
 from matplotlib.text import Annotation
 import rtlsdr
 import wx
 
 from constants import *
-from misc import split_spectrum, setup_plot
+from misc import split_spectrum
+from plot import setup_plot
 
 
 EVT_THREAD_STATUS = wx.NewId()
@@ -207,18 +206,3 @@ class ThreadPlot(threading.Thread):
             except RuntimeError:
                 pass
 
-
-def process_data(freq, data, cal, nfft):
-    scan = {}
-    window = matplotlib.numpy.hamming(nfft)
-    powers, freqs = matplotlib.mlab.psd(data,
-                     NFFT=nfft,
-                     Fs=SAMPLE_RATE / 1e6,
-                     window=window)
-    for freqPsd, pwr in itertools.izip(freqs, powers):
-        xr = freqPsd + (freq / 1e6)
-        xr = xr + (xr * cal / 1e6)
-        xr = int((xr * 5e4) + 0.5) / 5e4
-        scan[xr] = pwr
-
-    return (freq, scan)

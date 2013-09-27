@@ -35,7 +35,7 @@ import rtlsdr
 import wx
 
 from constants import *
-from misc import split_spectrum, open_plot
+from misc import split_spectrum
 from threads import EventThreadStatus
 import wx.grid as grid
 import wx.lib.masked as masked
@@ -309,7 +309,7 @@ class DialogCompare(wx.Dialog):
         dlg = wx.FileDialog(self, "Open a scan", self.dirname, self.filename,
                             FILE_RFS, wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
-            _start, _stop, spectrum = open_plot(dlg.GetDirectory(),
+            _start, _stop, spectrum = self.open_plot(dlg.GetDirectory(),
                                                 dlg.GetFilename())
             if(event.EventObject == self.buttonPlot1):
                 self.textPlot1.SetLabel(dlg.GetFilename())

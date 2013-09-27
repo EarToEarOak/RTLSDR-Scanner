@@ -47,10 +47,11 @@ except ImportError as error:
     exit(1)
 
 from constants import *
-from misc import open_plot, format_device_name, setup_plot, scale_plot, \
-    DropTarget
+from misc import format_device_name, next_2_to_pow
+from plot import setup_plot, scale_plot
+from scan import process_data
 from settings import Settings, Device
-from threads import EVT_THREAD_STATUS, ThreadScan, ThreadPlot, process_data
+from threads import EVT_THREAD_STATUS, ThreadScan, ThreadPlot
 from windows import PanelGraph, DialogPrefs, DialogCompare, DialogAutoCal, \
     DialogSaveWarn, DialogRefresh
 
@@ -458,7 +459,6 @@ class FrameMain(wx.Frame):
         status = event.data.get_status()
         freq = event.data.get_freq()
         data = event.data.get_data()
-        thread = event.data.get_thread()
         if status == THREAD_STATUS_STARTING:
             self.status.SetStatusText("Starting", 0)
         elif status == THREAD_STATUS_SCAN:
@@ -473,9 +473,6 @@ class FrameMain(wx.Frame):
             fftChoice = self.choiceNfft.GetSelection()
             cal = self.devices[self.settings.index].calibration
             nfft = NFFT[fftChoice]
-#             self.threadProcess.append(ThreadProcess(self, freq, data,
-#                                                     self.settings,
-#                                                     self.devices, nfft))
             pool.apply_async(process_data, (freq, data, cal, nfft),
                              callback=self.on_process_done)
         elif status == THREAD_STATUS_FINISHED:
@@ -531,7 +528,7 @@ class FrameMain(wx.Frame):
         self.dirname = dirname
         self.status.SetStatusText("Opening: {0}".format(filename), 0)
 
-        start, stop, spectrum = open_plot(dirname, filename)
+        start, stop, spectrum = self.open_plot(dirname, filename)
 
         if len(spectrum) > 0:
             self.settings.start = start
@@ -544,6 +541,24 @@ class FrameMain(wx.Frame):
             self.status.SetStatusText("Finished", 0)
         else:
             self.status.SetStatusText("Open failed", 0)
+
+    def open_plot(self, dirname, filename):
+        try:
+            handle = open(os.path.join(dirname, filename), 'rb')
+            header = cPickle.load(handle)
+            if header != FILE_HEADER:
+                wx.MessageBox('Invalid or corrupted file', 'Warning',
+                          wx.OK | wx.ICON_WARNING)
+                return
+            _version = cPickle.load(handle)
+            start = cPickle.load(handle)
+            stop = cPickle.load(handle)
+            spectrum = cPickle.load(handle)
+        except:
+            wx.MessageBox('File could not be opened', 'Warning',
+                          wx.OK | wx.ICON_WARNING)
+
+        return start, stop, spectrum
 
     def auto_cal(self, status):
         freq = self.dlgCal.get_freq()
@@ -755,17 +770,19 @@ class FrameMain(wx.Frame):
 class RtlsdrScanner(wx.App):
     def __init__(self, pool):
         self.pool = pool
-        wx.App.__init__(self)
+        wx.App.__init__(self, redirect=False)
 
 
-def next_2_to_pow(val):
-    val -= 1
-    val |= val >> 1
-    val |= val >> 2
-    val |= val >> 4
-    val |= val >> 8
-    val |= val >> 16
-    return val + 1
+class DropTarget(wx.FileDropTarget):
+    def __init__(self, window):
+        wx.FileDropTarget.__init__(self)
+        self.window = window
+
+    def OnDropFiles(self, _xPos, _yPos, filenames):
+        filename = filenames[0]
+        if os.path.splitext(filename)[1].lower() == ".rfs":
+            self.window.dirname, self.window.filename = os.path.split(filename)
+            self.window.open()
 
 
 def arguments():
@@ -782,7 +799,6 @@ def arguments():
 
 
 if __name__ == '__main__':
-
     pool = multiprocessing.Pool()
     app = RtlsdrScanner(pool)
     frame = FrameMain("RTLSDR Scanner", pool)

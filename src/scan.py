@@ -23,28 +23,24 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import itertools
 
-def split_spectrum(spectrum):
-    freqs = spectrum.keys()
-    freqs.sort()
-    powers = map(spectrum.get, freqs)
+import matplotlib
 
-    return freqs, powers
+from constants import SAMPLE_RATE
 
 
-def format_device_name(name):
-    remove = ["/", "\\"]
-    for char in remove:
-        name = name.replace(char, " ")
+def process_data(freq, data, cal, nfft):
+    scan = {}
+    window = matplotlib.numpy.hamming(nfft)
+    powers, freqs = matplotlib.mlab.psd(data,
+                     NFFT=nfft,
+                     Fs=SAMPLE_RATE / 1e6,
+                     window=window)
+    for freqPsd, pwr in itertools.izip(freqs, powers):
+        xr = freqPsd + (freq / 1e6)
+        xr = xr + (xr * cal / 1e6)
+        xr = int((xr * 5e4) + 0.5) / 5e4
+        scan[xr] = pwr
 
-    return name
-
-
-def next_2_to_pow(val):
-    val -= 1
-    val |= val >> 1
-    val |= val >> 2
-    val |= val >> 4
-    val |= val >> 8
-    val |= val >> 16
-    return val + 1
+    return (freq, scan)
