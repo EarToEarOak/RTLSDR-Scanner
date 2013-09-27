@@ -44,3 +44,8 @@ def process_data(freq, data, cal, nfft):
         scan[xr] = pwr
 
     return (freq, scan)
+
+
+if __name__ == '__main__':
+    print 'Please run rtlsdr_scan.py'
+    exit(1)

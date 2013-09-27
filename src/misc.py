@@ -48,3 +48,7 @@ def next_2_to_pow(val):
     val |= val >> 8
     val |= val >> 16
     return val + 1
+
+if __name__ == '__main__':
+    print 'Please run rtlsdr_scan.py'
+    exit(1)

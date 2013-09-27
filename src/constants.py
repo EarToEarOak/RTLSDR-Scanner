@@ -50,3 +50,8 @@ FILE_RFS = "RTLSDR frequency scan (*.rfs)|*.rfs"
 FILE_CSV = "CSV table (*.csv)|*.csv"
 FILE_HEADER = "RTLSDR Scanner"
 FILE_VERSION = 1
+
+
+if __name__ == '__main__':
+    print 'Please run rtlsdr_scan.py'
+    exit(1)

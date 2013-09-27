@@ -59,3 +59,8 @@ def scale_plot(graph, settings, updateScale=False):
             if settings.yMin == settings.yMax:
                 settings.yMax += 1
             axes.set_ylim(settings.yMin, settings.yMax)
+
+
+if __name__ == '__main__':
+    print 'Please run rtlsdr_scan.py'
+    exit(1)
