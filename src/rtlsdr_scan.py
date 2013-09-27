@@ -24,7 +24,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-
 try:
     input = raw_input
 except:
@@ -37,6 +36,7 @@ try:
     import argparse
     import cPickle
     import math
+    import multiprocessing
     import os.path
     import rtlsdr
     import webbrowser
@@ -50,9 +50,10 @@ from constants import *
 from misc import open_plot, format_device_name, setup_plot, scale_plot, \
     DropTarget
 from settings import Settings, Device
-from threads import EVT_THREAD_STATUS, ThreadProcess, ThreadScan, ThreadPlot
+from threads import EVT_THREAD_STATUS, ThreadScan, ThreadPlot, process_data
 from windows import PanelGraph, DialogPrefs, DialogCompare, DialogAutoCal, \
     DialogSaveWarn, DialogRefresh
+
 
 MODE = ["Single", 0,
         "Continuous", 1]
@@ -76,12 +77,13 @@ DWELL = ["10 ms", 0.01,
 
 
 class FrameMain(wx.Frame):
-    def __init__(self, title):
+    def __init__(self, title, pool):
 
         self.grid = True
 
+        self.pool = pool
         self.threadScan = None
-        self.threadProcess = []
+#         self.threadProcess = []
         self.threadPlot = None
         self.pendingPlot = False
         self.stopAtEnd = False
@@ -469,10 +471,13 @@ class FrameMain(wx.Frame):
         elif status == THREAD_STATUS_DATA:
             self.isSaved = False
             fftChoice = self.choiceNfft.GetSelection()
+            cal = self.devices[self.settings.index].calibration
             nfft = NFFT[fftChoice]
-            self.threadProcess.append(ThreadProcess(self, freq, data,
-                                                    self.settings,
-                                                    self.devices, nfft))
+#             self.threadProcess.append(ThreadProcess(self, freq, data,
+#                                                     self.settings,
+#                                                     self.devices, nfft))
+            pool.apply_async(process_data, (freq, data, cal, nfft),
+                             callback=self.on_process_done)
         elif status == THREAD_STATUS_FINISHED:
             self.statusProgress.Hide()
             self.status.SetStatusText("Finished", 0)
@@ -496,23 +501,24 @@ class FrameMain(wx.Frame):
             if self.dlgCal is not None:
                 self.dlgCal.Destroy()
                 self.dlgCal = None
-        elif status == THREAD_STATUS_PROCESSED:
-            self.threadProcess.remove(thread)
-            self.update_scan(freq, data)
-            if freq > self.settings.stop * 1e6:
-                self.draw_plot(True)
-            elif self.settings.liveUpdate:
-                self.draw_plot()
-            if self.settings.mode == 1 and freq > self.settings.stop * 1e6:
-                if self.dlgCal is None and not self.stopAtEnd:
-                    self.scan_start(False)
-                else:
-                    self.stopAtEnd = False
-                    self.set_controls(True)
         elif status == THREAD_STATUS_PLOTTED:
             self.threadPlot = None
             if self.pendingPlot:
                 self.draw_plot()
+
+    def on_process_done(self, data):
+        freq, scan = data
+        self.update_scan(freq, scan)
+        if freq > self.settings.stop * 1e6:
+            self.draw_plot(True)
+        elif self.settings.liveUpdate:
+            self.draw_plot()
+        if self.settings.mode == 1 and freq > self.settings.stop * 1e6:
+            if self.dlgCal is None and not self.stopAtEnd:
+                self.scan_start(False)
+            else:
+                self.stopAtEnd = False
+                self.set_controls(True)
 
     def on_size(self, event):
         rect = self.status.GetFieldRect(2)
@@ -705,9 +711,6 @@ class FrameMain(wx.Frame):
         if self.threadPlot:
             self.threadPlot.join()
             self.threadPlot = None
-        if len(self.threadProcess) > 0:
-            for thread in self.threadProcess:
-                thread.join()
 
     def set_range(self):
         self.spinCtrlStart.SetValue(self.settings.start)
@@ -749,6 +752,12 @@ class FrameMain(wx.Frame):
         return devices
 
 
+class RtlsdrScanner(wx.App):
+    def __init__(self, pool):
+        self.pool = pool
+        wx.App.__init__(self)
+
+
 def next_2_to_pow(val):
     val -= 1
     val |= val >> 1
@@ -773,8 +782,10 @@ def arguments():
 
 
 if __name__ == '__main__':
-    app = wx.App(False)
-    frame = FrameMain("RTLSDR Scanner")
+
+    pool = multiprocessing.Pool()
+    app = RtlsdrScanner(pool)
+    frame = FrameMain("RTLSDR Scanner", pool)
     directory, filename = arguments()
 
     if filename != None:

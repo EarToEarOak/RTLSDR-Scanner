@@ -24,7 +24,6 @@
 #
 
 import itertools
-import multiprocessing
 import threading
 
 import matplotlib
@@ -144,48 +143,6 @@ class ThreadScan(threading.Thread):
         return capture
 
 
-class ThreadProcess(threading.Thread):
-    def __init__(self, notify, freq, data, settings, devices, nfft):
-        threading.Thread.__init__(self)
-        self.name = 'ThreadProcess'
-        self.notify = notify
-        self.freq = freq
-        self.data = data
-        self.nfft = nfft
-        self.cal = devices[settings.index].calibration
-
-        self.start()
-
-    def run(self):
-        queue = multiprocessing.Queue()
-        process = multiprocessing.Process(target=process_data,
-                                          args=(queue, self.freq, self.data,
-                                                self.cal, self.nfft))
-        process.start()
-        scan = queue.get()
-        process.join()
-
-        thread = threading.current_thread()
-        wx.PostEvent(self.notify, EventThreadStatus(THREAD_STATUS_PROCESSED,
-                                                    self.freq, scan, thread))
-
-
-def process_data(queue, freq, data, cal, nfft):
-    scan = {}
-    window = matplotlib.numpy.hamming(nfft)
-    powers, freqs = matplotlib.mlab.psd(data,
-                     NFFT=nfft,
-                     Fs=SAMPLE_RATE / 1e6,
-                     window=window)
-    for freqPsd, pwr in itertools.izip(freqs, powers):
-        xr = freqPsd + (freq / 1e6)
-        xr = xr + (xr * cal / 1e6)
-        xr = int((xr * 5e4) + 0.5) / 5e4
-        scan[xr] = pwr
-
-    queue.put(scan)
-
-
 class ThreadPlot(threading.Thread):
     def __init__(self, graph, spectrum, settings, grid, full):
         threading.Thread.__init__(self)
@@ -249,3 +206,19 @@ class ThreadPlot(threading.Thread):
                           gid='peak')
             except RuntimeError:
                 pass
+
+
+def process_data(freq, data, cal, nfft):
+    scan = {}
+    window = matplotlib.numpy.hamming(nfft)
+    powers, freqs = matplotlib.mlab.psd(data,
+                     NFFT=nfft,
+                     Fs=SAMPLE_RATE / 1e6,
+                     window=window)
+    for freqPsd, pwr in itertools.izip(freqs, powers):
+        xr = freqPsd + (freq / 1e6)
+        xr = xr + (xr * cal / 1e6)
+        xr = int((xr * 5e4) + 0.5) / 5e4
+        scan[xr] = pwr
+
+    return (freq, scan)
