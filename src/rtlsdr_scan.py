@@ -85,7 +85,6 @@ class FrameMain(wx.Frame):
 
         self.pool = pool
         self.threadScan = None
-#         self.threadProcess = []
         self.threadPlot = None
         self.pendingPlot = False
         self.stopAtEnd = False
