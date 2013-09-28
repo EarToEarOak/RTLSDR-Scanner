@@ -47,6 +47,8 @@ except ImportError as error:
     exit(1)
 
 from constants import *
+from events import EVENT_STARTING, EVENT_SCAN, EVENT_DATA, EVENT_FINISHED, \
+    EVENT_STOPPED, EVENT_ERROR, EVENT_PLOTTED
 from misc import format_device_name, next_2_to_pow
 from plot import setup_plot, scale_plot
 from scan import process_data
@@ -54,7 +56,6 @@ from settings import Settings, Device
 from threads import EVT_THREAD_STATUS, ThreadScan, ThreadPlot
 from windows import PanelGraph, DialogPrefs, DialogCompare, DialogAutoCal, \
     DialogSaveWarn, DialogRefresh
-
 
 MODE = ["Single", 0,
         "Continuous", 1]
@@ -453,29 +454,29 @@ class FrameMain(wx.Frame):
 
     def on_check_grid(self, _event):
         self.grid = self.checkGrid.GetValue()
-        self.draw_plot()
+        self.plot()
 
     def on_thread_status(self, event):
         status = event.data.get_status()
         freq = event.data.get_freq()
         data = event.data.get_data()
-        if status == THREAD_STATUS_STARTING:
+        if status == EVENT_STARTING:
             self.status.SetStatusText("Starting", 0)
-        elif status == THREAD_STATUS_SCAN:
+        elif status == EVENT_SCAN:
             if self.stopAtEnd:
                 self.status.SetStatusText("Stopping", 0)
             else:
                 self.status.SetStatusText("Scanning", 0)
             self.statusProgress.Show()
             self.statusProgress.SetValue(data)
-        elif status == THREAD_STATUS_DATA:
+        elif status == EVENT_DATA:
             self.isSaved = False
             fftChoice = self.choiceNfft.GetSelection()
             cal = self.devices[self.settings.index].calibration
             nfft = NFFT[fftChoice]
             pool.apply_async(process_data, (freq, data, cal, nfft),
                              callback=self.on_process_done)
-        elif status == THREAD_STATUS_FINISHED:
+        elif status == EVENT_FINISHED:
             self.statusProgress.Hide()
             self.status.SetStatusText("Finished", 0)
             self.threadScan = None
@@ -484,13 +485,13 @@ class FrameMain(wx.Frame):
                 self.set_controls(True)
             if data:
                 self.auto_cal(CAL_DONE)
-        elif status == THREAD_STATUS_STOPPED:
+        elif status == EVENT_STOPPED:
             self.statusProgress.Hide()
             self.status.SetStatusText("Stopped", 0)
             self.threadScan = None
             self.set_controls(True)
-            self.draw_plot()
-        elif status == THREAD_STATUS_ERROR:
+            self.plot()
+        elif status == EVENT_ERROR:
             self.statusProgress.Hide()
             self.status.SetStatusText("Dongle error: {0}".format(data), 0)
             self.threadScan = None
@@ -498,18 +499,18 @@ class FrameMain(wx.Frame):
             if self.dlgCal is not None:
                 self.dlgCal.Destroy()
                 self.dlgCal = None
-        elif status == THREAD_STATUS_PLOTTED:
+        elif status == EVENT_PLOTTED:
             self.threadPlot = None
             if self.pendingPlot:
-                self.draw_plot()
+                self.plot()
 
     def on_process_done(self, data):
         freq, scan = data
         self.update_scan(freq, scan)
         if freq > self.settings.stop * 1e6:
-            self.draw_plot(True)
+            self.plot(True)
         elif self.settings.liveUpdate:
-            self.draw_plot()
+            self.plot()
         if self.settings.mode == 1 and freq > self.settings.stop * 1e6:
             if self.dlgCal is None and not self.stopAtEnd:
                 self.scan_start(False)
@@ -537,7 +538,7 @@ class FrameMain(wx.Frame):
             self.isSaved = True
             self.set_range()
             self.set_controls(True)
-            self.draw_plot()
+            self.plot()
             self.status.SetStatusText("Finished", 0)
         else:
             self.status.SetStatusText("Open failed", 0)
@@ -618,7 +619,7 @@ class FrameMain(wx.Frame):
             samples = dwell * SAMPLE_RATE
             samples = next_2_to_pow(int(samples))
             self.spectrum.clear()
-            self.draw_plot(True)
+            self.plot(True)
             self.scanFinished = False
             self.status.SetStatusText("", 1)
             self.threadScan = ThreadScan(self, self.settings, self.devices,
@@ -675,16 +676,15 @@ class FrameMain(wx.Frame):
         self.menuPref.Enable(state)
         self.menuCal.Enable(state)
 
-    def draw_plot(self, full=False, updateScale=False):
+    def plot(self, full=False, updateScale=False):
         scale_plot(self.graph, self.settings, updateScale)
 
         if full:
-            dlg = DialogRefresh(self)
-            self.delay_dialog(dlg, self.threadPlot)
+            if self.threadPlot is not None:
+                # TODO: horrible
+                self.threadPlot.join()
             self.threadPlot = ThreadPlot(self.graph, self.spectrum,
                                          self.settings, self.grid, True)
-            self.delay_dialog(dlg, self.threadPlot)
-            dlg.Destroy()
         else:
             if self.threadPlot is None:
                 self.threadPlot = ThreadPlot(self.graph, self.spectrum,
@@ -709,25 +709,6 @@ class FrameMain(wx.Frame):
                 return True
 
         return False
-
-    def delay_dialog(self, dialog, thread):
-        if thread is not None:
-                thread.join(0.5)
-                if self.threadPlot.isAlive():
-                    dialog.Show()
-                    wx.YieldIfNeeded()
-                    thread.join()
-
-    def wait_background(self):
-        self.Disconnect(-1, -1, EVT_THREAD_STATUS, self.on_thread_status)
-        if self.threadScan:
-            self.threadScan.join()
-            self.threadScan = None
-        if self.threadPlot:
-            self.threadPlot.join()
-            self.threadPlot = None
-        self.pool.close()
-        self.pool.join()
 
     def set_range(self):
         self.spinCtrlStart.SetValue(self.settings.start)
@@ -767,6 +748,17 @@ class FrameMain(wx.Frame):
             devices.append(device)
 
         return devices
+
+    def wait_background(self):
+        self.Disconnect(-1, -1, EVT_THREAD_STATUS, self.on_thread_status)
+        if self.threadScan:
+            self.threadScan.join()
+            self.threadScan = None
+        if self.threadPlot:
+            self.threadPlot.join()
+            self.threadPlot = None
+        self.pool.close()
+        self.pool.join()
 
 
 class RtlsdrScanner(wx.App):

@@ -23,25 +23,41 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-F_MIN = 0
-F_MAX = 9999
-GAIN = 0
-SAMPLE_RATE = 2e6
-BANDWIDTH = 500e3
+import wx
 
-WARN_SCAN = 0
-WARN_OPEN = 1
-WARN_EXIT = 2
 
-CAL_START = 0
-CAL_DONE = 1
-CAL_OK = 2
-CAL_CANCEL = 3
+EVENT_STARTING = 0
+EVENT_SCAN = 1
+EVENT_DATA = 2
+EVENT_FINISHED = 3
+EVENT_STOPPED = 4
+EVENT_ERROR = 5
+EVENT_PLOTTED = 6
 
-FILE_RFS = "RTLSDR frequency scan (*.rfs)|*.rfs"
-FILE_CSV = "CSV table (*.csv)|*.csv"
-FILE_HEADER = "RTLSDR Scanner"
-FILE_VERSION = 1
+EVT_THREAD_STATUS = wx.NewId()
+
+
+class Status():
+    def __init__(self, status, freq, data):
+        self.status = status
+        self.freq = freq
+        self.data = data
+
+    def get_status(self):
+        return self.status
+
+    def get_freq(self):
+        return self.freq
+
+    def get_data(self):
+        return self.data
+
+
+class EventThreadStatus(wx.PyEvent):
+    def __init__(self, status, freq=None, data=None):
+        wx.PyEvent.__init__(self)
+        self.SetEventType(EVT_THREAD_STATUS)
+        self.data = Status(status, freq, data)
 
 
 if __name__ == '__main__':

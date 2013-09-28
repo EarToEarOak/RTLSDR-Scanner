@@ -35,8 +35,8 @@ import rtlsdr
 import wx
 
 from constants import *
+from events import EVENT_PLOTTED, EventThreadStatus
 from misc import split_spectrum
-from threads import EventThreadStatus
 import wx.grid as grid
 import wx.lib.masked as masked
 
@@ -75,7 +75,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
     def on_range(self, _event):
         dlg = DialogRange(self, self.main)
         if dlg.ShowModal() == wx.ID_OK:
-            self.main.draw_plot(True, True)
+            self.main.plot(True, True)
         dlg.Destroy()
 
 
@@ -124,7 +124,7 @@ class PanelGraph(wx.Panel):
         self.main.status.SetStatusText(text, 1)
 
     def on_draw(self, _event):
-        wx.PostEvent(self.main, EventThreadStatus(THREAD_STATUS_PLOTTED))
+        wx.PostEvent(self.main, EventThreadStatus(EVENT_PLOTTED))
 
     def on_enter(self, _event):
         self.canvas.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
