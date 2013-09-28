@@ -680,8 +680,10 @@ class FrameMain(wx.Frame):
 
         if full:
             if self.threadPlot is not None:
-                self.threadPlot = ThreadPlot(self.graph, self.spectrum,
-                                             self.settings, self.grid, True)
+                # TODO: Horrible
+                self.threadPlot.join(2)
+            self.threadPlot = ThreadPlot(self.graph, self.spectrum,
+                                         self.settings, self.grid, True)
         else:
             if self.threadPlot is None:
                 self.threadPlot = ThreadPlot(self.graph, self.spectrum,

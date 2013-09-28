@@ -177,6 +177,8 @@ class ThreadPlot(threading.Thread):
                           gid='peak')
             except RuntimeError:
                 pass
+            except KeyError:
+                pass
 
 
 if __name__ == '__main__':
