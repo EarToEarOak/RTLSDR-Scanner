@@ -81,13 +81,18 @@ DWELL = ["10 ms", 0.01,
 class FrameMain(wx.Frame):
     def __init__(self, title, pool):
 
+        self.scanning = False
+
         self.grid = True
 
         self.pool = pool
+        self.numJobs = 0
         self.threadScan = None
-        self.threadPlot = None
         self.pendingPlot = False
+        self.threadPlot = None
+        self.pendingScan = False
         self.stopAtEnd = False
+        self.stopScan = False
 
         self.dlgCal = None
 
@@ -439,6 +444,7 @@ class FrameMain(wx.Frame):
         self.scan_start(False)
 
     def on_stop(self, _event):
+        self.stopScan = True
         self.stopAtEnd = False
         self.stop_scan()
 
@@ -475,9 +481,12 @@ class FrameMain(wx.Frame):
             nfft = NFFT[fftChoice]
             pool.apply_async(process_data, (freq, data, cal, nfft),
                              callback=self.on_process_done)
+            self.numJobs += 1
         elif status == EVENT_FINISHED:
+            self.scanning = False
             self.statusProgress.Hide()
-            self.status.SetStatusText("Finished", 0)
+            if self.settings.mode != 1 or self.stopAtEnd:
+                self.status.SetStatusText("Finished", 0)
             self.threadScan = None
             self.scanFinished = True
             if self.settings.mode != 1:
@@ -485,6 +494,7 @@ class FrameMain(wx.Frame):
             if data:
                 self.auto_cal(CAL_DONE)
         elif status == EVENT_STOPPED:
+            self.scanning = False
             self.statusProgress.Hide()
             self.status.SetStatusText("Stopped", 0)
             self.threadScan = None
@@ -502,17 +512,21 @@ class FrameMain(wx.Frame):
             self.threadPlot = None
             if self.pendingPlot:
                 self.plot()
+            if self.pendingScan:
+                self.scan_start(False)
 
     def on_process_done(self, data):
+        self.numJobs -= 1
         freq, scan = data
         self.update_scan(freq, scan)
-        if freq > self.settings.stop * 1e6:
+        if self.numJobs == 0 and not self.scanning:
             self.plot(True)
-            if self.settings.mode == 1:
+            if self.settings.mode == 1 and not self.stopScan:
                 if self.dlgCal is None and not self.stopAtEnd:
-                    self.scan_start(False)
+                    self.pendingScan = True
             else:
                 self.stopAtEnd = False
+                self.stopScan = False
                 self.set_controls(True)
         elif self.settings.liveUpdate:
             self.plot()
@@ -620,6 +634,8 @@ class FrameMain(wx.Frame):
             self.spectrum.clear()
             self.scanFinished = False
             self.status.SetStatusText("", 1)
+            self.pendingScan = False
+            self.scanning = True
             self.threadScan = ThreadScan(self, self.settings, self.devices,
                                      samples, isCal)
             self.filename = "Scan {0:.1f}-{1:.1f}MHz".format(self.settings.start,
@@ -677,19 +693,12 @@ class FrameMain(wx.Frame):
     def plot(self, full=False, updateScale=False):
         scale_plot(self.graph, self.settings, updateScale)
 
-        if full:
-            if self.threadPlot is not None:
-                # TODO: Horrible
-                self.threadPlot.join(2)
+        if self.threadPlot is None:
             self.threadPlot = ThreadPlot(self.graph, self.spectrum,
-                                         self.settings, self.grid, True)
+                                         self.settings, self.grid, full)
+            self.pendingPlot = False
         else:
-            if self.threadPlot is None:
-                self.threadPlot = ThreadPlot(self.graph, self.spectrum,
-                                             self.settings, self.grid, False)
-                self.pendingPlot = False
-            else:
-                self.pendingPlot = True
+            self.pendingPlot = True
 
     def save_warn(self, warnType):
         if self.settings.saveWarn and not self.isSaved:
