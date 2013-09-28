@@ -508,14 +508,14 @@ class FrameMain(wx.Frame):
         self.update_scan(freq, scan)
         if freq > self.settings.stop * 1e6:
             self.plot(True)
-        elif self.settings.liveUpdate:
-            self.plot()
-        if self.settings.mode == 1 and freq > self.settings.stop * 1e6:
-            if self.dlgCal is None and not self.stopAtEnd:
-                self.scan_start(False)
+            if self.settings.mode == 1:
+                if self.dlgCal is None and not self.stopAtEnd:
+                    self.scan_start(False)
             else:
                 self.stopAtEnd = False
                 self.set_controls(True)
+        elif self.settings.liveUpdate:
+            self.plot()
 
     def on_size(self, event):
         rect = self.status.GetFieldRect(2)
