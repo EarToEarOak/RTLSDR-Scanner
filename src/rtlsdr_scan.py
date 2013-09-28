@@ -154,7 +154,7 @@ class FrameMain(wx.Frame):
         size[1] += displaySize[1] / 4
         self.SetMinSize(size)
 
-        self.Connect(-1, -1, EVT_THREAD_STATUS, self.on_thread_status)
+        self.Connect(-1, -1, EVT_THREAD_STATUS, self.on_event)
 
         self.SetDropTarget(DropTarget(self))
 
@@ -455,7 +455,7 @@ class FrameMain(wx.Frame):
         self.grid = self.checkGrid.GetValue()
         self.plot()
 
-    def on_thread_status(self, event):
+    def on_event(self, event):
         status = event.data.get_status()
         freq = event.data.get_freq()
         data = event.data.get_data()
@@ -749,7 +749,7 @@ class FrameMain(wx.Frame):
         return devices
 
     def wait_background(self):
-        self.Disconnect(-1, -1, EVT_THREAD_STATUS, self.on_thread_status)
+        self.Disconnect(-1, -1, EVT_THREAD_STATUS, self.on_event)
         if self.threadScan:
             self.threadScan.join()
             self.threadScan = None
