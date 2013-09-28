@@ -25,9 +25,7 @@
 
 import threading
 
-from matplotlib.text import Annotation
 import rtlsdr
-import wx
 
 from constants import *
 from events import *
@@ -129,41 +127,60 @@ class ThreadPlot(threading.Thread):
         setup_plot(self.graph, self.settings, self.grid)
 
         axes = self.graph.get_axes()
-
         children = axes.get_children()
-        for child in children:
-            if isinstance(child, Annotation):
-                child.remove()
-            elif child.get_gid() is not None and child.get_gid() == 'peak':
-                child.remove()
 
-        self.retain_plot(axes)
+        self.retain_plot(children)
 
         freqs, powers = split_spectrum(self.spectrum)
-        axes.plot(freqs, powers, linewidth=0.4, color='b', alpha=1)
+        axes.plot(freqs, powers, linewidth=0.4, color='b', alpha=1, gid='plot')
 
-        self.annotate(axes)
+        if self.full:
+            self.annotate(axes, children)
 
         self.graph.get_canvas().draw()
 
-    def retain_plot(self, axes):
-        lines = axes.get_lines()
+    def retain_plot(self, children):
         if not self.settings.retainScans:
-            if len(lines) > 0:
-                axes.lines.pop(0)
+            self.remove_first(children)
         else:
             if not self.full:
-                if len(lines) > 0:
-                    axes.lines.pop(len(lines) - 1)
+                self.remove_last(children)
             else:
-                if len(lines) >= self.settings.maxScans:
-                    axes.lines.pop(0)
+                if self.count_plots(children) >= self.settings.maxScans:
+                    self.remove_first(children)
                 if self.settings.fadeScans:
-                    for line in lines:
-                        line.set_alpha(line.get_alpha() - 1.0 / self.settings.maxScans)
+                    self.fade_plots(children)
 
-    def annotate(self, axes):
+    def remove_first(self, children):
+        for child in children:
+            if child.get_gid() is not None and child.get_gid() == 'plot':
+                child.remove()
+                break
+
+    def remove_last(self, children):
+        for child in reversed(children):
+            if child.get_gid() is not None and child.get_gid() == 'plot':
+                child.remove()
+                break
+
+    def count_plots(self, children):
+        count = 0
+        for child in children:
+            if child.get_gid() is not None and child.get_gid() == 'plot':
+                count += 1
+        return count
+
+    def fade_plots(self, children):
+        for child in children:
+            if child.get_gid() is not None and child.get_gid() == 'plot':
+                child.set_alpha(child.get_alpha() - 1.0 / self.settings.maxScans)
+
+    def annotate(self, axes, children):
         if self.settings.annotate and len(self.spectrum) > 0:
+            for child in children:
+                if child.get_gid() is not None:
+                    if child.get_gid() == 'peak':
+                        child.remove()
             try:
                 freq = max(self.spectrum.iterkeys(),
                            key=(lambda key: self.spectrum[key]))
@@ -172,7 +189,7 @@ class ThreadPlot(threading.Thread):
                 textX = ((stop - start) / 50.0) + freq
                 axes.annotate('{0:.3f}MHz\n{1:.2f}dB'.format(freq, power),
                               xy=(freq, power), xytext=(textX, power),
-                              ha='left', va='top', size='small')
+                              ha='left', va='top', size='small', gid='peak')
                 axes.plot(freq, power, marker='x', markersize=10, color='r',
                           gid='peak')
             except RuntimeError:

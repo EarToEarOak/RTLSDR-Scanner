@@ -618,7 +618,6 @@ class FrameMain(wx.Frame):
             samples = dwell * SAMPLE_RATE
             samples = next_2_to_pow(int(samples))
             self.spectrum.clear()
-            self.plot(True)
             self.scanFinished = False
             self.status.SetStatusText("", 1)
             self.threadScan = ThreadScan(self, self.settings, self.devices,
