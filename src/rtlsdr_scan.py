@@ -87,7 +87,7 @@ class FrameMain(wx.Frame):
         self.threadPlot = None
         self.processAnalyse = []
         self.pendingScan = False
-        self.pendingPlot = PLOT_NONE
+        self.pendingPlot = Plot.NONE
         self.stopAtEnd = False
         self.stopScan = False
 
@@ -343,25 +343,25 @@ class FrameMain(wx.Frame):
         self.PopupMenu(self.popupMenu, pos)
 
     def on_open(self, _event):
-        if self.save_warn(WARN_OPEN):
+        if self.save_warn(Warn.OPEN):
             return
         dlg = wx.FileDialog(self, "Open a scan", self.dirname, self.filename,
-                            FILE_RFS, wx.OPEN)
+                            File.RFS, wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             self.open(dlg.GetDirectory(), dlg.GetFilename())
         dlg.Destroy()
 
     def on_save(self, _event):
         dlg = wx.FileDialog(self, "Save a scan", self.dirname,
-                            self.filename + ".rfs", FILE_RFS,
+                            self.filename + ".rfs", File.RFS,
                             wx.SAVE | wx.OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
             self.status.SetStatusText("Saving", 0)
             self.filename = dlg.GetFilename()
             self.dirname = dlg.GetDirectory()
             handle = open(os.path.join(self.dirname, self.filename), 'wb')
-            cPickle.dump(FILE_HEADER, handle)
-            cPickle.dump(FILE_VERSION, handle)
+            cPickle.dump(File.HEADER, handle)
+            cPickle.dump(File.VERSION, handle)
             cPickle.dump(self.settings.start, handle)
             cPickle.dump(self.settings.stop, handle)
             cPickle.dump(self.spectrum, handle)
@@ -372,7 +372,7 @@ class FrameMain(wx.Frame):
 
     def on_export(self, _event):
         dlg = wx.FileDialog(self, "Export a scan", self.dirname,
-                            self.filename + ".csv", FILE_CSV, wx.SAVE)
+                            self.filename + ".csv", File.CSV, wx.SAVE)
         if dlg.ShowModal() == wx.ID_OK:
             self.status.SetStatusText("Exporting", 0)
             self.filename = dlg.GetFilename()
@@ -387,7 +387,7 @@ class FrameMain(wx.Frame):
 
     def on_exit(self, _event):
         self.Unbind(wx.EVT_CLOSE)
-        if self.save_warn(WARN_EXIT):
+        if self.save_warn(Warn.EXIT):
             self.Bind(wx.EVT_CLOSE, self.on_exit)
             return
         self.stop_scan()
@@ -462,16 +462,16 @@ class FrameMain(wx.Frame):
         status = event.data.get_status()
         freq = event.data.get_freq()
         data = event.data.get_data()
-        if status == EVENT_STARTING:
+        if status == Event.STARTING:
             self.status.SetStatusText("Starting", 0)
-        elif status == EVENT_SCAN:
+        elif status == Event.SCAN:
             if self.stopAtEnd:
                 self.status.SetStatusText("Stopping", 0)
             else:
                 self.status.SetStatusText("Scanning", 0)
             self.statusProgress.Show()
             self.statusProgress.SetValue(data)
-        elif status == EVENT_DATA:
+        elif status == Event.DATA:
             self.isSaved = False
             fftChoice = self.choiceNfft.GetSelection()
             cal = self.devices[self.settings.index].calibration
@@ -479,22 +479,22 @@ class FrameMain(wx.Frame):
             self.processAnalyse.append(freq)
             pool.apply_async(anaylse_data, (freq, data, cal, nfft),
                              callback=self.on_process_done)
-        elif status == EVENT_FINISHED:
+        elif status == Event.FINISHED:
             self.statusProgress.Hide()
-            if self.settings.mode == MODE_SINGLE or self.stopAtEnd:
+            if self.settings.mode == Mode.SINGLE or self.stopAtEnd:
                 self.status.SetStatusText("Finished", 0)
             self.threadScan = None
-            if self.settings.mode == MODE_SINGLE:
+            if self.settings.mode == Mode.SINGLE:
                 self.set_controls(True)
             if data:
-                self.auto_cal(CAL_DONE)
-        elif status == EVENT_STOPPED:
+                self.auto_cal(Cal.DONE)
+        elif status == Event.STOPPED:
             self.statusProgress.Hide()
             self.status.SetStatusText("Stopped", 0)
             self.threadScan = None
             self.set_controls(True)
             self.update_plot()
-        elif status == EVENT_ERROR:
+        elif status == Event.ERROR:
             self.statusProgress.Hide()
             self.status.SetStatusText("Dongle error: {0}".format(data), 0)
             self.threadScan = None
@@ -502,10 +502,10 @@ class FrameMain(wx.Frame):
             if self.dlgCal is not None:
                 self.dlgCal.Destroy()
                 self.dlgCal = None
-        elif status == EVENT_PLOTTED:
+        elif status == Event.PLOTTED:
             self.threadPlot = None
             self.next_plot()
-        elif status == EVENT_PLOTTED_FULL:
+        elif status == Event.PLOTTED_FULL:
             self.next_plot()
             if self.pendingScan:
                 self.start_scan()
@@ -515,7 +515,7 @@ class FrameMain(wx.Frame):
         self.update_spectrum(freq, scan)
         self.processAnalyse.remove(freq)
         if self.threadScan is None and len(self.processAnalyse) == 0:
-            if self.settings.mode == MODE_CONTIN and not self.stopScan:
+            if self.settings.mode == Mode.CONTIN and not self.stopScan:
                 if self.dlgCal is None and not self.stopAtEnd:
                     self.pendingScan = True
             else:
@@ -555,7 +555,7 @@ class FrameMain(wx.Frame):
         try:
             handle = open(os.path.join(dirname, filename), 'rb')
             header = cPickle.load(handle)
-            if header != FILE_HEADER:
+            if header != File.HEADER:
                 wx.MessageBox('Invalid or corrupted file', 'Warning',
                           wx.OK | wx.ICON_WARNING)
                 return
@@ -572,7 +572,7 @@ class FrameMain(wx.Frame):
     def auto_cal(self, status):
         freq = self.dlgCal.get_freq()
         if self.dlgCal is not None:
-            if status == CAL_START:
+            if status == Cal.START:
                 self.spinCtrlStart.SetValue(freq - 1)
                 self.spinCtrlStop.SetValue(freq + 1)
                 self.oldCal = self.devices[self.settings.index].calibration
@@ -581,15 +581,15 @@ class FrameMain(wx.Frame):
                 self.graph.get_axes().clear()
                 if not self.start_scan(isCal=True):
                     self.dlgCal.reset_cal()
-            elif status == CAL_DONE:
+            elif status == Cal.DONE:
                 ppm = self.calc_ppm(freq)
                 self.dlgCal.set_cal(ppm)
                 self.set_controls(True)
-            elif status == CAL_OK:
+            elif status == Cal.OK:
                 self.devices[self.settings.index].calibration = self.dlgCal.get_cal()
                 self.settings.calFreq = freq
                 self.dlgCal = None
-            elif status == CAL_CANCEL:
+            elif status == Cal.CANCEL:
                 self.dlgCal = None
                 if len(self.devices) > 0:
                     self.devices[self.settings.index].calibration = self.oldCal
@@ -604,7 +604,7 @@ class FrameMain(wx.Frame):
         return ((freq - peak) / freq) * 1e6
 
     def start_scan(self, isCal=False):
-        if self.save_warn(WARN_SCAN):
+        if self.save_warn(Warn.SCAN):
             return False
 
         self.devices = self.refresh_devices()
@@ -674,7 +674,7 @@ class FrameMain(wx.Frame):
         self.popupMenuStart.Enable(state)
         self.menuStop.Enable(not state)
         self.popupMenuStop.Enable(not state)
-        if self.settings.mode == MODE_CONTIN:
+        if self.settings.mode == Mode.CONTIN:
             self.menuStopEnd.Enable(not state)
             self.popupMenuStopEnd.Enable(not state)
         else:
@@ -685,7 +685,7 @@ class FrameMain(wx.Frame):
 
     def plot(self, full):
         if self.threadPlot is None:
-            if self.settings.mode == MODE_CONTIN:
+            if self.settings.mode == Mode.CONTIN:
                 fade = True
             else:
                 fade = False
@@ -700,26 +700,26 @@ class FrameMain(wx.Frame):
 
         if full:
             if not self.plot(True):
-                self.pendingPlot = PLOT_FULL
+                self.pendingPlot = Plot.FULL
             else:
-                self.pendingPlot = PLOT_NONE
+                self.pendingPlot = Plot.NONE
         else:
-            if self.pendingPlot == PLOT_FULL:
+            if self.pendingPlot == Plot.FULL:
                 if not self.plot(True):
-                    self.pendingPlot = PLOT_FULL
+                    self.pendingPlot = Plot.FULL
                 else:
-                    self.pendingPlot = PLOT_NONE
+                    self.pendingPlot = Plot.NONE
             else:
                 if not self.plot(False):
-                    self.pendingPlot = PLOT_PARTIAL
+                    self.pendingPlot = Plot.PARTIAL
                 else:
-                    self.pendingPlot = PLOT_NONE
+                    self.pendingPlot = Plot.NONE
 
     def next_plot(self):
         self.threadPlot = None
-        if self.pendingPlot == PLOT_PARTIAL:
+        if self.pendingPlot == Plot.PARTIAL:
             self.update_plot(False)
-        elif self.pendingPlot == PLOT_FULL:
+        elif self.pendingPlot == Plot.FULL:
             self.update_plot(True)
 
     def save_warn(self, warnType):

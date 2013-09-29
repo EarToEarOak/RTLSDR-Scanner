@@ -123,10 +123,10 @@ class PanelGraph(wx.Panel):
         self.main.status.SetStatusText(text, 1)
 
     def on_draw(self, event):
-        if event.canvas.Name == PLOT_STR_FULL:
-            wx.PostEvent(self.main, EventThreadStatus(EVENT_PLOTTED_FULL))
-        elif event.canvas.Name == PLOT_STR_PARTIAL:
-            wx.PostEvent(self.main, EventThreadStatus(EVENT_PLOTTED))
+        if event.canvas.Name == Plot.STR_FULL:
+            wx.PostEvent(self.main, EventThreadStatus(Event.PLOTTED_FULL))
+        elif event.canvas.Name == Plot.STR_PARTIAL:
+            wx.PostEvent(self.main, EventThreadStatus(Event.PLOTTED))
 
     def on_enter(self, _event):
         self.canvas.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
@@ -309,7 +309,7 @@ class DialogCompare(wx.Dialog):
 
     def on_load_plot(self, event):
         dlg = wx.FileDialog(self, "Open a scan", self.dirname, self.filename,
-                            FILE_RFS, wx.OPEN)
+                            File.RFS, wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             _start, _stop, spectrum = self.open_plot(dlg.GetDirectory(),
                                                 dlg.GetFilename())
@@ -382,10 +382,10 @@ class DialogAutoCal(wx.Dialog):
         self.buttonCancel.Disable()
         self.textFreq.Disable()
         self.textResult.SetLabel("Calibrating...")
-        self.callback(CAL_START)
+        self.callback(Cal.START)
 
     def on_close(self, event):
-        status = [CAL_CANCEL, CAL_OK][event.GetId() == wx.ID_OK]
+        status = [Cal.CANCEL, Cal.OK][event.GetId() == wx.ID_OK]
         self.callback(status)
         self.EndModal(event.GetId())
         return
@@ -399,7 +399,7 @@ class DialogAutoCal(wx.Dialog):
     def set_cal(self, cal):
         self.cal = cal
         self.enable_controls()
-        self.textResult.SetLabel("Correction (ppm): {0:.3f}".format(cal))
+        self.textResult.SetLabel("SCorrection (ppm): {0:.3f}".format(cal))
 
     def get_cal(self):
         return self.cal

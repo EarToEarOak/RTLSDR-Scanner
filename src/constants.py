@@ -29,29 +29,30 @@ GAIN = 0
 SAMPLE_RATE = 2e6
 BANDWIDTH = 500e3
 
-WARN_SCAN = 0
-WARN_OPEN = 1
-WARN_EXIT = 2
 
-CAL_START = 0
-CAL_DONE = 1
-CAL_OK = 2
-CAL_CANCEL = 3
+class Warn:
+    SCAN, OPEN, EXIT = range(3)
 
-MODE_SINGLE = 0
-MODE_CONTIN = 1
 
-PLOT_NONE = 0
-PLOT_PARTIAL = 1
-PLOT_FULL = 2
+class Cal:
+    START, DONE, OK, CANCEL = range(4)
 
-PLOT_STR_FULL = 'Full'
-PLOT_STR_PARTIAL = 'Partial'
 
-FILE_RFS = "RTLSDR frequency scan (*.rfs)|*.rfs"
-FILE_CSV = "CSV table (*.csv)|*.csv"
-FILE_HEADER = "RTLSDR Scanner"
-FILE_VERSION = 1
+class Mode:
+    SINGLE, CONTIN = range(2)
+
+
+class Plot:
+    NONE, PARTIAL, FULL = range(3)
+    STR_FULL = 'Full'
+    STR_PARTIAL = 'Partial'
+
+
+class File:
+    RFS = "RTLSDR frequency scan (*.rfs)|*.rfs"
+    CSV = "CSV table (*.csv)|*.csv"
+    HEADER = "RTLSDR Scanner"
+    VERSION = 1
 
 
 if __name__ == '__main__':

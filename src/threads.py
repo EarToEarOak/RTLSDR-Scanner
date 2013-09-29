@@ -47,7 +47,7 @@ class ThreadScan(threading.Thread):
         self.lo = devices[self.index].lo * 1e6
         self.offset = devices[self.index].offset
         self.cancel = False
-        wx.PostEvent(self.notify, EventThreadStatus(EVENT_STARTING))
+        wx.PostEvent(self.notify, EventThreadStatus(Event.STARTING))
         self.start()
 
     def run(self):
@@ -59,18 +59,18 @@ class ThreadScan(threading.Thread):
         while freq <= self.fstop + self.offset:
             if self.cancel:
                 wx.PostEvent(self.notify,
-                             EventThreadStatus(EVENT_STOPPED))
+                             EventThreadStatus(Event.STOPPED))
                 sdr.close()
                 return
             try:
                 progress = ((freq - self.fstart + self.offset) /
                              (self.fstop - self.fstart + BANDWIDTH)) * 100
                 wx.PostEvent(self.notify,
-                             EventThreadStatus(EVENT_SCAN,
+                             EventThreadStatus(Event.SCAN,
                                                0, progress))
                 scan = self.scan(sdr, freq)
                 wx.PostEvent(self.notify,
-                             EventThreadStatus(EVENT_DATA, freq,
+                             EventThreadStatus(Event.DATA, freq,
                                                scan))
             except (IOError, WindowsError):
                 if sdr is not None:
@@ -79,14 +79,14 @@ class ThreadScan(threading.Thread):
             except (TypeError, AttributeError) as error:
                 if self.notify:
                     wx.PostEvent(self.notify,
-                             EventThreadStatus(EVENT_ERROR,
+                             EventThreadStatus(Event.ERROR,
                                                0, error.message))
                 return
 
             freq += BANDWIDTH / 2
 
         sdr.close()
-        wx.PostEvent(self.notify, EventThreadStatus(EVENT_FINISHED,
+        wx.PostEvent(self.notify, EventThreadStatus(Event.FINISHED,
                                                     0, self.isCal))
 
     def abort(self):
@@ -99,7 +99,7 @@ class ThreadScan(threading.Thread):
             sdr.set_sample_rate(SAMPLE_RATE)
             sdr.set_gain(self.gain)
         except IOError as error:
-            wx.PostEvent(self.notify, EventThreadStatus(EVENT_ERROR,
+            wx.PostEvent(self.notify, EventThreadStatus(Event.ERROR,
                                                         0, error.message))
 
         return sdr
@@ -130,9 +130,9 @@ class ThreadPlot(threading.Thread):
         axes = self.graph.get_axes()
         self.remove_partial(axes)
         if self.full:
-            name = PLOT_STR_FULL
+            name = Plot.STR_FULL
         else:
-            name = PLOT_STR_PARTIAL
+            name = Plot.STR_PARTIAL
         self.graph.get_canvas().Name = name
 
         freqs, powers = split_spectrum(self.spectrum)
@@ -158,15 +158,15 @@ class ThreadPlot(threading.Thread):
         children = axes.get_children()
         for child in children:
             if child.get_gid() is not None:
-                if child.get_gid() == PLOT_STR_PARTIAL:
+                if child.get_gid() == Plot.STR_PARTIAL:
                     child.remove()
 
     def remove_first(self, axes):
         children = axes.get_children()
         for child in children:
             if child.get_gid() is not None:
-                if child.get_gid() == PLOT_STR_FULL or \
-                child.get_gid() == PLOT_STR_PARTIAL:
+                if child.get_gid() == Plot.STR_FULL or \
+                child.get_gid() == Plot.STR_PARTIAL:
                     child.remove()
                 break
 
@@ -174,8 +174,8 @@ class ThreadPlot(threading.Thread):
         children = axes.get_children()
         for child in reversed(children):
             if child.get_gid() is not None:
-                if child.get_gid() == PLOT_STR_FULL or \
-                child.get_gid() == PLOT_STR_PARTIAL:
+                if child.get_gid() == Plot.STR_FULL or \
+                child.get_gid() == Plot.STR_PARTIAL:
                     child.remove()
                 break
 
@@ -184,8 +184,8 @@ class ThreadPlot(threading.Thread):
         count = 0
         for child in children:
             if child.get_gid() is not None:
-                if child.get_gid() == PLOT_STR_FULL or \
-                child.get_gid() == PLOT_STR_PARTIAL:
+                if child.get_gid() == Plot.STR_FULL or \
+                child.get_gid() == Plot.STR_PARTIAL:
                     count += 1
         return count
 
@@ -194,8 +194,8 @@ class ThreadPlot(threading.Thread):
             children = axes.get_children()
             for child in children:
                 if child.get_gid() is not None:
-                    if child.get_gid() == PLOT_STR_FULL or\
-                    child.get_gid() == PLOT_STR_PARTIAL:
+                    if child.get_gid() == Plot.STR_FULL or\
+                    child.get_gid() == Plot.STR_PARTIAL:
                         child.set_alpha(child.get_alpha() - 1.0 / self.settings.maxScans)
 
     def annotate(self, axes):
