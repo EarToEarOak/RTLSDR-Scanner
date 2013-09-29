@@ -30,7 +30,7 @@ import matplotlib
 from constants import SAMPLE_RATE
 
 
-def process_data(freq, data, cal, nfft):
+def anaylse_data(freq, data, cal, nfft):
     scan = {}
     window = matplotlib.numpy.hamming(nfft)
     powers, freqs = matplotlib.mlab.psd(data,

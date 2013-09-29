@@ -112,7 +112,7 @@ class ThreadScan(threading.Thread):
 
 
 class ThreadPlot(threading.Thread):
-    def __init__(self, graph, spectrum, settings, grid, full):
+    def __init__(self, graph, spectrum, settings, grid, full, fade):
         threading.Thread.__init__(self)
         self.name = 'ThreadPlot'
         self.graph = graph
@@ -120,6 +120,7 @@ class ThreadPlot(threading.Thread):
         self.settings = settings
         self.grid = grid
         self.full = full
+        self.fade = fade
 
         self.start()
 
@@ -127,55 +128,78 @@ class ThreadPlot(threading.Thread):
         setup_plot(self.graph, self.settings, self.grid)
 
         axes = self.graph.get_axes()
-        children = axes.get_children()
-
-        self.retain_plot(children)
+        self.remove_partial(axes)
+        if self.full:
+            name = PLOT_STR_FULL
+        else:
+            name = PLOT_STR_PARTIAL
+        self.graph.get_canvas().Name = name
 
         freqs, powers = split_spectrum(self.spectrum)
-        axes.plot(freqs, powers, linewidth=0.4, color='b', alpha=1, gid='plot')
+        axes.plot(freqs, powers, linewidth=0.4, color='b', alpha=1, gid=name)
+        self.retain_plot(axes)
 
         if self.full:
-            self.annotate(axes, children)
+            self.annotate(axes)
 
         self.graph.get_canvas().draw()
 
-    def retain_plot(self, children):
+    def retain_plot(self, axes):
         if not self.settings.retainScans:
-            self.remove_first(children)
+            self.remove_first(axes)
         else:
-            if not self.full:
-                self.remove_last(children)
-            else:
-                if self.count_plots(children) >= self.settings.maxScans:
-                    self.remove_first(children)
+            if self.full:
+                if self.count_plots(axes) >= self.settings.maxScans:
+                    self.remove_first(axes)
                 if self.settings.fadeScans:
-                    self.fade_plots(children)
+                    self.fade_plots(axes)
 
-    def remove_first(self, children):
+    def remove_partial(self, axes):
+        children = axes.get_children()
         for child in children:
-            if child.get_gid() is not None and child.get_gid() == 'plot':
-                child.remove()
+            if child.get_gid() is not None:
+                if child.get_gid() == PLOT_STR_PARTIAL:
+                    child.remove()
+
+    def remove_first(self, axes):
+        children = axes.get_children()
+        for child in children:
+            if child.get_gid() is not None:
+                if child.get_gid() == PLOT_STR_FULL or \
+                child.get_gid() == PLOT_STR_PARTIAL:
+                    child.remove()
                 break
 
-    def remove_last(self, children):
+    def remove_last(self, axes):
+        children = axes.get_children()
         for child in reversed(children):
-            if child.get_gid() is not None and child.get_gid() == 'plot':
-                child.remove()
+            if child.get_gid() is not None:
+                if child.get_gid() == PLOT_STR_FULL or \
+                child.get_gid() == PLOT_STR_PARTIAL:
+                    child.remove()
                 break
 
-    def count_plots(self, children):
+    def count_plots(self, axes):
+        children = axes.get_children()
         count = 0
         for child in children:
-            if child.get_gid() is not None and child.get_gid() == 'plot':
-                count += 1
+            if child.get_gid() is not None:
+                if child.get_gid() == PLOT_STR_FULL or \
+                child.get_gid() == PLOT_STR_PARTIAL:
+                    count += 1
         return count
 
-    def fade_plots(self, children):
-        for child in children:
-            if child.get_gid() is not None and child.get_gid() == 'plot':
-                child.set_alpha(child.get_alpha() - 1.0 / self.settings.maxScans)
+    def fade_plots(self, axes):
+        if self.fade:
+            children = axes.get_children()
+            for child in children:
+                if child.get_gid() is not None:
+                    if child.get_gid() == PLOT_STR_FULL or\
+                    child.get_gid() == PLOT_STR_PARTIAL:
+                        child.set_alpha(child.get_alpha() - 1.0 / self.settings.maxScans)
 
-    def annotate(self, axes, children):
+    def annotate(self, axes):
+        children = axes.get_children()
         if self.settings.annotate and len(self.spectrum) > 0:
             for child in children:
                 if child.get_gid() is not None:

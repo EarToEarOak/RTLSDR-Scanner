@@ -40,22 +40,21 @@ try:
     import os.path
     import rtlsdr
     import webbrowser
-    import wx
 except ImportError as error:
     print('Import error: {0}'.format(error))
     input('\nError importing libraries\nPress [Return] to exit')
     exit(1)
 
 from constants import *
-from events import EVENT_STARTING, EVENT_SCAN, EVENT_DATA, EVENT_FINISHED, \
-    EVENT_STOPPED, EVENT_ERROR, EVENT_PLOTTED
+from events import *
 from misc import format_device_name, next_2_to_pow
 from plot import setup_plot, scale_plot
-from scan import process_data
+from scan import anaylse_data
 from settings import Settings, Device
-from threads import EVT_THREAD_STATUS, ThreadScan, ThreadPlot
+from threads import ThreadScan, ThreadPlot
 from windows import PanelGraph, DialogPrefs, DialogCompare, DialogAutoCal, \
-    DialogSaveWarn, DialogRefresh
+    DialogSaveWarn
+
 
 MODE = ["Single", 0,
         "Continuous", 1]
@@ -81,16 +80,14 @@ DWELL = ["10 ms", 0.01,
 class FrameMain(wx.Frame):
     def __init__(self, title, pool):
 
-        self.scanning = False
-
         self.grid = True
 
         self.pool = pool
-        self.numJobs = 0
         self.threadScan = None
-        self.pendingPlot = False
         self.threadPlot = None
+        self.processAnalyse = []
         self.pendingScan = False
+        self.pendingPlot = PLOT_NONE
         self.stopAtEnd = False
         self.stopScan = False
 
@@ -218,7 +215,7 @@ class FrameMain(wx.Frame):
 
         self.checkUpdate = wx.CheckBox(self.panel, wx.ID_ANY,
                                         "Live update")
-        self.checkUpdate.SetToolTip(wx.ToolTip('Update plot with live samples '
+        self.checkUpdate.SetToolTip(wx.ToolTip('Update update_plot with live samples '
                                                '(Can be slow)'))
         self.checkUpdate.SetValue(self.settings.liveUpdate)
         self.Bind(wx.EVT_CHECKBOX, self.on_check_update, self.checkUpdate)
@@ -269,11 +266,11 @@ class FrameMain(wx.Frame):
 
     def create_menu(self):
         menuFile = wx.Menu()
-        self.menuOpen = menuFile.Append(wx.ID_OPEN, "&Open...", "Open plot")
+        self.menuOpen = menuFile.Append(wx.ID_OPEN, "&Open...", "Open update_plot")
         self.menuSave = menuFile.Append(wx.ID_SAVE, "&Save As...",
-                                          "Save plot")
+                                          "Save update_plot")
         self.menuExport = menuFile.Append(wx.ID_ANY, "&Export...",
-                                            "Export plot")
+                                            "Export update_plot")
         menuExit = menuFile.Append(wx.ID_EXIT, "E&xit", "Exit the program")
 
         menuScan = wx.Menu()
@@ -441,7 +438,7 @@ class FrameMain(wx.Frame):
         self.get_range()
         self.graph.get_axes().clear()
         scale_plot(self.graph, self.settings)
-        self.scan_start(False)
+        self.start_scan()
 
     def on_stop(self, _event):
         self.stopScan = True
@@ -459,7 +456,7 @@ class FrameMain(wx.Frame):
 
     def on_check_grid(self, _event):
         self.grid = self.checkGrid.GetValue()
-        self.plot()
+        self.update_plot()
 
     def on_event(self, event):
         status = event.data.get_status()
@@ -479,27 +476,24 @@ class FrameMain(wx.Frame):
             fftChoice = self.choiceNfft.GetSelection()
             cal = self.devices[self.settings.index].calibration
             nfft = NFFT[fftChoice]
-            pool.apply_async(process_data, (freq, data, cal, nfft),
+            self.processAnalyse.append(freq)
+            pool.apply_async(anaylse_data, (freq, data, cal, nfft),
                              callback=self.on_process_done)
-            self.numJobs += 1
         elif status == EVENT_FINISHED:
-            self.scanning = False
             self.statusProgress.Hide()
-            if self.settings.mode != 1 or self.stopAtEnd:
+            if self.settings.mode == MODE_SINGLE or self.stopAtEnd:
                 self.status.SetStatusText("Finished", 0)
             self.threadScan = None
-            self.scanFinished = True
-            if self.settings.mode != 1:
+            if self.settings.mode == MODE_SINGLE:
                 self.set_controls(True)
             if data:
                 self.auto_cal(CAL_DONE)
         elif status == EVENT_STOPPED:
-            self.scanning = False
             self.statusProgress.Hide()
             self.status.SetStatusText("Stopped", 0)
             self.threadScan = None
             self.set_controls(True)
-            self.plot()
+            self.update_plot()
         elif status == EVENT_ERROR:
             self.statusProgress.Hide()
             self.status.SetStatusText("Dongle error: {0}".format(data), 0)
@@ -510,26 +504,27 @@ class FrameMain(wx.Frame):
                 self.dlgCal = None
         elif status == EVENT_PLOTTED:
             self.threadPlot = None
-            if self.pendingPlot:
-                self.plot()
+            self.next_plot()
+        elif status == EVENT_PLOTTED_FULL:
+            self.next_plot()
             if self.pendingScan:
-                self.scan_start(False)
+                self.start_scan()
 
     def on_process_done(self, data):
-        self.numJobs -= 1
         freq, scan = data
-        self.update_scan(freq, scan)
-        if self.numJobs == 0 and not self.scanning:
-            self.plot(True)
-            if self.settings.mode == 1 and not self.stopScan:
+        self.update_spectrum(freq, scan)
+        self.processAnalyse.remove(freq)
+        if self.threadScan is None and len(self.processAnalyse) == 0:
+            if self.settings.mode == MODE_CONTIN and not self.stopScan:
                 if self.dlgCal is None and not self.stopAtEnd:
                     self.pendingScan = True
             else:
                 self.stopAtEnd = False
                 self.stopScan = False
                 self.set_controls(True)
+            self.update_plot(True)
         elif self.settings.liveUpdate:
-            self.plot()
+            self.update_plot()
 
     def on_size(self, event):
         rect = self.status.GetFieldRect(2)
@@ -551,7 +546,7 @@ class FrameMain(wx.Frame):
             self.isSaved = True
             self.set_range()
             self.set_controls(True)
-            self.plot()
+            self.update_plot()
             self.status.SetStatusText("Finished", 0)
         else:
             self.status.SetStatusText("Open failed", 0)
@@ -584,7 +579,7 @@ class FrameMain(wx.Frame):
                 self.devices[self.settings.index].calibration = 0
                 self.get_range()
                 self.graph.get_axes().clear()
-                if not self.scan_start(True):
+                if not self.start_scan(isCal=True):
                     self.dlgCal.reset_cal()
             elif status == CAL_DONE:
                 ppm = self.calc_ppm(freq)
@@ -608,7 +603,7 @@ class FrameMain(wx.Frame):
 
         return ((freq - peak) / freq) * 1e6
 
-    def scan_start(self, isCal):
+    def start_scan(self, isCal=False):
         if self.save_warn(WARN_SCAN):
             return False
 
@@ -632,10 +627,8 @@ class FrameMain(wx.Frame):
             samples = dwell * SAMPLE_RATE
             samples = next_2_to_pow(int(samples))
             self.spectrum.clear()
-            self.scanFinished = False
             self.status.SetStatusText("", 1)
             self.pendingScan = False
-            self.scanning = True
             self.threadScan = ThreadScan(self, self.settings, self.devices,
                                      samples, isCal)
             self.filename = "Scan {0:.1f}-{1:.1f}MHz".format(self.settings.start,
@@ -648,7 +641,7 @@ class FrameMain(wx.Frame):
             self.status.SetStatusText("Stopping", 0)
             self.threadScan.abort()
 
-    def update_scan(self, freqCentre, scan):
+    def update_spectrum(self, freqCentre, scan):
         offset = self.settings.devices[self.settings.index].offset
         upperStart = freqCentre + offset
         upperEnd = freqCentre + offset + BANDWIDTH / 2
@@ -681,7 +674,7 @@ class FrameMain(wx.Frame):
         self.popupMenuStart.Enable(state)
         self.menuStop.Enable(not state)
         self.popupMenuStop.Enable(not state)
-        if self.settings.mode == 1:
+        if self.settings.mode == MODE_CONTIN:
             self.menuStopEnd.Enable(not state)
             self.popupMenuStopEnd.Enable(not state)
         else:
@@ -690,15 +683,44 @@ class FrameMain(wx.Frame):
         self.menuPref.Enable(state)
         self.menuCal.Enable(state)
 
-    def plot(self, full=False, updateScale=False):
+    def plot(self, full):
+        if self.threadPlot is None:
+            if self.settings.mode == MODE_CONTIN:
+                fade = True
+            else:
+                fade = False
+            self.threadPlot = ThreadPlot(self.graph, self.spectrum,
+                                        self.settings, self.grid, full, fade)
+            return True
+        else:
+            return False
+
+    def update_plot(self, full=False, updateScale=False):
         scale_plot(self.graph, self.settings, updateScale)
 
-        if self.threadPlot is None:
-            self.threadPlot = ThreadPlot(self.graph, self.spectrum,
-                                         self.settings, self.grid, full)
-            self.pendingPlot = False
+        if full:
+            if not self.plot(True):
+                self.pendingPlot = PLOT_FULL
+            else:
+                self.pendingPlot = PLOT_NONE
         else:
-            self.pendingPlot = True
+            if self.pendingPlot == PLOT_FULL:
+                if not self.plot(True):
+                    self.pendingPlot = PLOT_FULL
+                else:
+                    self.pendingPlot = PLOT_NONE
+            else:
+                if not self.plot(False):
+                    self.pendingPlot = PLOT_PARTIAL
+                else:
+                    self.pendingPlot = PLOT_NONE
+
+    def next_plot(self):
+        self.threadPlot = None
+        if self.pendingPlot == PLOT_PARTIAL:
+            self.update_plot(False)
+        elif self.pendingPlot == PLOT_FULL:
+            self.update_plot(True)
 
     def save_warn(self, warnType):
         if self.settings.saveWarn and not self.isSaved:
@@ -788,7 +810,7 @@ class DropTarget(wx.FileDropTarget):
 
 def arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("file", help="plot filename", nargs='?')
+    parser.add_argument("file", help="update_plot filename", nargs='?')
     args = parser.parse_args()
 
     filename = None

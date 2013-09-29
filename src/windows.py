@@ -32,10 +32,9 @@ from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas,
 from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
 import numpy
 import rtlsdr
-import wx
 
 from constants import *
-from events import EVENT_PLOTTED, EventThreadStatus
+from events import *
 from misc import split_spectrum
 import wx.grid as grid
 import wx.lib.masked as masked
@@ -69,13 +68,13 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.DeleteTool(self.wx_ids['Forward'])
         self.DeleteTool(self.wx_ids['Subplots'])
         self.AddSimpleTool(navId, _load_bitmap('subplots.png'),
-                           'Range', 'Set plot range')
+                           'Range', 'Set update_plot range')
         wx.EVT_TOOL(self, navId, self.on_range)
 
     def on_range(self, _event):
         dlg = DialogRange(self, self.main)
         if dlg.ShowModal() == wx.ID_OK:
-            self.main.plot(True, True)
+            self.main.update_plot(True, True)
         dlg.Destroy()
 
 
@@ -123,8 +122,11 @@ class PanelGraph(wx.Panel):
 
         self.main.status.SetStatusText(text, 1)
 
-    def on_draw(self, _event):
-        wx.PostEvent(self.main, EventThreadStatus(EVENT_PLOTTED))
+    def on_draw(self, event):
+        if event.canvas.Name == PLOT_STR_FULL:
+            wx.PostEvent(self.main, EventThreadStatus(EVENT_PLOTTED_FULL))
+        elif event.canvas.Name == PLOT_STR_PARTIAL:
+            wx.PostEvent(self.main, EventThreadStatus(EVENT_PLOTTED))
 
     def on_enter(self, _event):
         self.canvas.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
@@ -158,11 +160,11 @@ class PanelGraphCompare(wx.Panel):
         self.axesScan.yaxis.set_major_formatter(formatter)
         self.axesDiff = self.axesScan.twinx()
         self.axesDiff.yaxis.set_minor_locator(AutoMinorLocator(10))
-        self.plotScan1, = self.axesScan.plot([], [], 'b-',
+        self.plotScan1, = self.axesScan.update_plot([], [], 'b-',
                                                      linewidth=0.4)
-        self.plotScan2, = self.axesScan.plot([], [], 'g-',
+        self.plotScan2, = self.axesScan.update_plot([], [], 'g-',
                                                      linewidth=0.4)
-        self.plotDiff, = self.axesDiff.plot([], [], 'r-', linewidth=0.4)
+        self.plotDiff, = self.axesDiff.update_plot([], [], 'r-', linewidth=0.4)
         self.axesScan.set_ylim(auto=True)
         self.axesDiff.set_ylim(auto=True)
 
@@ -282,8 +284,8 @@ class DialogCompare(wx.Dialog):
 
         self.graph = PanelGraphCompare(self)
 
-        self.buttonPlot1 = wx.Button(self, wx.ID_ANY, 'Load plot #1')
-        self.buttonPlot2 = wx.Button(self, wx.ID_ANY, 'Load plot #2')
+        self.buttonPlot1 = wx.Button(self, wx.ID_ANY, 'Load update_plot #1')
+        self.buttonPlot2 = wx.Button(self, wx.ID_ANY, 'Load update_plot #2')
         self.Bind(wx.EVT_BUTTON, self.on_load_plot, self.buttonPlot1)
         self.Bind(wx.EVT_BUTTON, self.on_load_plot, self.buttonPlot2)
         self.textPlot1 = wx.StaticText(self, label="<None>")
@@ -426,7 +428,7 @@ class DialogOffset(wx.Dialog):
         textHelp = wx.StaticText(self,
             label="Remove the aerial and press refresh, "
             "adjust the offset so the shaded areas overlay the flattest parts "
-            "of the plot.")
+            "of the update_plot.")
 
         textFreq = wx.StaticText(self, label="Test frequency (MHz)")
         self.spinFreq = wx.SpinCtrl(self)
@@ -490,7 +492,7 @@ class DialogOffset(wx.Dialog):
         self.EndModal(wx.ID_OK)
 
     def on_refresh(self, _event):
-        plot = []
+        update_plot = []
 
         dlg = wx.BusyInfo('Please wait...')
 
@@ -517,9 +519,9 @@ class DialogOffset(wx.Dialog):
 
         for x, y in itertools.izip(freqs, powers):
             x = x * SAMPLE_RATE / 2e6
-            plot.append((x, y))
-        plot.sort()
-        x, y = numpy.transpose(plot)
+            update_plot.append((x, y))
+        update_plot.sort()
+        x, y = numpy.transpose(update_plot)
 
         self.axes.clear()
         self.band1 = None
@@ -527,7 +529,7 @@ class DialogOffset(wx.Dialog):
         self.axes.set_xlabel("Frequency (MHz)")
         self.axes.set_ylabel('Level (dB)')
         self.axes.set_yscale('log')
-        self.axes.plot(x, y, linewidth=0.4)
+        self.axes.update_plot(x, y, linewidth=0.4)
         self.axes.grid(True)
         self.draw_limits()
 
@@ -724,7 +726,7 @@ class DialogSaveWarn(wx.Dialog):
         wx.Dialog.__init__(self, parent=parent, title="Warning")
 
         prompt = ["scanning again", "opening a file", "exiting"][warnType]
-        text = wx.StaticText(self, label="Save plot before {0}?".format(prompt))
+        text = wx.StaticText(self, label="Save update_plot before {0}?".format(prompt))
         icon = wx.StaticBitmap(self, wx.ID_ANY,
                                wx.ArtProvider.GetBitmap(wx.ART_INFORMATION,
                                                         wx.ART_MESSAGE_BOX))
@@ -826,7 +828,7 @@ class DialogRefresh(wx.Dialog):
 
         wx.Dialog.__init__(self, parent=parent, style=0)
 
-        text = wx.StaticText(self, label="Refreshing plot, please wait...")
+        text = wx.StaticText(self, label="Refreshing update_plot, please wait...")
         icon = wx.StaticBitmap(self, wx.ID_ANY,
                                wx.ArtProvider.GetBitmap(wx.ART_INFORMATION,
                                                         wx.ART_MESSAGE_BOX))

@@ -38,6 +38,16 @@ CAL_DONE = 1
 CAL_OK = 2
 CAL_CANCEL = 3
 
+MODE_SINGLE = 0
+MODE_CONTIN = 1
+
+PLOT_NONE = 0
+PLOT_PARTIAL = 1
+PLOT_FULL = 2
+
+PLOT_STR_FULL = 'Full'
+PLOT_STR_PARTIAL = 'Partial'
+
 FILE_RFS = "RTLSDR frequency scan (*.rfs)|*.rfs"
 FILE_CSV = "CSV table (*.csv)|*.csv"
 FILE_HEADER = "RTLSDR Scanner"
