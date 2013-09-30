@@ -502,6 +502,8 @@ class FrameMain(wx.Frame):
             if self.dlgCal is not None:
                 self.dlgCal.Destroy()
                 self.dlgCal = None
+        elif status == Event.DRAW:
+            self.graph.get_canvas().draw()
         elif status == Event.PLOTTED:
             self.threadPlot = None
             self.next_plot()
@@ -689,7 +691,7 @@ class FrameMain(wx.Frame):
                 fade = True
             else:
                 fade = False
-            self.threadPlot = ThreadPlot(self.graph, self.spectrum,
+            self.threadPlot = ThreadPlot(self, self.graph, self.spectrum,
                                         self.settings, self.grid, full, fade)
             return True
         else:
