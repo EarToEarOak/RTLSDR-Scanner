@@ -606,8 +606,9 @@ class FrameMain(wx.Frame):
         return ((freq - peak) / freq) * 1e6
 
     def start_scan(self, isCal=False):
-        if self.save_warn(Warn.SCAN):
-            return False
+        if self.settings.mode == Mode.SINGLE:
+            if self.save_warn(Warn.SCAN):
+                return False
 
         self.devices = self.refresh_devices()
         if(len(self.devices) == 0):
