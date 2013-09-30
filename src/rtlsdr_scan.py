@@ -508,6 +508,7 @@ class FrameMain(wx.Frame):
             self.threadPlot = None
             self.next_plot()
         elif status == Event.PLOTTED_FULL:
+            self.threadPlot = None
             self.next_plot()
             if self.pendingScan:
                 self.start_scan()
@@ -700,6 +701,8 @@ class FrameMain(wx.Frame):
 
     def update_plot(self, full=False, updateScale=False):
         scale_plot(self.graph, self.settings, updateScale)
+
+        # TODO: what if called after last plot but Threadplot not yet none?
 
         if full:
             if not self.plot(True):

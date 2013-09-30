@@ -129,7 +129,10 @@ class ThreadPlot(threading.Thread):
         setup_plot(self.graph, self.settings, self.grid)
 
         axes = self.graph.get_axes()
-        self.remove_partial(axes)
+        if not self.settings.retainScans:
+            self.remove_plot(axes, Plot.STR_FULL)
+        self.remove_plot(axes, Plot.STR_PARTIAL)
+
         if self.full:
             name = Plot.STR_FULL
         else:
@@ -146,20 +149,17 @@ class ThreadPlot(threading.Thread):
         wx.PostEvent(self.notify, EventThreadStatus(Event.DRAW))
 
     def retain_plot(self, axes):
-        if not self.settings.retainScans:
-            self.remove_first(axes)
-        else:
-            if self.full:
-                if self.count_plots(axes) >= self.settings.maxScans:
-                    self.remove_first(axes)
-                if self.settings.fadeScans:
-                    self.fade_plots(axes)
+        if self.full:
+            if self.count_plots(axes) >= self.settings.maxScans:
+                self.remove_first(axes)
+            if self.settings.fadeScans:
+                self.fade_plots(axes)
 
-    def remove_partial(self, axes):
+    def remove_plot(self, axes, plot):
         children = axes.get_children()
         for child in children:
             if child.get_gid() is not None:
-                if child.get_gid() == Plot.STR_PARTIAL:
+                if child.get_gid() == plot:
                     child.remove()
 
     def remove_first(self, axes):
