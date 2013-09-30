@@ -63,8 +63,8 @@ class ThreadScan(threading.Thread):
                 sdr.close()
                 return
             try:
-                progress = ((freq - self.fstart + self.offset) /
-                             (self.fstop - self.fstart + BANDWIDTH)) * 100
+                progress = ((freq - self.fstart + self.offset + BANDWIDTH) /
+                             (self.fstop - self.fstart + (self.offset * 2) + BANDWIDTH)) * 100
                 wx.PostEvent(self.notify,
                              EventThreadStatus(Event.SCAN,
                                                0, progress))
