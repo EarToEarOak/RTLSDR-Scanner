@@ -204,7 +204,8 @@ class FrameMain(wx.Frame):
 
         textNfft = wx.StaticText(self.panel, label="FFT size")
         self.choiceNfft = wx.Choice(self.panel, choices=map(str, NFFT))
-        self.choiceNfft.SetToolTip(wx.ToolTip('Higher values for greater precision'))
+        self.choiceNfft.SetToolTip(wx.ToolTip('Higher values for greater'
+                                              'precision'))
         self.choiceNfft.SetSelection(NFFT.index(self.settings.nfft))
 
         self.checkAuto = wx.CheckBox(self.panel, wx.ID_ANY,
@@ -215,8 +216,8 @@ class FrameMain(wx.Frame):
 
         self.checkUpdate = wx.CheckBox(self.panel, wx.ID_ANY,
                                         "Live update")
-        self.checkUpdate.SetToolTip(wx.ToolTip('Update update_plot with live samples '
-                                               '(Can be slow)'))
+        self.checkUpdate.SetToolTip(wx.ToolTip('Update update_plot with live '
+                                               'samples (can be slow)'))
         self.checkUpdate.SetValue(self.settings.liveUpdate)
         self.Bind(wx.EVT_CHECKBOX, self.on_check_update, self.checkUpdate)
 
@@ -266,7 +267,8 @@ class FrameMain(wx.Frame):
 
     def create_menu(self):
         menuFile = wx.Menu()
-        self.menuOpen = menuFile.Append(wx.ID_OPEN, "&Open...", "Open update_plot")
+        self.menuOpen = menuFile.Append(wx.ID_OPEN, "&Open...",
+                                        "Open update_plot")
         self.menuSave = menuFile.Append(wx.ID_SAVE, "&Save As...",
                                           "Save update_plot")
         self.menuExport = menuFile.Append(wx.ID_ANY, "&Export...",
@@ -278,7 +280,8 @@ class FrameMain(wx.Frame):
         self.menuStop = menuScan.Append(wx.ID_ANY, "S&top",
                                         "Stop scan immediately")
         self.menuStopEnd = menuScan.Append(wx.ID_ANY, "Stop at &end",
-                                           "Complete current sweep before stopping")
+                                           "Complete current sweep "
+                                           "before stopping")
 
         menuView = wx.Menu()
         self.menuPref = menuView.Append(wx.ID_ANY, "&Preferences...",
@@ -329,7 +332,8 @@ class FrameMain(wx.Frame):
         self.popupMenuStop = self.popupMenu.Append(wx.ID_ANY, "S&top",
                                                    "Stop scan immediately")
         self.popupMenuStopEnd = self.popupMenu.Append(wx.ID_ANY, "Stop at &end",
-                                                      "Complete current sweep before stopping")
+                                                      "Complete current sweep "
+                                                      "before stopping")
 
         self.Bind(wx.EVT_MENU, self.on_start, self.popupMenuStart)
         self.Bind(wx.EVT_MENU, self.on_stop, self.popupMenuStop)
