@@ -486,6 +486,8 @@ class FrameMain(wx.Frame):
             self.threadScan = None
             if self.settings.mode == Mode.SINGLE:
                 self.set_controls(True)
+            else:
+                self.re_scan()
             if data:
                 self.auto_cal(Cal.DONE)
         elif status == Event.STOPPED:
@@ -517,16 +519,9 @@ class FrameMain(wx.Frame):
         freq, scan = data
         self.update_spectrum(freq, scan)
         self.processAnalyse.remove(freq)
-        if self.threadScan is None and len(self.processAnalyse) == 0:
-            if self.settings.mode == Mode.CONTIN and not self.stopScan:
-                if self.dlgCal is None and not self.stopAtEnd:
-                    self.pendingScan = True
-            else:
-                self.stopAtEnd = False
-                self.stopScan = False
-                self.set_controls(True)
-            self.update_plot(True)
-        elif self.settings.liveUpdate:
+        self.re_scan()
+
+        if self.settings.liveUpdate:
             self.update_plot()
 
     def on_size(self, event):
@@ -645,6 +640,17 @@ class FrameMain(wx.Frame):
             self.status.SetStatusText("Stopping", 0)
             self.threadScan.abort()
 
+    def re_scan(self):
+        if self.threadScan is None and len(self.processAnalyse) == 0:
+            if self.settings.mode == Mode.CONTIN and not self.stopScan:
+                if self.dlgCal is None and not self.stopAtEnd:
+                    self.pendingScan = True
+            else:
+                self.stopAtEnd = False
+                self.stopScan = False
+                self.set_controls(True)
+            self.update_plot(True)
+
     def update_spectrum(self, freqCentre, scan):
         offset = self.settings.devices[self.settings.index].offset
         upperStart = freqCentre + offset
@@ -701,8 +707,6 @@ class FrameMain(wx.Frame):
 
     def update_plot(self, full=False, updateScale=False):
         scale_plot(self.graph, self.settings, updateScale)
-
-        # TODO: what if called after last plot but Threadplot not yet none?
 
         if full:
             if not self.plot(True):
