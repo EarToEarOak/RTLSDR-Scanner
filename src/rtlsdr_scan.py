@@ -824,6 +824,7 @@ def arguments():
 
 
 if __name__ == '__main__':
+    multiprocessing.freeze_support()
     pool = multiprocessing.Pool()
     app = RtlsdrScanner(pool)
     frame = FrameMain("RTLSDR Scanner", pool)
