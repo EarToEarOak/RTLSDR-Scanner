@@ -766,8 +766,11 @@ class FrameMain(wx.Frame):
 
     def refresh_devices(self):
         self.settings.devices = self.devices
+        devices = self.get_devices()
+        if self.settings.index > len(self.devices) - 1:
+            self.settings.index = 0
         self.settings.save()
-        return self.get_devices()
+        return devices
 
     def get_devices(self):
         devices = []
