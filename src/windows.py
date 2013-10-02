@@ -59,6 +59,38 @@ class CellRenderer(grid.PyGridCellRenderer):
                           rect.height / 4)
 
 
+class Statusbar(wx.StatusBar):
+    def __init__(self, parent):
+        wx.StatusBar.__init__(self, parent, -1)
+        self.SetFieldsCount(3)
+        self.statusProgress = wx.Gauge(self, -1,
+                                       style=wx.GA_HORIZONTAL | wx.GA_SMOOTH)
+        self.statusProgress.Hide()
+        self.Bind(wx.EVT_SIZE, self.on_size)
+
+    def on_size(self, event):
+        rect = self.GetFieldRect(2)
+        self.statusProgress.SetPosition((rect.x + 10, rect.y + 2))
+        self.statusProgress.SetSize((rect.width - 20, rect.height - 4))
+        event.Skip()
+
+    def set_general(self, text):
+        self.SetStatusText(text, 0)
+        self.SetToolTipString(text)
+
+    def set_info(self, text):
+        self.SetStatusText(text, 1)
+
+    def set_progress(self, progress):
+        self.statusProgress.SetValue(progress)
+
+    def show_progress(self):
+        self.statusProgress.Show()
+
+    def hide_progress(self):
+        self.statusProgress.Hide()
+
+
 class NavigationToolbar(NavigationToolbar2WxAgg):
     def __init__(self, canvas, main):
         self.main = main

@@ -53,7 +53,7 @@ from scan import anaylse_data
 from settings import Settings, Device
 from threads import ThreadScan, ThreadPlot
 from windows import PanelGraph, DialogPrefs, DialogCompare, DialogAutoCal, \
-    DialogSaveWarn
+    DialogSaveWarn, Statusbar
 
 
 MODE = ["Single", 0,
@@ -135,14 +135,10 @@ class FrameMain(wx.Frame):
         wx.Frame.__init__(self, None, title=title, size=(displaySize[0] / 1.5,
                                                          displaySize[1] / 2))
 
-        self.Bind(wx.EVT_SIZE, self.on_size)
         self.Bind(wx.EVT_CLOSE, self.on_exit)
 
-        self.status = self.CreateStatusBar()
-        self.status.SetFieldsCount(3)
-        self.statusProgress = wx.Gauge(self.status, -1,
-                                        style=wx.GA_HORIZONTAL | wx.GA_SMOOTH)
-        self.statusProgress.Hide()
+        self.status = Statusbar(self)
+        self.SetStatusBar(self.status)
 
         self.create_widgets()
         self.create_menu()
@@ -360,7 +356,7 @@ class FrameMain(wx.Frame):
                             self.filename + ".rfs", File.RFS,
                             wx.SAVE | wx.OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
-            self.status.SetStatusText("Saving", 0)
+            self.status.set_general("Saving")
             self.filename = dlg.GetFilename()
             self.dirname = dlg.GetDirectory()
             handle = open(os.path.join(self.dirname, self.filename), 'wb')
@@ -371,14 +367,14 @@ class FrameMain(wx.Frame):
             cPickle.dump(self.spectrum, handle)
             handle.close()
             self.isSaved = True
-            self.status.SetStatusText("Finished", 0)
+            self.status.set_general("Finished")
         dlg.Destroy()
 
     def on_export(self, _event):
         dlg = wx.FileDialog(self, "Export a scan", self.dirname,
                             self.filename + ".csv", File.CSV, wx.SAVE)
         if dlg.ShowModal() == wx.ID_OK:
-            self.status.SetStatusText("Exporting", 0)
+            self.status.set_general("Exporting")
             self.filename = dlg.GetFilename()
             self.dirname = dlg.GetDirectory()
             handle = open(os.path.join(self.dirname, self.filename), 'wb')
@@ -386,7 +382,7 @@ class FrameMain(wx.Frame):
             for freq, pwr in self.spectrum.iteritems():
                 handle.write("{0},{1}\n".format(freq, pwr))
             handle.close()
-            self.status.SetStatusText("Finished", 0)
+            self.status.set_general("Finished")
         dlg.Destroy()
 
     def on_exit(self, _event):
@@ -467,14 +463,14 @@ class FrameMain(wx.Frame):
         freq = event.data.get_freq()
         data = event.data.get_data()
         if status == Event.STARTING:
-            self.status.SetStatusText("Starting", 0)
+            self.status.set_general("Starting")
         elif status == Event.SCAN:
             if self.stopAtEnd:
-                self.status.SetStatusText("Stopping", 0)
+                self.status.set_general("Stopping")
             else:
-                self.status.SetStatusText("Scanning", 0)
-            self.statusProgress.Show()
-            self.statusProgress.SetValue(data)
+                self.status.set_general("Scanning")
+            self.status.show_progress()
+            self.status.set_progress(data)
         elif status == Event.DATA:
             self.isSaved = False
             fftChoice = self.choiceNfft.GetSelection()
@@ -484,9 +480,9 @@ class FrameMain(wx.Frame):
             pool.apply_async(anaylse_data, (freq, data, cal, nfft),
                              callback=self.on_process_done)
         elif status == Event.FINISHED:
-            self.statusProgress.Hide()
+            self.status.hide_progress()
             if self.settings.mode == Mode.SINGLE or self.stopAtEnd:
-                self.status.SetStatusText("Finished", 0)
+                self.status.set_general("Finished")
             self.threadScan = None
             if self.settings.mode == Mode.SINGLE:
                 self.set_controls(True)
@@ -495,14 +491,14 @@ class FrameMain(wx.Frame):
             if data:
                 self.auto_cal(Cal.DONE)
         elif status == Event.STOPPED:
-            self.statusProgress.Hide()
-            self.status.SetStatusText("Stopped", 0)
+            self.status.hide_progress()
+            self.status.set_general("Stopped")
             self.threadScan = None
             self.set_controls(True)
             self.update_plot()
         elif status == Event.ERROR:
-            self.statusProgress.Hide()
-            self.status.SetStatusText("Error: {0}".format(data), 0)
+            self.status.hide_progress()
+            self.status.set_general("Error: {0}".format(data))
             self.threadScan = None
             self.set_controls(True)
             if self.dlgCal is not None:
@@ -528,16 +524,10 @@ class FrameMain(wx.Frame):
         if self.settings.liveUpdate:
             self.update_plot()
 
-    def on_size(self, event):
-        rect = self.status.GetFieldRect(2)
-        self.statusProgress.SetPosition((rect.x + 10, rect.y + 2))
-        self.statusProgress.SetSize((rect.width - 20, rect.height - 4))
-        event.Skip()
-
     def open(self, dirname, filename):
         self.filename = filename
         self.dirname = dirname
-        self.status.SetStatusText("Opening: {0}".format(filename), 0)
+        self.status.set_general("Opening: {0}".format(filename))
 
         start, stop, spectrum = self.open_plot(dirname, filename)
 
@@ -549,9 +539,9 @@ class FrameMain(wx.Frame):
             self.set_range()
             self.set_controls(True)
             self.update_plot()
-            self.status.SetStatusText("Finished", 0)
+            self.status.set_general("Finished")
         else:
-            self.status.SetStatusText("Open failed", 0)
+            self.status.set_general("Open failed")
 
     def open_plot(self, dirname, filename):
         try:
@@ -630,7 +620,7 @@ class FrameMain(wx.Frame):
             samples = dwell * SAMPLE_RATE
             samples = next_2_to_pow(int(samples))
             self.spectrum.clear()
-            self.status.SetStatusText("", 1)
+            self.status.set_info('')
             self.pendingScan = False
 
             self.threadScan = ThreadScan(self, self.settings,
@@ -642,7 +632,7 @@ class FrameMain(wx.Frame):
 
     def stop_scan(self):
         if self.threadScan:
-            self.status.SetStatusText("Stopping", 0)
+            self.status.set_general("Stopping")
             self.threadScan.abort()
 
     def re_scan(self):
