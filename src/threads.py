@@ -31,6 +31,7 @@ from constants import *
 from events import *
 from misc import split_spectrum
 from plot import setup_plot
+import rtltcp
 
 
 class ThreadScan(threading.Thread):
@@ -60,7 +61,7 @@ class ThreadScan(threading.Thread):
             if self.cancel:
                 wx.PostEvent(self.notify,
                              EventThreadStatus(Event.STOPPED))
-                sdr.close()
+                self.rtl_close(sdr)
                 return
             try:
                 progress = ((freq - self.fstart + self.offset + BANDWIDTH) /
@@ -68,24 +69,24 @@ class ThreadScan(threading.Thread):
                 wx.PostEvent(self.notify,
                              EventThreadStatus(Event.SCAN,
                                                0, progress))
-                scan = self.scan(sdr, freq)
+                scan = self.rtl_scan(sdr, freq)
                 wx.PostEvent(self.notify,
                              EventThreadStatus(Event.DATA, freq,
                                                scan))
             except (IOError, WindowsError):
                 if sdr is not None:
-                    sdr.close()
+                    self.rtl_close(sdr)
                 sdr = self.rtl_setup()
             except (TypeError, AttributeError) as error:
                 if self.notify:
                     wx.PostEvent(self.notify,
-                             EventThreadStatus(Event.ERROR,
+                             EventThreadStatus(Event.ERROR_DONGLE,
                                                0, error.message))
                 return
 
             freq += BANDWIDTH / 2
 
-        sdr.close()
+        self.rtl_close(sdr)
         wx.PostEvent(self.notify, EventThreadStatus(Event.FINISHED,
                                                     0, self.isCal))
 
@@ -94,21 +95,36 @@ class ThreadScan(threading.Thread):
 
     def rtl_setup(self):
         sdr = None
-        try:
-            sdr = rtlsdr.RtlSdr(self.index)
-            sdr.set_sample_rate(SAMPLE_RATE)
-            sdr.set_gain(self.gain)
-        except IOError as error:
-            wx.PostEvent(self.notify, EventThreadStatus(Event.ERROR,
-                                                        0, error.message))
+
+        if not True:
+            try:
+                sdr = rtlsdr.RtlSdr(self.index)
+                sdr.set_sample_rate(SAMPLE_RATE)
+                sdr.set_gain(self.gain)
+            except IOError as error:
+                wx.PostEvent(self.notify, EventThreadStatus(Event.ERROR,
+                                                            0, error.message))
+
+            return sdr
+        else:
+            try:
+                sdr = rtltcp.RtlTcp('127.0.0.1', 1234)
+                sdr.set_sample_rate(SAMPLE_RATE)
+                sdr.set_gain(self.gain)
+            except IOError as error:
+                wx.PostEvent(self.notify, EventThreadStatus(Event.ERROR,
+                                                            0, error))
 
         return sdr
 
-    def scan(self, sdr, freq):
+    def rtl_scan(self, sdr, freq):
         sdr.set_center_freq(freq + self.lo)
         capture = sdr.read_samples(self.samples)
 
         return capture
+
+    def rtl_close(self, sdr):
+        sdr.close()
 
 
 class ThreadPlot(threading.Thread):

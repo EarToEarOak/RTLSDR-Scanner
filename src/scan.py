@@ -31,7 +31,7 @@ from constants import SAMPLE_RATE
 
 
 def anaylse_data(freq, data, cal, nfft):
-    scan = {}
+    rtl_scan = {}
     window = matplotlib.numpy.hamming(nfft)
     powers, freqs = matplotlib.mlab.psd(data,
                      NFFT=nfft,
@@ -41,9 +41,9 @@ def anaylse_data(freq, data, cal, nfft):
         xr = freqPsd + (freq / 1e6)
         xr = xr + (xr * cal / 1e6)
         xr = int((xr * 5e4) + 0.5) / 5e4
-        scan[xr] = pwr
+        rtl_scan[xr] = pwr
 
-    return (freq, scan)
+    return (freq, rtl_scan)
 
 
 if __name__ == '__main__':
