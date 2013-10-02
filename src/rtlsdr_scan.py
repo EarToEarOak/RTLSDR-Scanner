@@ -502,7 +502,7 @@ class FrameMain(wx.Frame):
             self.update_plot()
         elif status == Event.ERROR:
             self.statusProgress.Hide()
-            self.status.SetStatusText("Dongle error: {0}".format(data), 0)
+            self.status.SetStatusText("Error: {0}".format(data), 0)
             self.threadScan = None
             self.set_controls(True)
             if self.dlgCal is not None:
@@ -632,8 +632,9 @@ class FrameMain(wx.Frame):
             self.spectrum.clear()
             self.status.SetStatusText("", 1)
             self.pendingScan = False
-            self.threadScan = ThreadScan(self, self.settings, self.devices,
-                                     samples, isCal)
+
+            self.threadScan = ThreadScan(self, self.settings,
+                                         self.settings.index, samples, isCal)
             self.filename = "Scan {0:.1f}-{1:.1f}MHz".format(self.settings.start,
                                                             self.settings.stop)
 
@@ -784,14 +785,14 @@ class FrameMain(wx.Frame):
             device.lo = 0.0
             for conf in self.settings.devices:
                 # TODO: better matching than just name?
-                if device.name == conf.name:
-                    device.gain = conf.gain
-                    device.calibration = conf.calibration
-                    device.lo = conf.lo
-                    device.offset = conf.offset
-                    break
+                if conf.isDevice and device.name == conf.name:
+                    device.set(conf)
 
             devices.append(device)
+
+        for conf in self.settings.devices:
+            if not conf.isDevice:
+                devices.append(conf)
 
         return devices
 

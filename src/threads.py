@@ -35,18 +35,21 @@ import rtltcp
 
 
 class ThreadScan(threading.Thread):
-    def __init__(self, notify, settings, devices, samples, isCal):
+    def __init__(self, notify, settings, device, samples, isCal):
         threading.Thread.__init__(self)
         self.name = 'ThreadScan'
         self.notify = notify
-        self.index = settings.index
         self.fstart = settings.start * 1e6
         self.fstop = settings.stop * 1e6
         self.samples = samples
         self.isCal = isCal
-        self.gain = devices[self.index].gain
-        self.lo = devices[self.index].lo * 1e6
-        self.offset = devices[self.index].offset
+        self.index = settings.index
+        self.isDevice = settings.devices[device].isDevice
+        self.server = settings.devices[device].server
+        self.port = settings.devices[device].port
+        self.gain = settings.devices[device].gain
+        self.lo = settings.devices[device].lo * 1e6
+        self.offset = settings.devices[device].offset
         self.cancel = False
         wx.PostEvent(self.notify, EventThreadStatus(Event.STARTING))
         self.start()
@@ -96,7 +99,7 @@ class ThreadScan(threading.Thread):
     def rtl_setup(self):
         sdr = None
 
-        if not True:
+        if self.isDevice:
             try:
                 sdr = rtlsdr.RtlSdr(self.index)
                 sdr.set_sample_rate(SAMPLE_RATE)
@@ -104,11 +107,9 @@ class ThreadScan(threading.Thread):
             except IOError as error:
                 wx.PostEvent(self.notify, EventThreadStatus(Event.ERROR,
                                                             0, error.message))
-
-            return sdr
         else:
             try:
-                sdr = rtltcp.RtlTcp('127.0.0.1', 1234)
+                sdr = rtltcp.RtlTcp(self.server, self.port)
                 sdr.set_sample_rate(SAMPLE_RATE)
                 sdr.set_gain(self.gain)
             except IOError as error:

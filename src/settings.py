@@ -30,12 +30,21 @@ from misc import format_device_name
 
 class Device():
     def __init__(self):
+        self.isDevice = True
         self.index = None
         self.name = None
+        self.server = 'localhost'
+        self.port = 1234
         self.gain = 0
-        self.calibration = None
-        self.lo = None
+        self.calibration = 0
+        self.lo = 0
         self.offset = 250e3
+
+    def set(self, device):
+        self.gain = device.gain
+        self.calibration = device.calibration
+        self.lo = device.lo
+        self.offset = device.offset
 
 
 class Settings():
@@ -67,6 +76,7 @@ class Settings():
         self.load()
 
     def load(self):
+        servers = 0
         self.cfg = wx.Config('rtlsdr-scanner')
         self.saveWarn = self.cfg.ReadBool('saveWarn', self.saveWarn)
         self.annotate = self.cfg.ReadBool('annotate', self.annotate)
@@ -90,6 +100,11 @@ class Settings():
             self.cfg.SetPath("/Devices/" + group[1])
             device = Device()
             device.name = group[1]
+            device.isDevice = self.cfg.ReadBool('isDevice', True)
+            if not device.isDevice:
+                servers += 1
+            device.server = self.cfg.Read('server', 'localhost')
+            device.port = self.cfg.ReadInt('port', 1234)
             device.gain = self.cfg.ReadFloat('gain', 0)
             device.calibration = self.cfg.ReadFloat('calibration', 0)
             device.lo = self.cfg.ReadFloat('lo', 0)
@@ -97,6 +112,14 @@ class Settings():
             self.devices.append(device)
             self.cfg.SetPath("/Devices")
             group = self.cfg.GetNextGroup(group[2])
+
+        if servers == 0:
+            device = Device()
+            device.name = 'Server'
+            device.isDevice = False
+            device.server = 'localhost'
+            device.port = 1234
+            self.devices.append(device)
 
     def save(self):
         self.cfg.SetPath("/")
@@ -119,6 +142,9 @@ class Settings():
         if self.devices:
             for device in self.devices:
                 self.cfg.SetPath("/Devices/" + format_device_name(device.name))
+                self.cfg.WriteBool('isDevice', device.isDevice)
+                self.cfg.Write('server', device.server)
+                self.cfg.WriteInt('port', device.port)
                 self.cfg.WriteFloat('gain', device.gain)
                 self.cfg.WriteFloat('lo', device.lo)
                 self.cfg.WriteFloat('calibration', device.calibration)

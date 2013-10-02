@@ -24,6 +24,7 @@
 #
 
 import itertools
+from urlparse import urlparse
 
 import matplotlib
 from matplotlib.backends.backend_wx import _load_bitmap
@@ -605,22 +606,28 @@ class DialogPrefs(wx.Dialog):
         self.gridDev.SetColFormatFloat(5, -1, 3)
         self.gridDev.SetColFormatFloat(6, -1, 0)
 
+        colourBackground = self.gridDev.GetLabelBackgroundColour()
         attributes = grid.GridCellAttr()
-        attributes.SetBackgroundColour(self.gridDev.GetLabelBackgroundColour())
-        self.gridDev.SetColAttr(1, attributes)
+        attributes.SetBackgroundColour(colourBackground)
         self.gridDev.SetColAttr(2, attributes)
 
         i = 0
         for device in self.devices:
             self.gridDev.SetReadOnly(i, 0, True)
-            self.gridDev.SetReadOnly(i, 1, True)
+            self.gridDev.SetReadOnly(i, 1, device.isDevice)
             self.gridDev.SetReadOnly(i, 2, True)
             self.gridDev.SetCellRenderer(i, 0, CellRenderer())
             self.gridDev.SetCellEditor(i, 3, grid.GridCellFloatEditor(-1, 1))
             self.gridDev.SetCellEditor(i, 4, grid.GridCellFloatEditor(-1, 3))
             self.gridDev.SetCellEditor(i, 5, grid.GridCellFloatEditor(-1, 3))
-            self.gridDev.SetCellValue(i, 1, device.name)
-            self.gridDev.SetCellValue(i, 2, str(i))
+            if device.isDevice:
+                self.gridDev.SetCellValue(i, 1, device.name)
+                self.gridDev.SetCellValue(i, 2, str(i))
+                self.gridDev.SetCellBackgroundColour(i, 1, colourBackground)
+            else:
+                self.gridDev.SetCellValue(i, 1, '{0}:{1}'.format(device.server,
+                                                                 device.port))
+                self.gridDev.SetCellValue(i, 2, '')
             self.gridDev.SetCellValue(i, 3, str(device.gain))
             self.gridDev.SetCellValue(i, 4, str(device.calibration))
             self.gridDev.SetCellValue(i, 5, str(device.lo))
@@ -680,16 +687,18 @@ class DialogPrefs(wx.Dialog):
     def on_click(self, event):
         col = event.GetCol()
         index = event.GetRow()
-        if(col == 0):
+        if col == 0:
             self.index = event.GetRow()
             self.select_row(index)
-        elif(col == 6):
+        elif col == 6:
             dlg = DialogOffset(self, index,
                                float(self.gridDev.GetCellValue(index, 6)))
             if dlg.ShowModal() == wx.ID_OK:
                 self.gridDev.SetCellValue(index, 6, str(dlg.get_offset()))
             dlg.Destroy()
-        event.Skip()
+        else:
+            self.gridDev.ForceRefresh()
+            event.Skip()
 
     def on_ok(self, _event):
         self.settings.saveWarn = self.checkSaved.GetValue()
@@ -698,6 +707,18 @@ class DialogPrefs(wx.Dialog):
         self.settings.fadeScans = self.checkFade.GetValue()
         self.settings.maxScans = self.spinCtrlMaxScans.GetValue()
         for i in range(0, self.gridDev.GetNumberRows()):
+            if not self.devices[i].isDevice:
+                server = self.gridDev.GetCellValue(i, 1)
+                server = '//' + server
+                url = urlparse(server)
+                if url.hostname is not None:
+                    self.devices[i].server = url.hostname
+                else:
+                    self.devices[i].port = 'localhost'
+                if url.port is not None:
+                    self.devices[i].port = url.port
+                else:
+                    self.devices[i].port = 1234
             self.devices[i].gain = float(self.gridDev.GetCellValue(i, 3))
             self.devices[i].calibration = float(self.gridDev.GetCellValue(i, 4))
             self.devices[i].lo = float(self.gridDev.GetCellValue(i, 5))
@@ -706,6 +727,7 @@ class DialogPrefs(wx.Dialog):
         self.EndModal(wx.ID_OK)
 
     def select_row(self, index):
+        self.gridDev.ClearSelection()
         for i in range(0, self.gridDev.GetNumberRows()):
             tick = "0"
             if i == index:
