@@ -37,6 +37,7 @@ import rtlsdr
 from constants import *
 from events import *
 from misc import split_spectrum
+from rtltcp import RtlTcp
 import wx.grid as grid
 import wx.lib.masked as masked
 
@@ -445,8 +446,8 @@ class DialogAutoCal(wx.Dialog):
 
 
 class DialogOffset(wx.Dialog):
-    def __init__(self, parent, index, offset):
-        self.index = index
+    def __init__(self, parent, device, offset):
+        self.device = device
         self.offset = offset
         self.band1 = None
         self.band2 = None
@@ -530,15 +531,23 @@ class DialogOffset(wx.Dialog):
         dlg = wx.BusyInfo('Please wait...')
 
         try:
-            sdr = rtlsdr.RtlSdr(int(self.index))
+            if self.device.isDevice:
+                sdr = rtlsdr.RtlSdr(self.device.index)
+            else:
+                sdr = RtlTcp(self.device.server, self.device.port)
             sdr.set_sample_rate(SAMPLE_RATE)
             sdr.set_center_freq(self.spinFreq.GetValue() * 1e6)
             sdr.set_gain(self.spinGain.GetValue())
             capture = sdr.read_samples(2 ** 18)
+            sdr.close()
         except IOError as error:
+            if self.device.isDevice:
+                message = error.message
+            else:
+                message = error
             dlg.Destroy()
             dlg = wx.MessageDialog(self,
-                                   'Capture failed:\n{0}'.format(error.message),
+                                   'Capture failed:\n{0}'.format(message),
                                    'Error',
                                    wx.OK | wx.ICON_ERROR)
             dlg.ShowModal()
@@ -562,7 +571,7 @@ class DialogOffset(wx.Dialog):
         self.axes.set_xlabel("Frequency (MHz)")
         self.axes.set_ylabel('Level (dB)')
         self.axes.set_yscale('log')
-        self.axes.update_plot(x, y, linewidth=0.4)
+        self.axes.plot(x, y, linewidth=0.4)
         self.axes.grid(True)
         self.draw_limits()
 
@@ -724,7 +733,8 @@ class DialogPrefs(wx.Dialog):
             self.index = event.GetRow()
             self.select_row(index)
         elif col == 6:
-            dlg = DialogOffset(self, index,
+            device = self.devices[index]
+            dlg = DialogOffset(self, device,
                                float(self.gridDev.GetCellValue(index, 6)))
             if dlg.ShowModal() == wx.ID_OK:
                 self.gridDev.SetCellValue(index, 6, str(dlg.get_offset()))
