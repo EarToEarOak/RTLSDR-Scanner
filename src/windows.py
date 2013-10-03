@@ -666,9 +666,10 @@ class DialogPrefs(wx.Dialog):
             self.gridDev.SetCellValue(i, 6, str(device.offset / 1e3))
             i += 1
 
-        if settings.index > len(self.devices):
-            settings.index = len(self.devices)
+        if settings.index >= len(self.devices):
+            settings.index = len(self.devices) - 1
         self.select_row(settings.index)
+        self.index = settings.index
 
         self.gridDev.AutoSize()
 
