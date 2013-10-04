@@ -98,10 +98,10 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
 
         navId = wx.NewId()
         NavigationToolbar2WxAgg.__init__(self, canvas)
-        self.DeleteTool(self.wx_ids['Back'])
-        self.DeleteTool(self.wx_ids['Forward'])
-        self.DeleteTool(self.wx_ids['Subplots'])
-        self.AddSimpleTool(navId, _load_bitmap('subplots.png'),
+#         self.DeleteTool(self.wx_ids['Back'])
+#         self.DeleteTool(self.wx_ids['Forward'])
+#         self.DeleteTool(self.wx_ids['Subplots'])
+        self.AddSimpleTool(navId, _load_bitmap('hand.png'),
                            'Range', 'Set update_plot range')
         wx.EVT_TOOL(self, navId, self.on_range)
 
