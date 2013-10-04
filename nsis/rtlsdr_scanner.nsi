@@ -65,30 +65,8 @@ ShowUnInstDetails show
 Section "!RTLSDR Scanner" SECTION1
     SetOutPath "$INSTDIR"
     SetOverwrite ifnewer
-    File "..\src\constants.py"
-    File "..\src\constants.pyc"
-    File "..\src\events.py"
-    File "..\src\events.pyc"
-    File "..\src\misc.py"
-    File "..\src\misc.pyc"
-    File "..\src\plot.py"
-    File "..\src\plot.pyc"
-    File "..\src\rtlsdr_scan.py"
-    File "..\src\rtlsdr_scan.pyc"
-    File "..\src\rtlsdr_scan_diag.py"
-    File "..\src\rtlsdr_scan_diag.pyc"
-    File "..\src\rtltcp.py"
-    File "..\src\rtltcp.pyc"
-    File "..\src\scan.py"
-    File "..\src\scan.pyc"
-    File "..\src\settings.py"
-    File "..\src\settings.pyc"
-    File "..\src\threads.py"
-    File "..\src\threads.pyc"
-    File "..\src\windows.py"
-    File "..\src\windows.pyc"
     File "license.txt"
-    File "..\rtlsdr_scan.ico"
+    Call get_rtlsdr_scanner
     CreateShortCut "$STARTMENU.lnk" "$INSTDIR\rtlsdr_scan.py"
     CreateShortCut "$DESKTOP.lnk" "$INSTDIR\rtlsdr_scan.py"
 SectionEnd
@@ -161,27 +139,16 @@ Section Uninstall
     Delete "$INSTDIR\rtlsdr_scan.ico"
     Delete "$INSTDIR\uninst.exe"
     Delete "$INSTDIR\license.txt"
-    Delete "$INSTDIR\windows.pyc"
     Delete "$INSTDIR\windows.py"
-    Delete "$INSTDIR\threads.pyc"
     Delete "$INSTDIR\threads.py"
-    Delete "$INSTDIR\settings.pyc"
     Delete "$INSTDIR\settings.py"
-    Delete "$INSTDIR\scan.pyc"
     Delete "$INSTDIR\scan.py"
-    Delete "$INSTDIR\rtltcp.pyc"
     Delete "$INSTDIR\rtltcp.py"
-    Delete "$INSTDIR\rtlsdr_scan_diag.pyc"
     Delete "$INSTDIR\rtlsdr_scan_diag.py"
-    Delete "$INSTDIR\rtlsdr_scan.pyc"
     Delete "$INSTDIR\rtlsdr_scan.py"
-    Delete "$INSTDIR\plot.pyc"
     Delete "$INSTDIR\plot.py"
-    Delete "$INSTDIR\misc.pyc"
     Delete "$INSTDIR\misc.py"
-    Delete "$INSTDIR\events.pyc"
     Delete "$INSTDIR\events.py"
-    Delete "$INSTDIR\constants.pyc"
     Delete "$INSTDIR\constants.py"
 
     Delete "$SMPROGRAMS\RTLSDR Scanner\Uninstall.lnk"
@@ -216,6 +183,20 @@ Function page_info
     Pop $Text
     SendMessage $Text ${EM_SETREADONLY} 1 0
     nsDialogs::Show
+FunctionEnd
+
+Function get_rtlsdr_scanner
+    inetc::get "https://github.com/EarToEarOak/RTLSDR-Scanner/archive/master.zip" "$TEMP\rtlsdr_scanner.zip" /end
+    Pop $R0
+    StrCmp $R0 "OK" exists
+    MessageBox MB_OK "RTLSDR Scanner download failed: $R0"
+    return
+    exists:
+    ZipDLL::extractall "$TEMP\rtlsdr_scanner.zip" "$TEMP"
+    CopyFiles "$TEMP\RTLSDR-Scanner-master\src\*.py" "$INSTDIR"
+    CopyFiles "$TEMP\RTLSDR-Scanner-master\*.ico" "$INSTDIR"
+    ;Delete "$TEMP\pyrtlsdr.zip"
+    RmDir /r "$TEMP\RTLSDR-Scanner-master"
 FunctionEnd
 
 Function get_rtlsdr
