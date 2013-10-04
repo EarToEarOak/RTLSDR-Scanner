@@ -50,7 +50,6 @@ Page custom page_info
 !insertmacro MUI_LANGUAGE "English"
 
 !define INFO '"This will install RTLSDR Scanner and its Python dependencies $\r$\n$\r$\n \
-The rtlsdr library will not be installed (http://sdr.osmocom.org/trac/wiki/rtl-sdr) $\r$\n$\r$\n \
 It will add the new installation of Python to the path, potentially causing problems $\r$\n \
 to previous Python installs"'
 
@@ -96,6 +95,9 @@ SectionEnd
 
 
 SectionGroup "Dependencies" SECTION2
+    Section "RTLSDR Driver"
+        Call get_rtlsdr
+    SectionEnd
     SectionGroup "Python"
         Section "Python 2.7.5"
            Call get_python
@@ -104,28 +106,28 @@ SectionGroup "Dependencies" SECTION2
         Section "Add Python to PATH"
            Call set_python_path
         SectionEnd
+        Section "wxPython 2.8.12.1"
+            Call get_wxpython
+        SectionEnd
+        Section "matplotlib 1.3.0"
+            Call get_matplotlib
+        SectionEnd
+        Section "numpy 1.7.1"
+            Call get_numpy
+        SectionEnd
+        Section "pyparsing 2.0.1"
+            Call get_pyparsing
+        SectionEnd
+        Section "setuptools 1.1.6"
+            Call get_setuptools
+        SectionEnd
+        Section "dateutils 2.1"
+            Call get_dateutil
+        SectionEnd
+        Section "pyrtlsdr"
+            Call get_pyrtlsdr
+        SectionEnd
     SectionGroupEnd
-    Section "wxPython 2.8.12.1"
-        Call get_wxpython
-    SectionEnd
-    Section "matplotlib 1.3.0"
-        Call get_matplotlib
-    SectionEnd
-    Section "numpy 1.7.1"
-        Call get_numpy
-    SectionEnd
-    Section "pyparsing 2.0.1"
-        Call get_pyparsing
-    SectionEnd
-    Section "setuptools 1.1.6"
-        Call get_setuptools
-    SectionEnd
-    Section "dateutils 2.1"
-        Call get_dateutil
-    SectionEnd
-    Section "pyrtlsdr"
-        Call get_pyrtlsdr
-    SectionEnd
 SectionGroupEnd
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
@@ -135,6 +137,7 @@ SectionGroupEnd
 
 
 Section -AdditionalIcons
+    SetOutPath "$INSTDIR"
     WriteIniStr "$INSTDIR\${PRODUCT_NAME}.url" "InternetShortcut" "URL" "${PRODUCT_WEB_SITE}"
     CreateDirectory "$SMPROGRAMS\RTLSDR Scanner"
     CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\RTLSDR Scanner.lnk" "python" '"$INSTDIR\rtlsdr_scan.py"' "$INSTDIR\rtlsdr_scan.ico" 0
@@ -198,7 +201,7 @@ Var Text
 
 Function .onInit
     IntOp $0 ${SF_SELECTED} | ${SF_RO}
-    IntOp $0 ${SF_BOLD}
+    IntOp $0 $0 | ${SF_BOLD}
     SectionSetFlags ${SECTION1} $0
 FunctionEnd
 
@@ -215,11 +218,23 @@ Function page_info
     nsDialogs::Show
 FunctionEnd
 
+Function get_rtlsdr
+    inetc::get "http://sdr.osmocom.org/trac/raw-attachment/wiki/rtl-sdr/RelWithDebInfo.zip" "$TEMP\rtlsdr.zip" /end
+    Pop $R0
+    StrCmp $R0 "OK" exists
+    MessageBox MB_OK "rtlsdr download failed: $R0"
+    return
+    exists:
+    ZipDLL::extractall "$TEMP\rtlsdr.zip" "$TEMP"
+    CopyFiles "$TEMP\rtl-sdr-release\x32\*.dll" "$INSTDIR"
+    ;Delete "$TEMP\rtlsdr.zip"
+    RmDir /r "$TEMP\rtl-sdr-release"
+FunctionEnd
 
 Function get_python
     IfFileExists "$TEMP\python.msi" exists download
     download:
-    inetc::get "http://www.python.org/ftp/python/2.7.5/python-2.7.5.msi" "$TEMP\python.msi"
+    inetc::get "http://www.python.org/ftp/python/2.7.5/python-2.7.5.msi" "$TEMP\python.msi"  /end
     Pop $R0
     StrCmp $R0 "OK" exists
     MessageBox MB_OK "Python download failed: $R0"
@@ -232,7 +247,7 @@ FunctionEnd
 Function get_wxpython
     IfFileExists "$TEMP\wxPython2.8-win32-unicode-2.8.12.1-py27.exe" exists download
     download:
-    inetc::get "http://downloads.sourceforge.net/wxpython/wxPython2.8-win32-unicode-2.8.12.1-py27.exe" "$TEMP\wxPython2.8-win32-unicode-2.8.12.1-py27.exe"
+    inetc::get "http://downloads.sourceforge.net/wxpython/wxPython2.8-win32-unicode-2.8.12.1-py27.exe" "$TEMP\wxPython2.8-win32-unicode-2.8.12.1-py27.exe" /end
     Pop $R0
     StrCmp $R0 "OK" exists
     MessageBox MB_OK "wxPython download failed: $R0"
@@ -245,7 +260,7 @@ FunctionEnd
 Function get_matplotlib
     IfFileExists "$TEMP\matplotlib-1.3.0.win32-py2.7.exe" exists download
     download:
-    inetc::get "http://downloads.sourceforge.net/project/matplotlib/matplotlib/matplotlib-1.3.0/matplotlib-1.3.0.win32-py2.7.exe" "$TEMP\matplotlib-1.3.0.win32-py2.7.exe"
+    inetc::get "http://downloads.sourceforge.net/project/matplotlib/matplotlib/matplotlib-1.3.0/matplotlib-1.3.0.win32-py2.7.exe" "$TEMP\matplotlib-1.3.0.win32-py2.7.exe"  /end
     Pop $R0
     StrCmp $R0 "OK" exists
     MessageBox MB_OK "matplotlib download failed: $R0"
@@ -258,7 +273,7 @@ FunctionEnd
 Function get_numpy
     IfFileExists "$TEMP\numpy-1.7.1.win32-py2.7.exe" exists download
     download:
-    inetc::get "https://pypi.python.org/packages/2.7/n/numpy/numpy-1.7.1.win32-py2.7.exe" "$TEMP\numpy-1.7.1.win32-py2.7.exe"
+    inetc::get "https://pypi.python.org/packages/2.7/n/numpy/numpy-1.7.1.win32-py2.7.exe" "$TEMP\numpy-1.7.1.win32-py2.7.exe"  /end
     Pop $R0
     StrCmp $R0 "OK" exists
     MessageBox MB_OK "NumPy download failed: $R0"
@@ -271,7 +286,7 @@ FunctionEnd
 Function get_pyparsing
     IfFileExists "$TEMP\pyparsing-2.0.1.win32-py2.7.exe" exists download
     download:
-    inetc::get "http://downloads.sourceforge.net/project/pyparsing/pyparsing/pyparsing-2.0.1/pyparsing-2.0.1.win32-py2.7.exe" "$TEMP\pyparsing-2.0.1.win32-py2.7.exe"
+    inetc::get "http://downloads.sourceforge.net/project/pyparsing/pyparsing/pyparsing-2.0.1/pyparsing-2.0.1.win32-py2.7.exe" "$TEMP\pyparsing-2.0.1.win32-py2.7.exe"  /end
     Pop $R0
     StrCmp $R0 "OK" exists
     MessageBox MB_OK "pyparsing download failed: $R0"
@@ -284,7 +299,7 @@ FunctionEnd
 Function get_setuptools
     IfFileExists "$TEMP\setuptools-1.1.6.tar.gz" exists download
     download:
-    inetc::get "http://pypi.python.org/packages/source/s/setuptools/setuptools-1.1.6.tar.gz" "$TEMP\setuptools-1.1.6.tar.gz"
+    inetc::get "http://pypi.python.org/packages/source/s/setuptools/setuptools-1.1.6.tar.gz" "$TEMP\setuptools-1.1.6.tar.gz"  /end
     Pop $R0
     StrCmp $R0 "OK" exists
     MessageBox MB_OK "setuptools download failed: $R0"
@@ -300,7 +315,7 @@ FunctionEnd
 Function get_dateutil
     IfFileExists "$TEMP\python-dateutil-2.1.tar.gz" exists download
     download:
-    inetc::get "http://pypi.python.org/packages/source/p/python-dateutil/python-dateutil-2.1.tar.gz" "$TEMP\python-dateutil-2.1.tar.gz"
+    inetc::get "http://pypi.python.org/packages/source/p/python-dateutil/python-dateutil-2.1.tar.gz" "$TEMP\python-dateutil-2.1.tar.gz" /end
     Pop $R0
     StrCmp $R0 "OK" exists
     MessageBox MB_OK "dateutil download failed: $R0"
@@ -310,11 +325,11 @@ Function get_dateutil
     SetOutPath "$TEMP\python-dateutil-2.1"
     ExecWait "python $TEMP\python-dateutil-2.1\setup.py install"
     ;Delete "$TEMP\python-dateutil-2.1.tar.gz"
-    RmDir /r "$TEMP\setuptools-1.1.6"
+    RmDir /r "$TEMP\python-dateutil-2.1.tar.gz"
 FunctionEnd
 
 Function get_pyrtlsdr
-    inetc::get "https://github.com/roger-/pyrtlsdr/archive/master.zip" "$TEMP\pyrtlsdr.zip"
+    inetc::get "https://github.com/roger-/pyrtlsdr/archive/master.zip" "$TEMP\pyrtlsdr.zip" /end
     Pop $R0
     StrCmp $R0 "OK" exists
     MessageBox MB_OK "pyrtlsdr download failed: $R0"
@@ -323,8 +338,8 @@ Function get_pyrtlsdr
     ZipDLL::extractall "$TEMP\pyrtlsdr.zip" "$TEMP"
     SetOutPath "$TEMP\pyrtlsdr-master"
     ExecWait "python $TEMP\pyrtlsdr-master\setup.py install"
-    ;Delete "$TEMP\python-dateutil-2.1.tar.gz"
-    RmDir /r "$TEMP\setuptools-1.1.6"
+    ;Delete "$TEMP\pyrtlsdr.zip"
+    RmDir /r "$TEMP\pyrtlsdr-master"
 FunctionEnd
 
 Function set_installer_path
