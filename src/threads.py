@@ -129,10 +129,11 @@ class ThreadScan(threading.Thread):
 
 
 class ThreadPlot(threading.Thread):
-    def __init__(self, notify, graph, spectrum, settings, grid, full, fade):
+    def __init__(self, notify, lock, graph, spectrum, settings, grid, full, fade):
         threading.Thread.__init__(self)
         self.name = 'ThreadPlot'
         self.notify = notify
+        self.lock = lock
         self.graph = graph
         self.spectrum = spectrum
         self.settings = settings
@@ -143,6 +144,7 @@ class ThreadPlot(threading.Thread):
         self.start()
 
     def run(self):
+        self.lock.acquire()
         setup_plot(self.graph, self.settings, self.grid)
 
         axes = self.graph.get_axes()
@@ -164,6 +166,7 @@ class ThreadPlot(threading.Thread):
             self.annotate(axes)
 
         wx.PostEvent(self.notify, EventThreadStatus(Event.DRAW))
+        self.lock.release()
 
     def retain_plot(self, axes):
         if self.full:

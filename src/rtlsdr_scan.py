@@ -39,6 +39,7 @@ try:
     import multiprocessing
     import os.path
     import rtlsdr
+    import threading
     import webbrowser
 except ImportError as error:
     print('Import error: {0}'.format(error))
@@ -54,7 +55,6 @@ from settings import Settings, Device
 from threads import ThreadScan, ThreadPlot
 from windows import PanelGraph, DialogPrefs, DialogCompare, DialogAutoCal, \
     DialogSaveWarn, Statusbar
-
 
 MODE = ["Single", 0,
         "Continuous", 1]
@@ -83,6 +83,7 @@ class FrameMain(wx.Frame):
         self.grid = True
 
         self.pool = pool
+        self.lock = threading.Lock()
         self.threadScan = None
         self.threadPlot = None
         self.processAnalyse = []
@@ -694,7 +695,7 @@ class FrameMain(wx.Frame):
                 fade = True
             else:
                 fade = False
-            self.threadPlot = ThreadPlot(self, self.graph, self.spectrum,
+            self.threadPlot = ThreadPlot(self, self.lock, self.graph, self.spectrum,
                                         self.settings, self.grid, full, fade)
             return True
         else:
