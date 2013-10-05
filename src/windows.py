@@ -37,6 +37,7 @@ import rtlsdr
 from constants import *
 from events import *
 from misc import split_spectrum
+from plot import open_plot
 from rtltcp import RtlTcp
 import wx.grid as grid
 import wx.lib.masked as masked
@@ -194,11 +195,11 @@ class PanelGraphCompare(wx.Panel):
         self.axesScan.yaxis.set_major_formatter(formatter)
         self.axesDiff = self.axesScan.twinx()
         self.axesDiff.yaxis.set_minor_locator(AutoMinorLocator(10))
-        self.plotScan1, = self.axesScan.update_plot([], [], 'b-',
+        self.plotScan1, = self.axesScan.plot([], [], 'b-',
                                                      linewidth=0.4)
-        self.plotScan2, = self.axesScan.update_plot([], [], 'g-',
+        self.plotScan2, = self.axesScan.plot([], [], 'g-',
                                                      linewidth=0.4)
-        self.plotDiff, = self.axesDiff.update_plot([], [], 'r-', linewidth=0.4)
+        self.plotDiff, = self.axesDiff.plot([], [], 'r-', linewidth=0.4)
         self.axesScan.set_ylim(auto=True)
         self.axesDiff.set_ylim(auto=True)
 
@@ -345,7 +346,7 @@ class DialogCompare(wx.Dialog):
         dlg = wx.FileDialog(self, "Open a scan", self.dirname, self.filename,
                             File.RFS, wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
-            _start, _stop, spectrum = self.open_plot(dlg.GetDirectory(),
+            _start, _stop, spectrum = open_plot(dlg.GetDirectory(),
                                                 dlg.GetFilename())
             if(event.EventObject == self.buttonPlot1):
                 self.textPlot1.SetLabel(dlg.GetFilename())

@@ -49,12 +49,13 @@ except ImportError as error:
 from constants import *
 from events import *
 from misc import format_device_name, next_2_to_pow
-from plot import setup_plot, scale_plot
+from plot import setup_plot, scale_plot, open_plot
 from scan import anaylse_data
 from settings import Settings, Device
 from threads import ThreadScan, ThreadPlot
 from windows import PanelGraph, DialogPrefs, DialogCompare, DialogAutoCal, \
     DialogSaveWarn, Statusbar
+
 
 MODE = ["Single", 0,
         "Continuous", 1]
@@ -530,7 +531,7 @@ class FrameMain(wx.Frame):
         self.dirname = dirname
         self.status.set_general("Opening: {0}".format(filename))
 
-        start, stop, spectrum = self.open_plot(dirname, filename)
+        start, stop, spectrum = open_plot(dirname, filename)
 
         if len(spectrum) > 0:
             self.settings.start = start
@@ -543,24 +544,6 @@ class FrameMain(wx.Frame):
             self.status.set_general("Finished")
         else:
             self.status.set_general("Open failed")
-
-    def open_plot(self, dirname, filename):
-        try:
-            handle = open(os.path.join(dirname, filename), 'rb')
-            header = cPickle.load(handle)
-            if header != File.HEADER:
-                wx.MessageBox('Invalid or corrupted file', 'Warning',
-                          wx.OK | wx.ICON_WARNING)
-                return
-            _version = cPickle.load(handle)
-            start = cPickle.load(handle)
-            stop = cPickle.load(handle)
-            spectrum = cPickle.load(handle)
-        except:
-            wx.MessageBox('File could not be opened', 'Warning',
-                          wx.OK | wx.ICON_WARNING)
-
-        return start, stop, spectrum
 
     def auto_cal(self, status):
         freq = self.dlgCal.get_freq()

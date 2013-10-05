@@ -23,7 +23,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import cPickle
+import os
+
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
+import wx
+
+from constants import File
 
 
 def setup_plot(graph, settings, grid):
@@ -60,6 +66,24 @@ def scale_plot(graph, settings, updateScale=False):
                 settings.yMax += 1
             axes.set_ylim(settings.yMin, settings.yMax)
 
+
+def open_plot(dirname, filename):
+    try:
+        handle = open(os.path.join(dirname, filename), 'rb')
+        header = cPickle.load(handle)
+        if header != File.HEADER:
+            wx.MessageBox('Invalid or corrupted file', 'Warning',
+                      wx.OK | wx.ICON_WARNING)
+            return
+        _version = cPickle.load(handle)
+        start = cPickle.load(handle)
+        stop = cPickle.load(handle)
+        spectrum = cPickle.load(handle)
+    except:
+        wx.MessageBox('File could not be opened', 'Warning',
+                      wx.OK | wx.ICON_WARNING)
+
+    return start, stop, spectrum
 
 if __name__ == '__main__':
     print 'Please run rtlsdr_scan.py'
