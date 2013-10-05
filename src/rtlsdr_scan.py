@@ -266,11 +266,11 @@ class FrameMain(wx.Frame):
     def create_menu(self):
         menuFile = wx.Menu()
         self.menuOpen = menuFile.Append(wx.ID_OPEN, "&Open...",
-                                        "Open update_plot")
+                                        "Open plot")
         self.menuSave = menuFile.Append(wx.ID_SAVE, "&Save As...",
-                                          "Save update_plot")
+                                          "Save plot")
         self.menuExport = menuFile.Append(wx.ID_ANY, "&Export...",
-                                            "Export update_plot")
+                                            "Export plot")
         menuExit = menuFile.Append(wx.ID_EXIT, "E&xit", "Exit the program")
 
         menuScan = wx.Menu()
@@ -802,7 +802,7 @@ class DropTarget(wx.FileDropTarget):
 
 def arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("file", help="update_plot filename", nargs='?')
+    parser.add_argument("file", help="plot filename", nargs='?')
     args = parser.parse_args()
 
     filename = None
