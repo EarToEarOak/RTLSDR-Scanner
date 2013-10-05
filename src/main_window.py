@@ -225,7 +225,7 @@ class FrameMain(wx.Frame):
 
         self.checkUpdate = wx.CheckBox(self.panel, wx.ID_ANY,
                                         "Live update")
-        self.checkUpdate.SetToolTip(wx.ToolTip('Update update_plot with live '
+        self.checkUpdate.SetToolTip(wx.ToolTip('Update plot with live '
                                                'samples (can be slow)'))
         self.checkUpdate.SetValue(self.settings.liveUpdate)
         self.Bind(wx.EVT_CHECKBOX, self.on_check_update, self.checkUpdate)
@@ -277,11 +277,11 @@ class FrameMain(wx.Frame):
     def create_menu(self):
         menuFile = wx.Menu()
         self.menuOpen = menuFile.Append(wx.ID_OPEN, "&Open...",
-                                        "Open update_plot")
+                                        "Open plot")
         self.menuSave = menuFile.Append(wx.ID_SAVE, "&Save As...",
-                                          "Save update_plot")
+                                          "Save plot")
         self.menuExport = menuFile.Append(wx.ID_ANY, "&Export...",
-                                            "Export update_plot")
+                                            "Export plot")
         menuExit = menuFile.Append(wx.ID_EXIT, "E&xit", "Exit the program")
 
         menuScan = wx.Menu()

@@ -103,7 +103,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
 #         self.DeleteTool(self.wx_ids['Forward'])
 #         self.DeleteTool(self.wx_ids['Subplots'])
         self.AddSimpleTool(navId, _load_bitmap('hand.png'),
-                           'Range', 'Set update_plot range')
+                           'Range', 'Set plot range')
         wx.EVT_TOOL(self, navId, self.on_range)
 
     def on_range(self, _event):
@@ -319,8 +319,8 @@ class DialogCompare(wx.Dialog):
 
         self.graph = PanelGraphCompare(self)
 
-        self.buttonPlot1 = wx.Button(self, wx.ID_ANY, 'Load update_plot #1')
-        self.buttonPlot2 = wx.Button(self, wx.ID_ANY, 'Load update_plot #2')
+        self.buttonPlot1 = wx.Button(self, wx.ID_ANY, 'Load plot #1')
+        self.buttonPlot2 = wx.Button(self, wx.ID_ANY, 'Load plot #2')
         self.Bind(wx.EVT_BUTTON, self.on_load_plot, self.buttonPlot1)
         self.Bind(wx.EVT_BUTTON, self.on_load_plot, self.buttonPlot2)
         self.textPlot1 = wx.StaticText(self, label="<None>")
@@ -463,7 +463,7 @@ class DialogOffset(wx.Dialog):
         textHelp = wx.StaticText(self,
             label="Remove the aerial and press refresh, "
             "adjust the offset so the shaded areas overlay the flattest parts "
-            "of the update_plot.")
+            "of the plot.")
 
         textFreq = wx.StaticText(self, label="Test frequency (MHz)")
         self.spinFreq = wx.SpinCtrl(self)
@@ -527,7 +527,7 @@ class DialogOffset(wx.Dialog):
         self.EndModal(wx.ID_OK)
 
     def on_refresh(self, _event):
-        update_plot = []
+        plot = []
 
         dlg = wx.BusyInfo('Please wait...')
 
@@ -562,9 +562,9 @@ class DialogOffset(wx.Dialog):
 
         for x, y in itertools.izip(freqs, powers):
             x = x * SAMPLE_RATE / 2e6
-            update_plot.append((x, y))
-        update_plot.sort()
-        x, y = numpy.transpose(update_plot)
+            plot.append((x, y))
+        plot.sort()
+        x, y = numpy.transpose(plot)
 
         self.axes.clear()
         self.band1 = None
@@ -792,7 +792,7 @@ class DialogSaveWarn(wx.Dialog):
         wx.Dialog.__init__(self, parent=parent, title="Warning")
 
         prompt = ["scanning again", "opening a file", "exiting"][warnType]
-        text = wx.StaticText(self, label="Save update_plot before {0}?".format(prompt))
+        text = wx.StaticText(self, label="Save plot before {0}?".format(prompt))
         icon = wx.StaticBitmap(self, wx.ID_ANY,
                                wx.ArtProvider.GetBitmap(wx.ART_INFORMATION,
                                                         wx.ART_MESSAGE_BOX))
@@ -894,7 +894,7 @@ class DialogRefresh(wx.Dialog):
 
         wx.Dialog.__init__(self, parent=parent, style=0)
 
-        text = wx.StaticText(self, label="Refreshing update_plot, please wait...")
+        text = wx.StaticText(self, label="Refreshing plot, please wait...")
         icon = wx.StaticBitmap(self, wx.ID_ANY,
                                wx.ArtProvider.GetBitmap(wx.ART_INFORMATION,
                                                         wx.ART_MESSAGE_BOX))

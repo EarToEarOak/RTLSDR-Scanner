@@ -42,7 +42,7 @@ class RtlsdrScanner(wx.App):
 
 def arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("file", help="update_plot filename", nargs='?')
+    parser.add_argument("file", help="plot filename", nargs='?')
     args = parser.parse_args()
 
     filename = None
