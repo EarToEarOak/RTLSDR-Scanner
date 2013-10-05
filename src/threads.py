@@ -83,7 +83,7 @@ class ThreadScan(threading.Thread):
             except (TypeError, AttributeError) as error:
                 if self.notify:
                     wx.PostEvent(self.notify,
-                             EventThreadStatus(Event.ERROR_DONGLE,
+                             EventThreadStatus(Event.ERROR,
                                                0, error.message))
                 return
 
