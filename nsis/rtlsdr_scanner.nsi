@@ -51,7 +51,9 @@ Page custom page_info
 
 !define INFO '"This will install RTLSDR Scanner and its Python dependencies $\r$\n$\r$\n \
 It will add the new installation of Python to the path, potentially causing problems $\r$\n \
-to previous Python installs"'
+to previous Python installs $\r$\n$\r$\n \
+You can update to the latest versions of RTLSDR-Scanner, $\r$\n \
+the rtlsdr driver and pyrtlsdr by running this installer again"'
 
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
@@ -62,7 +64,7 @@ ShowInstDetails show
 ShowUnInstDetails show
 
 
-Section "!RTLSDR Scanner" SECTION1
+Section "RTLSDR Scanner (Required)" SECTION1
     SetOutPath "$INSTDIR"
     SetOverwrite ifnewer
     File "license.txt"
@@ -73,7 +75,7 @@ SectionEnd
 
 
 SectionGroup "Dependencies" SECTION2
-    Section "RTLSDR Driver"
+    Section "RTLSDR Driver" SECTION3
         Call get_rtlsdr
     SectionEnd
     SectionGroup "Python"
@@ -102,15 +104,17 @@ SectionGroup "Dependencies" SECTION2
         Section "dateutils 2.1"
             Call get_dateutil
         SectionEnd
-        Section "pyrtlsdr"
+        Section "pyrtlsdr" SECTION4
             Call get_pyrtlsdr
         SectionEnd
     SectionGroupEnd
 SectionGroupEnd
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-!insertmacro MUI_DESCRIPTION_TEXT ${SECTION1} "RTLSDR Scanner (Required)"
+!insertmacro MUI_DESCRIPTION_TEXT ${SECTION1} "RTLSDR Scanner"
 !insertmacro MUI_DESCRIPTION_TEXT ${SECTION2} "Dependencies"
+!insertmacro MUI_DESCRIPTION_TEXT ${SECTION3} "Latest rtlsdr driver"
+!insertmacro MUI_DESCRIPTION_TEXT ${SECTION4} "Latest Python wrapper for the rtlsdr driver"
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 
