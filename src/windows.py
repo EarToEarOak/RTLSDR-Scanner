@@ -313,7 +313,6 @@ class DialogCompare(wx.Dialog):
     def __init__(self, parent, dirname, filename):
 
         self.dirname = dirname
-        self.filename = filename
 
         wx.Dialog.__init__(self, parent=parent, title="Compare plots",
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.MAXIMIZE_BOX)
@@ -344,10 +343,11 @@ class DialogCompare(wx.Dialog):
         self.SetSizerAndFit(sizer)
 
     def on_load_plot(self, event):
-        dlg = wx.FileDialog(self, "Open a scan", self.dirname, self.filename,
+        dlg = wx.FileDialog(self, "Open a scan", self.dirname, "",
                             File.RFS, wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
-            _start, _stop, spectrum = open_plot(dlg.GetDirectory(),
+            self.dirname = dlg.GetDirectory()
+            _start, _stop, spectrum = open_plot(self.dirname,
                                                 dlg.GetFilename())
             if(event.EventObject == self.buttonPlot1):
                 self.textPlot1.SetLabel(dlg.GetFilename())
