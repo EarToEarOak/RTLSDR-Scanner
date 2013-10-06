@@ -209,7 +209,7 @@ class FrameMain(wx.Frame):
         self.checkUpdate = wx.CheckBox(self.panel, wx.ID_ANY,
                                         "Live update")
         self.checkUpdate.SetToolTip(wx.ToolTip('Update plot with live '
-                                               'samples (can be slow)'))
+                                               'samples (experimental)'))
         self.checkUpdate.SetValue(self.settings.liveUpdate)
         self.Bind(wx.EVT_CHECKBOX, self.on_check_update, self.checkUpdate)
 
