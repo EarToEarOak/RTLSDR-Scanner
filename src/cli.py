@@ -26,7 +26,7 @@
 import Queue
 import os
 import sys
-import urlparse
+from urlparse import urlparse
 
 from constants import SAMPLE_RATE
 from devices import Device, get_devices
@@ -69,21 +69,20 @@ class Cli():
                 count = len(self.settings.devices)
                 if index > count - 1:
                         error = "Device not found ({0} devices in total)".format(count)
+            else:
+                device = Device()
+                device.isDevice = False
+                url = urlparse('//' + remote)
+                if url.hostname is not None:
+                        device.server = url.hostname
                 else:
-                    if remote is not None:
-                        device = Device()
-                        device.isDevice = False
-                        url = urlparse('//' + remote)
-                        if url.hostname is not None:
-                                device.server = url.hostname
-                        else:
-                            error = "Invalid hostname"
-                        if url.port is not None:
-                            device.port = url.port
-                        else:
-                            device.port = 1234
-                        self.settings.devices.append(device)
-                        index = len(self.settings.devices) - 1
+                    error = "Invalid hostname"
+                if url.port is not None:
+                    device.port = url.port
+                else:
+                    device.port = 1234
+                self.settings.devices.append(device)
+                index = len(self.settings.devices) - 1
 
         if error is not None:
             print "Error: {0}".format(error)
