@@ -23,14 +23,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import Queue
+
 import wx
+
+EVT_THREAD_STATUS = wx.NewId()
 
 
 class Event:
     STARTING, SCAN, DATA, FINISHED, STOPPED, \
     ERROR, DRAW, PLOTTED, PLOTTED_FULL = range(9)
-
-EVT_THREAD_STATUS = wx.NewId()
 
 
 class Status():
@@ -54,6 +56,13 @@ class EventThreadStatus(wx.PyEvent):
         wx.PyEvent.__init__(self)
         self.SetEventType(EVT_THREAD_STATUS)
         self.data = Status(status, freq, data)
+
+
+def post_event(destination, status):
+    if isinstance(destination, Queue.Queue):
+        destination.put(status)
+    else:
+        wx.PostEvent(destination, status)
 
 
 if __name__ == '__main__':

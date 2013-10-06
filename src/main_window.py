@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 #
 # rtlsdr_scan
 #
@@ -23,6 +22,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import os.path
+import threading
+import webbrowser
 
 try:
     input = raw_input
@@ -34,47 +36,22 @@ try:
     matplotlib.interactive(True)
     matplotlib.use('WXAgg')
     import rtlsdr
+    import wx
 except ImportError as error:
-    print('Import error: {0}'.format(error))
+    print 'Import error: {0}'.format(error)
     input('\nError importing libraries\nPress [Return] to exit')
     exit(1)
 
-import cPickle
-import math
-import os.path
-import threading
-import webbrowser
-
 from constants import *
-from events import *
-from misc import format_device_name, next_2_to_pow
-from plot import setup_plot, scale_plot, open_plot
-from scan import anaylse_data
-from settings import Settings, Device
-from threads import ThreadScan, ThreadPlot
+from devices import get_devices
+from events import EVT_THREAD_STATUS, Event
+from misc import next_2_to_pow
+from plot import setup_plot, scale_plot, open_plot, save_plot, export_plot, \
+    ThreadPlot
+from scan import ThreadScan, anaylse_data, update_spectrum
+from settings import Settings
 from windows import PanelGraph, DialogPrefs, DialogCompare, DialogAutoCal, \
     DialogSaveWarn, Statusbar
-
-
-MODE = ["Single", 0,
-        "Continuous", 1]
-NFFT = [128,
-        512,
-        1024,
-        2048,
-        4096,
-        8192,
-        16384,
-        32768]
-DWELL = ["10 ms", 0.01,
-         "25 ms", 0.025,
-         "50 ms", 0.05,
-         "100 ms", 0.1,
-         "200 ms", 0.2,
-         "500 ms", 0.5,
-         "1 s", 1,
-         "2 s", 2,
-         "5 s", 5]
 
 
 class DropTarget(wx.FileDropTarget):
@@ -87,6 +64,12 @@ class DropTarget(wx.FileDropTarget):
         if os.path.splitext(filename)[1].lower() == ".rfs":
             self.window.dirname, self.window.filename = os.path.split(filename)
             self.window.open()
+
+
+class RtlSdrScanner(wx.App):
+    def __init__(self, pool):
+        self.pool = pool
+        wx.App.__init__(self, redirect=False)
 
 
 class FrameMain(wx.Frame):
@@ -141,7 +124,7 @@ class FrameMain(wx.Frame):
         self.isSaved = True
 
         self.settings = Settings()
-        self.devices = self.get_devices()
+        self.devices = get_devices(self.settings.devices)
         self.oldCal = 0
 
         displaySize = wx.DisplaySize()
@@ -372,13 +355,7 @@ class FrameMain(wx.Frame):
             self.status.set_general("Saving")
             self.filename = dlg.GetFilename()
             self.dirname = dlg.GetDirectory()
-            handle = open(os.path.join(self.dirname, self.filename), 'wb')
-            cPickle.dump(File.HEADER, handle)
-            cPickle.dump(File.VERSION, handle)
-            cPickle.dump(self.settings.start, handle)
-            cPickle.dump(self.settings.stop, handle)
-            cPickle.dump(self.spectrum, handle)
-            handle.close()
+            save_plot(self.dirname, self.filename, self.settings, self.spectrum)
             self.isSaved = True
             self.status.set_general("Finished")
         dlg.Destroy()
@@ -390,11 +367,7 @@ class FrameMain(wx.Frame):
             self.status.set_general("Exporting")
             self.filename = dlg.GetFilename()
             self.dirname = dlg.GetDirectory()
-            handle = open(os.path.join(self.dirname, self.filename), 'wb')
-            handle.write("Frequency (MHz),Level (dB)\n")
-            for freq, pwr in self.spectrum.iteritems():
-                handle.write("{0},{1}\n".format(freq, pwr))
-            handle.close()
+            export_plot(self.dirname, self.filename, self.spectrum)
             self.status.set_general("Finished")
         dlg.Destroy()
 
@@ -530,7 +503,9 @@ class FrameMain(wx.Frame):
 
     def on_process_done(self, data):
         freq, scan = data
-        self.update_spectrum(freq, scan)
+        offset = self.settings.devices[self.settings.index].offset
+        update_spectrum(self.settings.start, self.settings.stop, freq, scan,
+                        offset, self.spectrum)
         self.processAnalyse.remove(freq)
         self.re_scan()
 
@@ -641,24 +616,6 @@ class FrameMain(wx.Frame):
                 self.set_controls(True)
             self.update_plot(True)
 
-    def update_spectrum(self, freqCentre, scan):
-        offset = self.settings.devices[self.settings.index].offset
-        upperStart = freqCentre + offset
-        upperEnd = freqCentre + offset + BANDWIDTH / 2
-        lowerStart = freqCentre - offset - BANDWIDTH / 2
-        lowerEnd = freqCentre - offset
-
-        for freq in scan:
-            if self.settings.start < freq < self.settings.stop:
-                power = 10 * math.log10(scan[freq])
-                if upperStart < freq * 1e6 < upperEnd:
-                    self.spectrum[freq] = power
-                if lowerStart < freq * 1e6 < lowerEnd:
-                    if freq in self.spectrum:
-                        self.spectrum[freq] = (self.spectrum[freq] + power) / 2
-                    else:
-                        self.spectrum[freq] = power
-
     def set_controls(self, state):
         self.spinCtrlStart.Enable(state)
         self.spinCtrlStop.Enable(state)
@@ -752,33 +709,10 @@ class FrameMain(wx.Frame):
 
     def refresh_devices(self):
         self.settings.devices = self.devices
-        devices = self.get_devices()
+        devices = get_devices(self.settings.devices)
         if self.settings.index > len(self.devices) - 1:
             self.settings.index = 0
         self.settings.save()
-        return devices
-
-    def get_devices(self):
-        devices = []
-        count = rtlsdr.librtlsdr.rtlsdr_get_device_count()
-
-        for dev in range(0, count):
-            device = Device()
-            device.index = dev
-            device.name = format_device_name(rtlsdr.librtlsdr.rtlsdr_get_device_name(dev))
-            device.calibration = 0.0
-            device.lo = 0.0
-            for conf in self.settings.devices:
-                # TODO: better matching than just name?
-                if conf.isDevice and device.name == conf.name:
-                    device.set(conf)
-
-            devices.append(device)
-
-        for conf in self.settings.devices:
-            if not conf.isDevice:
-                devices.append(conf)
-
         return devices
 
     def wait_background(self):
@@ -791,3 +725,8 @@ class FrameMain(wx.Frame):
             self.threadPlot = None
         self.pool.close()
         self.pool.join()
+
+
+if __name__ == '__main__':
+    print 'Please run rtlsdr_scan.py'
+    exit(1)

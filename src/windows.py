@@ -33,9 +33,10 @@ from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas,
 from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
 import numpy
 import rtlsdr
+import wx
 
 from constants import *
-from events import *
+from events import EventThreadStatus, Event
 from misc import split_spectrum
 from plot import open_plot
 from rtltcp import RtlTcp
@@ -434,7 +435,7 @@ class DialogAutoCal(wx.Dialog):
     def set_cal(self, cal):
         self.cal = cal
         self.enable_controls()
-        self.textResult.SetLabel("SCorrection (ppm): {0:.3f}".format(cal))
+        self.textResult.SetLabel("Correction (ppm): {0:.3f}".format(cal))
 
     def get_cal(self):
         return self.cal

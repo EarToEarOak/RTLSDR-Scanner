@@ -25,30 +25,11 @@
 
 import wx
 
-from misc import format_device_name
-
-
-class Device():
-    def __init__(self):
-        self.isDevice = True
-        self.index = None
-        self.name = None
-        self.server = 'localhost'
-        self.port = 1234
-        self.gain = 0
-        self.calibration = 0
-        self.lo = 0
-        self.offset = 250e3
-
-    def set(self, device):
-        self.gain = device.gain
-        self.calibration = device.calibration
-        self.lo = device.lo
-        self.offset = device.offset
+from devices import Device, format_device_name
 
 
 class Settings():
-    def __init__(self):
+    def __init__(self, load = True):
         self.cfg = None
 
         self.saveWarn = True
@@ -73,7 +54,8 @@ class Settings():
         self.devices = []
         self.index = 0
 
-        self.load()
+        if load:
+            self.load()
 
     def load(self):
         servers = 0

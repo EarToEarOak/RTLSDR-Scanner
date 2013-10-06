@@ -27,39 +27,61 @@
 
 import argparse
 import multiprocessing
-import os.path
 
-import wx
-
-from main_window import FrameMain
-
-
-class RtlsdrScanner(wx.App):
-    def __init__(self, pool):
-        self.pool = pool
-        wx.App.__init__(self, redirect=False)
+from cli import Cli
+from main_window import FrameMain, RtlSdrScanner
 
 
 def arguments():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("file", help="plot filename", nargs='?')
+    parser = argparse.ArgumentParser(prog="rtlsdr_scan.py",
+                                     description='''
+                                        Scan a range of frequencies and
+                                        save the results to a file''')
+    parser.add_argument("-s", "--start", help="Start frequency (MHz)",
+                        type=int)
+    parser.add_argument("-e", "--end", help="End frequency (MHz)", type=int)
+    parser.add_argument("-g", "--gain", help="Gain (dB)", type=int, default=0)
+    parser.add_argument("-d", "--dwell", help="Dwell time (seconds)",
+                        type=float, default=0.1)
+    parser.add_argument("-f", "--fft", help="FFT bins", type=int, default=1024)
+    parser.add_argument("-l", "--lo", help="Local oscillator offset", type=int,
+                        default=0)
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("-i", "--index", help="Device index (from 0)", type=int,
+                       default=0)
+    group.add_argument("-r", "--remote", help="Server IP and port", type=str)
+    parser.add_argument("file", help="Output file (.rfs or .cvs)", nargs='?')
     args = parser.parse_args()
 
-    filename = None
-    directory = None
-    if args.file != None:
-        directory, filename = os.path.split(args.file)
+    error = None
+    isGui = True
+    if args.start is not None or args.end is not None:
+        if args.start is not None:
+            if args.end is not None:
+                if args.file is not None:
+                    isGui = False
+                else:
+                    error = "No filename specified"
+            else:
+                error = "No end frequency specified"
+        else:
+            error = "No start frequency specified"
 
-    return directory, filename
+    if error is not None:
+        print "Error: {0}".format(error)
+        parser.exit(1)
+
+    return isGui, (args)
 
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
     pool = multiprocessing.Pool()
-    app = RtlsdrScanner(pool)
-    frame = FrameMain("RTLSDR Scanner", pool)
-    directory, filename = arguments()
-
-    if filename != None:
-        frame.open(directory, filename)
-    app.MainLoop()
+    print "RTLSDR Scanner\n"
+    isGui, args = arguments()
+    if isGui:
+        app = RtlSdrScanner(pool)
+        FrameMain("RTLSDR Scanner", pool)
+        app.MainLoop()
+    else:
+        Cli(pool, args)
