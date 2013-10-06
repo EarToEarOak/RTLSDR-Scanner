@@ -144,7 +144,6 @@ Section Uninstall
     Delete "$INSTDIR\uninst.exe"
     Delete "$INSTDIR\license.txt"
     Delete "$INSTDIR\windows.py"
-    Delete "$INSTDIR\threads.py"
     Delete "$INSTDIR\settings.py"
     Delete "$INSTDIR\scan.py"
     Delete "$INSTDIR\rtltcp.py"
@@ -152,8 +151,15 @@ Section Uninstall
     Delete "$INSTDIR\rtlsdr_scan.py"
     Delete "$INSTDIR\plot.py"
     Delete "$INSTDIR\misc.py"
+    Delete "$INSTDIR\main_window.py"
     Delete "$INSTDIR\events.py"
+    Delete "$INSTDIR\devices.py"
     Delete "$INSTDIR\constants.py"
+    Delete "$INSTDIR\cli.py"
+
+    ; Obsolete
+    Delete "$INSTDIR\threads.py"
+
 
     Delete "$SMPROGRAMS\RTLSDR Scanner\Uninstall.lnk"
     Delete "$SMPROGRAMS\RTLSDR Scanner\Website.lnk"

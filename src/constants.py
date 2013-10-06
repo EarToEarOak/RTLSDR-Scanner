@@ -29,6 +29,26 @@ GAIN = 0
 SAMPLE_RATE = 2e6
 BANDWIDTH = 500e3
 
+MODE = ["Single", 0,
+        "Continuous", 1]
+NFFT = [128,
+        512,
+        1024,
+        2048,
+        4096,
+        8192,
+        16384,
+        32768]
+DWELL = ["10 ms", 0.01,
+         "25 ms", 0.025,
+         "50 ms", 0.05,
+         "100 ms", 0.1,
+         "200 ms", 0.2,
+         "500 ms", 0.5,
+         "1 s", 1,
+         "2 s", 2,
+         "5 s", 5]
+
 
 class Warn:
     SCAN, OPEN, EXIT = range(3)

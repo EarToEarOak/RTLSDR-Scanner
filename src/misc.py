@@ -32,14 +32,6 @@ def split_spectrum(spectrum):
     return freqs, powers
 
 
-def format_device_name(name):
-    remove = ["/", "\\"]
-    for char in remove:
-        name = name.replace(char, " ")
-
-    return name
-
-
 def next_2_to_pow(val):
     val -= 1
     val |= val >> 1
