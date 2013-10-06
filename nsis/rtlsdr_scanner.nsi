@@ -25,6 +25,7 @@
 
 !include "EnvVarUpdate.nsh"
 !include "LogicLib.nsh"
+!include "Sections.nsh"
 !include "MUI.nsh"
 !include "nsDialogs.nsh"
 !include "nsDialogs_createTextMultiline.nsh"
@@ -42,6 +43,7 @@
 !insertmacro MUI_PAGE_WELCOME
 Page custom page_info
 !insertmacro MUI_PAGE_LICENSE "license.txt"
+Page custom page_type page_type_end
 !insertmacro MUI_PAGE_COMPONENTS
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
@@ -49,13 +51,14 @@ Page custom page_info
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_LANGUAGE "English"
 
+!define TYPE_FULL "Full"
+!define TYPE_UPDATE "Update"
 !define INFO '"This will install RTLSDR Scanner and its Python dependencies $\r$\n$\r$\n \
 When asked it is recommended to use the default options for all software $\r$\n$\r$\n \
 It will add the new installation of Python to the path, potentially causing problems $\r$\n \
 to previous Python installs $\r$\n$\r$\n \
 You can update to the latest versions of RTLSDR-Scanner, $\r$\n \
-the rtlsdr driver and pyrtlsdr by running this installer again, $\r$\n \
-but only selecting these options to install"'
+the rtlsdr driver and pyrtlsdr by running this installer again $\r$\n"'
 
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
@@ -65,8 +68,14 @@ InstallDir "$PROGRAMFILES\RTLSDR Scanner"
 ShowInstDetails show
 ShowUnInstDetails show
 
+Var Type
+Var Page
+Var Text
+Var Radio1
+Var radio2
 
-Section "RTLSDR Scanner (Required)" SECTION1
+
+Section "RTLSDR Scanner (Required)" SEC_SCAN
     SetOutPath "$INSTDIR"
     SetOverwrite ifnewer
     File "license.txt"
@@ -76,12 +85,12 @@ Section "RTLSDR Scanner (Required)" SECTION1
 SectionEnd
 
 
-SectionGroup "Dependencies" SECTION2
-    Section "RTLSDR Driver" SECTION3
+SectionGroup "/e" "Dependencies" SEC_DEP
+    Section "RTLSDR Driver" SEC_RTLSDR
         Call get_rtlsdr
     SectionEnd
-    SectionGroup "Python"
-        Section "Python 2.7.5"
+    SectionGroup "/e" "Python" SEC_PYDEP
+        Section "Python 2.7.5" SEC_PYTHON
            Call get_python
            Call set_installer_path
         SectionEnd
@@ -106,17 +115,18 @@ SectionGroup "Dependencies" SECTION2
         Section "dateutils 2.1"
             Call get_dateutil
         SectionEnd
-        Section "pyrtlsdr" SECTION4
+        Section "pyrtlsdr" SEC_PYRTLSDR
             Call get_pyrtlsdr
         SectionEnd
     SectionGroupEnd
 SectionGroupEnd
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-!insertmacro MUI_DESCRIPTION_TEXT ${SECTION1} "RTLSDR Scanner"
-!insertmacro MUI_DESCRIPTION_TEXT ${SECTION2} "Dependencies"
-!insertmacro MUI_DESCRIPTION_TEXT ${SECTION3} "Latest rtlsdr driver"
-!insertmacro MUI_DESCRIPTION_TEXT ${SECTION4} "Latest Python wrapper for the rtlsdr driver"
+!insertmacro MUI_DESCRIPTION_TEXT ${SEC_SCAN} "RTLSDR Scanner"
+!insertmacro MUI_DESCRIPTION_TEXT ${SEC_RTLSDR} "Latest rtlsdr driver"
+!insertmacro MUI_DESCRIPTION_TEXT ${SEC_DEP} "Dependencies"
+!insertmacro MUI_DESCRIPTION_TEXT ${SEC_PYDEP} "Python dependencies"
+!insertmacro MUI_DESCRIPTION_TEXT ${SEC_PYRTLSDR} "Latest Python wrapper for the rtlsdr driver"
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 
@@ -175,13 +185,11 @@ Section Uninstall
 SectionEnd
 
 
-Var Page
-Var Text
-
 Function .onInit
+    StrCpy $Type ${TYPE_FULL}
     IntOp $0 ${SF_SELECTED} | ${SF_RO}
     IntOp $0 $0 | ${SF_BOLD}
-    SectionSetFlags ${SECTION1} $0
+    SectionSetFlags ${SEC_SCAN} $0
 FunctionEnd
 
 Function page_info
@@ -195,6 +203,44 @@ Function page_info
     Pop $Text
     SendMessage $Text ${EM_SETREADONLY} 1 0
     nsDialogs::Show
+FunctionEnd
+
+Function page_type
+    !insertmacro MUI_HEADER_TEXT "Installation type" "Please select an install type"
+    nsDialogs::Create 1018
+    Pop $Page
+    ${If} $Page == error
+        Abort
+    ${EndIf}
+    ${NSD_CreateRadioButton} 20% 10% 100% 10u ${TYPE_FULL}
+    Pop $Radio1
+    ${NSD_CreateLabel} 20% 20% 100% 10u "Full installation."
+    Pop $0
+    ${NSD_CreateRadioButton} 20% 40% 100% 10u ${TYPE_UPDATE}
+    Pop $Radio2
+    ${NSD_CreateLabel} 20% 50% 100% 10u "Update the scanner, the rtlsdr library and pyrtlsdr wrapper."
+    Pop $0
+    ${NSD_CreateLabel} 20% 60% 100% 10u "Select this if the dependencies are already installed."
+    Pop $0
+    ${If} $Type == ${TYPE_FULL}
+        ${NSD_SetState} $Radio1 ${BST_CHECKED}
+    ${Else}
+        ${NSD_SetState} $Radio2 ${BST_CHECKED}
+    ${EndIf}
+    nsDialogs::Show
+FunctionEnd
+
+Function page_type_end
+    ${NSD_GetState} $Radio1 $0
+    ${If} $0 == ${BST_CHECKED}
+        StrCpy $Type ${TYPE_FULL}
+        !insertmacro SelectSection ${SEC_DEP}
+    ${Else}
+        StrCpy $Type ${TYPE_UPDATE}
+        !insertmacro UnselectSection ${SEC_DEP}
+        !insertmacro SelectSection ${SEC_RTLSDR}
+        !insertmacro SelectSection ${SEC_PYRTLSDR}
+    ${EndIf}
 FunctionEnd
 
 Function get_rtlsdr_scanner
