@@ -50,10 +50,12 @@ Page custom page_info
 !insertmacro MUI_LANGUAGE "English"
 
 !define INFO '"This will install RTLSDR Scanner and its Python dependencies $\r$\n$\r$\n \
+When asked it is recommended to use the default options for all software $\r$\n$\r$\n \
 It will add the new installation of Python to the path, potentially causing problems $\r$\n \
 to previous Python installs $\r$\n$\r$\n \
 You can update to the latest versions of RTLSDR-Scanner, $\r$\n \
-the rtlsdr driver and pyrtlsdr by running this installer again"'
+the rtlsdr driver and pyrtlsdr by running this installer again, $\r$\n \
+but only selecting these options to install"'
 
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
