@@ -491,6 +491,7 @@ class FrameMain(wx.Frame):
                 self.dlgCal.Destroy()
                 self.dlgCal = None
         elif status == Event.DRAW:
+            self.graph.get_axes().relim()
             self.graph.get_canvas().draw()
         elif status == Event.PLOTTED:
             self.threadPlot = None
