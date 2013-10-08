@@ -75,8 +75,9 @@ class RtlTcp():
         total = 0
         data = []
 
+        recv = ""
         while total < samples * 2:
-            recv = self.socket.recv(16 * 1024)
+            recv = self.socket.recv((samples * 2) - total)
             data.append(recv)
             total += len(recv)
 
@@ -86,7 +87,6 @@ class RtlTcp():
         iq = numpy.empty(len(raw) / 2, 'complex')
         iq.real, iq.imag = raw[::2], raw[1::2]
         iq /= (255 / 2)
-        iq -= (1 + 1j)
 
         return iq
 
