@@ -43,6 +43,7 @@ class RtlTcp():
 
         self.socket = None
         self.tuner = None
+        self.rate = 0
 
         self.setup()
 
@@ -92,12 +93,14 @@ class RtlTcp():
 
     def set_sample_rate(self, rate):
         self.send_command(RtlTcpCmd.SET_SAMPLE_RATE, rate)
+        self.rate = rate
 
     def set_gain(self, gain):
         self.send_command(RtlTcpCmd.SET_GAIN, gain)
 
     def set_center_freq(self, freq):
         self.send_command(RtlTcpCmd.SET_FREQ, freq)
+        self.read_raw(int(self.rate * 2 * 0.1))
 
     def read_samples(self, samples):
 
