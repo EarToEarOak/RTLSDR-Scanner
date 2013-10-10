@@ -22,6 +22,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from ctypes import create_string_buffer, c_ubyte, string_at
+
 import rtlsdr
 
 
@@ -30,6 +32,7 @@ class Device():
         self.isDevice = True
         self.index = None
         self.name = None
+        self.serial = ''
         self.server = 'localhost'
         self.port = 1234
         self.gain = 0
@@ -52,11 +55,16 @@ def get_devices(currentDevices=[]):
         device = Device()
         device.index = dev
         device.name = format_device_name(rtlsdr.librtlsdr.rtlsdr_get_device_name(dev))
+        buffer1 = (c_ubyte * 256)()
+        buffer2 = (c_ubyte * 256)()
+        serial = (c_ubyte * 256)()
+        rtlsdr.librtlsdr.rtlsdr_get_device_usb_strings(dev, buffer1, buffer2,
+                                                       serial)
+        device.serial = string_at(serial)
         device.calibration = 0.0
         device.lo = 0.0
         for conf in currentDevices:
-            # TODO: better matching than just name?
-            if conf.isDevice and device.name == conf.name:
+            if conf.isDevice and device.name == conf.name and device.serial == conf.serial:
                 device.set(conf)
 
         devices.append(device)
