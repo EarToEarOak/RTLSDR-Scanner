@@ -71,6 +71,8 @@ class ThreadPlot(threading.Thread):
         if self.full:
             self.annotate(axes)
 
+        self.graph.get_figure().tight_layout()
+
         wx.PostEvent(self.notify, EventThreadStatus(Event.DRAW))
 
     def retain_plot(self, axes):
