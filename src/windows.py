@@ -167,6 +167,9 @@ class PanelGraph(wx.Panel):
     def on_enter(self, _event):
         self.canvas.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
 
+    def get_figure(self):
+        return self.figure
+
     def get_canvas(self):
         return self.canvas
 
