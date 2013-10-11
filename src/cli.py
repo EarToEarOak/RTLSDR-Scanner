@@ -68,7 +68,9 @@ class Cli():
                 self.settings.devices = get_devices()
                 count = len(self.settings.devices)
                 if index > count - 1:
-                        error = "Device not found ({0} devices in total)".format(count)
+                        error = "Device not found ({0} devices in total):\n".format(count)
+                        for device in self.settings.devices:
+                            error += "\t{0}: {1}\n".format(device.index, device.name)
             else:
                 device = Device()
                 device.isDevice = False
