@@ -157,7 +157,7 @@ def setup_plot(graph, settings, grid):
     formatter = ScalarFormatter(useOffset=False)
 
     axes.set_title("Frequency Scan\n{0} - {1} MHz,"
-                   " gain = {2}".format(settings.start,
+                   " gain = {2}dB".format(settings.start,
                                         settings.stop, gain))
     axes.set_xlabel("Frequency (MHz)")
     axes.set_ylabel('Level (dB)')

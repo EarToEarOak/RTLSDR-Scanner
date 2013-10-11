@@ -41,6 +41,11 @@ def next_2_to_pow(val):
     val |= val >> 16
     return val + 1
 
+
+def nearest(value, values):
+    offset = [abs(value - v) for v in values]
+    return values[offset.index(min(offset))]
+
 if __name__ == '__main__':
     print 'Please run rtlsdr_scan.py'
     exit(1)

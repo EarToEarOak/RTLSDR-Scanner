@@ -35,6 +35,7 @@ class Device():
         self.serial = ''
         self.server = 'localhost'
         self.port = 1234
+        self.gains = []
         self.gain = 0
         self.calibration = 0
         self.lo = 0
@@ -61,6 +62,8 @@ def get_devices(currentDevices=[]):
         rtlsdr.librtlsdr.rtlsdr_get_device_usb_strings(dev, buffer1, buffer2,
                                                        serial)
         device.serial = string_at(serial)
+        sdr = rtlsdr.RtlSdr(dev)
+        device.gains = sdr.valid_gains_db
         device.calibration = 0.0
         device.lo = 0.0
         for conf in currentDevices:

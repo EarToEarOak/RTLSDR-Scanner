@@ -31,7 +31,7 @@ from urlparse import urlparse
 from constants import SAMPLE_RATE
 from devices import Device, get_devices
 from events import Event
-from misc import next_2_to_pow
+from misc import next_2_to_pow, nearest
 from plot import save_plot, export_plot
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
@@ -64,13 +64,13 @@ class Cli():
         elif ext != ".rfs" and ext != ".csv":
             error = "File extension should be .rfs or .csv"
         else:
+            device = Device()
             if remote is None:
                 self.settings.devices = get_devices()
                 count = len(self.settings.devices)
                 if index > count - 1:
                         error = "Device not found ({0} devices in total)".format(count)
             else:
-                device = Device()
                 device.isDevice = False
                 url = urlparse('//' + remote)
                 if url.hostname is not None:
@@ -90,6 +90,9 @@ class Cli():
 
         if end - 1 < start:
             end = start + 1
+        if remote is None:
+            gain = nearest(gain, self.settings.devices[index].gains)
+
         self.settings.start = start
         self.settings.stop = end
         self.settings.dwell = dwell

@@ -37,7 +37,7 @@ import wx
 
 from constants import *
 from events import EventThreadStatus, Event
-from misc import split_spectrum
+from misc import split_spectrum, nearest
 from plot import open_plot
 from rtltcp import RtlTcp
 import wx.grid as grid
@@ -664,8 +664,10 @@ class DialogPrefs(wx.Dialog):
             self.gridDev.SetReadOnly(i, self.COL_SER, True)
             self.gridDev.SetReadOnly(i, self.COL_IND, True)
             self.gridDev.SetCellRenderer(i, self.COL_SEL, CellRenderer())
-            self.gridDev.SetCellEditor(i, self.COL_GAIN,
-                                       grid.GridCellFloatEditor(-1, 1))
+            if device.isDevice:
+                self.gridDev.SetCellEditor(i, self.COL_GAIN,
+                                           grid.GridCellChoiceEditor(map(str, device.gains),
+                                                                     allowOthers=False))
             self.gridDev.SetCellEditor(i, self.COL_CAL,
                                        grid.GridCellFloatEditor(-1, 3))
             self.gridDev.SetCellEditor(i, self.COL_LO,
@@ -684,7 +686,11 @@ class DialogPrefs(wx.Dialog):
                 self.gridDev.SetCellValue(i, self.COL_IND, '')
             self.gridDev.SetCellBackgroundColour(i, self.COL_SER,
                                                  colourBackground)
-            self.gridDev.SetCellValue(i, self.COL_GAIN, str(device.gain))
+            if device.isDevice:
+                self.gridDev.SetCellValue(i, self.COL_GAIN,
+                                          str(nearest(device.gain, device.gains)))
+            else:
+                self.gridDev.SetCellValue(i, self.COL_GAIN, str(device.gain))
             self.gridDev.SetCellValue(i, self.COL_CAL, str(device.calibration))
             self.gridDev.SetCellValue(i, self.COL_LO, str(device.lo))
             self.gridDev.SetCellValue(i, self.COL_OFF, str(device.offset / 1e3))
