@@ -123,6 +123,7 @@ class PanelGraph(wx.Panel):
     def __init__(self, parent, main):
         self.parent = parent
         self.main = main
+        self.resize = False
 
         wx.Panel.__init__(self, self.parent)
 
@@ -138,6 +139,9 @@ class PanelGraph(wx.Panel):
         vbox = wx.BoxSizer(wx.VERTICAL)
         vbox.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
         vbox.Add(self.toolbar, 0, wx.EXPAND)
+
+        self.Bind(wx.EVT_IDLE, self.on_idle)
+        self.Bind(wx.EVT_SIZE, self.on_size)
 
         self.SetSizer(vbox)
         vbox.Fit(self)
@@ -166,6 +170,25 @@ class PanelGraph(wx.Panel):
 
     def on_enter(self, _event):
         self.canvas.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
+
+    def on_size(self, event):
+        self.resize = True
+        event.Skip()
+
+    def on_idle(self, _event):
+        if self.resize:
+            self.resize = False
+            self.set_size()
+
+    def set_size(self):
+        self.Unbind(wx.EVT_SIZE)
+        window = self.GetClientSize()
+        toolbar = self.toolbar.GetClientSize()
+        self.canvas.SetSize(window)
+        window[1] -= toolbar[1]
+        self.figure.set_size_inches(float(window[0]) / self.figure.get_dpi(),
+                                    float(window[1]) / self.figure.get_dpi())
+        self.Bind(wx.EVT_SIZE, self.on_size)
 
     def get_figure(self):
         return self.figure
