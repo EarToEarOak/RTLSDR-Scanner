@@ -61,7 +61,7 @@ class ThreadScan(threading.Thread):
             return
 
         freq = self.fstart - self.offset - BANDWIDTH
-        while freq <= self.fstop + self.offset:
+        while freq <= self.fstop + self.offset + BANDWIDTH:
             if self.cancel:
                 post_event(self.notify,
                            EventThreadStatus(Event.STOPPED))
@@ -69,7 +69,7 @@ class ThreadScan(threading.Thread):
                 return
             try:
                 progress = ((freq - self.fstart + self.offset + BANDWIDTH) /
-                             (self.fstop - self.fstart + (self.offset * 2) + BANDWIDTH)) * 100
+                            (self.fstop - self.fstart + (self.offset * 2) + BANDWIDTH)) * 100
                 post_event(self.notify,
                            EventThreadStatus(Event.SCAN,
                                                0, progress))
@@ -139,7 +139,6 @@ def anaylse_data(freq, data, cal, nfft):
     for freqPsd, pwr in itertools.izip(freqs, powers):
         xr = freqPsd + (freq / 1e6)
         xr = xr + (xr * cal / 1e6)
-        xr = int((xr * 5e4) + 0.5) / 5e4
         rtl_scan[xr] = pwr
 
     return (freq, rtl_scan)
