@@ -609,6 +609,7 @@ class FrameMain(wx.Frame):
             self.threadScan = None
             if self.settings.mode == Mode.SINGLE:
                 self.set_controls(True)
+                self.update_plot(True)
             else:
                 if self.settings.mode == Mode.CONTIN and not self.stopScan:
                     if self.dlgCal is None and not self.stopAtEnd:
