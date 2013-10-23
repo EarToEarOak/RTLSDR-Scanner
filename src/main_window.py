@@ -81,7 +81,6 @@ class FrameMain(wx.Frame):
         self.lock = threading.Lock()
         self.threadScan = None
         self.threadPlot = None
-        self.processAnalyse = []
         self.stepsTotal = 0
         self.steps = 0
         self.pendingScan = False
@@ -467,7 +466,6 @@ class FrameMain(wx.Frame):
             fftChoice = self.choiceNfft.GetSelection()
             cal = self.devices[self.settings.index].calibration
             nfft = NFFT[fftChoice]
-            self.processAnalyse.append(freq)
             self.pool.apply_async(anaylse_data, (freq, data, cal, nfft),
                              callback=self.on_process_done)
         elif status == Event.STOPPED:
@@ -502,7 +500,6 @@ class FrameMain(wx.Frame):
         offset = self.settings.devices[self.settings.index].offset
         update_spectrum(self.settings.start, self.settings.stop, freq, scan,
                         offset, self.spectrum)
-        self.processAnalyse.remove(freq)
         self.progress()
 
         if self.settings.liveUpdate:
