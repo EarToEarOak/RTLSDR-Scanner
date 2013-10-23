@@ -26,6 +26,7 @@
 import array
 import socket
 import struct
+import threading
 
 import numpy
 
@@ -41,6 +42,7 @@ class RtlTcp():
         self.host = host
         self.port = port
 
+        self.threadBucket = None
         self.socket = None
         self.tuner = None
         self.rate = 0
@@ -50,7 +52,9 @@ class RtlTcp():
     def setup(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((self.host, self.port))
+        self.threadBucket = ThreadBucket(self.socket)
         self.tuner = self.get_header()
+        self.threadBucket.bucket(True)
 
     def get_header(self):
         recv = self.socket.recv(4096)
@@ -77,11 +81,13 @@ class RtlTcp():
         data = []
 
         recv = ""
+        self.threadBucket.bucket(False)
         while total < samples * 2:
             recv = self.socket.recv((samples * 2) - total)
             data.append(recv)
             total += len(recv)
 
+        self.threadBucket.bucket(True)
         return bytearray(''.join(data))
 
     def raw_to_iq(self, raw):
@@ -110,3 +116,25 @@ class RtlTcp():
     def close(self):
         self.socket.shutdown(socket.SHUT_RDWR)
         self.socket.close()
+
+
+class ThreadBucket(threading.Thread):
+    def __init__(self, socket):
+        threading.Thread.__init__(self)
+        self.name = 'ThreadBucket'
+        self.cancel = False
+        self.socket = socket
+        self.state = False
+
+        self.start()
+
+    def run(self):
+        while(not self.cancel):
+            if self.bucket:
+                self.socket.recv(4096)
+
+    def bucket(self, state):
+        self.state = state
+
+    def abort(self):
+        self.cancel = True
