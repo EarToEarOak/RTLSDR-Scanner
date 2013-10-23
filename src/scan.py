@@ -53,26 +53,32 @@ class ThreadScan(threading.Thread):
         self.offset = settings.devices[device].offset
         self.cancel = False
         post_event(self.notify, EventThreadStatus(Event.STARTING))
+        steps = ((self.f_stop() - self.f_start()) / self.f_step()) + 1
+        post_event(self.notify, EventThreadStatus(Event.STEPS, steps))
         self.start()
+
+    def f_start(self):
+        return self.fstart - self.offset - BANDWIDTH
+
+    def f_stop(self):
+        return self.fstop + self.offset + BANDWIDTH
+
+    def f_step(self):
+        return int(BANDWIDTH / 2)
 
     def run(self):
         sdr = self.rtl_setup()
         if sdr is None:
             return
 
-        freq = self.fstart - self.offset - BANDWIDTH
-        while freq <= self.fstop + self.offset + BANDWIDTH:
+        freq = self.f_start()
+        while freq <= self.f_stop():
             if self.cancel:
                 post_event(self.notify,
                            EventThreadStatus(Event.STOPPED))
                 self.rtl_close(sdr)
                 return
             try:
-                progress = ((freq - self.fstart + self.offset + BANDWIDTH) /
-                            (self.fstop - self.fstart + (self.offset * 2) + BANDWIDTH)) * 100
-                post_event(self.notify,
-                           EventThreadStatus(Event.SCAN,
-                                               0, progress))
                 scan = self.rtl_scan(sdr, freq)
                 post_event(self.notify,
                            EventThreadStatus(Event.DATA, freq,
@@ -92,11 +98,11 @@ class ThreadScan(threading.Thread):
                                                  0, error.message))
                 return
 
-            freq += BANDWIDTH / 2
+            freq += self.f_step()
 
         self.rtl_close(sdr)
-        post_event(self.notify, EventThreadStatus(Event.FINISHED,
-                                                  0, self.isCal))
+        if self.isCal:
+            post_event(self.notify, EventThreadStatus(Event.CAL))
 
     def abort(self):
         self.cancel = True

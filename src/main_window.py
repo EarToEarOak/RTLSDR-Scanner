@@ -82,6 +82,8 @@ class FrameMain(wx.Frame):
         self.threadScan = None
         self.threadPlot = None
         self.processAnalyse = []
+        self.stepsTotal = 0
+        self.steps = 0
         self.pendingScan = False
         self.pendingPlot = Plot.NONE
         self.stopAtEnd = False
@@ -355,7 +357,8 @@ class FrameMain(wx.Frame):
             self.status.set_general("Saving")
             self.filename = dlg.GetFilename()
             self.dirname = dlg.GetDirectory()
-            save_plot(self.dirname, self.filename, self.settings, self.spectrum)
+            save_plot(self.dirname, self.filename, self.settings,
+                      self.spectrum)
             self.isSaved = True
             self.status.set_general("Finished")
         dlg.Destroy()
@@ -450,13 +453,15 @@ class FrameMain(wx.Frame):
         data = event.data.get_data()
         if status == Event.STARTING:
             self.status.set_general("Starting")
-        elif status == Event.SCAN:
-            if self.stopAtEnd:
-                self.status.set_general("Stopping")
-            else:
-                self.status.set_general("Scanning")
+        elif status == Event.STEPS:
+            self.stepsTotal = freq * 2
+            self.steps = self.stepsTotal
+            self.status.set_progress(0)
             self.status.show_progress()
-            self.status.set_progress(data)
+        elif status == Event.STEP:
+            self.progress()
+        elif status == Event.CAL:
+            self.auto_cal(Cal.DONE)
         elif status == Event.DATA:
             self.isSaved = False
             fftChoice = self.choiceNfft.GetSelection()
@@ -465,17 +470,6 @@ class FrameMain(wx.Frame):
             self.processAnalyse.append(freq)
             self.pool.apply_async(anaylse_data, (freq, data, cal, nfft),
                              callback=self.on_process_done)
-        elif status == Event.FINISHED:
-            self.status.hide_progress()
-            if self.settings.mode == Mode.SINGLE or self.stopAtEnd:
-                self.status.set_general("Finished")
-            self.threadScan = None
-            if self.settings.mode == Mode.SINGLE:
-                self.set_controls(True)
-            else:
-                self.re_scan()
-            if data:
-                self.auto_cal(Cal.DONE)
         elif status == Event.STOPPED:
             self.status.hide_progress()
             self.status.set_general("Stopped")
@@ -503,12 +497,13 @@ class FrameMain(wx.Frame):
                 self.start_scan()
 
     def on_process_done(self, data):
+        self.progress()
         freq, scan = data
         offset = self.settings.devices[self.settings.index].offset
         update_spectrum(self.settings.start, self.settings.stop, freq, scan,
                         offset, self.spectrum)
         self.processAnalyse.remove(freq)
-        self.re_scan()
+        self.progress()
 
         if self.settings.liveUpdate:
             self.update_plot()
@@ -585,7 +580,6 @@ class FrameMain(wx.Frame):
         choiceDwell = self.choiceDwell.GetSelection()
 
         if not self.threadScan or not self.threadScan.isAlive():
-
             self.set_controls(False)
             dwell = DWELL[1::2][choiceDwell]
             samples = dwell * SAMPLE_RATE
@@ -598,7 +592,6 @@ class FrameMain(wx.Frame):
                                          self.settings.index, samples, isCal)
             self.filename = "Scan {0:.1f}-{1:.1f}MHz".format(self.settings.start,
                                                             self.settings.stop)
-
             return True
 
     def stop_scan(self):
@@ -606,16 +599,28 @@ class FrameMain(wx.Frame):
             self.status.set_general("Stopping")
             self.threadScan.abort()
 
-    def re_scan(self):
-        if self.threadScan is None and len(self.processAnalyse) == 0:
-            if self.settings.mode == Mode.CONTIN and not self.stopScan:
-                if self.dlgCal is None and not self.stopAtEnd:
-                    self.pendingScan = True
-            else:
-                self.stopAtEnd = False
-                self.stopScan = False
+    def progress(self):
+        self.steps -= 1
+        if self.steps > 0:
+            self.status.set_progress((self.stepsTotal - self.steps) * 100
+                    / self.stepsTotal)
+            self.status.show_progress()
+        else:
+            self.status.hide_progress()
+            if self.settings.mode == Mode.SINGLE or self.stopAtEnd:
+                self.status.set_general("Finished")
+            self.threadScan = None
+            if self.settings.mode == Mode.SINGLE:
                 self.set_controls(True)
-            self.update_plot(True)
+            else:
+                if self.settings.mode == Mode.CONTIN and not self.stopScan:
+                    if self.dlgCal is None and not self.stopAtEnd:
+                        self.pendingScan = True
+                    else:
+                        self.stopAtEnd = False
+                        self.stopScan = False
+                        self.set_controls(True)
+                    self.update_plot(True)
 
     def set_controls(self, state):
         self.spinCtrlStart.Enable(state)
@@ -647,8 +652,9 @@ class FrameMain(wx.Frame):
                 fade = True
             else:
                 fade = False
-            self.threadPlot = ThreadPlot(self, self.lock, self.graph, self.spectrum,
-                                        self.settings, self.grid, full, fade)
+            self.threadPlot = ThreadPlot(self, self.lock, self.graph,
+                                         self.spectrum, self.settings,
+                                         self.grid, full, fade)
             return True
         else:
             return False

@@ -31,8 +31,8 @@ EVT_THREAD_STATUS = wx.NewId()
 
 
 class Event:
-    STARTING, SCAN, DATA, FINISHED, STOPPED, \
-    ERROR, DRAW, PLOTTED, PLOTTED_FULL = range(9)
+    STARTING, STEP, STEPS, DATA, CAL, STOPPED, \
+    ERROR, DRAW, PLOTTED, PLOTTED_FULL = range(10)
 
 
 class Status():
