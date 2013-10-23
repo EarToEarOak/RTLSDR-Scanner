@@ -140,8 +140,8 @@ class PanelGraph(wx.Panel):
         vbox.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
         vbox.Add(self.toolbar, 0, wx.EXPAND)
 
-        self.Bind(wx.EVT_IDLE, self.on_idle)
-        self.Bind(wx.EVT_SIZE, self.on_size)
+#         self.Bind(wx.EVT_IDLE, self.on_idle)
+#         self.Bind(wx.EVT_SIZE, self.on_size)
 
         self.SetSizer(vbox)
         vbox.Fit(self)
