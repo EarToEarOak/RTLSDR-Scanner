@@ -114,6 +114,8 @@ class RtlTcp():
         return self.raw_to_iq(raw)
 
     def close(self):
+        self.threadBucket.abort()
+        self.threadBucket.join()
         self.socket.shutdown(socket.SHUT_RDWR)
         self.socket.close()
 
