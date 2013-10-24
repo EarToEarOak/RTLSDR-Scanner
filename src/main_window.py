@@ -602,6 +602,7 @@ class FrameMain(wx.Frame):
             self.status.set_progress((self.stepsTotal - self.steps) * 100
                     / self.stepsTotal)
             self.status.show_progress()
+            self.status.set_general("Scanning")
         else:
             self.status.hide_progress()
             if self.settings.mode == Mode.SINGLE or self.stopAtEnd:
