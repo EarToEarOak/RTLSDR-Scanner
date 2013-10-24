@@ -62,7 +62,10 @@ def get_devices(currentDevices=[]):
         rtlsdr.librtlsdr.rtlsdr_get_device_usb_strings(dev, buffer1, buffer2,
                                                        serial)
         device.serial = string_at(serial)
-        sdr = rtlsdr.RtlSdr(dev)
+        try:
+            sdr = rtlsdr.RtlSdr(dev)
+        except IOError:
+            continue
         device.gains = sdr.valid_gains_db
         device.calibration = 0.0
         device.lo = 0.0
