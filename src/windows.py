@@ -37,7 +37,7 @@ import wx
 
 from constants import *
 from events import EventThreadStatus, Event
-from misc import split_spectrum
+from misc import split_spectrum, nearest
 from plot import open_plot
 from rtltcp import RtlTcp
 import wx.grid as grid
@@ -625,6 +625,8 @@ class DialogOffset(wx.Dialog):
 
 
 class DialogPrefs(wx.Dialog):
+    COL_SEL, COL_DEV, COL_SER, COL_IND, COL_GAIN, COL_CAL, COL_LO, COL_OFF = range(8)
+
     def __init__(self, parent, devices, settings):
         self.settings = settings
         self.index = 0
@@ -661,46 +663,63 @@ class DialogPrefs(wx.Dialog):
 
         self.devices = devices
         self.gridDev = grid.Grid(self)
-        self.gridDev.CreateGrid(len(self.devices), 7)
+        self.gridDev.CreateGrid(len(self.devices), 8)
         self.gridDev.SetRowLabelSize(0)
-        self.gridDev.SetColLabelValue(0, "Select")
-        self.gridDev.SetColLabelValue(1, "Device")
-        self.gridDev.SetColLabelValue(2, "Index")
-        self.gridDev.SetColLabelValue(3, "Gain\n(dB)")
-        self.gridDev.SetColLabelValue(4, "Calibration\n(ppm)")
-        self.gridDev.SetColLabelValue(5, "LO\n(MHz)")
-        self.gridDev.SetColLabelValue(6, "Band Offset\n(kHz)")
-        self.gridDev.SetColFormatFloat(3, -1, 1)
-        self.gridDev.SetColFormatFloat(4, -1, 3)
-        self.gridDev.SetColFormatFloat(5, -1, 3)
-        self.gridDev.SetColFormatFloat(6, -1, 0)
+        self.gridDev.SetColLabelValue(self.COL_SEL, "Select")
+        self.gridDev.SetColLabelValue(self.COL_DEV, "Device")
+        self.gridDev.SetColLabelValue(self.COL_SER, "Serial Number")
+        self.gridDev.SetColLabelValue(self.COL_IND, "Index")
+        self.gridDev.SetColLabelValue(self.COL_GAIN, "Gain\n(dB)")
+        self.gridDev.SetColLabelValue(self.COL_CAL, "Calibration\n(ppm)")
+        self.gridDev.SetColLabelValue(self.COL_LO, "LO\n(MHz)")
+        self.gridDev.SetColLabelValue(self.COL_OFF, "Band Offset\n(kHz)")
+        self.gridDev.SetColFormatFloat(self.COL_GAIN, -1, 1)
+        self.gridDev.SetColFormatFloat(self.COL_CAL, -1, 3)
+        self.gridDev.SetColFormatFloat(self.COL_LO, -1, 3)
+        self.gridDev.SetColFormatFloat(self.COL_OFF, -1, 0)
 
         colourBackground = self.gridDev.GetLabelBackgroundColour()
         attributes = grid.GridCellAttr()
         attributes.SetBackgroundColour(colourBackground)
-        self.gridDev.SetColAttr(2, attributes)
+        self.gridDev.SetColAttr(self.COL_IND, attributes)
 
         i = 0
         for device in self.devices:
-            self.gridDev.SetReadOnly(i, 0, True)
-            self.gridDev.SetReadOnly(i, 1, device.isDevice)
-            self.gridDev.SetReadOnly(i, 2, True)
-            self.gridDev.SetCellRenderer(i, 0, CellRenderer())
-            self.gridDev.SetCellEditor(i, 3, grid.GridCellFloatEditor(-1, 1))
-            self.gridDev.SetCellEditor(i, 4, grid.GridCellFloatEditor(-1, 3))
-            self.gridDev.SetCellEditor(i, 5, grid.GridCellFloatEditor(-1, 3))
+            self.gridDev.SetReadOnly(i, self.COL_SEL, True)
+            self.gridDev.SetReadOnly(i, self.COL_DEV, device.isDevice)
+            self.gridDev.SetReadOnly(i, self.COL_SER, True)
+            self.gridDev.SetReadOnly(i, self.COL_IND, True)
+            self.gridDev.SetCellRenderer(i, self.COL_SEL, CellRenderer())
             if device.isDevice:
-                self.gridDev.SetCellValue(i, 1, device.name)
-                self.gridDev.SetCellValue(i, 2, str(i))
-                self.gridDev.SetCellBackgroundColour(i, 1, colourBackground)
+                self.gridDev.SetCellEditor(i, self.COL_GAIN,
+                                           grid.GridCellChoiceEditor(map(str, device.gains),
+                                                                     allowOthers=False))
+            self.gridDev.SetCellEditor(i, self.COL_CAL,
+                                       grid.GridCellFloatEditor(-1, 3))
+            self.gridDev.SetCellEditor(i, self.COL_LO,
+                                       grid.GridCellFloatEditor(-1, 3))
+            if device.isDevice:
+                self.gridDev.SetCellValue(i, self.COL_DEV, device.name)
+                self.gridDev.SetCellValue(i, self.COL_SER, str(device.serial))
+                self.gridDev.SetCellValue(i, self.COL_IND, str(i))
+                self.gridDev.SetCellBackgroundColour(i, self.COL_DEV,
+                                                     colourBackground)
             else:
-                self.gridDev.SetCellValue(i, 1, '{0}:{1}'.format(device.server,
-                                                                 device.port))
-                self.gridDev.SetCellValue(i, 2, '')
-            self.gridDev.SetCellValue(i, 3, str(device.gain))
-            self.gridDev.SetCellValue(i, 4, str(device.calibration))
-            self.gridDev.SetCellValue(i, 5, str(device.lo))
-            self.gridDev.SetCellValue(i, 6, str(device.offset / 1e3))
+                self.gridDev.SetCellValue(i, self.COL_DEV,
+                                          '{0}:{1}'.format(device.server,
+                                                           device.port))
+                self.gridDev.SetCellValue(i, self.COL_SER, '')
+                self.gridDev.SetCellValue(i, self.COL_IND, '')
+            self.gridDev.SetCellBackgroundColour(i, self.COL_SER,
+                                                 colourBackground)
+            if device.isDevice:
+                self.gridDev.SetCellValue(i, self.COL_GAIN,
+                                          str(nearest(device.gain, device.gains)))
+            else:
+                self.gridDev.SetCellValue(i, self.COL_GAIN, str(device.gain))
+            self.gridDev.SetCellValue(i, self.COL_CAL, str(device.calibration))
+            self.gridDev.SetCellValue(i, self.COL_LO, str(device.lo))
+            self.gridDev.SetCellValue(i, self.COL_OFF, str(device.offset / 1e3))
             i += 1
 
         if settings.index >= len(self.devices):
@@ -757,15 +776,15 @@ class DialogPrefs(wx.Dialog):
     def on_click(self, event):
         col = event.GetCol()
         index = event.GetRow()
-        if col == 0:
+        if col == self.COL_SEL:
             self.index = event.GetRow()
             self.select_row(index)
         elif col == 6:
             device = self.devices[index]
             dlg = DialogOffset(self, device,
-                               float(self.gridDev.GetCellValue(index, 6)))
+                               float(self.gridDev.GetCellValue(index, self.COL_OFF)))
             if dlg.ShowModal() == wx.ID_OK:
-                self.gridDev.SetCellValue(index, 6, str(dlg.get_offset()))
+                self.gridDev.SetCellValue(index, self.COL_OFF, str(dlg.get_offset()))
             dlg.Destroy()
         else:
             self.gridDev.ForceRefresh()
@@ -779,7 +798,7 @@ class DialogPrefs(wx.Dialog):
         self.settings.maxScans = self.spinCtrlMaxScans.GetValue()
         for i in range(0, self.gridDev.GetNumberRows()):
             if not self.devices[i].isDevice:
-                server = self.gridDev.GetCellValue(i, 1)
+                server = self.gridDev.GetCellValue(i, self.COL_DEV)
                 server = '//' + server
                 url = urlparse(server)
                 if url.hostname is not None:
@@ -790,10 +809,10 @@ class DialogPrefs(wx.Dialog):
                     self.devices[i].port = url.port
                 else:
                     self.devices[i].port = 1234
-            self.devices[i].gain = float(self.gridDev.GetCellValue(i, 3))
-            self.devices[i].calibration = float(self.gridDev.GetCellValue(i, 4))
-            self.devices[i].lo = float(self.gridDev.GetCellValue(i, 5))
-            self.devices[i].offset = float(self.gridDev.GetCellValue(i, 6)) * 1e3
+            self.devices[i].gain = float(self.gridDev.GetCellValue(i, self.COL_GAIN))
+            self.devices[i].calibration = float(self.gridDev.GetCellValue(i, self.COL_CAL))
+            self.devices[i].lo = float(self.gridDev.GetCellValue(i, self.COL_LO))
+            self.devices[i].offset = float(self.gridDev.GetCellValue(i, self.COL_OFF)) * 1e3
 
         self.EndModal(wx.ID_OK)
 
@@ -803,7 +822,7 @@ class DialogPrefs(wx.Dialog):
             tick = "0"
             if i == index:
                 tick = "1"
-            self.gridDev.SetCellValue(i, 0, tick)
+            self.gridDev.SetCellValue(i, self.COL_SEL, tick)
 
     def get_index(self):
         return self.index

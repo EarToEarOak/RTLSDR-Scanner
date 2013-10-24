@@ -29,7 +29,7 @@ from devices import Device, format_device_name
 
 
 class Settings():
-    def __init__(self, load = True):
+    def __init__(self, load=True):
         self.cfg = None
 
         self.saveWarn = True
@@ -82,6 +82,7 @@ class Settings():
             self.cfg.SetPath("/Devices/" + group[1])
             device = Device()
             device.name = group[1]
+            device.serial = self.cfg.Read('serial', '')
             device.isDevice = self.cfg.ReadBool('isDevice', True)
             if not device.isDevice:
                 servers += 1
@@ -124,6 +125,7 @@ class Settings():
         if self.devices:
             for device in self.devices:
                 self.cfg.SetPath("/Devices/" + format_device_name(device.name))
+                self.cfg.Write('serial', device.serial)
                 self.cfg.WriteBool('isDevice', device.isDevice)
                 self.cfg.Write('server', device.server)
                 self.cfg.WriteInt('port', device.port)
