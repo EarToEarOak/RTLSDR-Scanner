@@ -122,6 +122,7 @@ class ThreadScan(threading.Thread):
             try:
                 sdr = rtltcp.RtlTcp(self.server, self.port)
                 sdr.set_sample_rate(SAMPLE_RATE)
+                sdr.set_gain_mode(1)
                 sdr.set_gain(self.gain)
             except IOError as error:
                 post_event(self.notify, EventThreadStatus(Event.ERROR,

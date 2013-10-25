@@ -34,6 +34,7 @@ import numpy
 class RtlTcpCmd():
     SET_FREQ = 0x1
     SET_SAMPLE_RATE = 0x2
+    SET_GAIN_MODE = 0x3
     SET_GAIN = 0x4
 
 
@@ -100,6 +101,9 @@ class RtlTcp():
     def set_sample_rate(self, rate):
         self.send_command(RtlTcpCmd.SET_SAMPLE_RATE, rate)
         self.rate = rate
+
+    def set_gain_mode(self, mode):
+        self.send_command(RtlTcpCmd.SET_GAIN_MODE, mode)
 
     def set_gain(self, gain):
         self.send_command(RtlTcpCmd.SET_GAIN, gain)
