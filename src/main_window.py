@@ -513,6 +513,7 @@ class FrameMain(wx.Frame):
         start, stop, spectrum = open_plot(dirname, filename)
 
         if len(spectrum) > 0:
+            self.spectrum.clear()
             self.settings.start = start
             self.settings.stop = stop
             self.spectrum = spectrum

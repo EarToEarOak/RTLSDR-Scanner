@@ -24,6 +24,7 @@
 #
 
 import cPickle
+import json
 import os
 import threading
 
@@ -186,31 +187,55 @@ def scale_plot(graph, settings, updateScale=False):
 
 
 def open_plot(dirname, filename):
+    pickle = True
+    error = False
+    spectrum = {}
+
+    handle = open(os.path.join(dirname, filename), 'rb')
     try:
-        handle = open(os.path.join(dirname, filename), 'rb')
         header = cPickle.load(handle)
-        if header != File.HEADER:
-            wx.MessageBox('Invalid or corrupted file', 'Warning',
-                      wx.OK | wx.ICON_WARNING)
-            return
-        _version = cPickle.load(handle)
-        start = cPickle.load(handle)
-        stop = cPickle.load(handle)
-        spectrum = cPickle.load(handle)
-    except:
-        wx.MessageBox('File could not be opened', 'Warning',
-                      wx.OK | wx.ICON_WARNING)
+    except cPickle.UnpicklingError:
+        pickle = False
+
+    if pickle:
+        try:
+            _version = cPickle.load(handle)
+            start = cPickle.load(handle)
+            stop = cPickle.load(handle)
+            spectrum = cPickle.load(handle)
+        except pickle.PickleError:
+            error = True
+    else:
+        try:
+            handle.seek(0)
+            data = json.loads(handle.read())
+            header = data[0]
+            _version = data[1]['Version']
+            start = data[1]['Start']
+            stop = data[1]['Stop']
+            for key, value in data[1]['Spectrum'].iteritems():
+                spectrum[float(key)] = value
+        except ValueError:
+            error = True
+        except KeyError:
+            error = True
+
+    if error or header != File.HEADER:
+        wx.MessageBox('Invalid or corrupted file', 'Warning',
+                  wx.OK | wx.ICON_WARNING)
+        return 0, 0, []
 
     return start, stop, spectrum
 
 
 def save_plot(dirname, filename, settings, spectrum):
+    data = [File.HEADER, {'Version': File.VERSION,
+                          'Start':settings.start,
+                          'Stop':settings.stop,
+                          'Spectrum': spectrum}]
+
     handle = open(os.path.join(dirname, filename), 'wb')
-    cPickle.dump(File.HEADER, handle)
-    cPickle.dump(File.VERSION, handle)
-    cPickle.dump(settings.start, handle)
-    cPickle.dump(settings.stop, handle)
-    cPickle.dump(spectrum, handle)
+    handle.write(json.dumps(data))
     handle.close()
 
 
