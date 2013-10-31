@@ -199,6 +199,8 @@ def remove_plot(axes, plot):
 def open_plot(dirname, filename):
     pickle = True
     error = False
+    dwell = 0.131
+    nfft = 1024
     spectrum = {}
 
     handle = open(os.path.join(dirname, filename), 'rb')
@@ -220,11 +222,14 @@ def open_plot(dirname, filename):
             handle.seek(0)
             data = json.loads(handle.read())
             header = data[0]
-            _version = data[1]['Version']
+            version = data[1]['Version']
             start = data[1]['Start']
             stop = data[1]['Stop']
             for key, value in data[1]['Spectrum'].iteritems():
                 spectrum[float(key)] = value
+            if version > 1:
+                dwell = data[1]['Dwell']
+                nfft = data[1]['Nfft']
         except ValueError:
             error = True
         except KeyError:
@@ -235,13 +240,15 @@ def open_plot(dirname, filename):
                   wx.OK | wx.ICON_WARNING)
         return 0, 0, []
 
-    return start, stop, spectrum
+    return start, stop, dwell, nfft, spectrum
 
 
 def save_plot(dirname, filename, settings, spectrum):
     data = [File.HEADER, {'Version': File.VERSION,
                           'Start':settings.start,
                           'Stop':settings.stop,
+                          'Dwell':settings.dwell,
+                          'Nfft':settings.nfft,
                           'Spectrum': spectrum}]
 
     handle = open(os.path.join(dirname, filename), 'wb')

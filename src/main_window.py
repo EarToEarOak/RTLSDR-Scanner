@@ -141,7 +141,7 @@ class FrameMain(wx.Frame):
         self.create_widgets()
         self.create_menu()
         self.create_popup_menu()
-        self.set_controls(True)
+        self.set_control_state(True)
         self.menuSave.Enable(False)
         self.menuExport.Enable(False)
         self.Show()
@@ -182,25 +182,22 @@ class FrameMain(wx.Frame):
         self.spinCtrlStop.SetToolTip(wx.ToolTip('Stop frequency'))
         self.spinCtrlStart.SetRange(F_MIN, F_MAX - 1)
         self.spinCtrlStop.SetRange(F_MIN + 1, F_MAX)
-        self.set_range()
         self.Bind(wx.EVT_SPINCTRL, self.on_spin, self.spinCtrlStart)
         self.Bind(wx.EVT_SPINCTRL, self.on_spin, self.spinCtrlStop)
 
         textMode = wx.StaticText(self.panel, label="Mode")
         self.choiceMode = wx.Choice(self.panel, choices=MODE[::2])
         self.choiceMode.SetToolTip(wx.ToolTip('Scanning mode'))
-        self.choiceMode.SetSelection(MODE[1::2].index(self.settings.mode))
 
         textDwell = wx.StaticText(self.panel, label="Dwell")
         self.choiceDwell = wx.Choice(self.panel, choices=DWELL[::2])
         self.choiceDwell.SetToolTip(wx.ToolTip('Scan time per step'))
-        self.choiceDwell.SetSelection(DWELL[1::2].index(self.settings.dwell))
 
         textNfft = wx.StaticText(self.panel, label="FFT size")
         self.choiceNfft = wx.Choice(self.panel, choices=map(str, NFFT))
         self.choiceNfft.SetToolTip(wx.ToolTip('Higher values for greater'
                                               'precision'))
-        self.choiceNfft.SetSelection(NFFT.index(self.settings.nfft))
+        self.set_controls()
 
         self.checkAuto = wx.CheckBox(self.panel, wx.ID_ANY,
                                         "Auto range")
@@ -381,7 +378,7 @@ class FrameMain(wx.Frame):
             return
         self.stop_scan()
         self.wait_background()
-        self.get_range()
+        self.get_controls()
         self.settings.dwell = DWELL[1::2][self.choiceDwell.GetSelection()]
         self.settings.nfft = NFFT[self.choiceNfft.GetSelection()]
         self.settings.devices = self.devices
@@ -424,7 +421,7 @@ class FrameMain(wx.Frame):
                                           F_MAX)
 
     def on_start(self, _event):
-        self.get_range()
+        self.get_controls()
         self.graph.get_axes().clear()
         scale_plot(self.graph, self.settings)
         self.start_scan()
@@ -464,22 +461,21 @@ class FrameMain(wx.Frame):
             self.auto_cal(Cal.DONE)
         elif status == Event.DATA:
             self.isSaved = False
-            fftChoice = self.choiceNfft.GetSelection()
             cal = self.devices[self.settings.index].calibration
-            nfft = NFFT[fftChoice]
-            self.pool.apply_async(anaylse_data, (freq, data, cal, nfft),
-                             callback=self.on_process_done)
+            self.pool.apply_async(anaylse_data,
+                                  (freq, data, cal, self.settings.nfft),
+                                  callback=self.on_process_done)
         elif status == Event.STOPPED:
             self.status.hide_progress()
             self.status.set_general("Stopped")
             self.threadScan = None
-            self.set_controls(True)
+            self.set_control_state(True)
             self.update_plot()
         elif status == Event.ERROR:
             self.status.hide_progress()
             self.status.set_general("Error: {0}".format(data))
             self.threadScan = None
-            self.set_controls(True)
+            self.set_control_state(True)
             if self.dlgCal is not None:
                 self.dlgCal.Destroy()
                 self.dlgCal = None
@@ -511,16 +507,18 @@ class FrameMain(wx.Frame):
         self.dirname = dirname
         self.status.set_general("Opening: {0}".format(filename))
 
-        start, stop, spectrum = open_plot(dirname, filename)
+        start, stop, dwell, nfft, spectrum = open_plot(dirname, filename)
 
         if len(spectrum) > 0:
             self.spectrum.clear()
             self.settings.start = start
             self.settings.stop = stop
+            self.settings.dwell = dwell
+            self.settings.nfft = nfft
             self.spectrum = spectrum
             self.isSaved = True
-            self.set_range()
-            self.set_controls(True)
+            self.set_controls()
+            self.set_control_state(True)
             clear_plot(self.graph.get_axes())
             self.update_plot()
             self.status.set_general("Finished")
@@ -535,14 +533,14 @@ class FrameMain(wx.Frame):
                 self.spinCtrlStop.SetValue(freq + 1)
                 self.oldCal = self.devices[self.settings.index].calibration
                 self.devices[self.settings.index].calibration = 0
-                self.get_range()
+                self.get_controls()
                 self.graph.get_axes().clear()
                 if not self.start_scan(isCal=True):
                     self.dlgCal.reset_cal()
             elif status == Cal.DONE:
                 ppm = self.calc_ppm(freq)
                 self.dlgCal.set_cal(ppm)
-                self.set_controls(True)
+                self.set_control_state(True)
             elif status == Cal.OK:
                 self.devices[self.settings.index].calibration = self.dlgCal.get_cal()
                 self.settings.calFreq = freq
@@ -577,12 +575,9 @@ class FrameMain(wx.Frame):
                           'Warning', wx.OK | wx.ICON_WARNING)
             return
 
-        choiceDwell = self.choiceDwell.GetSelection()
-
         if not self.threadScan or not self.threadScan.isAlive():
-            self.set_controls(False)
-            dwell = DWELL[1::2][choiceDwell]
-            samples = dwell * SAMPLE_RATE
+            self.set_control_state(False)
+            samples = self.settings.dwell * SAMPLE_RATE
             samples = next_2_to_pow(int(samples))
             self.spectrum.clear()
             self.status.set_info('')
@@ -612,7 +607,7 @@ class FrameMain(wx.Frame):
                 self.status.set_general("Finished")
             self.threadScan = None
             if self.settings.mode == Mode.SINGLE:
-                self.set_controls(True)
+                self.set_control_state(True)
                 self.update_plot(True)
             else:
                 if self.settings.mode == Mode.CONTIN and not self.stopScan:
@@ -621,10 +616,10 @@ class FrameMain(wx.Frame):
                     else:
                         self.stopAtEnd = False
                         self.stopScan = False
-                        self.set_controls(True)
+                        self.set_control_state(True)
                     self.update_plot(True)
 
-    def set_controls(self, state):
+    def set_control_state(self, state):
         self.spinCtrlStart.Enable(state)
         self.spinCtrlStop.Enable(state)
         self.choiceMode.Enable(state)
@@ -647,6 +642,20 @@ class FrameMain(wx.Frame):
             self.popupMenuStopEnd.Enable(False)
         self.menuPref.Enable(state)
         self.menuCal.Enable(state)
+
+    def set_controls(self):
+        self.spinCtrlStart.SetValue(self.settings.start)
+        self.spinCtrlStop.SetValue(self.settings.stop)
+        self.choiceMode.SetSelection(MODE[1::2].index(self.settings.mode))
+        self.choiceDwell.SetSelection(DWELL[1::2].index(self.settings.dwell))
+        self.choiceNfft.SetSelection(NFFT.index(self.settings.nfft))
+
+    def get_controls(self):
+        self.settings.start = self.spinCtrlStart.GetValue()
+        self.settings.stop = self.spinCtrlStop.GetValue()
+        self.settings.mode = MODE[1::2][self.choiceMode.GetSelection()]
+        self.settings.dwell = DWELL[1::2][self.choiceDwell.GetSelection()]
+        self.settings.fft = NFFT[self.choiceNfft.GetSelection()]
 
     def plot(self, full):
         if self.threadPlot is None:
@@ -704,17 +713,6 @@ class FrameMain(wx.Frame):
                 return True
 
         return False
-
-    def set_range(self):
-        self.spinCtrlStart.SetValue(self.settings.start)
-        self.spinCtrlStop.SetValue(self.settings.stop)
-
-    def get_range(self):
-        choiceMode = self.choiceMode.GetSelection()
-
-        self.settings.mode = MODE[1::2][choiceMode]
-        self.settings.start = self.spinCtrlStart.GetValue()
-        self.settings.stop = self.spinCtrlStop.GetValue()
 
     def refresh_devices(self):
         self.settings.devices = self.devices
