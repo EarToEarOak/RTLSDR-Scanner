@@ -22,9 +22,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-import os.path
-import threading
-import webbrowser
 
 try:
     input = raw_input
@@ -42,12 +39,16 @@ except ImportError as error:
     input('\nError importing libraries\nPress [Return] to exit')
     exit(1)
 
+import os.path
+import threading
+import webbrowser
+
 from constants import *
 from devices import get_devices
 from events import EVT_THREAD_STATUS, Event
 from misc import next_2_to_pow
 from plot import setup_plot, scale_plot, open_plot, save_plot, export_plot, \
-    ThreadPlot
+    ThreadPlot, clear_plot
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
 from windows import PanelGraph, DialogPrefs, DialogCompare, DialogAutoCal, \
@@ -520,6 +521,7 @@ class FrameMain(wx.Frame):
             self.isSaved = True
             self.set_range()
             self.set_controls(True)
+            clear_plot(self.graph.get_axes())
             self.update_plot()
             self.status.set_general("Finished")
         else:

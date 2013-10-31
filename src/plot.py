@@ -56,8 +56,8 @@ class ThreadPlot(threading.Thread):
 
         axes = self.graph.get_axes()
         if not self.settings.retainScans:
-            self.remove_plot(axes, Plot.STR_FULL)
-        self.remove_plot(axes, Plot.STR_PARTIAL)
+            remove_plot(axes, Plot.STR_FULL)
+        remove_plot(axes, Plot.STR_PARTIAL)
 
         if self.full:
             name = Plot.STR_FULL
@@ -82,13 +82,6 @@ class ThreadPlot(threading.Thread):
                 self.remove_first(axes)
             if self.settings.fadeScans:
                 self.fade_plots(axes)
-
-    def remove_plot(self, axes, plot):
-        children = axes.get_children()
-        for child in children:
-            if child.get_gid() is not None:
-                if child.get_gid() == plot:
-                    child.remove()
 
     def remove_first(self, axes):
         children = axes.get_children()
@@ -184,6 +177,23 @@ def scale_plot(graph, settings, updateScale=False):
             if settings.yMin == settings.yMax:
                 settings.yMax += 1
             axes.set_ylim(settings.yMin, settings.yMax)
+
+
+def clear_plot(axes):
+    children = axes.get_children()
+    for child in children:
+        if child.get_gid() is not None:
+            if child.get_gid() == Plot.STR_FULL or \
+            child.get_gid() == Plot.STR_PARTIAL:
+                child.remove()
+
+
+def remove_plot(axes, plot):
+    children = axes.get_children()
+    for child in children:
+        if child.get_gid() is not None:
+            if child.get_gid() == plot:
+                child.remove()
 
 
 def open_plot(dirname, filename):
