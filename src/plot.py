@@ -179,15 +179,6 @@ def scale_plot(graph, settings, updateScale=False):
             axes.set_ylim(settings.yMin, settings.yMax)
 
 
-def clear_plot(axes):
-    children = axes.get_children()
-    for child in children:
-        if child.get_gid() is not None:
-            if child.get_gid() == Plot.STR_FULL or \
-            child.get_gid() == Plot.STR_PARTIAL:
-                child.remove()
-
-
 def remove_plot(axes, plot):
     children = axes.get_children()
     for child in children:

@@ -48,7 +48,7 @@ from devices import get_devices
 from events import EVT_THREAD_STATUS, Event
 from misc import calc_samples, calc_real_dwell
 from plot import setup_plot, scale_plot, open_plot, save_plot, export_plot, \
-    ThreadPlot, clear_plot
+    ThreadPlot
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
 from windows import PanelGraph, DialogPrefs, DialogCompare, DialogAutoCal, \
@@ -517,8 +517,8 @@ class FrameMain(wx.Frame):
             self.isSaved = True
             self.set_controls()
             self.set_control_state(True)
-            clear_plot(self.graph.get_axes())
-            self.update_plot()
+            self.graph.get_axes().clear()
+            self.update_plot(True)
             self.status.set_general("Finished")
         else:
             self.status.set_general("Open failed")
