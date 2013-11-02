@@ -50,6 +50,9 @@ class Cli():
         directory, filename = os.path.split(args.file)
         _null, ext = os.path.splitext(args.file)
 
+        self.stepsTotal = 0
+        self.steps = 0
+
         self.spectrum = {}
         self.settings = Settings(load=False)
 
@@ -139,11 +142,13 @@ class Cli():
 
         if status == Event.STARTING:
             print "Starting"
-        elif status == Event.SCAN:
-            sys.stdout.write("\r{0:.1f}%".format(data))
+        elif status == Event.STEPS:
+            self.stepsTotal = freq * 2
+            self.steps = self.stepsTotal
         elif status == Event.DATA:
             pool.apply_async(anaylse_data, (freq, data, 0, self.settings.nfft),
                              callback=self.on_process_done)
+            self.progress()
         elif status == Event.ERROR:
             print "Error: {0}".format(data)
             exit(1)
@@ -153,6 +158,12 @@ class Cli():
         offset = self.settings.devices[self.settings.index].offset
         update_spectrum(self.settings.start, self.settings.stop, freq, scan,
                         offset, self.spectrum)
+        self.progress()
+
+    def progress(self):
+        self.steps -= 1
+        comp = (self.stepsTotal - self.steps) * 100 / self.stepsTotal
+        sys.stdout.write("\r{0:.1f}%".format(comp))
 
 
 if __name__ == '__main__':

@@ -455,8 +455,6 @@ class FrameMain(wx.Frame):
             self.steps = self.stepsTotal
             self.status.set_progress(0)
             self.status.show_progress()
-        elif status == Event.STEP:
-            self.progress()
         elif status == Event.CAL:
             self.auto_cal(Cal.DONE)
         elif status == Event.DATA:
@@ -465,6 +463,7 @@ class FrameMain(wx.Frame):
             self.pool.apply_async(anaylse_data,
                                   (freq, data, cal, self.settings.nfft),
                                   callback=self.on_process_done)
+            self.progress()
         elif status == Event.STOPPED:
             self.status.hide_progress()
             self.status.set_general("Stopped")
@@ -492,7 +491,6 @@ class FrameMain(wx.Frame):
                 self.start_scan()
 
     def on_process_done(self, data):
-        self.progress()
         freq, scan = data
         offset = self.settings.devices[self.settings.index].offset
         update_spectrum(self.settings.start, self.settings.stop, freq, scan,
