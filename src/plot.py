@@ -235,6 +235,8 @@ def open_plot(dirname, filename):
         except KeyError:
             error = True
 
+    handle.close()
+
     if error or header != File.HEADER:
         wx.MessageBox('Invalid or corrupted file', 'Warning',
                   wx.OK | wx.ICON_WARNING)
