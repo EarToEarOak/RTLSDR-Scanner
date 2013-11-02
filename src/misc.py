@@ -22,6 +22,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from constants import SAMPLE_RATE
 
 
 def split_spectrum(spectrum):
@@ -40,6 +41,18 @@ def next_2_to_pow(val):
     val |= val >> 8
     val |= val >> 16
     return val + 1
+
+
+def calc_samples(dwell):
+    samples = dwell * SAMPLE_RATE
+    samples = next_2_to_pow(int(samples))
+    return samples
+
+
+def calc_real_dwell(dwell):
+    samples = calc_samples(dwell)
+    dwellReal = samples / SAMPLE_RATE
+    return (int)(dwellReal * 1000.0) / 1000.0
 
 
 def nearest(value, values):

@@ -31,7 +31,7 @@ from urlparse import urlparse
 from constants import SAMPLE_RATE
 from devices import Device, get_devices
 from events import Event
-from misc import next_2_to_pow, nearest
+from misc import next_2_to_pow, nearest, calc_real_dwell
 from plot import save_plot, export_plot
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
@@ -97,7 +97,7 @@ class Cli():
 
         self.settings.start = start
         self.settings.stop = end
-        self.settings.dwell = dwell
+        self.settings.dwell = calc_real_dwell(dwell)
         self.settings.nfft = nfft
         self.settings.devices[index].gain = gain
         self.settings.devices[index].lo = lo

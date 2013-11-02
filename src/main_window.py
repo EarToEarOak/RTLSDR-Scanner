@@ -46,7 +46,7 @@ import webbrowser
 from constants import *
 from devices import get_devices
 from events import EVT_THREAD_STATUS, Event
-from misc import next_2_to_pow
+from misc import calc_samples, calc_real_dwell
 from plot import setup_plot, scale_plot, open_plot, save_plot, export_plot, \
     ThreadPlot, clear_plot
 from scan import ThreadScan, anaylse_data, update_spectrum
@@ -577,8 +577,7 @@ class FrameMain(wx.Frame):
 
         if not self.threadScan or not self.threadScan.isAlive():
             self.set_control_state(False)
-            samples = self.settings.dwell * SAMPLE_RATE
-            samples = next_2_to_pow(int(samples))
+            samples = calc_samples(self.settings.dwell)
             self.spectrum.clear()
             self.status.set_info('')
             self.pendingScan = False
@@ -647,7 +646,8 @@ class FrameMain(wx.Frame):
         self.spinCtrlStart.SetValue(self.settings.start)
         self.spinCtrlStop.SetValue(self.settings.stop)
         self.choiceMode.SetSelection(MODE[1::2].index(self.settings.mode))
-        self.choiceDwell.SetSelection(DWELL[1::2].index(self.settings.dwell))
+        dwell = calc_real_dwell(self.settings.dwell)
+        self.choiceDwell.SetSelection(DWELL[1::2].index(dwell))
         self.choiceNfft.SetSelection(NFFT.index(self.settings.nfft))
 
     def get_controls(self):
