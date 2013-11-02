@@ -39,15 +39,15 @@ NFFT = [128,
         8192,
         16384,
         32768]
-DWELL = ["16 ms", 0.01,
-         "32 ms", 0.025,
-         "65 ms", 0.05,
-         "131 ms", 0.1,
-         "262 ms", 0.2,
-         "524 ms", 0.5,
+DWELL = ["16 ms", 0.016,
+         "32 ms", 0.032,
+         "65 ms", 0.064,
+         "131 ms", 0.131,
+         "262 ms", 0.262,
+         "524 ms", 0.524,
          "1 s", 1,
          "2 s", 2,
-         "8 s", 5]
+         "8 s", 8]
 
 
 class Warn:
@@ -72,7 +72,7 @@ class File:
     RFS = "RTLSDR frequency scan (*.rfs)|*.rfs"
     CSV = "CSV table (*.csv)|*.csv"
     HEADER = "RTLSDR Scanner"
-    VERSION = 2
+    VERSION = 3
 
 
 if __name__ == '__main__':
