@@ -63,8 +63,8 @@ class DropTarget(wx.FileDropTarget):
     def OnDropFiles(self, _xPos, _yPos, filenames):
         filename = filenames[0]
         if os.path.splitext(filename)[1].lower() == ".rfs":
-            self.window.dirname, self.window.filename = os.path.split(filename)
-            self.window.open()
+            dirname, filename = os.path.split(filename)
+            self.window.open(dirname, filename)
 
 
 class RtlSdrScanner(wx.App):
