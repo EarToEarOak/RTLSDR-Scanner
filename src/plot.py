@@ -245,7 +245,7 @@ def save_plot(dirname, filename, settings, spectrum):
                           'Spectrum': spectrum}]
 
     handle = open(os.path.join(dirname, filename), 'wb')
-    handle.write(json.dumps(data))
+    handle.write(json.dumps(data, indent=4))
     handle.close()
 
 
