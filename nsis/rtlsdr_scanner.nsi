@@ -29,6 +29,7 @@
 !include "MUI.nsh"
 !include "nsDialogs.nsh"
 !include "nsDialogs_createTextMultiline.nsh"
+!include "fileassoc.nsh"
 
 !define PRODUCT_NAME "RTLSDR Scanner"
 !define PRODUCT_VERSION ""
@@ -63,6 +64,10 @@ to previous Python installs $\r$\n$\r$\n \
 You can update to the latest versions of RTLSDR-Scanner, $\r$\n \
 the rtlsdr driver and pyrtlsdr by running this installer again $\r$\n"'
 
+!define FILE_CLASS "RTLSDRScanner.Scan"
+!define FILE_TYPE ".rfs"
+!define FILE_DESC "RTLSDR Scan"
+
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
 OutFile "rtlsdr_scanner-setup-win32.exe"
@@ -83,6 +88,7 @@ Section "RTLSDR Scanner (Required)" SEC_SCAN
     SetOverwrite ifnewer
     File "license.txt"
     Call get_rtlsdr_scanner
+    !insertmacro APP_ASSOCIATE "${FILE_TYPE}" "${FILE_CLASS}" "{$FILE_DESC}" "$INSTDIR\rtlsdr_scan.ico,0" "Open with RTLSDR Scanner" "python $\"$INSTDIR\rtlsdr_scan.py$\" $\"%1$\""
     CopyFiles "$ExePath" "$InstDir\"
     CreateDirectory "$SMPROGRAMS\RTLSDR Scanner"
     CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\RTLSDR Scanner.lnk" "python" '"$INSTDIR\rtlsdr_scan.py"' "$INSTDIR\rtlsdr_scan.ico" 0
@@ -155,6 +161,9 @@ SectionEnd
 
 
 Section Uninstall
+
+    !insertmacro APP_UNASSOCIATE "${FILE_TYPE}" "${FILE_CLASS}"
+
     Delete "$INSTDIR\${PRODUCT_NAME}.url"
     Delete "$INSTDIR\rtlsdr_scan.ico"
     Delete "$INSTDIR\uninst.exe"
