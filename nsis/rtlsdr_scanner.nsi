@@ -37,6 +37,9 @@
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
 !define PRODUCT_UNINST_ROOT_KEY "HKLM"
 
+!define SETTINGS_KEY "Software\rtlsdr-scanner"
+!define SETTINGS_INSTDIR "InstDir"
+
 !define MUI_ABORTWARNING
 !define MUI_ICON "rtlsdr_scan.ico"
 !define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
@@ -141,6 +144,7 @@ SectionEnd
 
 
 Section -Post
+    WriteRegStr HKCU "${SETTINGS_KEY}" "${SETTINGS_INSTDIR}" "$INSTDIR"
     WriteUninstaller "$INSTDIR\uninst.exe"
     WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayName" "$(^Name)"
     WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString" "$INSTDIR\uninst.exe"
@@ -172,6 +176,7 @@ Section Uninstall
     ; Obsolete
     Delete "$INSTDIR\threads.py"
 
+    DeleteRegKey HKCU "${SETTINGS_KEY}/${SETTINGS_INSTDIR}"
 
     Delete "$SMPROGRAMS\RTLSDR Scanner\Uninstall.lnk"
     Delete "$SMPROGRAMS\RTLSDR Scanner\Website.lnk"
@@ -186,7 +191,10 @@ SectionEnd
 
 
 Function .onInit
-    StrCpy $Type ${TYPE_FULL}
+    ReadRegStr $0 HKCU "${SETTINGS_KEY}" "${SETTINGS_INSTDIR}"
+    ${If} $0 == ""
+        StrCpy $Type ${TYPE_FULL}
+    ${EndIf}
     IntOp $0 ${SF_SELECTED} | ${SF_RO}
     IntOp $0 $0 | ${SF_BOLD}
     SectionSetFlags ${SEC_SCAN} $0
@@ -393,13 +401,13 @@ Function set_python_path
     ${EnvVarUpdate} $0 "PATH" "A" "HKLM" $0
 FunctionEnd
 
-Function un.onUninstSuccess
-    HideWindow
-    MessageBox MB_ICONINFORMATION|MB_OK "$(^Name) was successfully uninstalled from your computer."
-FunctionEnd
-
 Function un.onInit
     MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 "Are you sure you want to completely uninstall $(^Name)?" IDYES end
     Abort
     end:
+FunctionEnd
+
+Function un.onUninstSuccess
+    HideWindow
+    MessageBox MB_ICONINFORMATION|MB_OK "$(^Name) was successfully uninstalled from your computer."
 FunctionEnd
