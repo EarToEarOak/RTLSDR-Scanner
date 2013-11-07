@@ -499,6 +499,10 @@ class FrameMain(wx.Frame):
             self.update_plot()
 
     def open(self, dirname, filename):
+        if not os.path.exists(os.path.join(dirname, filename)):
+                wx.MessageBox('File not found',
+                              'Error', wx.OK | wx.ICON_ERROR)
+
         self.filename = filename
         self.dirname = dirname
         self.status.set_general("Opening: {0}".format(filename))

@@ -194,7 +194,10 @@ def open_plot(dirname, filename):
     nfft = 1024
     spectrum = {}
 
-    handle = open(os.path.join(dirname, filename), 'rb')
+    path = os.path.join(dirname, filename)
+    if not os.path.exists(path):
+        return 0, 0, 0, 0, []
+    handle = open(path, 'rb')
     try:
         header = cPickle.load(handle)
     except cPickle.UnpicklingError:
@@ -231,7 +234,7 @@ def open_plot(dirname, filename):
     if error or header != File.HEADER:
         wx.MessageBox('Invalid or corrupted file', 'Warning',
                   wx.OK | wx.ICON_WARNING)
-        return 0, 0, []
+        return 0, 0, 0, 0, []
 
     return start, stop, dwell, nfft, spectrum
 

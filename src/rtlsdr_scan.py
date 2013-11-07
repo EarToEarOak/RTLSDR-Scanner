@@ -27,6 +27,7 @@
 
 import argparse
 import multiprocessing
+import os.path
 
 from cli import Cli
 from main_window import FrameMain, RtlSdrScanner
@@ -50,7 +51,8 @@ def arguments():
     group.add_argument("-i", "--index", help="Device index (from 0)", type=int,
                        default=0)
     group.add_argument("-r", "--remote", help="Server IP and port", type=str)
-    parser.add_argument("file", help="Output file (.rfs or .cvs)", nargs='?')
+    parser.add_argument("file", help="Input file (.rfs) or output file (.rfs or .cvs) when scanning",
+                        nargs='?')
     args = parser.parse_args()
 
     error = None
@@ -66,6 +68,8 @@ def arguments():
                 error = "No end frequency specified"
         else:
             error = "No start frequency specified"
+    elif args.file is not None:
+        args.dirname, args.filename = os.path.split(args.file)
 
     if error is not None:
         print "Error: {0}".format(error)
@@ -81,7 +85,9 @@ if __name__ == '__main__':
     isGui, args = arguments()
     if isGui:
         app = RtlSdrScanner(pool)
-        FrameMain("RTLSDR Scanner", pool)
+        frame = FrameMain("RTLSDR Scanner", pool)
+        if args.file is not None:
+            frame.open(args.dirname, args.filename)
         app.MainLoop()
     else:
         Cli(pool, args)
