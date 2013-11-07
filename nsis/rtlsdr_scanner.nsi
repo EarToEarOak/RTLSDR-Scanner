@@ -138,6 +138,7 @@ Section -AdditionalIcons
     WriteIniStr "$INSTDIR\${PRODUCT_NAME}.url" "InternetShortcut" "URL" "${PRODUCT_WEB_SITE}"
     CreateDirectory "$SMPROGRAMS\RTLSDR Scanner"
     CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\RTLSDR Scanner.lnk" "python" '"$INSTDIR\rtlsdr_scan.py"' "$INSTDIR\rtlsdr_scan.ico" 0
+    CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\Setup.lnk" "$INSTDIR\$EXEFILE"
     CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\Website.lnk" "$INSTDIR\${PRODUCT_NAME}.url"
     CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\Uninstall.lnk" "$INSTDIR\uninst.exe"
 SectionEnd
@@ -266,6 +267,7 @@ Function get_rtlsdr_scanner
 FunctionEnd
 
 Function get_rtlsdr
+    CopyFiles "$ExePath" "$InstDir\"
     inetc::get "http://sdr.osmocom.org/trac/raw-attachment/wiki/rtl-sdr/RelWithDebInfo.zip" "$TEMP\rtlsdr.zip" /end
     Pop $R0
     StrCmp $R0 "OK" exists
