@@ -43,53 +43,38 @@ class RtlTcp():
         self.host = host
         self.port = port
 
-        self.threadBucket = None
-        self.socket = None
+        self.threadBuffer = None
         self.tuner = None
         self.rate = 0
 
         self.setup()
 
     def setup(self):
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.connect((self.host, self.port))
-        self.threadBucket = ThreadBucket(self.socket)
+        self.threadBuffer = ThreadBuffer(self.host, self.port)
         self.tuner = self.get_header()
-        self.threadBucket.bucket(True)
 
     def get_header(self):
-        recv = self.socket.recv(4096)
+        header = self.threadBuffer.get_header()
         tuner = None
-        if len(recv) == 12:
-            if recv.startswith('RTL'):
-                tuner = (ord(recv[4]) << 24) | \
-                (ord(recv[5]) << 16) | \
-                (ord(recv[6]) << 8) | \
-                ord(recv[7])
+        if len(header) == 12:
+            if header.startswith('RTL'):
+                tuner = (ord(header[4]) << 24) | \
+                        (ord(header[5]) << 16) | \
+                        (ord(header[6]) << 8) | \
+                        ord(header[7])
 
         return tuner
 
     def send_command(self, command, data):
-        recv = array.array('c', '\0' * 5)
+        send = array.array('c', '\0' * 5)
 
-        struct.pack_into('>l', recv, 1, data)
-        recv[0] = struct.pack('<b', command)
+        struct.pack_into('>l', send, 1, data)
+        send[0] = struct.pack('<b', command)
 
-        self.socket.sendall(recv)
+        self.threadBuffer.sendall(send)
 
     def read_raw(self, samples):
-        total = 0
-        data = []
-
-        recv = ""
-        self.threadBucket.bucket(False)
-        while total < samples * 2:
-            recv = self.socket.recv((samples * 2) - total)
-            data.append(recv)
-            total += len(recv)
-
-        self.threadBucket.bucket(True)
-        return bytearray(''.join(data))
+        return self.threadBuffer.recv(samples)
 
     def raw_to_iq(self, raw):
         iq = numpy.empty(len(raw) / 2, 'complex')
@@ -118,29 +103,79 @@ class RtlTcp():
         return self.raw_to_iq(raw)
 
     def close(self):
-        self.threadBucket.abort()
-        self.threadBucket.join()
-        self.socket.shutdown(socket.SHUT_RDWR)
-        self.socket.close()
+        self.threadBuffer.abort()
+        self.threadBuffer.join()
 
 
-class ThreadBucket(threading.Thread):
-    def __init__(self, socket):
+class ThreadBuffer(threading.Thread):
+    name = 'ThreadBuffer'
+    buffer = ""
+    cancel = False
+    readLen = 0
+    read = 0
+    done = False
+    READ_SIZE = 4096
+
+    def __init__(self, host, port):
         threading.Thread.__init__(self)
-        self.name = 'ThreadBucket'
-        self.cancel = False
-        self.socket = socket
-        self.state = False
 
+        self.condition = threading.Condition()
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.connect((host, port))
+        self.header = self.socket.recv(12)
         self.start()
 
     def run(self):
         while(not self.cancel):
-            if self.bucket:
-                self.socket.recv(4096)
+            if self.readLen > 0:
+                self.read_stream()
+            else:
+                self.skip_stream()
 
-    def bucket(self, state):
-        self.state = state
+        self.socket.close()
+
+    def doWait(self):
+        self.condition.acquire()
+        while not self.done:
+            self.condition.wait()
+        self.done = False
+        self.condition.release()
+
+    def doNotify(self):
+        self.condition.acquire()
+        self.done = True
+        self.condition.notify()
+        self.condition.release()
+
+    def read_stream(self):
+        data = []
+        recv = ""
+
+        self.buffer = ""
+        while self.readLen > 0:
+            recv = self.socket.recv(self.readLen)
+            data.append(recv)
+            self.readLen -= len(recv)
+
+        self.buffer = bytearray(''.join(data))
+        self.doNotify()
+
+    def skip_stream(self):
+        total = self.READ_SIZE
+        while total > 0:
+            recv = self.socket.recv(total)
+            total -= len(recv)
+
+    def get_header(self):
+        return self.header
+
+    def recv(self, length):
+        self.readLen = length
+        self.doWait()
+        return self.buffer
+
+    def sendall(self, data):
+        self.socket.sendall(data)
 
     def abort(self):
         self.cancel = True
