@@ -48,11 +48,11 @@ from devices import get_devices
 from events import EVT_THREAD_STATUS, Event
 from misc import calc_samples, calc_real_dwell
 from plot import setup_plot, scale_plot, open_plot, save_plot, export_plot, \
-    ThreadPlot
+    ThreadPlot, ScanInfo
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
 from windows import PanelGraph, DialogPrefs, DialogCompare, DialogAutoCal, \
-    DialogSaveWarn, Statusbar
+    DialogSaveWarn, Statusbar, DialogProperties
 
 
 class DropTarget(wx.FileDropTarget):
@@ -94,6 +94,7 @@ class FrameMain(wx.Frame):
         self.menuOpen = None
         self.menuSave = None
         self.menuExport = None
+        self.menuProperties = None
         self.menuStart = None
         self.menuStop = None
         self.menuStopEnd = None
@@ -123,6 +124,7 @@ class FrameMain(wx.Frame):
         self.dirname = "."
 
         self.spectrum = {}
+        self.scanInfo = ScanInfo()
         self.isSaved = True
 
         self.settings = Settings()
@@ -262,6 +264,8 @@ class FrameMain(wx.Frame):
                                           "Save plot")
         self.menuExport = menuFile.Append(wx.ID_ANY, "&Export...",
                                             "Export plot")
+        self.menuProperties = menuFile.Append(wx.ID_ANY, "&Properties...",
+                                            "Show properties")
         menuExit = menuFile.Append(wx.ID_EXIT, "E&xit", "Exit the program")
 
         menuScan = wx.Menu()
@@ -299,6 +303,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_open, self.menuOpen)
         self.Bind(wx.EVT_MENU, self.on_save, self.menuSave)
         self.Bind(wx.EVT_MENU, self.on_export, self.menuExport)
+        self.Bind(wx.EVT_MENU, self.on_properties, self.menuProperties)
         self.Bind(wx.EVT_MENU, self.on_exit, menuExit)
         self.Bind(wx.EVT_MENU, self.on_start, self.menuStart)
         self.Bind(wx.EVT_MENU, self.on_stop, self.menuStop)
@@ -369,6 +374,11 @@ class FrameMain(wx.Frame):
             self.status.set_general("Finished")
         dlg.Destroy()
 
+    def on_properties(self, _event):
+        dlg = DialogProperties(self, self.scanInfo)
+        dlg.ShowModal()
+        dlg.Destroy()
+
     def on_exit(self, _event):
         self.Unbind(wx.EVT_CLOSE)
         if self.save_warn(Warn.EXIT):
@@ -385,7 +395,7 @@ class FrameMain(wx.Frame):
 
     def on_pref(self, _event):
         self.devices = self.refresh_devices()
-        dlg = DialogPrefs(self, self.devices, self.settings)
+        dlg = DialogPrefs(self, self.devices, self.scanInfo)
         if dlg.ShowModal() == wx.ID_OK:
             self.devices = dlg.get_devices()
             self.settings.index = dlg.get_index()
@@ -507,14 +517,11 @@ class FrameMain(wx.Frame):
         self.dirname = dirname
         self.status.set_general("Opening: {0}".format(filename))
 
-        start, stop, dwell, nfft, spectrum = open_plot(dirname, filename)
+        self.scanInfo, spectrum = open_plot(dirname, filename)
 
         if len(spectrum) > 0:
             self.spectrum.clear()
-            self.settings.start = start
-            self.settings.stop = stop
-            self.settings.dwell = dwell
-            self.settings.nfft = nfft
+            self.scanInfo.setToSettings(self.settings)
             self.spectrum = spectrum
             self.isSaved = True
             self.set_controls()
@@ -581,6 +588,7 @@ class FrameMain(wx.Frame):
             self.spectrum.clear()
             self.status.set_info('')
             self.pendingScan = False
+            self.scanInfo.setFromSettings(self.settings)
 
             self.threadScan = ThreadScan(self, self.settings,
                                          self.settings.index, samples, isCal)

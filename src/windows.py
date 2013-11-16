@@ -387,7 +387,6 @@ class DialogCompare(wx.Dialog):
 
     def on_close(self, _event):
         self.EndModal(wx.ID_CLOSE)
-        return
 
 
 class DialogAutoCal(wx.Dialog):
@@ -624,6 +623,89 @@ class DialogOffset(wx.Dialog):
 
     def get_offset(self):
         return self.offset
+
+
+class DialogProperties(wx.Dialog):
+    def __init__(self, parent, scanInfo):
+        wx.Dialog.__init__(self, parent, title="Properties")
+
+        box = wx.BoxSizer(wx.VERTICAL)
+
+        grid = wx.GridBagSizer(0, 0)
+
+        boxRange = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Range"),
+                                     wx.HORIZONTAL)
+
+        gridRange = wx.GridSizer(0, 3, 0, 0)
+
+        textStart = wx.StaticText(self, label="Start")
+        gridRange.Add(textStart, 0, wx.ALL, 5)
+
+        textCtrlStart = wx.TextCtrl(self)
+        if scanInfo.start is not None:
+            textCtrlStart.SetValue(str(scanInfo.start))
+        textCtrlStart.Enable(False)
+        gridRange.Add(textCtrlStart, 0, wx.ALL, 5)
+
+        textMHz1 = wx.StaticText(self, wx.ID_ANY, label="MHz")
+        gridRange.Add(textMHz1, 0, wx.ALL, 5)
+
+        textStop = wx.StaticText(self, label="Stop")
+        gridRange.Add(textStop, 0, wx.ALL, 5)
+
+        textCtrlStop = wx.TextCtrl(self)
+        if scanInfo.stop is not None:
+            textCtrlStop.SetValue(str(scanInfo.stop))
+        textCtrlStop.Enable(False)
+        gridRange.Add(textCtrlStop, 0, wx.ALL, 5)
+
+        textMHz2 = wx.StaticText(self, label="MHz")
+        gridRange.Add(textMHz2, 0, wx.ALL, 5)
+
+        boxRange.Add(gridRange, 1, 0, 5)
+
+        grid.Add(boxRange, (0, 0), (1, 1), wx.ALL | wx.EXPAND, 5)
+
+        boxSettings = wx.StaticBoxSizer(wx.StaticBox(self, label="Settings"),
+                                        wx.HORIZONTAL)
+
+        gridSettings = wx.GridSizer(0, 3, 0, 0)
+
+        textDwell = wx.StaticText(self, label="Dwell")
+        gridSettings.Add(textDwell, 0, wx.ALL, 5)
+        textCtrlDwell = wx.TextCtrl(self)
+        if scanInfo.dwell is not None:
+            textCtrlDwell.SetValue(str(scanInfo.dwell))
+        textCtrlDwell.Enable(False)
+
+        gridSettings.Add(textCtrlDwell, 0, wx.ALL, 5)
+
+        textSeconds = wx.StaticText(self, label="seconds")
+        gridSettings.Add(textSeconds, 0, wx.ALL, 5)
+        textNfft = wx.StaticText(self, label="FFT Size")
+        gridSettings.Add(textNfft, 0, wx.ALL, 5)
+
+        textCtrlNfft = wx.TextCtrl(self)
+        if scanInfo.nfft is not None:
+            textCtrlNfft.SetValue(str(scanInfo.nfft))
+        textCtrlNfft.Enable(False)
+        gridSettings.Add(textCtrlNfft, 0, wx.ALL, 5)
+
+        boxSettings.Add(gridSettings, 1, 0, 5)
+
+        grid.Add(boxSettings, (1, 0), (1, 1), wx.ALL | wx.EXPAND, 5)
+
+        box.Add(grid, 1, wx.ALL | wx.EXPAND, 5)
+
+        buttonClose = wx.Button(self, label="Close")
+        buttonClose.SetDefault()
+        self.Bind(wx.EVT_BUTTON, self.on_close, buttonClose)
+        box.Add(buttonClose, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
+
+        self.SetSizerAndFit(box)
+
+    def on_close(self, _event):
+        self.EndModal(wx.ID_CLOSE)
 
 
 class DialogPrefs(wx.Dialog):

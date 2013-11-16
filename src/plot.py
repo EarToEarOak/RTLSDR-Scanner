@@ -144,6 +144,25 @@ class ThreadPlot(threading.Thread):
                 pass
 
 
+class ScanInfo():
+    start = None
+    stop = None
+    dwell = None
+    nfft = None
+
+    def setFromSettings(self, settings):
+        self.start = settings.start
+        self.stop = settings.stop
+        self.dwell = settings.dwell
+        self.nfft = settings.nfft
+
+    def setToSettings(self, settings):
+        settings.start = self.start
+        settings.stop = self.stop
+        settings.dwell = self.dwell
+        settings.nfft = self.nfft
+
+
 def setup_plot(graph, settings, grid):
     axes = graph.get_axes()
     if len(settings.devices) > 0:
@@ -236,7 +255,13 @@ def open_plot(dirname, filename):
                   wx.OK | wx.ICON_WARNING)
         return 0, 0, 0, 0, []
 
-    return start, stop, dwell, nfft, spectrum
+    scanInfo = ScanInfo()
+    scanInfo.start = start
+    scanInfo.stop = stop
+    scanInfo.dwell = dwell
+    scanInfo.nfft = nfft
+
+    return scanInfo, spectrum
 
 
 def save_plot(dirname, filename, settings, spectrum):
