@@ -107,7 +107,7 @@ class Cli():
 
         print "{0} - {1}MHz".format(start, end)
         print "{0}dB Gain".format(gain)
-        print "{0}s Dwell".format(dwell)
+        print "{0}s Dwell".format(self.settings.dwell)
         print "{0} FFT points".format(nfft)
         print "{0}MHz LO".format(lo)
         if remote is not None:
