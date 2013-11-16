@@ -351,7 +351,7 @@ class FrameMain(wx.Frame):
 
     def on_save(self, _event):
         dlg = wx.FileDialog(self, "Save a scan", self.dirname,
-                            self.filename + ".rfs", File.RFS,
+                            self.filename, File.RFS,
                             wx.SAVE | wx.OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
             self.status.set_general("Saving")
