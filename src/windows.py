@@ -633,34 +633,34 @@ class DialogProperties(wx.Dialog):
 
         grid = wx.GridBagSizer(0, 0)
 
-        boxRange = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Range"),
+        boxRange = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Scan"),
                                      wx.HORIZONTAL)
 
-        gridRange = wx.GridSizer(0, 3, 0, 0)
+        gridRange = wx.GridBagSizer(0, 0)
 
         textStart = wx.StaticText(self, label="Start")
-        gridRange.Add(textStart, 0, wx.ALL, 5)
+        gridRange.Add(textStart, (0, 0), (1, 1), wx.ALL, 5)
 
-        textCtrlStart = wx.TextCtrl(self)
+        textCtrlStart = wx.TextCtrl(self, value="Unknown")
         if scanInfo.start is not None:
             textCtrlStart.SetValue(str(scanInfo.start))
         textCtrlStart.Enable(False)
-        gridRange.Add(textCtrlStart, 0, wx.ALL, 5)
+        gridRange.Add(textCtrlStart, (0, 1), (1, 1), wx.ALL, 5)
 
         textMHz1 = wx.StaticText(self, wx.ID_ANY, label="MHz")
-        gridRange.Add(textMHz1, 0, wx.ALL, 5)
+        gridRange.Add(textMHz1, (0, 2), (1, 1), wx.ALL, 5)
 
         textStop = wx.StaticText(self, label="Stop")
-        gridRange.Add(textStop, 0, wx.ALL, 5)
+        gridRange.Add(textStop, (1, 0), (1, 1), wx.ALL, 5)
 
-        textCtrlStop = wx.TextCtrl(self)
+        textCtrlStop = wx.TextCtrl(self, value="Unknown")
         if scanInfo.stop is not None:
             textCtrlStop.SetValue(str(scanInfo.stop))
         textCtrlStop.Enable(False)
-        gridRange.Add(textCtrlStop, 0, wx.ALL, 5)
+        gridRange.Add(textCtrlStop, (1, 1), (1, 1), wx.ALL, 5)
 
         textMHz2 = wx.StaticText(self, label="MHz")
-        gridRange.Add(textMHz2, 0, wx.ALL, 5)
+        gridRange.Add(textMHz2, (1, 2), (1, 1), wx.ALL, 5)
 
         boxRange.Add(gridRange, 1, 0, 5)
 
@@ -669,31 +669,86 @@ class DialogProperties(wx.Dialog):
         boxSettings = wx.StaticBoxSizer(wx.StaticBox(self, label="Settings"),
                                         wx.HORIZONTAL)
 
-        gridSettings = wx.GridSizer(0, 3, 0, 0)
+        gridSettings = wx.GridBagSizer(0, 0)
 
         textDwell = wx.StaticText(self, label="Dwell")
-        gridSettings.Add(textDwell, 0, wx.ALL, 5)
-        textCtrlDwell = wx.TextCtrl(self)
+        gridSettings.Add(textDwell, (0, 0), (1, 1), wx.ALL, 5)
+
+        textCtrlDwell = wx.TextCtrl(self, value="Unknown")
         if scanInfo.dwell is not None:
             textCtrlDwell.SetValue(str(scanInfo.dwell))
         textCtrlDwell.Enable(False)
-
-        gridSettings.Add(textCtrlDwell, 0, wx.ALL, 5)
+        gridSettings.Add(textCtrlDwell, (0, 1), (1, 1), wx.ALL, 5)
 
         textSeconds = wx.StaticText(self, label="seconds")
-        gridSettings.Add(textSeconds, 0, wx.ALL, 5)
-        textNfft = wx.StaticText(self, label="FFT Size")
-        gridSettings.Add(textNfft, 0, wx.ALL, 5)
+        gridSettings.Add(textSeconds, (0, 2), (1, 1), wx.ALL, 5)
 
-        textCtrlNfft = wx.TextCtrl(self)
+        textNfft = wx.StaticText(self, label="FFT Size")
+        gridSettings.Add(textNfft, (1, 0), (1, 1), wx.ALL, 5)
+
+        textCtrlNfft = wx.TextCtrl(self, value="Unknown")
         if scanInfo.nfft is not None:
             textCtrlNfft.SetValue(str(scanInfo.nfft))
         textCtrlNfft.Enable(False)
-        gridSettings.Add(textCtrlNfft, 0, wx.ALL, 5)
+        gridSettings.Add(textCtrlNfft, (1, 1), (1, 1), wx.ALL, 5)
 
         boxSettings.Add(gridSettings, 1, 0, 5)
 
         grid.Add(boxSettings, (1, 0), (1, 1), wx.ALL | wx.EXPAND, 5)
+
+        boxDevice = wx.StaticBoxSizer(wx.StaticBox(self, label="Device"),
+                                      wx.VERTICAL)
+
+        gridDevice = wx.GridBagSizer(0, 0)
+
+        testName = wx.StaticText(self, label="Name")
+        gridDevice.Add(testName, (0, 0), (1, 1), wx.ALL, 5)
+
+        textCtrlName = wx.TextCtrl(self, value="Unknown")
+        if scanInfo.name is not None:
+            textCtrlName.SetValue(scanInfo.name)
+        textCtrlName.Enable(False)
+        gridDevice.Add(textCtrlName, (0, 1), (1, 1), wx.ALL, 5)
+
+        testGain = wx.StaticText(self, label="Gain")
+        gridDevice.Add(testGain, (1, 0), (1, 1), wx.ALL, 5)
+
+        textCtrlGain = wx.TextCtrl(self, value="Unknown")
+        if scanInfo.gain is not None:
+            textCtrlGain.SetValue(str(scanInfo.gain))
+        textCtrlGain.Enable(False)
+        gridDevice.Add(textCtrlGain, (1, 1), (1, 1), wx.ALL, 5)
+
+        textDb = wx.StaticText(self, label="dB")
+        gridDevice.Add(textDb, (1, 2), (1, 1), wx.ALL, 5)
+
+        textLo = wx.StaticText(self, label="LO")
+        gridDevice.Add(textLo, (2, 0), (1, 1), wx.ALL, 5)
+
+        textCtrlLo = wx.TextCtrl(self, value="Unknown")
+        if scanInfo.lo is not None:
+            textCtrlLo.SetValue(str(scanInfo.lo))
+        textCtrlLo.Enable(False)
+        gridDevice.Add(textCtrlLo, (2, 1), (1, 1), wx.ALL, 5)
+
+        textMHz3 = wx.StaticText(self, label="MHz")
+        gridDevice.Add(textMHz3, (2, 2), (1, 1), wx.ALL, 5)
+
+        textCal = wx.StaticText(self, label="Calibration")
+        gridDevice.Add(textCal, (3, 0), (1, 1), wx.ALL, 5)
+
+        textCtrlCal = wx.TextCtrl(self, value="Unknown")
+        if scanInfo.calibration is not None:
+            textCtrlCal.SetValue(str(scanInfo.calibration))
+        textCtrlCal.Enable(False)
+        gridDevice.Add(textCtrlCal, (3, 1), (1, 1), wx.ALL, 5)
+
+        testPpm = wx.StaticText(self, label="ppm")
+        gridDevice.Add(testPpm, (3, 2), (1, 1), wx.ALL, 5)
+
+        boxDevice.Add(gridDevice, 1, wx.EXPAND, 5)
+
+        grid.Add(boxDevice, (2, 0), (1, 1), wx.ALL | wx.EXPAND, 5)
 
         box.Add(grid, 1, wx.ALL | wx.EXPAND, 5)
 

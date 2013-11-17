@@ -149,12 +149,21 @@ class ScanInfo():
     stop = None
     dwell = None
     nfft = None
+    name = None
+    gain = None
+    lo = None
+    calibration = None
 
     def setFromSettings(self, settings):
         self.start = settings.start
         self.stop = settings.stop
         self.dwell = settings.dwell
         self.nfft = settings.nfft
+        device = settings.devices[settings.index]
+        self.name = device.name
+        self.gain = device.gain
+        self.lo = device.lo
+        self.calibration = device.calibration
 
     def setToSettings(self, settings):
         settings.start = self.start
@@ -211,6 +220,10 @@ def open_plot(dirname, filename):
     error = False
     dwell = 0.131
     nfft = 1024
+    name = None
+    gain = None
+    lo = None
+    calibration = None
     spectrum = {}
 
     path = os.path.join(dirname, filename)
@@ -243,6 +256,11 @@ def open_plot(dirname, filename):
             if version > 1:
                 dwell = data[1]['Dwell']
                 nfft = data[1]['Nfft']
+            if version > 2:
+                name = data[1]['Device']
+                gain = data[1]['Gain']
+                lo = data[1]['LO']
+                calibration = data[1]['Calibration']
         except ValueError:
             error = True
         except KeyError:
@@ -260,16 +278,26 @@ def open_plot(dirname, filename):
     scanInfo.stop = stop
     scanInfo.dwell = dwell
     scanInfo.nfft = nfft
+    scanInfo.name = name
+    scanInfo.gain = gain
+    scanInfo.lo = lo
+    scanInfo.calibration = calibration
 
     return scanInfo, spectrum
 
 
 def save_plot(dirname, filename, settings, spectrum):
+    device = settings.devices[settings.index]
+
     data = [File.HEADER, {'Version': File.VERSION,
                           'Start':settings.start,
                           'Stop':settings.stop,
                           'Dwell':settings.dwell,
                           'Nfft':settings.nfft,
+                          'Device':device.name,
+                          'Gain':device.gain,
+                          'LO':device.lo,
+                          'Calibration':device.calibration,
                           'Spectrum': spectrum}]
 
     handle = open(os.path.join(dirname, filename), 'wb')
