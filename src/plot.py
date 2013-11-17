@@ -287,6 +287,7 @@ def open_plot(dirname, filename):
 
 
 def save_plot(dirname, filename, settings, spectrum):
+    # TODO: use ScanInfo instead of settings
     device = settings.devices[settings.index]
 
     data = [File.HEADER, {'Version': File.VERSION,

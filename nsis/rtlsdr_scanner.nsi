@@ -88,7 +88,7 @@ Section "RTLSDR Scanner (Required)" SEC_SCAN
     SetOverwrite ifnewer
     File "license.txt"
     Call get_rtlsdr_scanner
-    !insertmacro APP_ASSOCIATE "${FILE_TYPE}" "${FILE_CLASS}" "{$FILE_DESC}" "$INSTDIR\rtlsdr_scan.ico,0" "Open with RTLSDR Scanner" "python $\"$INSTDIR\rtlsdr_scan.py$\" $\"%1$\""
+    !insertmacro APP_ASSOCIATE "${FILE_TYPE}" "${FILE_CLASS}" "${FILE_DESC}" "$INSTDIR\rtlsdr_scan.ico,0" "Open with RTLSDR Scanner" "python $\"$INSTDIR\rtlsdr_scan.py$\" $\"%1$\""
     CopyFiles "$ExePath" "$InstDir\"
     CreateDirectory "$SMPROGRAMS\RTLSDR Scanner"
     CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\RTLSDR Scanner.lnk" "python" '"$INSTDIR\rtlsdr_scan.py"' "$INSTDIR\rtlsdr_scan.ico" 0
