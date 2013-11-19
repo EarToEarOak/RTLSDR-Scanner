@@ -357,7 +357,7 @@ class FrameMain(wx.Frame):
             self.status.set_general("Saving")
             self.filename = dlg.GetFilename()
             self.dirname = dlg.GetDirectory()
-            save_plot(self.dirname, self.filename, self.settings,
+            save_plot(self.dirname, self.filename, self.scanInfo,
                       self.spectrum)
             self.isSaved = True
             self.status.set_general("Finished")

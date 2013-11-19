@@ -32,7 +32,7 @@ from constants import SAMPLE_RATE
 from devices import Device, get_devices
 from events import Event
 from misc import next_2_to_pow, nearest, calc_real_dwell
-from plot import save_plot, export_plot
+from plot import save_plot, export_plot, ScanInfo
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
 
@@ -72,9 +72,9 @@ class Cli():
                 self.settings.devices = get_devices()
                 count = len(self.settings.devices)
                 if index > count - 1:
-                        error = "Device not found ({0} devices in total):\n".format(count)
-                        for device in self.settings.devices:
-                            error += "\t{0}: {1}\n".format(device.index, device.name)
+                    error = "Device not found ({0} devices in total):\n".format(count)
+                    for device in self.settings.devices:
+                        error += "\t{0}: {1}\n".format(device.index, device.name)
             else:
                 device.isDevice = False
                 url = urlparse('//' + remote)
@@ -118,7 +118,9 @@ class Cli():
         self.scan(self.settings, index, pool)
 
         if ext == ".rfs":
-            save_plot(directory, filename, self.settings, self.spectrum)
+            scanInfo = ScanInfo()
+            scanInfo.setFromSettings(self.settings)
+            save_plot(directory, filename, scanInfo, self.spectrum)
         else:
             export_plot(directory, filename, self.spectrum)
 

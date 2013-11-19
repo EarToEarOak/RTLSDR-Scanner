@@ -286,19 +286,16 @@ def open_plot(dirname, filename):
     return scanInfo, spectrum
 
 
-def save_plot(dirname, filename, settings, spectrum):
-    # TODO: use ScanInfo instead of settings
-    device = settings.devices[settings.index]
-
+def save_plot(dirname, filename, scanInfo, spectrum):
     data = [File.HEADER, {'Version': File.VERSION,
-                          'Start':settings.start,
-                          'Stop':settings.stop,
-                          'Dwell':settings.dwell,
-                          'Nfft':settings.nfft,
-                          'Device':device.name,
-                          'Gain':device.gain,
-                          'LO':device.lo,
-                          'Calibration':device.calibration,
+                          'Start':scanInfo.start,
+                          'Stop':scanInfo.stop,
+                          'Dwell':scanInfo.dwell,
+                          'Nfft':scanInfo.nfft,
+                          'Device':scanInfo.name,
+                          'Gain':scanInfo.gain,
+                          'LO':scanInfo.lo,
+                          'Calibration':scanInfo.calibration,
                           'Spectrum': spectrum}]
 
     handle = open(os.path.join(dirname, filename), 'wb')
