@@ -395,7 +395,7 @@ class FrameMain(wx.Frame):
 
     def on_pref(self, _event):
         self.devices = self.refresh_devices()
-        dlg = DialogPrefs(self, self.devices, self.scanInfo)
+        dlg = DialogPrefs(self, self.devices, self.settings)
         if dlg.ShowModal() == wx.ID_OK:
             self.devices = dlg.get_devices()
             self.settings.index = dlg.get_index()
