@@ -260,12 +260,19 @@ class FrameMain(wx.Frame):
         menuFile = wx.Menu()
         self.menuOpen = menuFile.Append(wx.ID_OPEN, "&Open...",
                                         "Open plot")
+        recent = wx.Menu()
+        self.settings.fileHistory.UseMenu(recent)
+        self.settings.fileHistory.AddFilesToMenu()
+        menuFile.AppendMenu(wx.ID_ANY, "&Recent Files", recent)
+        menuFile.AppendSeparator()
         self.menuSave = menuFile.Append(wx.ID_SAVE, "&Save As...",
                                           "Save plot")
         self.menuExport = menuFile.Append(wx.ID_ANY, "&Export...",
                                             "Export plot")
+        menuFile.AppendSeparator()
         self.menuProperties = menuFile.Append(wx.ID_ANY, "&Properties...",
                                             "Show properties")
+        menuFile.AppendSeparator()
         menuExit = menuFile.Append(wx.ID_EXIT, "E&xit", "Exit the program")
 
         menuScan = wx.Menu()
@@ -301,6 +308,8 @@ class FrameMain(wx.Frame):
         self.SetMenuBar(menuBar)
 
         self.Bind(wx.EVT_MENU, self.on_open, self.menuOpen)
+        self.Bind(wx.EVT_MENU_RANGE, self.on_file_history, id=wx.ID_FILE1,
+                  id2=wx.ID_FILE9)
         self.Bind(wx.EVT_MENU, self.on_save, self.menuSave)
         self.Bind(wx.EVT_MENU, self.on_export, self.menuExport)
         self.Bind(wx.EVT_MENU, self.on_properties, self.menuProperties)
@@ -348,6 +357,13 @@ class FrameMain(wx.Frame):
         if dlg.ShowModal() == wx.ID_OK:
             self.open(dlg.GetDirectory(), dlg.GetFilename())
         dlg.Destroy()
+
+    def on_file_history(self, event):
+        selection = event.GetId() - wx.ID_FILE1
+        path = self.settings.fileHistory.GetHistoryFile(selection)
+        self.settings.fileHistory.AddFileToHistory(path)
+        dirname, filename = os.path.split(path)
+        self.open(dirname, filename)
 
     def on_save(self, _event):
         dlg = wx.FileDialog(self, "Save a scan", self.dirname,
@@ -529,6 +545,8 @@ class FrameMain(wx.Frame):
             self.graph.get_axes().clear()
             self.update_plot(True)
             self.status.set_general("Finished")
+            self.settings.fileHistory.AddFileToHistory(os.path.join(dirname,
+                                                                    filename))
         else:
             self.status.set_general("Open failed")
 

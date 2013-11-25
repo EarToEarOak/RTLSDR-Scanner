@@ -33,6 +33,7 @@ class Settings():
         self.cfg = None
 
         self.saveWarn = True
+        self.fileHistory = wx.FileHistory(5)
 
         self.annotate = True
 
@@ -61,6 +62,7 @@ class Settings():
         servers = 0
         self.cfg = wx.Config('rtlsdr-scanner')
         self.saveWarn = self.cfg.ReadBool('saveWarn', self.saveWarn)
+        self.fileHistory.Load(self.cfg)
         self.annotate = self.cfg.ReadBool('annotate', self.annotate)
         self.retainScans = self.cfg.ReadBool('retainScans', self.retainScans)
         self.fadeScans = self.cfg.ReadBool('fadeScans', self.fadeScans)
@@ -107,6 +109,7 @@ class Settings():
     def save(self):
         self.cfg.SetPath("/")
         self.cfg.WriteBool('saveWarn', self.saveWarn)
+        self.fileHistory.Save(self.cfg)
         self.cfg.WriteBool('annotate', self.annotate)
         self.cfg.WriteBool('retainScans', self.retainScans)
         self.cfg.WriteBool('fadeScans', self.fadeScans)
