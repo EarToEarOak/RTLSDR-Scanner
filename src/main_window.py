@@ -73,6 +73,25 @@ class RtlSdrScanner(wx.App):
         wx.App.__init__(self, redirect=False)
 
 
+class ProcStatus():
+    processId = 0
+    processes = []
+
+    def addProcess(self):
+        self.processId += 1
+        self.processes.append(self.processId)
+        return self.processId
+
+    def removeProcess(self, id):
+        self.processes.remove(id)
+
+    def isProcessing(self):
+        if(len(self.processes) > 0):
+            return True
+
+        return False
+
+
 class FrameMain(wx.Frame):
     def __init__(self, title, pool):
 
@@ -80,10 +99,9 @@ class FrameMain(wx.Frame):
 
         self.pool = pool
         self.lock = threading.Lock()
+        self.procStatus = ProcStatus()
         self.threadScan = None
         self.threadPlot = None
-        self.stepsTotal = 0
-        self.steps = 0
         self.pendingScan = False
         self.pendingPlot = Plot.NONE
         self.stopAtEnd = False
@@ -484,8 +502,9 @@ class FrameMain(wx.Frame):
         elif status == Event.DATA:
             self.isSaved = False
             cal = self.devices[self.settings.index].calibration
+            id = self.procStatus.addProcess()
             self.pool.apply_async(anaylse_data,
-                                  (freq, data, cal, self.settings.nfft),
+                                  (freq, data, cal, self.settings.nfft, id),
                                   callback=self.on_process_done)
             self.progress()
         elif status == Event.STOPPED:
@@ -494,6 +513,8 @@ class FrameMain(wx.Frame):
             self.threadScan = None
             self.set_control_state(True)
             self.update_plot()
+        elif status == Event.FINISHED:
+            self.threadScan = None
         elif status == Event.ERROR:
             self.status.hide_progress()
             self.status.set_general("Error: {0}".format(data))
@@ -515,7 +536,8 @@ class FrameMain(wx.Frame):
                 self.start_scan()
 
     def on_process_done(self, data):
-        freq, scan = data
+        freq, scan, id = data
+        self.procStatus.removeProcess(id)
         offset = self.settings.devices[self.settings.index].offset
         with self.lock:
             update_spectrum(self.settings.start, self.settings.stop, freq,
@@ -622,7 +644,7 @@ class FrameMain(wx.Frame):
 
     def progress(self):
         self.steps -= 1
-        if self.steps > 0:
+        if self.threadScan or self.procStatus.isProcessing():
             self.status.set_progress((self.stepsTotal - self.steps) * 100
                     / self.stepsTotal)
             self.status.show_progress()
@@ -631,7 +653,6 @@ class FrameMain(wx.Frame):
             self.status.hide_progress()
             if self.settings.mode == Mode.SINGLE or self.stopAtEnd:
                 self.status.set_general("Finished")
-            self.threadScan = None
             if self.settings.mode == Mode.SINGLE:
                 self.set_control_state(True)
                 self.update_plot(True)

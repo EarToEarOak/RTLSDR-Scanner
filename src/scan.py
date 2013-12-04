@@ -101,6 +101,8 @@ class ThreadScan(threading.Thread):
             freq += self.f_step()
 
         self.rtl_close(sdr)
+        post_event(self.notify, EventThreadStatus(Event.FINISHED, 0, None))
+
         if self.isCal:
             post_event(self.notify, EventThreadStatus(Event.CAL))
 
@@ -140,7 +142,7 @@ class ThreadScan(threading.Thread):
         sdr.close()
 
 
-def anaylse_data(freq, data, cal, nfft):
+def anaylse_data(freq, data, cal, nfft, id):
     rtl_scan = {}
     window = matplotlib.numpy.hamming(nfft)
     powers, freqs = matplotlib.mlab.psd(data,
@@ -152,7 +154,7 @@ def anaylse_data(freq, data, cal, nfft):
         xr = xr + (xr * cal / 1e6)
         rtl_scan[xr] = pwr
 
-    return (freq, rtl_scan)
+    return (freq, rtl_scan, id)
 
 
 def update_spectrum(start, stop, freqCentre, scan, offset, spectrum):
