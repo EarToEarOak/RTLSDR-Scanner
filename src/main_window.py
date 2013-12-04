@@ -465,7 +465,7 @@ class FrameMain(wx.Frame):
     def on_start(self, _event):
         self.get_controls()
         self.graph.get_axes().clear()
-        scale_plot(self.graph, self.settings)
+        scale_plot(self.graph, self.settings, self.lock)
         self.start_scan()
 
     def on_stop(self, _event):
@@ -719,7 +719,7 @@ class FrameMain(wx.Frame):
             return False
 
     def update_plot(self, full=False, updateScale=False):
-        scale_plot(self.graph, self.settings, updateScale)
+        scale_plot(self.graph, self.settings, self.lock, updateScale)
 
         if full:
             if not self.plot(True):

@@ -194,19 +194,20 @@ def setup_plot(graph, settings, grid):
     axes.grid(grid)
 
 
-def scale_plot(graph, settings, updateScale=False):
-    axes = graph.get_axes()
-    if settings.autoScale:
-        axes.set_ylim(auto=True)
-        axes.set_xlim(auto=True)
-        settings.yMin, settings.yMax = axes.get_ylim()
-    else:
-        axes.set_ylim(auto=False)
-        axes.set_xlim(auto=False)
-        if updateScale:
-            if settings.yMin == settings.yMax:
-                settings.yMax += 1
-            axes.set_ylim(settings.yMin, settings.yMax)
+def scale_plot(graph, settings, lock, updateScale=False):
+    with lock:
+        axes = graph.get_axes()
+        if settings.autoScale:
+            axes.set_ylim(auto=True)
+            axes.set_xlim(auto=True)
+            settings.yMin, settings.yMax = axes.get_ylim()
+        else:
+            axes.set_ylim(auto=False)
+            axes.set_xlim(auto=False)
+            if updateScale:
+                if settings.yMin == settings.yMax:
+                    settings.yMax += 1
+                axes.set_ylim(settings.yMin, settings.yMax)
 
 
 def remove_plot(axes, plot):
