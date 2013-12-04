@@ -53,7 +53,7 @@ class ThreadScan(threading.Thread):
         self.offset = settings.devices[device].offset
         self.cancel = False
         post_event(self.notify, EventThreadStatus(Event.STARTING))
-        steps = (self.f_stop() - self.f_start()) / self.f_step()
+        steps = int((self.f_stop() - self.f_start()) / self.f_step()) + 1
         post_event(self.notify, EventThreadStatus(Event.STEPS, steps))
         self.start()
 
