@@ -37,7 +37,8 @@ from misc import split_spectrum
 
 
 class ThreadPlot(threading.Thread):
-    def __init__(self, notify, lock, graph, spectrum, settings, grid, full, fade):
+    def __init__(self, notify, lock, graph, spectrum, settings, grid, full,
+                 fade):
         threading.Thread.__init__(self)
         self.name = 'ThreadPlot'
         self.notify = notify
@@ -52,29 +53,30 @@ class ThreadPlot(threading.Thread):
         self.start()
 
     def run(self):
-        setup_plot(self.graph, self.settings, self.grid)
+        with self.lock:
+            setup_plot(self.graph, self.settings, self.grid)
 
-        axes = self.graph.get_axes()
-        if not self.settings.retainScans:
-            remove_plot(axes, Plot.STR_FULL)
-        remove_plot(axes, Plot.STR_PARTIAL)
+            axes = self.graph.get_axes()
+            if not self.settings.retainScans:
+                remove_plot(axes, Plot.STR_FULL)
+            remove_plot(axes, Plot.STR_PARTIAL)
 
-        if self.full:
-            name = Plot.STR_FULL
-        else:
-            name = Plot.STR_PARTIAL
-        self.graph.get_canvas().Name = name
+            if self.full:
+                name = Plot.STR_FULL
+            else:
+                name = Plot.STR_PARTIAL
+            self.graph.get_canvas().Name = name
 
-        freqs, powers = split_spectrum(self.spectrum)
-        axes.plot(freqs, powers, linewidth=0.4, color='b', alpha=1, gid=name)
-        self.retain_plot(axes)
+            freqs, powers = split_spectrum(self.spectrum)
+            axes.plot(freqs, powers, linewidth=0.4, color='b', alpha=1, gid=name)
+            self.retain_plot(axes)
 
-        if self.full:
-            self.annotate(axes)
+            if self.full:
+                self.annotate(axes)
 
-        self.graph.get_figure().tight_layout()
+            self.graph.get_figure().tight_layout()
 
-        wx.PostEvent(self.notify, EventThreadStatus(Event.DRAW))
+            wx.PostEvent(self.notify, EventThreadStatus(Event.DRAW))
 
     def retain_plot(self, axes):
         if self.full:

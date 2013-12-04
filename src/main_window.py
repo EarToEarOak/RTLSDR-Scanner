@@ -517,8 +517,9 @@ class FrameMain(wx.Frame):
     def on_process_done(self, data):
         freq, scan = data
         offset = self.settings.devices[self.settings.index].offset
-        update_spectrum(self.settings.start, self.settings.stop, freq, scan,
-                        offset, self.spectrum)
+        with self.lock:
+            update_spectrum(self.settings.start, self.settings.stop, freq,
+                            scan, offset, self.spectrum)
         self.progress()
 
         if self.settings.liveUpdate:
