@@ -87,16 +87,16 @@ class ThreadScan(threading.Thread):
                 if sdr is not None:
                     self.rtl_close(sdr)
                 sdr = self.rtl_setup()
-            except WindowsError:
-                if sdr is not None:
-                    self.rtl_close(sdr)
-                sdr = self.rtl_setup()
             except (TypeError, AttributeError) as error:
                 if self.notify:
                     post_event(self.notify,
                                EventThreadStatus(Event.ERROR,
                                                  0, error.message))
                 return
+            except WindowsError:
+                if sdr is not None:
+                    self.rtl_close(sdr)
+                sdr = self.rtl_setup()
 
             freq += self.f_step()
 
