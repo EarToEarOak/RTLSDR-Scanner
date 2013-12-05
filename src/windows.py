@@ -918,7 +918,7 @@ class DialogPrefs(wx.Dialog):
         if col == self.COL_SEL:
             self.index = event.GetRow()
             self.select_row(index)
-        elif col == 7:
+        elif col == self.COL_OFF:
             device = self.devices[index]
             dlg = DialogOffset(self, device,
                                float(self.gridDev.GetCellValue(index, self.COL_OFF)))
