@@ -91,7 +91,7 @@ class RtlTcp():
         self.send_command(RtlTcpCmd.SET_GAIN_MODE, mode)
 
     def set_gain(self, gain):
-        self.send_command(RtlTcpCmd.SET_GAIN, gain)
+        self.send_command(RtlTcpCmd.SET_GAIN, gain * 10)
 
     def set_center_freq(self, freq):
         self.send_command(RtlTcpCmd.SET_FREQ, freq)
