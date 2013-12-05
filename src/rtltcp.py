@@ -121,6 +121,8 @@ class ThreadBuffer(threading.Thread):
 
         self.condition = threading.Condition()
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.settimeout(5)
+        self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self.socket.connect((host, port))
         self.header = self.socket.recv(12)
         self.start()
@@ -133,11 +135,12 @@ class ThreadBuffer(threading.Thread):
                 self.skip_stream()
 
         self.socket.close()
+        self.doNotify()
 
     def doWait(self):
         self.condition.acquire()
         while not self.done:
-            self.condition.wait()
+            self.condition.wait(2)
         self.done = False
         self.condition.release()
 
@@ -154,6 +157,8 @@ class ThreadBuffer(threading.Thread):
         self.buffer = ""
         while self.readLen > 0:
             recv = self.socket.recv(self.readLen)
+            if len(recv) == 0:
+                break
             data.append(recv)
             self.readLen -= len(recv)
 
@@ -164,6 +169,8 @@ class ThreadBuffer(threading.Thread):
         total = self.READ_SIZE
         while total > 0:
             recv = self.socket.recv(total)
+            if len(recv) == 0:
+                break
             total -= len(recv)
 
     def get_header(self):
