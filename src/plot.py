@@ -155,6 +155,7 @@ class ScanInfo():
     gain = None
     lo = None
     calibration = None
+    tuner = 0
 
     def setFromSettings(self, settings):
         self.start = settings.start
@@ -169,6 +170,7 @@ class ScanInfo():
         self.gain = device.gain
         self.lo = device.lo
         self.calibration = device.calibration
+        self.tuner = device.tuner
 
     def setToSettings(self, settings):
         settings.start = self.start
@@ -230,6 +232,7 @@ def open_plot(dirname, filename):
     gain = None
     lo = None
     calibration = None
+    tuner = 0
     spectrum = {}
 
     path = os.path.join(dirname, filename)
@@ -267,6 +270,8 @@ def open_plot(dirname, filename):
                 gain = data[1]['Gain']
                 lo = data[1]['LO']
                 calibration = data[1]['Calibration']
+            if version > 4:
+                tuner = data[1]['Tuner']
         except ValueError:
             error = True
         except KeyError:
@@ -288,6 +293,7 @@ def open_plot(dirname, filename):
     scanInfo.gain = gain
     scanInfo.lo = lo
     scanInfo.calibration = calibration
+    scanInfo.tuner = tuner
 
     return scanInfo, spectrum
 
@@ -302,6 +308,7 @@ def save_plot(dirname, filename, scanInfo, spectrum):
                           'Gain':scanInfo.gain,
                           'LO':scanInfo.lo,
                           'Calibration':scanInfo.calibration,
+                          'Tuner':scanInfo.tuner,
                           'Spectrum': spectrum}]
 
     handle = open(os.path.join(dirname, filename), 'wb')

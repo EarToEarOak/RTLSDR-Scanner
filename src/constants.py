@@ -31,6 +31,7 @@ BANDWIDTH = 500e3
 
 MODE = ["Single", 0,
         "Continuous", 1]
+
 NFFT = [128,
         512,
         1024,
@@ -39,6 +40,7 @@ NFFT = [128,
         8192,
         16384,
         32768]
+
 DWELL = ["16 ms", 0.016,
          "32 ms", 0.032,
          "65 ms", 0.064,
@@ -48,6 +50,14 @@ DWELL = ["16 ms", 0.016,
          "1 s", 1,
          "2 s", 2,
          "8 s", 8]
+
+TUNER = ["Unknown",
+         "Elonics E4000",
+         "Fitipower FC0012",
+         "Fitipower FC0013",
+         "FCI FC2580",
+         "Rafael Micro R820T",
+         "Rafael Micro R828D"]
 
 
 class Warn:
@@ -72,7 +82,7 @@ class File:
     RFS = "RTLSDR frequency scan (*.rfs)|*.rfs"
     CSV = "CSV table (*.csv)|*.csv"
     HEADER = "RTLSDR Scanner"
-    VERSION = 4
+    VERSION = 5
 
 
 if __name__ == '__main__':

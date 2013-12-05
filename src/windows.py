@@ -627,7 +627,7 @@ class DialogOffset(wx.Dialog):
 
 class DialogProperties(wx.Dialog):
     def __init__(self, parent, scanInfo):
-        wx.Dialog.__init__(self, parent, title="Properties")
+        wx.Dialog.__init__(self, parent, title="Scan Properties")
 
         box = wx.BoxSizer(wx.VERTICAL)
 
@@ -700,46 +700,55 @@ class DialogProperties(wx.Dialog):
 
         gridDevice = wx.GridBagSizer(0, 0)
 
-        testName = wx.StaticText(self, label="Name", style=wx.TE_READONLY)
-        gridDevice.Add(testName, (0, 0), (1, 1), wx.ALL, 5)
+        textName = wx.StaticText(self, label="Name")
+        gridDevice.Add(textName, (0, 0), (1, 1), wx.ALL, 5)
 
-        textCtrlName = wx.TextCtrl(self, value="Unknown")
+        textCtrlName = wx.TextCtrl(self, value="Unknown", style=wx.TE_READONLY)
         if scanInfo.name is not None:
             textCtrlName.SetValue(scanInfo.name)
         gridDevice.Add(textCtrlName, (0, 1), (1, 1), wx.ALL, 5)
 
+        textTuner = wx.StaticText(self, label="Tuner")
+        gridDevice.Add(textTuner, (1, 0), (1, 1), wx.ALL, 5)
+
+        textCtrlTuner = wx.TextCtrl(self, value="Unknown",
+                                    style=wx.TE_READONLY)
+        if scanInfo.tuner != -1:
+            textCtrlTuner.SetValue(TUNER[scanInfo.tuner])
+        gridDevice.Add(textCtrlTuner, (1, 1), (1, 1), wx.ALL, 5)
+
         testGain = wx.StaticText(self, label="Gain")
-        gridDevice.Add(testGain, (1, 0), (1, 1), wx.ALL, 5)
+        gridDevice.Add(testGain, (2, 0), (1, 1), wx.ALL, 5)
 
         textCtrlGain = wx.TextCtrl(self, value="Unknown", style=wx.TE_READONLY)
         if scanInfo.gain is not None:
             textCtrlGain.SetValue(str(scanInfo.gain))
-        gridDevice.Add(textCtrlGain, (1, 1), (1, 1), wx.ALL, 5)
+        gridDevice.Add(textCtrlGain, (2, 1), (1, 1), wx.ALL, 5)
 
         textDb = wx.StaticText(self, label="dB")
-        gridDevice.Add(textDb, (1, 2), (1, 1), wx.ALL, 5)
+        gridDevice.Add(textDb, (2, 2), (1, 1), wx.ALL, 5)
 
         textLo = wx.StaticText(self, label="LO")
-        gridDevice.Add(textLo, (2, 0), (1, 1), wx.ALL, 5)
+        gridDevice.Add(textLo, (3, 0), (1, 1), wx.ALL, 5)
 
         textCtrlLo = wx.TextCtrl(self, value="Unknown", style=wx.TE_READONLY)
         if scanInfo.lo is not None:
             textCtrlLo.SetValue(str(scanInfo.lo))
-        gridDevice.Add(textCtrlLo, (2, 1), (1, 1), wx.ALL, 5)
+        gridDevice.Add(textCtrlLo, (3, 1), (1, 1), wx.ALL, 5)
 
         textMHz3 = wx.StaticText(self, label="MHz")
-        gridDevice.Add(textMHz3, (2, 2), (1, 1), wx.ALL, 5)
+        gridDevice.Add(textMHz3, (3, 2), (1, 1), wx.ALL, 5)
 
         textCal = wx.StaticText(self, label="Calibration")
-        gridDevice.Add(textCal, (3, 0), (1, 1), wx.ALL, 5)
+        gridDevice.Add(textCal, (4, 0), (1, 1), wx.ALL, 5)
 
         textCtrlCal = wx.TextCtrl(self, value="Unknown", style=wx.TE_READONLY)
         if scanInfo.calibration is not None:
             textCtrlCal.SetValue(str(scanInfo.calibration))
-        gridDevice.Add(textCtrlCal, (3, 1), (1, 1), wx.ALL, 5)
+        gridDevice.Add(textCtrlCal, (4, 1), (1, 1), wx.ALL, 5)
 
         testPpm = wx.StaticText(self, label="ppm")
-        gridDevice.Add(testPpm, (3, 2), (1, 1), wx.ALL, 5)
+        gridDevice.Add(testPpm, (4, 2), (1, 1), wx.ALL, 5)
 
         boxDevice.Add(gridDevice, 1, wx.EXPAND, 5)
 

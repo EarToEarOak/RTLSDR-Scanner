@@ -500,6 +500,9 @@ class FrameMain(wx.Frame):
             self.status.show_progress()
         elif status == Event.CAL:
             self.auto_cal(Cal.DONE)
+        elif status == Event.INFO:
+            self.devices[self.settings.index].tuner = data
+            self.scanInfo.tuner = data
         elif status == Event.DATA:
             self.isSaved = False
             cal = self.devices[self.settings.index].calibration

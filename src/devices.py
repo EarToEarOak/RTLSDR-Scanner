@@ -40,6 +40,7 @@ class Device():
         self.calibration = 0
         self.lo = 0
         self.offset = 250e3
+        self.tuner = 0
 
     def set(self, device):
         self.gain = device.gain

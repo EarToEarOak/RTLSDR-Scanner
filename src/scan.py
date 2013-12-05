@@ -67,9 +67,10 @@ class ThreadScan(threading.Thread):
         return int(BANDWIDTH / 2)
 
     def run(self):
-        sdr = self.rtl_setup()
+        sdr, tuner = self.rtl_setup()
         if sdr is None:
             return
+        post_event(self.notify, EventThreadStatus(Event.INFO, None, tuner))
 
         freq = self.f_start()
         while freq <= self.f_stop():
@@ -111,6 +112,7 @@ class ThreadScan(threading.Thread):
 
     def rtl_setup(self):
         sdr = None
+        tuner = 0
 
         if self.isDevice:
             try:
@@ -126,11 +128,12 @@ class ThreadScan(threading.Thread):
                 sdr.set_sample_rate(SAMPLE_RATE)
                 sdr.set_gain_mode(1)
                 sdr.set_gain(self.gain)
+                tuner = sdr.get_tuner()
             except IOError as error:
                 post_event(self.notify, EventThreadStatus(Event.ERROR,
                                                           0, error))
 
-        return sdr
+        return sdr, tuner
 
     def rtl_scan(self, sdr, freq):
         sdr.set_center_freq(freq + self.lo)

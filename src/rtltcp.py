@@ -44,26 +44,23 @@ class RtlTcp():
         self.port = port
 
         self.threadBuffer = None
-        self.tuner = None
+        self.tuner = 0
         self.rate = 0
 
         self.setup()
 
     def setup(self):
         self.threadBuffer = ThreadBuffer(self.host, self.port)
-        self.tuner = self.get_header()
+        self.get_header()
 
     def get_header(self):
         header = self.threadBuffer.get_header()
-        tuner = None
         if len(header) == 12:
             if header.startswith('RTL'):
-                tuner = (ord(header[4]) << 24) | \
-                        (ord(header[5]) << 16) | \
-                        (ord(header[6]) << 8) | \
-                        ord(header[7])
-
-        return tuner
+                self.tuner = (ord(header[4]) << 24) | \
+                             (ord(header[5]) << 16) | \
+                             (ord(header[6]) << 8) | \
+                             ord(header[7])
 
     def send_command(self, command, data):
         send = array.array('c', '\0' * 5)
@@ -96,6 +93,9 @@ class RtlTcp():
     def set_center_freq(self, freq):
         self.send_command(RtlTcpCmd.SET_FREQ, freq)
         self.read_raw(int(self.rate * 2 * 0.1))
+
+    def get_tuner(self):
+        return self.tuner
 
     def read_samples(self, samples):
 
