@@ -45,7 +45,7 @@ import webbrowser
 
 from constants import *
 from devices import get_devices
-from events import EVT_THREAD_STATUS, Event
+from events import EVT_THREAD_STATUS, Event, EventThreadStatus
 from misc import calc_samples, calc_real_dwell
 from plot import setup_plot, scale_plot, open_plot, save_plot, export_plot, \
     ThreadPlot, ScanInfo
@@ -101,6 +101,7 @@ class FrameMain(wx.Frame):
         self.lock = threading.Lock()
         self.procStatus = ProcStatus()
         self.threadScan = None
+        self.isPlotting = False
         self.threadPlot = None
         self.pendingScan = False
         self.pendingPlot = Plot.NONE
@@ -512,40 +513,45 @@ class FrameMain(wx.Frame):
             self.status.set_general("Stopped")
             self.threadScan = None
             self.set_control_state(True)
-            self.update_plot()
+            self.update_plot(True)
         elif status == Event.FINISHED:
             self.threadScan = None
         elif status == Event.ERROR:
+            self.threadScan = None
             self.status.hide_progress()
             self.status.set_general("Error: {0}".format(data))
-            self.threadScan = None
             self.set_control_state(True)
             if self.dlgCal is not None:
                 self.dlgCal.Destroy()
                 self.dlgCal = None
+        elif status == Event.PROCESSED:
+            offset = self.settings.devices[self.settings.index].offset
+            with self.lock:
+                update_spectrum(self.settings.start, self.settings.stop, freq,
+                                data, offset, self.spectrum)
+            self.progress()
+        elif status == Event.PLOT_FULL:
+            self.update_plot(True)
+        elif status == Event.PLOT:
+            self.update_plot(False)
         elif status == Event.DRAW:
             self.graph.get_axes().relim()
             self.graph.get_canvas().draw()
         elif status == Event.PLOTTED:
+            self.isPlotting = False
             self.threadPlot = None
-            self.next_plot()
         elif status == Event.PLOTTED_FULL:
+            self.isPlotting = False
             self.threadPlot = None
-            self.next_plot()
             if self.pendingScan:
                 self.start_scan()
+
+        wx.YieldIfNeeded()
 
     def on_process_done(self, data):
         freq, scan, id = data
         self.procStatus.removeProcess(id)
-        offset = self.settings.devices[self.settings.index].offset
-        with self.lock:
-            update_spectrum(self.settings.start, self.settings.stop, freq,
-                            scan, offset, self.spectrum)
-        self.progress()
-
-        if self.settings.liveUpdate:
-            self.update_plot()
+        wx.PostEvent(self, EventThreadStatus(Event.PROCESSED, freq, scan))
 
     def open(self, dirname, filename):
         if not os.path.exists(os.path.join(dirname, filename)):
@@ -649,13 +655,14 @@ class FrameMain(wx.Frame):
                     / self.stepsTotal)
             self.status.show_progress()
             self.status.set_general("Scanning")
+            if self.settings.liveUpdate:
+                self.update_plot()
         else:
             self.status.hide_progress()
             if self.settings.mode == Mode.SINGLE or self.stopAtEnd:
                 self.status.set_general("Finished")
             if self.settings.mode == Mode.SINGLE:
                 self.set_control_state(True)
-                self.update_plot(True)
             else:
                 if self.settings.mode == Mode.CONTIN and not self.stopScan:
                     if self.dlgCal is None and not self.stopAtEnd:
@@ -664,7 +671,7 @@ class FrameMain(wx.Frame):
                         self.stopAtEnd = False
                         self.stopScan = False
                         self.set_control_state(True)
-                    self.update_plot(True)
+            self.update_plot(True)
 
     def set_control_state(self, state):
         self.spinCtrlStart.Enable(state)
@@ -705,45 +712,23 @@ class FrameMain(wx.Frame):
         self.settings.dwell = DWELL[1::2][self.choiceDwell.GetSelection()]
         self.settings.fft = NFFT[self.choiceNfft.GetSelection()]
 
-    def plot(self, full):
-        if self.threadPlot is None:
+    def update_plot(self, full=False):
+        scale_plot(self.graph, self.settings, self.lock, False)
+
+        if not self.isPlotting:
             if self.settings.mode == Mode.CONTIN:
                 fade = True
             else:
                 fade = False
+            self.isPlotting = True
             self.threadPlot = ThreadPlot(self, self.lock, self.graph,
                                          self.spectrum, self.settings,
                                          self.grid, full, fade)
-            return True
         else:
-            return False
-
-    def update_plot(self, full=False, updateScale=False):
-        scale_plot(self.graph, self.settings, self.lock, updateScale)
-
-        if full:
-            if not self.plot(True):
-                self.pendingPlot = Plot.FULL
+            if full:
+                wx.PostEvent(self, EventThreadStatus(Event.PLOT_FULL))
             else:
-                self.pendingPlot = Plot.NONE
-        else:
-            if self.pendingPlot == Plot.FULL:
-                if not self.plot(True):
-                    self.pendingPlot = Plot.FULL
-                else:
-                    self.pendingPlot = Plot.NONE
-            else:
-                if not self.plot(False):
-                    self.pendingPlot = Plot.PARTIAL
-                else:
-                    self.pendingPlot = Plot.NONE
-
-    def next_plot(self):
-        self.threadPlot = None
-        if self.pendingPlot == Plot.PARTIAL:
-            self.update_plot(False)
-        elif self.pendingPlot == Plot.FULL:
-            self.update_plot(True)
+                wx.PostEvent(self, EventThreadStatus(Event.PLOT))
 
     def save_warn(self, warnType):
         if self.settings.saveWarn and not self.isSaved:
