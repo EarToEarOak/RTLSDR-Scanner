@@ -396,6 +396,8 @@ class FrameMain(wx.Frame):
                       self.spectrum)
             self.isSaved = True
             self.status.set_general("Finished")
+            self.settings.fileHistory.AddFileToHistory(os.path.join(self.dirname,
+                                                                    self.filename))
         dlg.Destroy()
 
     def on_export(self, _event):
