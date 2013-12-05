@@ -641,10 +641,10 @@ class DialogProperties(wx.Dialog):
         textStart = wx.StaticText(self, label="Start")
         gridRange.Add(textStart, (0, 0), (1, 1), wx.ALL, 5)
 
-        textCtrlStart = wx.TextCtrl(self, value="Unknown")
+        textCtrlStart = wx.TextCtrl(self, value="Unknown",
+                                    style=wx.TE_READONLY)
         if scanInfo.start is not None:
             textCtrlStart.SetValue(str(scanInfo.start))
-        textCtrlStart.Enable(False)
         gridRange.Add(textCtrlStart, (0, 1), (1, 1), wx.ALL, 5)
 
         textMHz1 = wx.StaticText(self, wx.ID_ANY, label="MHz")
@@ -653,10 +653,10 @@ class DialogProperties(wx.Dialog):
         textStop = wx.StaticText(self, label="Stop")
         gridRange.Add(textStop, (1, 0), (1, 1), wx.ALL, 5)
 
-        textCtrlStop = wx.TextCtrl(self, value="Unknown")
+        textCtrlStop = wx.TextCtrl(self, value="Unknown",
+                                   style=wx.TE_READONLY)
         if scanInfo.stop is not None:
             textCtrlStop.SetValue(str(scanInfo.stop))
-        textCtrlStop.Enable(False)
         gridRange.Add(textCtrlStop, (1, 1), (1, 1), wx.ALL, 5)
 
         textMHz2 = wx.StaticText(self, label="MHz")
@@ -674,10 +674,10 @@ class DialogProperties(wx.Dialog):
         textDwell = wx.StaticText(self, label="Dwell")
         gridSettings.Add(textDwell, (0, 0), (1, 1), wx.ALL, 5)
 
-        textCtrlDwell = wx.TextCtrl(self, value="Unknown")
+        textCtrlDwell = wx.TextCtrl(self, value="Unknown",
+                                    style=wx.TE_READONLY)
         if scanInfo.dwell is not None:
             textCtrlDwell.SetValue(str(scanInfo.dwell))
-        textCtrlDwell.Enable(False)
         gridSettings.Add(textCtrlDwell, (0, 1), (1, 1), wx.ALL, 5)
 
         textSeconds = wx.StaticText(self, label="seconds")
@@ -686,10 +686,9 @@ class DialogProperties(wx.Dialog):
         textNfft = wx.StaticText(self, label="FFT Size")
         gridSettings.Add(textNfft, (1, 0), (1, 1), wx.ALL, 5)
 
-        textCtrlNfft = wx.TextCtrl(self, value="Unknown")
+        textCtrlNfft = wx.TextCtrl(self, value="Unknown", style=wx.TE_READONLY)
         if scanInfo.nfft is not None:
             textCtrlNfft.SetValue(str(scanInfo.nfft))
-        textCtrlNfft.Enable(False)
         gridSettings.Add(textCtrlNfft, (1, 1), (1, 1), wx.ALL, 5)
 
         boxSettings.Add(gridSettings, 1, 0, 5)
@@ -701,22 +700,20 @@ class DialogProperties(wx.Dialog):
 
         gridDevice = wx.GridBagSizer(0, 0)
 
-        testName = wx.StaticText(self, label="Name")
+        testName = wx.StaticText(self, label="Name", style=wx.TE_READONLY)
         gridDevice.Add(testName, (0, 0), (1, 1), wx.ALL, 5)
 
         textCtrlName = wx.TextCtrl(self, value="Unknown")
         if scanInfo.name is not None:
             textCtrlName.SetValue(scanInfo.name)
-        textCtrlName.Enable(False)
         gridDevice.Add(textCtrlName, (0, 1), (1, 1), wx.ALL, 5)
 
         testGain = wx.StaticText(self, label="Gain")
         gridDevice.Add(testGain, (1, 0), (1, 1), wx.ALL, 5)
 
-        textCtrlGain = wx.TextCtrl(self, value="Unknown")
+        textCtrlGain = wx.TextCtrl(self, value="Unknown", style=wx.TE_READONLY)
         if scanInfo.gain is not None:
             textCtrlGain.SetValue(str(scanInfo.gain))
-        textCtrlGain.Enable(False)
         gridDevice.Add(textCtrlGain, (1, 1), (1, 1), wx.ALL, 5)
 
         textDb = wx.StaticText(self, label="dB")
@@ -725,10 +722,9 @@ class DialogProperties(wx.Dialog):
         textLo = wx.StaticText(self, label="LO")
         gridDevice.Add(textLo, (2, 0), (1, 1), wx.ALL, 5)
 
-        textCtrlLo = wx.TextCtrl(self, value="Unknown")
+        textCtrlLo = wx.TextCtrl(self, value="Unknown", style=wx.TE_READONLY)
         if scanInfo.lo is not None:
             textCtrlLo.SetValue(str(scanInfo.lo))
-        textCtrlLo.Enable(False)
         gridDevice.Add(textCtrlLo, (2, 1), (1, 1), wx.ALL, 5)
 
         textMHz3 = wx.StaticText(self, label="MHz")
@@ -737,10 +733,9 @@ class DialogProperties(wx.Dialog):
         textCal = wx.StaticText(self, label="Calibration")
         gridDevice.Add(textCal, (3, 0), (1, 1), wx.ALL, 5)
 
-        textCtrlCal = wx.TextCtrl(self, value="Unknown")
+        textCtrlCal = wx.TextCtrl(self, value="Unknown", style=wx.TE_READONLY)
         if scanInfo.calibration is not None:
             textCtrlCal.SetValue(str(scanInfo.calibration))
-        textCtrlCal.Enable(False)
         gridDevice.Add(textCtrlCal, (3, 1), (1, 1), wx.ALL, 5)
 
         testPpm = wx.StaticText(self, label="ppm")
@@ -754,6 +749,7 @@ class DialogProperties(wx.Dialog):
 
         buttonClose = wx.Button(self, label="Close")
         buttonClose.SetDefault()
+        buttonClose.SetFocus()
         self.Bind(wx.EVT_BUTTON, self.on_close, buttonClose)
         box.Add(buttonClose, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
 

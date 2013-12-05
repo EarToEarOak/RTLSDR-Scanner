@@ -162,7 +162,10 @@ class ScanInfo():
         self.dwell = settings.dwell
         self.nfft = settings.nfft
         device = settings.devices[settings.index]
-        self.name = device.name
+        if device.isDevice:
+            self.name = device.name
+        else:
+            self.name = device.server + ":" + str(device.port)
         self.gain = device.gain
         self.lo = device.lo
         self.calibration = device.calibration
