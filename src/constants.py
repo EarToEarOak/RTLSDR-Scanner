@@ -32,7 +32,10 @@ BANDWIDTH = 500e3
 MODE = ["Single", 0,
         "Continuous", 1]
 
-NFFT = [128,
+NFFT = [16,
+        32,
+        64,
+        128,
         512,
         1024,
         2048,
