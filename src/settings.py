@@ -94,6 +94,7 @@ class Settings():
             device.calibration = self.cfg.ReadFloat('calibration', 0)
             device.lo = self.cfg.ReadFloat('lo', 0)
             device.offset = self.cfg.ReadFloat('offset', 250e3)
+            device.tuner = self.cfg.ReadInt('tuner', 0)
             self.devices.append(device)
             self.cfg.SetPath("/Devices")
             group = self.cfg.GetNextGroup(group[2])
@@ -136,6 +137,7 @@ class Settings():
                 self.cfg.WriteFloat('lo', device.lo)
                 self.cfg.WriteFloat('calibration', device.calibration)
                 self.cfg.WriteFloat('offset', device.offset)
+                self.cfg.WriteInt('tuner', device.tuner)
 
 
 if __name__ == '__main__':

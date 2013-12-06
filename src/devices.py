@@ -47,6 +47,7 @@ class Device():
         self.calibration = device.calibration
         self.lo = device.lo
         self.offset = device.offset
+        self.tuner = device.tuner
 
 
 def get_devices(currentDevices=[]):
