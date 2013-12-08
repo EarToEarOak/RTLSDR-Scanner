@@ -715,7 +715,7 @@ class FrameMain(wx.Frame):
         self.settings.stop = self.spinCtrlStop.GetValue()
         self.settings.mode = MODE[1::2][self.choiceMode.GetSelection()]
         self.settings.dwell = DWELL[1::2][self.choiceDwell.GetSelection()]
-        self.settings.fft = NFFT[self.choiceNfft.GetSelection()]
+        self.settings.nfft = NFFT[self.choiceNfft.GetSelection()]
 
     def update_plot(self, full=False):
         scale_plot(self.graph, self.settings, self.lock, False)
