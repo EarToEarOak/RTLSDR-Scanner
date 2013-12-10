@@ -633,7 +633,7 @@ class DialogProperties(wx.Dialog):
 
         grid = wx.GridBagSizer(0, 0)
 
-        boxRange = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Scan"),
+        boxScan = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Scan"),
                                      wx.HORIZONTAL)
 
         gridRange = wx.GridBagSizer(0, 0)
@@ -662,38 +662,29 @@ class DialogProperties(wx.Dialog):
         textMHz2 = wx.StaticText(self, label="MHz")
         gridRange.Add(textMHz2, (1, 2), (1, 1), wx.ALL, 5)
 
-        boxRange.Add(gridRange, 1, 0, 5)
-
-        grid.Add(boxRange, (0, 0), (1, 1), wx.ALL | wx.EXPAND, 5)
-
-        boxSettings = wx.StaticBoxSizer(wx.StaticBox(self, label="Settings"),
-                                        wx.HORIZONTAL)
-
-        gridSettings = wx.GridBagSizer(0, 0)
-
         textDwell = wx.StaticText(self, label="Dwell")
-        gridSettings.Add(textDwell, (0, 0), (1, 1), wx.ALL, 5)
+        gridRange.Add(textDwell, (2, 0), (1, 1), wx.ALL, 5)
 
         textCtrlDwell = wx.TextCtrl(self, value="Unknown",
                                     style=wx.TE_READONLY)
         if scanInfo.dwell is not None:
             textCtrlDwell.SetValue(str(scanInfo.dwell))
-        gridSettings.Add(textCtrlDwell, (0, 1), (1, 1), wx.ALL, 5)
+        gridRange.Add(textCtrlDwell, (2, 1), (1, 1), wx.ALL, 5)
 
         textSeconds = wx.StaticText(self, label="seconds")
-        gridSettings.Add(textSeconds, (0, 2), (1, 1), wx.ALL, 5)
+        gridRange.Add(textSeconds, (2, 2), (1, 1), wx.ALL, 5)
 
         textNfft = wx.StaticText(self, label="FFT Size")
-        gridSettings.Add(textNfft, (1, 0), (1, 1), wx.ALL, 5)
+        gridRange.Add(textNfft, (3, 0), (1, 1), wx.ALL, 5)
 
         textCtrlNfft = wx.TextCtrl(self, value="Unknown", style=wx.TE_READONLY)
         if scanInfo.nfft is not None:
             textCtrlNfft.SetValue(str(scanInfo.nfft))
-        gridSettings.Add(textCtrlNfft, (1, 1), (1, 1), wx.ALL, 5)
+        gridRange.Add(textCtrlNfft, (3, 1), (1, 1), wx.ALL, 5)
 
-        boxSettings.Add(gridSettings, 1, 0, 5)
+        boxScan.Add(gridRange, 0, 0, 5)
 
-        grid.Add(boxSettings, (1, 0), (1, 1), wx.ALL | wx.EXPAND, 5)
+        grid.Add(boxScan, (0, 0), (1, 1), wx.ALL | wx.EXPAND, 5)
 
         boxDevice = wx.StaticBoxSizer(wx.StaticBox(self, label="Device"),
                                       wx.VERTICAL)
@@ -752,7 +743,7 @@ class DialogProperties(wx.Dialog):
 
         boxDevice.Add(gridDevice, 1, wx.EXPAND, 5)
 
-        grid.Add(boxDevice, (2, 0), (1, 1), wx.ALL | wx.EXPAND, 5)
+        grid.Add(boxDevice, (1, 0), (1, 1), wx.ALL | wx.EXPAND, 5)
 
         box.Add(grid, 1, wx.ALL | wx.EXPAND, 5)
 
