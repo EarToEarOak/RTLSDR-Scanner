@@ -22,7 +22,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-
 try:
     input = raw_input
 except:
@@ -39,6 +38,7 @@ except ImportError as error:
     input('\nError importing libraries\nPress [Return] to exit')
     exit(1)
 
+import datetime
 import os.path
 import threading
 import webbrowser
@@ -641,6 +641,10 @@ class FrameMain(wx.Frame):
             self.status.set_info('')
             self.pendingScan = False
             self.scanInfo.setFromSettings(self.settings)
+            time = datetime.datetime.utcnow().replace(microsecond=0)
+            self.scanInfo.time = time.isoformat() +"Z"
+            self.scanInfo.lat = None
+            self.scanInfo.lon = None
 
             self.threadScan = ThreadScan(self, self.settings,
                                          self.settings.index, samples, isCal)

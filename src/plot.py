@@ -156,6 +156,9 @@ class ScanInfo():
     lo = None
     calibration = None
     tuner = 0
+    time = None
+    lat = None
+    lon = None
 
     def setFromSettings(self, settings):
         self.start = settings.start
@@ -234,6 +237,9 @@ def open_plot(dirname, filename):
     calibration = None
     tuner = 0
     spectrum = {}
+    time = None
+    lat = None
+    lon = None
 
     path = os.path.join(dirname, filename)
     if not os.path.exists(path):
@@ -272,6 +278,10 @@ def open_plot(dirname, filename):
                 calibration = data[1]['Calibration']
             if version > 4:
                 tuner = data[1]['Tuner']
+            if version > 5:
+                time = data[1]['Time']
+                lat = data[1]['Latitude']
+                lon = data[1]['Longitude']
         except ValueError:
             error = True
         except KeyError:
@@ -294,6 +304,9 @@ def open_plot(dirname, filename):
     scanInfo.lo = lo
     scanInfo.calibration = calibration
     scanInfo.tuner = tuner
+    scanInfo.time = time
+    scanInfo.lat = lat
+    scanInfo.lon = lon
 
     return scanInfo, spectrum
 
@@ -309,6 +322,9 @@ def save_plot(dirname, filename, scanInfo, spectrum):
                           'LO':scanInfo.lo,
                           'Calibration':scanInfo.calibration,
                           'Tuner':scanInfo.tuner,
+                          'Time':scanInfo.time,
+                          'Latitude':scanInfo.lat,
+                          'Longitude':scanInfo.lon,
                           'Spectrum': spectrum}]
 
     handle = open(os.path.join(dirname, filename), 'wb')

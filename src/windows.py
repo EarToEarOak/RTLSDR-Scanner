@@ -28,8 +28,8 @@ from urlparse import urlparse
 
 import matplotlib
 from matplotlib.backends.backend_wx import _load_bitmap
-from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas, \
-    NavigationToolbar2WxAgg
+from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as \
+    FigureCanvas, NavigationToolbar2WxAgg
 from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
 import numpy
 import rtlsdr
@@ -629,6 +629,8 @@ class DialogProperties(wx.Dialog):
     def __init__(self, parent, scanInfo):
         wx.Dialog.__init__(self, parent, title="Scan Properties")
 
+        self.scanInfo = scanInfo
+
         box = wx.BoxSizer(wx.VERTICAL)
 
         grid = wx.GridBagSizer(0, 0)
@@ -636,53 +638,69 @@ class DialogProperties(wx.Dialog):
         boxScan = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Scan"),
                                      wx.HORIZONTAL)
 
-        gridRange = wx.GridBagSizer(0, 0)
+        gridScan = wx.GridBagSizer(0, 0)
 
         textStart = wx.StaticText(self, label="Start")
-        gridRange.Add(textStart, (0, 0), (1, 1), wx.ALL, 5)
-
+        gridScan.Add(textStart, (0, 0), (1, 1), wx.ALL, 5)
         textCtrlStart = wx.TextCtrl(self, value="Unknown",
                                     style=wx.TE_READONLY)
         if scanInfo.start is not None:
             textCtrlStart.SetValue(str(scanInfo.start))
-        gridRange.Add(textCtrlStart, (0, 1), (1, 1), wx.ALL, 5)
-
+        gridScan.Add(textCtrlStart, (0, 1), (1, 1), wx.ALL, 5)
         textMHz1 = wx.StaticText(self, wx.ID_ANY, label="MHz")
-        gridRange.Add(textMHz1, (0, 2), (1, 1), wx.ALL, 5)
+        gridScan.Add(textMHz1, (0, 2), (1, 1), wx.ALL, 5)
 
         textStop = wx.StaticText(self, label="Stop")
-        gridRange.Add(textStop, (1, 0), (1, 1), wx.ALL, 5)
-
+        gridScan.Add(textStop, (1, 0), (1, 1), wx.ALL, 5)
         textCtrlStop = wx.TextCtrl(self, value="Unknown",
                                    style=wx.TE_READONLY)
         if scanInfo.stop is not None:
             textCtrlStop.SetValue(str(scanInfo.stop))
-        gridRange.Add(textCtrlStop, (1, 1), (1, 1), wx.ALL, 5)
-
+        gridScan.Add(textCtrlStop, (1, 1), (1, 1), wx.ALL, 5)
         textMHz2 = wx.StaticText(self, label="MHz")
-        gridRange.Add(textMHz2, (1, 2), (1, 1), wx.ALL, 5)
+        gridScan.Add(textMHz2, (1, 2), (1, 1), wx.ALL, 5)
 
         textDwell = wx.StaticText(self, label="Dwell")
-        gridRange.Add(textDwell, (2, 0), (1, 1), wx.ALL, 5)
-
+        gridScan.Add(textDwell, (2, 0), (1, 1), wx.ALL, 5)
         textCtrlDwell = wx.TextCtrl(self, value="Unknown",
                                     style=wx.TE_READONLY)
         if scanInfo.dwell is not None:
             textCtrlDwell.SetValue(str(scanInfo.dwell))
-        gridRange.Add(textCtrlDwell, (2, 1), (1, 1), wx.ALL, 5)
-
+        gridScan.Add(textCtrlDwell, (2, 1), (1, 1), wx.ALL, 5)
         textSeconds = wx.StaticText(self, label="seconds")
-        gridRange.Add(textSeconds, (2, 2), (1, 1), wx.ALL, 5)
+        gridScan.Add(textSeconds, (2, 2), (1, 1), wx.ALL, 5)
 
         textNfft = wx.StaticText(self, label="FFT Size")
-        gridRange.Add(textNfft, (3, 0), (1, 1), wx.ALL, 5)
-
+        gridScan.Add(textNfft, (3, 0), (1, 1), wx.ALL, 5)
         textCtrlNfft = wx.TextCtrl(self, value="Unknown", style=wx.TE_READONLY)
         if scanInfo.nfft is not None:
             textCtrlNfft.SetValue(str(scanInfo.nfft))
-        gridRange.Add(textCtrlNfft, (3, 1), (1, 1), wx.ALL, 5)
+        gridScan.Add(textCtrlNfft, (3, 1), (1, 1), wx.ALL, 5)
 
-        boxScan.Add(gridRange, 0, 0, 5)
+        textTime = wx.StaticText(self, label="Time")
+        gridScan.Add(textTime, (4, 0), (1, 1), wx.ALL, 5)
+        textCtrlTime = wx.TextCtrl(self, value="Unknown", style=wx.TE_READONLY)
+        if scanInfo.time is not None:
+            textCtrlTime.SetValue(scanInfo.time)
+        gridScan.Add(textCtrlTime, (4, 1), (1, 1), wx.ALL, 5)
+
+        textLat = wx.StaticText(self, label="Latitude")
+        gridScan.Add(textLat, (5, 0), (1, 1), wx.ALL, 5)
+        self.textCtrlLat = wx.TextCtrl(self, value="Unknown")
+        self.textCtrlLat.SetValidator(ValidatorCoord(True))
+        if scanInfo.lat is not None:
+            self.textCtrlLat.SetValue(str(scanInfo.lat))
+        gridScan.Add(self.textCtrlLat, (5, 1), (1, 1), wx.ALL, 5)
+
+        textLon = wx.StaticText(self, label="Longitude")
+        gridScan.Add(textLon, (6, 0), (1, 1), wx.ALL, 5)
+        self.textCtrlLon = wx.TextCtrl(self, value="Unknown")
+        self.textCtrlLon.SetValidator(ValidatorCoord(False))
+        if scanInfo.lon is not None:
+            self.textCtrlLon.SetValue(str(scanInfo.lon))
+        gridScan.Add(self.textCtrlLon, (6, 1), (1, 1), wx.ALL, 5)
+
+        boxScan.Add(gridScan, 0, 0, 5)
 
         grid.Add(boxScan, (0, 0), (1, 1), wx.ALL | wx.EXPAND, 5)
 
@@ -747,16 +765,32 @@ class DialogProperties(wx.Dialog):
 
         box.Add(grid, 1, wx.ALL | wx.EXPAND, 5)
 
-        buttonClose = wx.Button(self, label="Close")
-        buttonClose.SetDefault()
-        buttonClose.SetFocus()
-        self.Bind(wx.EVT_BUTTON, self.on_close, buttonClose)
-        box.Add(buttonClose, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
+        sizerButtons = wx.StdDialogButtonSizer()
+        buttonOk = wx.Button(self, wx.ID_OK)
+        buttonCancel = wx.Button(self, wx.ID_CANCEL)
+        sizerButtons.AddButton(buttonOk)
+        sizerButtons.AddButton(buttonCancel)
+        sizerButtons.Realize()
+        self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
+        box.Add(sizerButtons, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
 
         self.SetSizerAndFit(box)
 
-    def on_close(self, _event):
-        self.EndModal(wx.ID_CLOSE)
+    def on_ok(self, _event):
+        if self.Validate():
+            lat = self.textCtrlLat.GetValue()
+            if len(lat) == 0 or lat == "-" or lat.lower() == "unknown":
+                self.scanInfo.lat = None
+            else:
+                self.scanInfo.lat = float(lat)
+
+            lon = self.textCtrlLon.GetValue()
+            if len(lon) == 0 or lon == "-" or lon.lower() == "unknown":
+                self.scanInfo.lon = None
+            else:
+                self.scanInfo.lon = float(lon)
+
+            self.EndModal(wx.ID_CLOSE)
 
 
 class DialogPrefs(wx.Dialog):
@@ -1086,6 +1120,46 @@ class DialogRefresh(wx.Dialog):
 
         self.SetSizerAndFit(box)
         self.Centre()
+
+
+class ValidatorCoord(wx.PyValidator):
+    def __init__(self, isLat):
+        wx.PyValidator.__init__(self)
+        self.isLat = isLat
+
+    def Validate(self, _window):
+        textCtrl = self.GetWindow()
+        text = textCtrl.GetValue()
+        if len(text) == 0 or text == '-' or text.lower() == 'unknown':
+            textCtrl.SetForegroundColour("black")
+            textCtrl.Refresh()
+            return True
+
+        value = None
+        try:
+            value = float(text)
+            if self.isLat and (value < -90 or value > 90):
+                raise ValueError()
+            elif value < -180 or value > 180:
+                raise ValueError()
+        except ValueError:
+            textCtrl.SetForegroundColour("red")
+            textCtrl.SetFocus()
+            textCtrl.Refresh()
+            return False
+
+        textCtrl.SetForegroundColour("black")
+        textCtrl.Refresh()
+        return True
+
+    def TransferToWindow(self):
+        return True
+
+    def TransferFromWindow(self):
+        return True
+
+    def Clone(self):
+        return ValidatorCoord(self.isLat)
 
 
 if __name__ == '__main__':

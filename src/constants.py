@@ -85,7 +85,7 @@ class File:
     RFS = "RTLSDR frequency scan (*.rfs)|*.rfs"
     CSV = "CSV table (*.csv)|*.csv"
     HEADER = "RTLSDR Scanner"
-    VERSION = 5
+    VERSION = 6
 
 
 if __name__ == '__main__':
