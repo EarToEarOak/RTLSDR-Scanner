@@ -167,11 +167,11 @@ def update_spectrum(start, stop, freqCentre, scan, offset, spectrum):
         lowerEnd = freqCentre - offset
 
         for freq in scan:
-            if start < freq < stop:
+            if start <= freq < stop:
                 power = 10 * math.log10(scan[freq])
-                if upperStart < freq * 1e6 < upperEnd:
+                if upperStart <= freq * 1e6 <= upperEnd:
                     spectrum[freq] = power
-                if lowerStart < freq * 1e6 < lowerEnd:
+                if lowerStart <= freq * 1e6 <= lowerEnd:
                     if freq in spectrum:
                         spectrum[freq] = (spectrum[freq] + power) / 2
                     else:
