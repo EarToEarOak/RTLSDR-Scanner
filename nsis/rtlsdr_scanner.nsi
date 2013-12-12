@@ -65,7 +65,7 @@ You can update to the latest versions of RTLSDR-Scanner, $\r$\n \
 the rtlsdr driver and pyrtlsdr by running this installer again $\r$\n"'
 
 !define FILE_CLASS "RTLSDRScanner.Scan"
-!define FILE_TYPE ".rfs"
+!define FILE_TYPE "rfs"
 !define FILE_DESC "RTLSDR Scan"
 
 
