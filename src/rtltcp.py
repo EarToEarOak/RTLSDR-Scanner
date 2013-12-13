@@ -94,7 +94,7 @@ class RtlTcp():
         self.send_command(RtlTcpCmd.SET_FREQ, freq)
         self.read_raw(int(self.rate * 2 * 0.1))
 
-    def get_tuner(self):
+    def get_tuner_type(self):
         return self.tuner
 
     def read_samples(self, samples):

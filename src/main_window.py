@@ -503,8 +503,9 @@ class FrameMain(wx.Frame):
         elif status == Event.CAL:
             self.auto_cal(Cal.DONE)
         elif status == Event.INFO:
-            self.devices[self.settings.index].tuner = data
-            self.scanInfo.tuner = data
+            if data != -1:
+                self.devices[self.settings.index].tuner = data
+                self.scanInfo.tuner = data
         elif status == Event.DATA:
             self.isSaved = False
             cal = self.devices[self.settings.index].calibration
@@ -757,12 +758,11 @@ class FrameMain(wx.Frame):
         return False
 
     def refresh_devices(self):
-        self.settings.devices = self.devices
-        devices = get_devices(self.settings.devices)
+        self.settings.devices = get_devices(self.devices)
         if self.settings.index > len(self.devices) - 1:
             self.settings.index = 0
         self.settings.save()
-        return devices
+        return self.settings.devices
 
     def wait_background(self):
         self.Disconnect(-1, -1, EVT_THREAD_STATUS, self.on_event)

@@ -794,7 +794,8 @@ class DialogProperties(wx.Dialog):
 
 
 class DialogPrefs(wx.Dialog):
-    COL_SEL, COL_DEV, COL_SER, COL_IND, COL_GAIN, COL_CAL, COL_LO, COL_OFF = range(8)
+    COL_SEL, COL_DEV, COL_TUN, COL_SER, COL_IND, \
+    COL_GAIN, COL_CAL, COL_LO, COL_OFF = range(9)
 
     def __init__(self, parent, devices, settings):
         self.settings = settings
@@ -832,10 +833,11 @@ class DialogPrefs(wx.Dialog):
 
         self.devices = devices
         self.gridDev = grid.Grid(self)
-        self.gridDev.CreateGrid(len(self.devices), 8)
+        self.gridDev.CreateGrid(len(self.devices), 9)
         self.gridDev.SetRowLabelSize(0)
         self.gridDev.SetColLabelValue(self.COL_SEL, "Select")
         self.gridDev.SetColLabelValue(self.COL_DEV, "Device")
+        self.gridDev.SetColLabelValue(self.COL_TUN, "Tuner")
         self.gridDev.SetColLabelValue(self.COL_SER, "Serial Number")
         self.gridDev.SetColLabelValue(self.COL_IND, "Index")
         self.gridDev.SetColLabelValue(self.COL_GAIN, "Gain\n(dB)")
@@ -856,6 +858,7 @@ class DialogPrefs(wx.Dialog):
         for device in self.devices:
             self.gridDev.SetReadOnly(i, self.COL_SEL, True)
             self.gridDev.SetReadOnly(i, self.COL_DEV, device.isDevice)
+            self.gridDev.SetReadOnly(i, self.COL_TUN, True)
             self.gridDev.SetReadOnly(i, self.COL_SER, True)
             self.gridDev.SetReadOnly(i, self.COL_IND, True)
             self.gridDev.SetCellRenderer(i, self.COL_SEL, CellRenderer())
@@ -873,19 +876,19 @@ class DialogPrefs(wx.Dialog):
                 self.gridDev.SetCellValue(i, self.COL_IND, str(i))
                 self.gridDev.SetCellBackgroundColour(i, self.COL_DEV,
                                                      colourBackground)
+                self.gridDev.SetCellValue(i, self.COL_GAIN,
+                                          str(nearest(device.gain, device.gains)))
             else:
                 self.gridDev.SetCellValue(i, self.COL_DEV,
                                           '{0}:{1}'.format(device.server,
                                                            device.port))
                 self.gridDev.SetCellValue(i, self.COL_SER, '')
                 self.gridDev.SetCellValue(i, self.COL_IND, '')
+                self.gridDev.SetCellValue(i, self.COL_GAIN, str(device.gain))
             self.gridDev.SetCellBackgroundColour(i, self.COL_SER,
                                                  colourBackground)
-            if device.isDevice:
-                self.gridDev.SetCellValue(i, self.COL_GAIN,
-                                          str(nearest(device.gain, device.gains)))
-            else:
-                self.gridDev.SetCellValue(i, self.COL_GAIN, str(device.gain))
+
+            self.gridDev.SetCellValue(i, self.COL_TUN, TUNER[device.tuner])
             self.gridDev.SetCellValue(i, self.COL_CAL, str(device.calibration))
             self.gridDev.SetCellValue(i, self.COL_LO, str(device.lo))
             self.gridDev.SetCellValue(i, self.COL_OFF, str(device.offset / 1e3))
