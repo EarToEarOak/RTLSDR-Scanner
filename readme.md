@@ -17,9 +17,10 @@ Tested on:
 - Ubuntu 12.10 (x64)
 - Ubuntu 13.04 (x64)
 - OS X Snow Leopard
+- OS X Mountain Lion
 
-## Binaries ##
-Test binaries can be found on [SourceForge](http://sourceforge.net/projects/rtlsdrscanner/files/)
+## Installer ##
+A Windows installer can be found on [SourceForge](http://sourceforge.net/projects/rtlsdrscanner/files/)
 
 ## Requirements ##
 
@@ -34,8 +35,6 @@ To test for missing libraries run `rtlsdr_scan_diag.py`
 
 Windows 64 bit modules can be found [here](http://www.lfd.uci.edu/~gohlke/pythonlibs/)
 
-OS X users report success using [Homebrew](http://mxcl.github.com/homebrew/), if you have problems with imports [this page](http://stackoverflow.com/questions/5121574/wxpython-import-error) may help (thanks @edy555).
-
 ## Usage ##
 
 `rtlsdr_scan [file]`
@@ -46,9 +45,10 @@ OS X users report success using [Homebrew](http://mxcl.github.com/homebrew/), if
 
 - **Start** - Scan start frequency
 - **Stop** - Scan stop frequency
+- **Mode** - Single or continuous scanning
 - **Dwell** - Sampling time spent on each step
 - **FFT Size** - FFT size, greater values result in higher analysis precision (with higher sizes dwell should be increased)
-- **Continuous update** - Update the display on each step (caution only use with small scans and low dwell times)
+- **Live update** - Update the display on each step (caution only use with small scans and low dwell times)
 - **Grid** - Show a grid on the scan
 
 **File Menu**
@@ -56,6 +56,7 @@ OS X users report success using [Homebrew](http://mxcl.github.com/homebrew/), if
 - **Open...** - Open a saved scan
 - **Save As...** - Save a scan
 - **Export...** - Export a scan to a CSV file
+- **Properties..** - Scan information
 
 **Scan Menu**
 
@@ -69,7 +70,7 @@ OS X users report success using [Homebrew](http://mxcl.github.com/homebrew/), if
 **Tools Menu**
 
 - **Compare** - Compare two previously saved scans
-- **Auto Calibration** - Perform a crude calibration of the dongle to a known signal (this should be a continuous, unwavering signal)
+- **Auto Calibration** - Perform a crude calibration of the dongle to a known signal (this should be a continuous, steady signal)
 
 ## License ##
 
