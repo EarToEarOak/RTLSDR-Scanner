@@ -103,7 +103,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
 #         self.DeleteTool(self.wx_ids['Back'])
 #         self.DeleteTool(self.wx_ids['Forward'])
 #         self.DeleteTool(self.wx_ids['Subplots'])
-        self.AddSimpleTool(navId, _load_bitmap('hand.png'),
+        self.AddSimpleTool(navId, wx.Bitmap('res/range.png', wx.BITMAP_TYPE_PNG),
                            'Range', 'Set plot range')
         wx.EVT_TOOL(self, navId, self.on_range)
 
