@@ -375,7 +375,7 @@ class DialogCompare(wx.Dialog):
         if dlg.ShowModal() == wx.ID_OK:
             self.dirname = dlg.GetDirectory()
             self.filename = dlg.GetFilename()
-            _start, _stop, spectrum = open_plot(self.dirname,
+            _scanInfo, spectrum = open_plot(self.dirname,
                                                 self.filename)
             if(event.EventObject == self.buttonPlot1):
                 self.textPlot1.SetLabel(self.filename)
