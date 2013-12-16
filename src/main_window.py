@@ -767,6 +767,7 @@ class FrameMain(wx.Frame):
     def wait_background(self):
         self.Disconnect(-1, -1, EVT_THREAD_STATUS, self.on_event)
         if self.threadScan:
+            self.threadScan.abort()
             self.threadScan.join()
             self.threadScan = None
         if self.threadPlot:
