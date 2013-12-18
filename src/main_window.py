@@ -104,7 +104,6 @@ class FrameMain(wx.Frame):
         self.isPlotting = False
         self.threadPlot = None
         self.pendingScan = False
-        self.pendingPlot = Plot.NONE
         self.stopAtEnd = False
         self.stopScan = False
 
@@ -170,6 +169,11 @@ class FrameMain(wx.Frame):
         self.SetMinSize(size)
 
         self.Connect(-1, -1, EVT_THREAD_STATUS, self.on_event)
+
+        self.updateTimer = wx.Timer(self, wx.ID_ANY)
+        self.updateTimerFull = wx.Timer(self, wx.ID_ANY)
+        self.Bind(wx.EVT_TIMER, self.on_update, self.updateTimer)
+        self.Bind(wx.EVT_TIMER, self.on_update_full, self.updateTimerFull)
 
         self.SetDropTarget(DropTarget(self))
 
@@ -535,6 +539,8 @@ class FrameMain(wx.Frame):
             with self.lock:
                 update_spectrum(self.settings.start, self.settings.stop, freq,
                                 data, offset, self.spectrum)
+            if self.settings.liveUpdate:
+                self.update_plot()
             self.progress()
         elif status == Event.PLOT_FULL:
             self.update_plot(True)
@@ -553,6 +559,12 @@ class FrameMain(wx.Frame):
                 self.start_scan()
 
         wx.YieldIfNeeded()
+
+    def on_update(self, _event):
+        wx.PostEvent(self, EventThreadStatus(Event.PLOT))
+
+    def on_update_full(self, _event):
+        wx.PostEvent(self, EventThreadStatus(Event.PLOT_FULL))
 
     def on_process_done(self, data):
         freq, scan, id = data
@@ -643,7 +655,7 @@ class FrameMain(wx.Frame):
             self.pendingScan = False
             self.scanInfo.setFromSettings(self.settings)
             time = datetime.datetime.utcnow().replace(microsecond=0)
-            self.scanInfo.time = time.isoformat() +"Z"
+            self.scanInfo.time = time.isoformat() + "Z"
             self.scanInfo.lat = None
             self.scanInfo.lon = None
 
@@ -660,13 +672,11 @@ class FrameMain(wx.Frame):
 
     def progress(self):
         self.steps -= 1
-        if self.threadScan or self.procStatus.isProcessing():
+        if (self.threadScan or self.procStatus.isProcessing()):
             self.status.set_progress((self.stepsTotal - self.steps) * 100
                     / self.stepsTotal)
             self.status.show_progress()
             self.status.set_general("Scanning")
-            if self.settings.liveUpdate:
-                self.update_plot()
         else:
             self.status.hide_progress()
             if self.settings.mode == Mode.SINGLE or self.stopAtEnd:
@@ -736,9 +746,13 @@ class FrameMain(wx.Frame):
                                          self.grid, full, fade)
         else:
             if full:
-                wx.PostEvent(self, EventThreadStatus(Event.PLOT_FULL))
+                self.updateTimer.Stop()
+                if not self.updateTimerFull.IsRunning():
+                    self.updateTimerFull.Start(100, True)
             else:
-                wx.PostEvent(self, EventThreadStatus(Event.PLOT))
+                if not self.updateTimerFull.IsRunning() \
+                and not self.updateTimer.IsRunning():
+                    self.updateTimer.Start(100, True)
 
     def save_warn(self, warnType):
         if self.settings.saveWarn and not self.isSaved:

@@ -76,7 +76,6 @@ class Mode:
 
 
 class Plot:
-    NONE, PARTIAL, FULL = range(3)
     STR_FULL = 'Full'
     STR_PARTIAL = 'Partial'
 
