@@ -23,15 +23,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import Queue
 import os
 import sys
 from urlparse import urlparse
 
 from constants import SAMPLE_RATE
 from devices import Device, get_devices
-from events import Event
-from misc import next_2_to_pow, nearest, calc_real_dwell
+from events import *
+from misc import next_2_to_pow, nearest, calc_real_dwell, ProcStatus
 from plot import save_plot, export_plot, ScanInfo
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
@@ -55,6 +54,9 @@ class Cli():
 
         self.spectrum = {}
         self.settings = Settings(load=False)
+
+        self.queue = Queue.Queue()
+        self.procStatus = ProcStatus()
 
         error = None
 
@@ -127,13 +129,12 @@ class Cli():
         print "Done"
 
     def scan(self, settings, index, pool):
-        queue = Queue.Queue()
         samples = settings.dwell * SAMPLE_RATE
         samples = next_2_to_pow(int(samples))
-        threadScan = ThreadScan(queue, settings, index, samples, False)
-        while threadScan.isAlive():
-            if not queue.empty():
-                self.process_event(queue, pool)
+        threadScan = ThreadScan(self.queue, settings, index, samples, False)
+        while threadScan.isAlive() or self.procStatus.isProcessing():
+            if not self.queue.empty():
+                self.process_event(self.queue, pool)
         print ""
 
     def process_event(self, queue, pool):
@@ -145,22 +146,31 @@ class Cli():
         if status == Event.STARTING:
             print "Starting"
         elif status == Event.STEPS:
-            self.stepsTotal = freq * 2
+            self.stepsTotal = (freq * 2) - 1
             self.steps = self.stepsTotal
+        elif status == Event.INFO:
+            if data != -1:
+                self.settings.devices[self.settings.index].tuner = data
         elif status == Event.DATA:
-            pool.apply_async(anaylse_data, (freq, data, 0, self.settings.nfft),
+            cal = self.settings.devices[self.settings.index].calibration
+            id = self.procStatus.addProcess()
+            pool.apply_async(anaylse_data, (freq, data, cal,
+                                            self.settings.nfft, id),
                              callback=self.on_process_done)
             self.progress()
         elif status == Event.ERROR:
             print "Error: {0}".format(data)
             exit(1)
+        elif status == Event.PROCESSED:
+            offset = self.settings.devices[self.settings.index].offset
+            update_spectrum(self.settings.start, self.settings.stop, freq,
+                            data, offset, self.spectrum)
+            self.progress()
 
     def on_process_done(self, data):
-        freq, scan = data
-        offset = self.settings.devices[self.settings.index].offset
-        update_spectrum(self.settings.start, self.settings.stop, freq, scan,
-                        offset, self.spectrum)
-        self.progress()
+        freq, scan, id = data
+        self.procStatus.removeProcess(id)
+        post_event(self.queue, EventThreadStatus(Event.PROCESSED, freq, scan))
 
     def progress(self):
         self.steps -= 1

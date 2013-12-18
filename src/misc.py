@@ -25,6 +25,25 @@
 from constants import SAMPLE_RATE
 
 
+class ProcStatus():
+    processId = 0
+    processes = []
+
+    def addProcess(self):
+        self.processId += 1
+        self.processes.append(self.processId)
+        return self.processId
+
+    def removeProcess(self, id):
+        self.processes.remove(id)
+
+    def isProcessing(self):
+        if(len(self.processes) > 0):
+            return True
+
+        return False
+
+
 def split_spectrum(spectrum):
     freqs = spectrum.keys()
     freqs.sort()

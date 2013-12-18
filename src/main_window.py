@@ -46,7 +46,7 @@ import webbrowser
 from constants import *
 from devices import get_devices
 from events import EVT_THREAD_STATUS, Event, EventThreadStatus
-from misc import calc_samples, calc_real_dwell
+from misc import ProcStatus, calc_samples, calc_real_dwell
 from plot import setup_plot, scale_plot, open_plot, save_plot, export_plot, \
     ThreadPlot, ScanInfo
 from scan import ThreadScan, anaylse_data, update_spectrum
@@ -71,25 +71,6 @@ class RtlSdrScanner(wx.App):
     def __init__(self, pool):
         self.pool = pool
         wx.App.__init__(self, redirect=False)
-
-
-class ProcStatus():
-    processId = 0
-    processes = []
-
-    def addProcess(self):
-        self.processId += 1
-        self.processes.append(self.processId)
-        return self.processId
-
-    def removeProcess(self, id):
-        self.processes.remove(id)
-
-    def isProcessing(self):
-        if(len(self.processes) > 0):
-            return True
-
-        return False
 
 
 class FrameMain(wx.Frame):
