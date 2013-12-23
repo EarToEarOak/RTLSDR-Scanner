@@ -30,7 +30,7 @@ from urlparse import urlparse
 from constants import SAMPLE_RATE
 from devices import Device, get_devices
 from events import *
-from misc import next_2_to_pow, nearest, calc_real_dwell, ProcStatus
+from misc import nearest, calc_real_dwell, next_2_to_pow
 from plot import save_plot, export_plot, ScanInfo
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
@@ -56,7 +56,6 @@ class Cli():
         self.settings = Settings(load=False)
 
         self.queue = Queue.Queue()
-        self.procStatus = ProcStatus()
 
         error = None
 
@@ -132,7 +131,7 @@ class Cli():
         samples = settings.dwell * SAMPLE_RATE
         samples = next_2_to_pow(int(samples))
         threadScan = ThreadScan(self.queue, settings, index, samples, False)
-        while threadScan.isAlive() or self.procStatus.isProcessing():
+        while threadScan.isAlive() or self.steps > 0:
             if not self.queue.empty():
                 self.process_event(self.queue, pool)
         print ""
@@ -168,7 +167,7 @@ class Cli():
             self.progress()
 
     def on_process_done(self, data):
-        freq, scan, id = data
+        freq, scan = data
         self.procStatus.removeProcess(id)
         post_event(self.queue, EventThreadStatus(Event.PROCESSED, freq, scan))
 

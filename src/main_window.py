@@ -46,9 +46,8 @@ import webbrowser
 from constants import *
 from devices import get_devices
 from events import EVT_THREAD_STATUS, Event, EventThreadStatus
-from misc import ProcStatus, calc_samples, calc_real_dwell
-from plot import setup_plot, scale_plot, open_plot, save_plot, export_plot, \
-    ThreadPlot, ScanInfo
+from misc import calc_samples, calc_real_dwell
+from plot import open_plot, save_plot, export_plot, ScanInfo, Plotter
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
 from windows import PanelGraph, DialogPrefs, DialogCompare, DialogAutoCal, \
@@ -80,11 +79,10 @@ class FrameMain(wx.Frame):
 
         self.pool = pool
         self.lock = threading.Lock()
-        self.procStatus = ProcStatus()
+
+        self.sdr = None
         self.threadScan = None
-        self.isPlotting = False
-        self.threadPlot = None
-        self.pendingScan = False
+
         self.stopAtEnd = False
         self.stopScan = False
 
@@ -151,11 +149,6 @@ class FrameMain(wx.Frame):
 
         self.Connect(-1, -1, EVT_THREAD_STATUS, self.on_event)
 
-        self.updateTimer = wx.Timer(self, wx.ID_ANY)
-        self.updateTimerFull = wx.Timer(self, wx.ID_ANY)
-        self.Bind(wx.EVT_TIMER, self.on_update, self.updateTimer)
-        self.Bind(wx.EVT_TIMER, self.on_update_full, self.updateTimerFull)
-
         self.SetDropTarget(DropTarget(self))
 
     def create_widgets(self):
@@ -163,10 +156,8 @@ class FrameMain(wx.Frame):
 
         self.panel = wx.Panel(panel)
         self.graph = PanelGraph(panel, self)
-        setup_plot(self.graph, self.settings, self.grid)
-        axes = self.graph.get_axes()
-        axes.set_xlim(self.settings.start, self.settings.stop)
-        axes.set_ylim(self.settings.yMin, self.settings.yMax)
+        self.plot = Plotter(self, self.graph, self.settings, self.grid,
+                            self.lock)
 
         self.buttonStart = wx.Button(self.panel, wx.ID_ANY, 'Start')
         self.buttonStop = wx.Button(self.panel, wx.ID_ANY, 'Stop')
@@ -451,10 +442,20 @@ class FrameMain(wx.Frame):
                                           F_MAX)
 
     def on_start(self, _event):
+        if self.settings.start >= self.settings.stop:
+            wx.MessageBox('Stop frequency must be greater that start',
+                          'Warning', wx.OK | wx.ICON_WARNING)
+            return
+
         self.get_controls()
-        self.graph.get_axes().clear()
-        scale_plot(self.graph, self.settings, self.lock)
-        self.start_scan()
+        self.plot.clear_plots()
+
+        self.devices = self.refresh_devices()
+        if(len(self.devices) == 0):
+            wx.MessageBox('No devices found',
+                          'Error', wx.OK | wx.ICON_ERROR)
+        else:
+            self.start_scan()
 
     def on_stop(self, _event):
         self.stopScan = True
@@ -488,30 +489,25 @@ class FrameMain(wx.Frame):
         elif status == Event.CAL:
             self.auto_cal(Cal.DONE)
         elif status == Event.INFO:
-            if data != -1:
+            self.sdr = self.threadScan.get_sdr()
+            if data is not None:
                 self.devices[self.settings.index].tuner = data
                 self.scanInfo.tuner = data
         elif status == Event.DATA:
             self.isSaved = False
             cal = self.devices[self.settings.index].calibration
-            id = self.procStatus.addProcess()
             self.pool.apply_async(anaylse_data,
-                                  (freq, data, cal, self.settings.nfft, id),
+                                  (freq, data, cal, self.settings.nfft),
                                   callback=self.on_process_done)
             self.progress()
         elif status == Event.STOPPED:
-            self.status.hide_progress()
+            self.cleanup()
             self.status.set_general("Stopped")
-            self.threadScan = None
-            self.set_control_state(True)
-            self.update_plot(True)
         elif status == Event.FINISHED:
             self.threadScan = None
         elif status == Event.ERROR:
-            self.threadScan = None
-            self.status.hide_progress()
+            self.cleanup()
             self.status.set_general("Error: {0}".format(data))
-            self.set_control_state(True)
             if self.dlgCal is not None:
                 self.dlgCal.Destroy()
                 self.dlgCal = None
@@ -521,35 +517,15 @@ class FrameMain(wx.Frame):
                 update_spectrum(self.settings.start, self.settings.stop, freq,
                                 data, offset, self.spectrum)
             if self.settings.liveUpdate:
-                self.update_plot()
+                self.plot.set_plot(self.spectrum)
             self.progress()
-        elif status == Event.PLOT_FULL:
-            self.update_plot(True)
-        elif status == Event.PLOT:
-            self.update_plot(False)
         elif status == Event.DRAW:
-            self.graph.get_axes().relim()
             self.graph.get_canvas().draw()
-        elif status == Event.PLOTTED:
-            self.isPlotting = False
-            self.threadPlot = None
-        elif status == Event.PLOTTED_FULL:
-            self.isPlotting = False
-            self.threadPlot = None
-            if self.pendingScan:
-                self.start_scan()
 
         wx.YieldIfNeeded()
 
-    def on_update(self, _event):
-        wx.PostEvent(self, EventThreadStatus(Event.PLOT))
-
-    def on_update_full(self, _event):
-        wx.PostEvent(self, EventThreadStatus(Event.PLOT_FULL))
-
     def on_process_done(self, data):
-        freq, scan, id = data
-        self.procStatus.removeProcess(id)
+        freq, scan = data
         wx.PostEvent(self, EventThreadStatus(Event.PROCESSED, freq, scan))
 
     def open(self, dirname, filename):
@@ -570,7 +546,7 @@ class FrameMain(wx.Frame):
             self.isSaved = True
             self.set_controls()
             self.set_control_state(True)
-            self.graph.get_axes().clear()
+            self.plot.clear_plots()
             self.update_plot(True)
             self.status.set_general("Finished")
             self.settings.fileHistory.AddFileToHistory(os.path.join(dirname,
@@ -587,7 +563,7 @@ class FrameMain(wx.Frame):
                 self.oldCal = self.devices[self.settings.index].calibration
                 self.devices[self.settings.index].calibration = 0
                 self.get_controls()
-                self.graph.get_axes().clear()
+                self.plot.clear_plots()
                 if not self.start_scan(isCal=True):
                     self.dlgCal.reset_cal()
             elif status == Cal.DONE:
@@ -617,30 +593,19 @@ class FrameMain(wx.Frame):
             if self.save_warn(Warn.SCAN):
                 return False
 
-        self.devices = self.refresh_devices()
-        if(len(self.devices) == 0):
-            wx.MessageBox('No devices found',
-                          'Error', wx.OK | wx.ICON_ERROR)
-            return
-
-        if self.settings.start >= self.settings.stop:
-            wx.MessageBox('Stop frequency must be greater that start',
-                          'Warning', wx.OK | wx.ICON_WARNING)
-            return
-
-        if not self.threadScan or not self.threadScan.isAlive():
+        if not self.threadScan:
             self.set_control_state(False)
             samples = calc_samples(self.settings.dwell)
             self.spectrum.clear()
             self.status.set_info('')
-            self.pendingScan = False
             self.scanInfo.setFromSettings(self.settings)
             time = datetime.datetime.utcnow().replace(microsecond=0)
             self.scanInfo.time = time.isoformat() + "Z"
             self.scanInfo.lat = None
             self.scanInfo.lon = None
-
-            self.threadScan = ThreadScan(self, self.settings,
+            self.stopAtEnd = False
+            self.stopScan = False
+            self.threadScan = ThreadScan(self, self.sdr, self.settings,
                                          self.settings.index, samples, isCal)
             self.filename = "Scan {0:.1f}-{1:.1f}MHz".format(self.settings.start,
                                                             self.settings.stop)
@@ -650,10 +615,14 @@ class FrameMain(wx.Frame):
         if self.threadScan:
             self.status.set_general("Stopping")
             self.threadScan.abort()
+            self.threadScan.join()
+        if self.sdr is not None:
+            self.sdr.close()
+        self.set_control_state(True)
 
     def progress(self):
         self.steps -= 1
-        if (self.threadScan or self.procStatus.isProcessing()):
+        if self.steps > -1:
             self.status.set_progress((self.stepsTotal - self.steps) * 100
                     / self.stepsTotal)
             self.status.show_progress()
@@ -662,17 +631,27 @@ class FrameMain(wx.Frame):
             self.status.hide_progress()
             if self.settings.mode == Mode.SINGLE or self.stopAtEnd:
                 self.status.set_general("Finished")
-            if self.settings.mode == Mode.SINGLE:
-                self.set_control_state(True)
+                self.plot.annotate_plot()
+                self.cleanup()
             else:
                 if self.settings.mode == Mode.CONTIN and not self.stopScan:
                     if self.dlgCal is None and not self.stopAtEnd:
-                        self.pendingScan = True
+                        self.plot.new_plot()
+                        self.plot.annotate_plot()
+                        self.start_scan()
                     else:
-                        self.stopAtEnd = False
-                        self.stopScan = False
-                        self.set_control_state(True)
-            self.update_plot(True)
+                        self.cleanup()
+
+    def cleanup(self):
+        if self.sdr is not None:
+            self.sdr.close()
+            self.sdr = None
+        self.status.hide_progress()
+        self.steps = 0
+        self.threadScan = None
+        self.set_control_state(True)
+        self.stopAtEnd = False
+        self.stopScan = True
 
     def set_control_state(self, state):
         self.spinCtrlStart.Enable(state)
@@ -713,28 +692,6 @@ class FrameMain(wx.Frame):
         self.settings.dwell = DWELL[1::2][self.choiceDwell.GetSelection()]
         self.settings.nfft = NFFT[self.choiceNfft.GetSelection()]
 
-    def update_plot(self, full=False):
-        scale_plot(self.graph, self.settings, self.lock, False)
-
-        if not self.isPlotting:
-            if self.settings.mode == Mode.CONTIN:
-                fade = True
-            else:
-                fade = False
-            self.isPlotting = True
-            self.threadPlot = ThreadPlot(self, self.lock, self.graph,
-                                         self.spectrum, self.settings,
-                                         self.grid, full, fade)
-        else:
-            if full:
-                self.updateTimer.Stop()
-                if not self.updateTimerFull.IsRunning():
-                    self.updateTimerFull.Start(100, True)
-            else:
-                if not self.updateTimerFull.IsRunning() \
-                and not self.updateTimer.IsRunning():
-                    self.updateTimer.Start(100, True)
-
     def save_warn(self, warnType):
         if self.settings.saveWarn and not self.isSaved:
             dlg = DialogSaveWarn(self, warnType)
@@ -765,9 +722,6 @@ class FrameMain(wx.Frame):
             self.threadScan.abort()
             self.threadScan.join()
             self.threadScan = None
-        if self.threadPlot:
-            self.threadPlot.join()
-            self.threadPlot = None
         self.pool.close()
         self.pool.join()
 

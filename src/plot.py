@@ -26,124 +26,168 @@
 import cPickle
 import json
 import os
-import threading
 
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 import wx
 
-from constants import File, Plot
+from constants import File
 from events import EventThreadStatus, Event
 from misc import split_spectrum
 
 
-class ThreadPlot(threading.Thread):
-    def __init__(self, notify, lock, graph, spectrum, settings, grid, full,
-                 fade):
-        threading.Thread.__init__(self)
-        self.name = 'ThreadPlot'
+class Plotter():
+    def __init__(self, notify, graph, settings, grid, lock):
         self.notify = notify
-        self.lock = lock
         self.graph = graph
-        self.spectrum = spectrum
         self.settings = settings
+        self.graph = graph
         self.grid = grid
-        self.full = full
-        self.fade = fade
+        self.lock = lock
+        self.axes = None
+        self.currentPlot = None
+        self.lastPlot = None
+        self.setup_plot()
+        self.clear_plots()
 
-        self.start()
+    def setup_plot(self):
+        self.axes = self.graph.get_axes()
+        if len(self.settings.devices) > 0:
+            gain = self.settings.devices[self.settings.index].gain
+        else:
+            gain = 0
+        formatter = ScalarFormatter(useOffset=False)
 
-    def run(self):
+        self.axes.set_title("Frequency Scan\n{0} - {1} MHz,"
+                            " gain = {2}dB".format(self.settings.start,
+                                                   self.settings.stop, gain))
+        self.axes.set_xlabel("Frequency (MHz)")
+        self.axes.set_ylabel('Level (dB)')
+        self.axes.xaxis.set_major_formatter(formatter)
+        self.axes.yaxis.set_major_formatter(formatter)
+        self.axes.xaxis.set_minor_locator(AutoMinorLocator(10))
+        self.axes.yaxis.set_minor_locator(AutoMinorLocator(10))
+        self.axes.grid(self.grid)
+        self.axes.set_xlim(self.settings.start, self.settings.stop)
+        self.axes.set_ylim(-50, 0)
+
+    def scale_plot(self):
         with self.lock:
-            setup_plot(self.graph, self.settings, self.grid)
-
-            axes = self.graph.get_axes()
-            if not self.settings.retainScans:
-                remove_plot(axes, Plot.STR_FULL)
-            remove_plot(axes, Plot.STR_PARTIAL)
-
-            if self.full:
-                name = Plot.STR_FULL
+            if self.settings.autoScale:
+                self.axes.set_ylim(auto=True)
+                self.axes.set_xlim(auto=True)
+                self.axes.relim()
+                self.axes.autoscale_view()
+                self.settings.yMin, self.settings.yMax = self.axes.get_ylim()
             else:
-                name = Plot.STR_PARTIAL
-            self.graph.get_canvas().Name = name
+                self.axes.set_ylim(auto=False)
+                self.axes.set_xlim(auto=False)
+                self.axes.set_ylim(self.settings.yMin, self.settings.yMax)
 
-            freqs, powers = split_spectrum(self.spectrum)
-            axes.plot(freqs, powers, linewidth=0.4, color='b', alpha=1, gid=name)
-            self.retain_plot(axes)
+    def retain_plot(self):
+        if self.count_plots() >= self.settings.maxScans:
+            self.remove_first()
 
-            if self.full:
-                self.annotate(axes)
-
-            self.graph.get_figure().tight_layout()
-
-            wx.PostEvent(self.notify, EventThreadStatus(Event.DRAW))
-
-    def retain_plot(self, axes):
-        if self.full:
-            if self.count_plots(axes) >= self.settings.maxScans:
-                self.remove_first(axes)
-            if self.settings.fadeScans:
-                self.fade_plots(axes)
-
-    def remove_first(self, axes):
-        children = axes.get_children()
-        for child in children:
-            if child.get_gid() is not None:
-                if child.get_gid() == Plot.STR_FULL or \
-                child.get_gid() == Plot.STR_PARTIAL:
-                    child.remove()
-                break
-
-    def remove_last(self, axes):
-        children = axes.get_children()
-        for child in reversed(children):
-            if child.get_gid() is not None:
-                if child.get_gid() == Plot.STR_FULL or \
-                child.get_gid() == Plot.STR_PARTIAL:
-                    child.remove()
-                break
-
-    def count_plots(self, axes):
-        children = axes.get_children()
-        count = 0
-        for child in children:
-            if child.get_gid() is not None:
-                if child.get_gid() == Plot.STR_FULL or \
-                child.get_gid() == Plot.STR_PARTIAL:
-                    count += 1
-        return count
-
-    def fade_plots(self, axes):
-        if self.fade:
-            children = axes.get_children()
+    def remove_first(self):
+        with self.lock:
+            children = self.axes.get_children()
             for child in children:
                 if child.get_gid() is not None:
-                    if child.get_gid() == Plot.STR_FULL or\
-                    child.get_gid() == Plot.STR_PARTIAL:
-                        child.set_alpha(child.get_alpha() - 1.0 / self.settings.maxScans)
-
-    def annotate(self, axes):
-        children = axes.get_children()
-        if self.settings.annotate and len(self.spectrum) > 0:
-            for child in children:
-                if child.get_gid() is not None:
-                    if child.get_gid() == 'peak':
+                    if child.get_gid() == "plot":
                         child.remove()
-            try:
-                freq = max(self.spectrum.iterkeys(),
-                           key=(lambda key: self.spectrum[key]))
-                power = self.spectrum[freq]
-                start, stop = axes.get_xlim()
-                textX = ((stop - start) / 50.0) + freq
-                axes.annotate('{0:.3f}MHz\n{1:.2f}dB'.format(freq, power),
-                              xy=(freq, power), xytext=(textX, power),
-                              ha='left', va='top', size='small', gid='peak')
-                axes.plot(freq, power, marker='x', markersize=10, color='r',
-                          gid='peak')
-            except RuntimeError:
-                pass
-            except KeyError:
-                pass
+                    break
+
+    def remove_last(self):
+        with self.lock:
+            children = self.axes.get_children()
+            for child in reversed(children):
+                if child.get_gid() is not None:
+                    if child.get_gid() == "plot":
+                        child.remove()
+                    break
+
+    def count_plots(self):
+        with self.lock:
+            children = self.axes.get_children()
+            count = 0
+            for child in children:
+                if child.get_gid() is not None:
+                    if child.get_gid() == "plot":
+                        count += 1
+            return count
+
+    def fade_plots(self):
+        with self.lock:
+            children = self.axes.get_children()
+            for child in children:
+                if child.get_gid() is not None:
+                    if child.get_gid() == "plot":
+                        child.set_alpha(child.get_alpha() - 1.0 \
+                                        / self.settings.maxScans)
+
+    def redraw(self):
+        self.graph.get_figure().tight_layout()
+        wx.PostEvent(self.notify, EventThreadStatus(Event.DRAW))
+
+    def set_plot(self, plot):
+        xs, ys = split_spectrum(plot)
+        with self.lock:
+            self.currentPlot.set_data(xs, ys)
+            self.axes.relim()
+            self.axes.autoscale_view()
+        self.scale_plot()
+        self.redraw()
+
+    def new_plot(self):
+        if self.settings.retainScans:
+            self.retain_plot()
+        else:
+            self.remove_first()
+        if self.settings.retainScans and self.settings.fadeScans:
+            self.fade_plots()
+
+        with self.lock:
+            self.lastPlot = self.currentPlot
+            self.currentPlot, = self.axes.plot([], [], linewidth=0.4, color='b',
+                                               alpha=1, gid="plot")
+        self.redraw()
+
+    def annotate_plot(self):
+        with self.lock:
+            if not self.settings.annotate:
+                return
+            children = self.axes.get_children()
+            for child in children:
+                    if child.get_gid() is not None:
+                        if child.get_gid() == 'peak':
+                            child.remove()
+
+            if self.lastPlot is not None:
+                line = self.lastPlot
+            else:
+                line = self.currentPlot
+
+            data = line.get_data()
+            y = max(data[1])
+            pos = data[1].index(y)
+            x = data[0][pos]
+            start, stop = self.axes.get_xlim()
+            textX = ((stop - start) / 50.0) + x
+            self.axes.annotate('{0:.3f}MHz\n{1:.2f}dB'.format(x, y),
+                               xy=(x, y), xytext=(textX, y),
+                               ha='left', va='top', size='small', gid='peak')
+            self.axes.plot(x, y, marker='x', markersize=10, color='r',
+                           gid='peak')
+
+    def clear_plots(self):
+        with self.lock:
+            children = self.axes.get_children()
+            for child in children:
+                if child.get_gid() is not None:
+                    if child.get_gid() == "plot" or child.get_gid() == "peak":
+                        child.remove()
+
+        self.new_plot()
+        self.lastPlot = None
 
 
 class ScanInfo():
@@ -180,50 +224,6 @@ class ScanInfo():
         settings.stop = self.stop
         settings.dwell = self.dwell
         settings.nfft = self.nfft
-
-
-def setup_plot(graph, settings, grid):
-    axes = graph.get_axes()
-    if len(settings.devices) > 0:
-        gain = settings.devices[settings.index].gain
-    else:
-        gain = 0
-    formatter = ScalarFormatter(useOffset=False)
-
-    axes.set_title("Frequency Scan\n{0} - {1} MHz,"
-                   " gain = {2}dB".format(settings.start,
-                                        settings.stop, gain))
-    axes.set_xlabel("Frequency (MHz)")
-    axes.set_ylabel('Level (dB)')
-    axes.xaxis.set_major_formatter(formatter)
-    axes.yaxis.set_major_formatter(formatter)
-    axes.xaxis.set_minor_locator(AutoMinorLocator(10))
-    axes.yaxis.set_minor_locator(AutoMinorLocator(10))
-    axes.grid(grid)
-
-
-def scale_plot(graph, settings, lock, updateScale=False):
-    with lock:
-        axes = graph.get_axes()
-        if settings.autoScale:
-            axes.set_ylim(auto=True)
-            axes.set_xlim(auto=True)
-            settings.yMin, settings.yMax = axes.get_ylim()
-        else:
-            axes.set_ylim(auto=False)
-            axes.set_xlim(auto=False)
-            if updateScale:
-                if settings.yMin == settings.yMax:
-                    settings.yMax += 1
-                axes.set_ylim(settings.yMin, settings.yMax)
-
-
-def remove_plot(axes, plot):
-    children = axes.get_children()
-    for child in children:
-        if child.get_gid() is not None:
-            if child.get_gid() == plot:
-                child.remove()
 
 
 def open_plot(dirname, filename):
@@ -342,3 +342,4 @@ def export_plot(dirname, filename, spectrum):
 if __name__ == '__main__':
     print 'Please run rtlsdr_scan.py'
     exit(1)
+

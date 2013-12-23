@@ -110,7 +110,8 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
     def on_range(self, _event):
         dlg = DialogRange(self, self.main)
         if dlg.ShowModal() == wx.ID_OK:
-            self.main.update_plot(True, True)
+            self.main.plot.scale_plot()
+            self.main.plot.redraw()
         dlg.Destroy()
 
 
@@ -162,11 +163,8 @@ class PanelGraph(wx.Panel):
 
         self.main.status.SetStatusText(text, 1)
 
-    def on_draw(self, event):
-        if event.canvas.Name == Plot.STR_FULL:
-            wx.PostEvent(self.main, EventThreadStatus(Event.PLOTTED_FULL))
-        elif event.canvas.Name == Plot.STR_PARTIAL:
-            wx.PostEvent(self.main, EventThreadStatus(Event.PLOTTED))
+    def on_draw(self, _event):
+        wx.PostEvent(self.main, EventThreadStatus(Event.PLOTTED))
 
     def on_enter(self, _event):
         self.canvas.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))

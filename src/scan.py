@@ -36,10 +36,11 @@ import rtltcp
 
 
 class ThreadScan(threading.Thread):
-    def __init__(self, notify, settings, device, samples, isCal):
+    def __init__(self, notify, sdr, settings, device, samples, isCal):
         threading.Thread.__init__(self)
         self.name = 'ThreadScan'
         self.notify = notify
+        self.sdr = sdr
         self.fstart = settings.start * 1e6
         self.fstop = settings.stop * 1e6
         self.samples = samples
@@ -52,6 +53,7 @@ class ThreadScan(threading.Thread):
         self.lo = settings.devices[device].lo * 1e6
         self.offset = settings.devices[device].offset
         self.cancel = False
+
         post_event(self.notify, EventThreadStatus(Event.STARTING))
         steps = int((self.f_stop() - self.f_start()) / self.f_step()) + 1
         post_event(self.notify, EventThreadStatus(Event.STEPS, steps))
@@ -67,8 +69,8 @@ class ThreadScan(threading.Thread):
         return int(BANDWIDTH / 2)
 
     def run(self):
-        sdr, tuner = self.rtl_setup()
-        if sdr is None:
+        tuner = self.rtl_setup()
+        if self.sdr is None:
             return
         post_event(self.notify, EventThreadStatus(Event.INFO, None, tuner))
 
@@ -77,17 +79,17 @@ class ThreadScan(threading.Thread):
             if self.cancel:
                 post_event(self.notify,
                            EventThreadStatus(Event.STOPPED))
-                self.rtl_close(sdr)
+                self.rtl_close()
                 return
             try:
-                scan = self.rtl_scan(sdr, freq)
+                scan = self.rtl_scan(freq)
                 post_event(self.notify,
                            EventThreadStatus(Event.DATA, freq,
                                                scan))
             except IOError:
-                if sdr is not None:
-                    self.rtl_close(sdr)
-                sdr = self.rtl_setup()
+                if self.sdr is not None:
+                    self.rtl_close()
+                self.rtl_setup()
             except (TypeError, AttributeError) as error:
                 if self.notify:
                     post_event(self.notify,
@@ -95,13 +97,11 @@ class ThreadScan(threading.Thread):
                                                  0, error.message))
                 return
             except WindowsError:
-                if sdr is not None:
-                    self.rtl_close(sdr)
-                sdr = self.rtl_setup()
+                if self.sdr is not None:
+                    self.rtl_close()
 
             freq += self.f_step()
 
-        self.rtl_close(sdr)
         post_event(self.notify, EventThreadStatus(Event.FINISHED, 0, None))
 
         if self.isCal:
@@ -111,42 +111,48 @@ class ThreadScan(threading.Thread):
         self.cancel = True
 
     def rtl_setup(self):
-        sdr = None
+
+        if self.sdr is not None:
+            return
+
         tuner = 0
 
         if self.isDevice:
             try:
-                sdr = rtlsdr.RtlSdr(self.index)
-                sdr.set_sample_rate(SAMPLE_RATE)
-                sdr.set_gain(self.gain)
-                tuner = sdr.get_tuner_type()
+                self.sdr = rtlsdr.RtlSdr(self.index)
+                self.sdr.set_sample_rate(SAMPLE_RATE)
+                self.sdr.set_gain(self.gain)
+                tuner = self.sdr.get_tuner_type()
             except IOError as error:
                 post_event(self.notify, EventThreadStatus(Event.ERROR,
                                                           0, error.message))
         else:
             try:
-                sdr = rtltcp.RtlTcp(self.server, self.port)
-                sdr.set_sample_rate(SAMPLE_RATE)
-                sdr.set_gain_mode(1)
-                sdr.set_gain(self.gain)
-                tuner = sdr.get_tuner_type()
+                self.sdr = rtltcp.RtlTcp(self.server, self.port)
+                self.sdr.set_sample_rate(SAMPLE_RATE)
+                self.sdr.set_gain_mode(1)
+                self.sdr.set_gain(self.gain)
+                tuner = self.sdr.get_tuner_type()
             except IOError as error:
                 post_event(self.notify, EventThreadStatus(Event.ERROR,
                                                           0, error))
 
-        return sdr, tuner
+        return tuner
 
-    def rtl_scan(self, sdr, freq):
-        sdr.set_center_freq(freq + self.lo)
-        capture = sdr.read_samples(self.samples)
+    def rtl_scan(self, freq):
+        self.sdr.set_center_freq(freq + self.lo)
+        capture = self.sdr.read_samples(self.samples)
 
         return capture
 
-    def rtl_close(self, sdr):
-        sdr.close()
+    def rtl_close(self):
+        self.sdr.close()
+
+    def get_sdr(self):
+        return self.sdr
 
 
-def anaylse_data(freq, data, cal, nfft, id):
+def anaylse_data(freq, data, cal, nfft):
     rtl_scan = {}
     window = matplotlib.numpy.hamming(nfft)
     powers, freqs = matplotlib.mlab.psd(data,
@@ -158,7 +164,7 @@ def anaylse_data(freq, data, cal, nfft, id):
         xr = xr + (xr * cal / 1e6)
         rtl_scan[xr] = pwr
 
-    return (freq, rtl_scan, id)
+    return (freq, rtl_scan)
 
 
 def update_spectrum(start, stop, freqCentre, scan, offset, spectrum):
