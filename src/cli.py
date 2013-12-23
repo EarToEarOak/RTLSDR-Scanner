@@ -130,7 +130,8 @@ class Cli():
     def scan(self, settings, index, pool):
         samples = settings.dwell * SAMPLE_RATE
         samples = next_2_to_pow(int(samples))
-        threadScan = ThreadScan(self.queue, settings, index, samples, False)
+        threadScan = ThreadScan(self.queue, None, settings, index, samples,
+                                False)
         while threadScan.isAlive() or self.steps > 0:
             if not self.queue.empty():
                 self.process_event(self.queue, pool)
@@ -152,9 +153,8 @@ class Cli():
                 self.settings.devices[self.settings.index].tuner = data
         elif status == Event.DATA:
             cal = self.settings.devices[self.settings.index].calibration
-            id = self.procStatus.addProcess()
             pool.apply_async(anaylse_data, (freq, data, cal,
-                                            self.settings.nfft, id),
+                                            self.settings.nfft),
                              callback=self.on_process_done)
             self.progress()
         elif status == Event.ERROR:
@@ -168,7 +168,6 @@ class Cli():
 
     def on_process_done(self, data):
         freq, scan = data
-        self.procStatus.removeProcess(id)
         post_event(self.queue, EventThreadStatus(Event.PROCESSED, freq, scan))
 
     def progress(self):
