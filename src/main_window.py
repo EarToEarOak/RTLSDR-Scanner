@@ -631,6 +631,7 @@ class FrameMain(wx.Frame):
             self.status.hide_progress()
             if self.settings.mode == Mode.SINGLE or self.stopAtEnd:
                 self.status.set_general("Finished")
+                self.plot.annotate_plot()
                 self.cleanup()
             else:
                 if self.settings.mode == Mode.CONTIN and not self.stopScan:
@@ -646,7 +647,6 @@ class FrameMain(wx.Frame):
             self.sdr.close()
             self.sdr = None
         self.status.hide_progress()
-        self.plot.annotate_plot()
         self.steps = 0
         self.threadScan = None
         self.set_control_state(True)
