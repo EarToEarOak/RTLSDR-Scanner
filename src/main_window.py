@@ -473,7 +473,7 @@ class FrameMain(wx.Frame):
 
     def on_check_grid(self, _event):
         self.grid = self.checkGrid.GetValue()
-        self.update_plot()
+        self.plot.set_grid(self.grid)
 
     def on_event(self, event):
         status = event.data.get_status()
@@ -547,7 +547,7 @@ class FrameMain(wx.Frame):
             self.set_controls()
             self.set_control_state(True)
             self.plot.clear_plots()
-            self.update_plot(True)
+            self.plot.set_plot(spectrum)
             self.status.set_general("Finished")
             self.settings.fileHistory.AddFileToHistory(os.path.join(dirname,
                                                                     filename))

@@ -42,13 +42,14 @@ class Plotter():
         self.graph = graph
         self.settings = settings
         self.graph = graph
-        self.grid = grid
         self.lock = lock
         self.axes = None
         self.currentPlot = None
         self.lastPlot = None
         self.setup_plot()
         self.clear_plots()
+        self.set_grid(grid)
+        self.redraw()
 
     def setup_plot(self):
         self.axes = self.graph.get_axes()
@@ -67,7 +68,6 @@ class Plotter():
         self.axes.yaxis.set_major_formatter(formatter)
         self.axes.xaxis.set_minor_locator(AutoMinorLocator(10))
         self.axes.yaxis.set_minor_locator(AutoMinorLocator(10))
-        self.axes.grid(self.grid)
         self.axes.set_xlim(self.settings.start, self.settings.stop)
         self.axes.set_ylim(-50, 0)
 
@@ -193,6 +193,10 @@ class Plotter():
 
         self.new_plot()
         self.lastPlot = None
+
+    def set_grid(self, on):
+        self.axes.grid(on)
+        self.redraw()
 
 
 class ScanInfo():
