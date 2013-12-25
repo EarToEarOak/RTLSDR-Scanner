@@ -26,6 +26,7 @@
 import cPickle
 import json
 import os
+from threading import Thread
 
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 import wx
@@ -126,7 +127,11 @@ class Plotter():
 
     def redraw(self):
         self.graph.get_figure().tight_layout()
-        wx.PostEvent(self.notify, EventThreadStatus(Event.DRAW))
+        if os.name == "nt":
+            thread = Thread(target=thread_plot, args=(self.graph, self.lock,))
+            thread.start()
+        else:
+            wx.PostEvent(self.notify, EventThreadStatus(Event.DRAW))
 
     def set_plot(self, plot):
         xs, ys = split_spectrum(plot)
@@ -147,8 +152,8 @@ class Plotter():
 
         with self.lock:
             self.lastPlot = self.currentPlot
-            self.currentPlot, = self.axes.plot([], [], linewidth=0.4, color='b',
-                                               alpha=1, gid="plot")
+            self.currentPlot, = self.axes.plot([], [], linewidth=0.4,
+                                               color='b', alpha=1, gid="plot")
         self.redraw()
 
     def annotate_plot(self):
@@ -224,6 +229,11 @@ class ScanInfo():
         settings.stop = self.stop
         settings.dwell = self.dwell
         settings.nfft = self.nfft
+
+
+def thread_plot(graph, lock):
+    with lock:
+        graph.get_canvas().draw()
 
 
 def open_plot(dirname, filename):
@@ -342,4 +352,3 @@ def export_plot(dirname, filename, spectrum):
 if __name__ == '__main__':
     print 'Please run rtlsdr_scan.py'
     exit(1)
-
