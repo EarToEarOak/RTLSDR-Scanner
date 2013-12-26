@@ -25,7 +25,7 @@
 
 import wx
 
-from constants import Mode
+from constants import Display, Mode
 from devices import Device, format_device_name
 
 
@@ -35,6 +35,8 @@ class Settings():
 
         self.saveWarn = True
         self.fileHistory = wx.FileHistory(5)
+
+        self.display = Display.PLOT
 
         self.annotate = True
 

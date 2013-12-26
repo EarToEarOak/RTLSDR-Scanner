@@ -23,15 +23,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import cPickle
-import json
 import os
 from threading import Thread
 
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 import wx
 
-from constants import File
 from events import EventThreadStatus, Event
 from misc import split_spectrum
 
@@ -39,7 +36,6 @@ from misc import split_spectrum
 class Plotter():
     def __init__(self, notify, graph, settings, grid, lock):
         self.notify = notify
-        self.graph = graph
         self.settings = settings
         self.graph = graph
         self.lock = lock
@@ -52,7 +48,7 @@ class Plotter():
         self.redraw()
 
     def setup_plot(self):
-        self.axes = self.graph.get_axes()
+        self.axes = self.graph.get_figure().add_subplot(111)
         if len(self.settings.devices) > 0:
             gain = self.settings.devices[self.settings.index].gain
         else:
@@ -200,159 +196,10 @@ class Plotter():
         self.redraw()
 
 
-class ScanInfo():
-    start = None
-    stop = None
-    dwell = None
-    nfft = None
-    name = None
-    gain = None
-    lo = None
-    calibration = None
-    tuner = 0
-    time = None
-    lat = None
-    lon = None
-
-    def setFromSettings(self, settings):
-        self.start = settings.start
-        self.stop = settings.stop
-        self.dwell = settings.dwell
-        self.nfft = settings.nfft
-        device = settings.devices[settings.index]
-        if device.isDevice:
-            self.name = device.name
-        else:
-            self.name = device.server + ":" + str(device.port)
-        self.gain = device.gain
-        self.lo = device.lo
-        self.calibration = device.calibration
-        self.tuner = device.tuner
-
-    def setToSettings(self, settings):
-        settings.start = self.start
-        settings.stop = self.stop
-        settings.dwell = self.dwell
-        settings.nfft = self.nfft
-
-
 def thread_plot(graph, lock):
     with lock:
         graph.get_canvas().draw()
 
-
-def open_plot(dirname, filename):
-    pickle = True
-    error = False
-    dwell = 0.131
-    nfft = 1024
-    name = None
-    gain = None
-    lo = None
-    calibration = None
-    tuner = 0
-    spectrum = {}
-    time = None
-    lat = None
-    lon = None
-
-    path = os.path.join(dirname, filename)
-    if not os.path.exists(path):
-        return 0, 0, 0, 0, []
-    handle = open(path, 'rb')
-    try:
-        header = cPickle.load(handle)
-    except cPickle.UnpicklingError:
-        pickle = False
-
-    if pickle:
-        try:
-            _version = cPickle.load(handle)
-            start = cPickle.load(handle)
-            stop = cPickle.load(handle)
-            spectrum = cPickle.load(handle)
-        except pickle.PickleError:
-            error = True
-    else:
-        try:
-            handle.seek(0)
-            data = json.loads(handle.read())
-            header = data[0]
-            version = data[1]['Version']
-            start = data[1]['Start']
-            stop = data[1]['Stop']
-            for key, value in data[1]['Spectrum'].iteritems():
-                spectrum[float(key)] = value
-            if version > 1:
-                dwell = data[1]['Dwell']
-                nfft = data[1]['Nfft']
-            if version > 2:
-                name = data[1]['Device']
-                gain = data[1]['Gain']
-                lo = data[1]['LO']
-                calibration = data[1]['Calibration']
-            if version > 4:
-                tuner = data[1]['Tuner']
-            if version > 5:
-                time = data[1]['Time']
-                lat = data[1]['Latitude']
-                lon = data[1]['Longitude']
-        except ValueError:
-            error = True
-        except KeyError:
-            error = True
-
-    handle.close()
-
-    if error or header != File.HEADER:
-        wx.MessageBox('Invalid or corrupted file', 'Warning',
-                  wx.OK | wx.ICON_WARNING)
-        return 0, 0, 0, 0, []
-
-    scanInfo = ScanInfo()
-    scanInfo.start = start
-    scanInfo.stop = stop
-    scanInfo.dwell = dwell
-    scanInfo.nfft = nfft
-    scanInfo.name = name
-    scanInfo.gain = gain
-    scanInfo.lo = lo
-    scanInfo.calibration = calibration
-    scanInfo.tuner = tuner
-    scanInfo.time = time
-    scanInfo.lat = lat
-    scanInfo.lon = lon
-
-    return scanInfo, spectrum
-
-
-def save_plot(dirname, filename, scanInfo, spectrum):
-    data = [File.HEADER, {'Version': File.VERSION,
-                          'Start':scanInfo.start,
-                          'Stop':scanInfo.stop,
-                          'Dwell':scanInfo.dwell,
-                          'Nfft':scanInfo.nfft,
-                          'Device':scanInfo.name,
-                          'Gain':scanInfo.gain,
-                          'LO':scanInfo.lo,
-                          'Calibration':scanInfo.calibration,
-                          'Tuner':scanInfo.tuner,
-                          'Time':scanInfo.time,
-                          'Latitude':scanInfo.lat,
-                          'Longitude':scanInfo.lon,
-                          'Spectrum': spectrum}]
-
-    handle = open(os.path.join(dirname, filename), 'wb')
-    handle.write(json.dumps(data, indent=4))
-    handle.close()
-
-
-def export_plot(dirname, filename, spectrum):
-    handle = open(os.path.join(dirname, filename), 'wb')
-    handle.write("Frequency (MHz),Level (dB)\n")
-    for freq, pwr in spectrum.iteritems():
-        handle.write("{0},{1}\n".format(freq, pwr))
-    handle.close()
 
 if __name__ == '__main__':
     print 'Please run rtlsdr_scan.py'

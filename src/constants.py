@@ -71,6 +71,10 @@ class Cal:
     START, DONE, OK, CANCEL = range(4)
 
 
+class Display:
+    PLOT, SPECT = range(2)
+
+
 class Mode:
     SINGLE, CONTIN = range(2)
 

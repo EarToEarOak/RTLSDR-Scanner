@@ -22,6 +22,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+
 try:
     input = raw_input
 except:
@@ -46,10 +47,12 @@ import webbrowser
 from constants import *
 from devices import get_devices
 from events import EVT_THREAD_STATUS, Event, EventThreadStatus
-from misc import calc_samples, calc_real_dwell
-from plot import open_plot, save_plot, export_plot, ScanInfo, Plotter
+from misc import ScanInfo, calc_samples, calc_real_dwell, open_plot, save_plot, \
+    export_plot
+from plot import Plotter
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
+from spectrogram import Spectrogram
 from windows import PanelGraph, DialogPrefs, DialogCompare, DialogAutoCal, \
     DialogSaveWarn, Statusbar, DialogProperties
 
@@ -156,8 +159,14 @@ class FrameMain(wx.Frame):
 
         self.panel = wx.Panel(panel)
         self.graph = PanelGraph(panel, self)
-        self.plot = Plotter(self, self.graph, self.settings, self.grid,
-                            self.lock)
+
+#         TODO:
+#         if self.settings.display == Display.PLOT:
+#             self.plot = Plotter(self, self.graph, self.settings, self.grid,
+#                                 self.lock)
+#         else:
+#             self.plot = Spectrogram(self, self.graph, self.settings, self.lock)
+        self.plot = Spectrogram(self, self.graph, self.settings, self.lock)
 
         self.buttonStart = wx.Button(self.panel, wx.ID_ANY, 'Start')
         self.buttonStop = wx.Button(self.panel, wx.ID_ANY, 'Stop')
@@ -202,7 +211,7 @@ class FrameMain(wx.Frame):
 
         self.checkUpdate = wx.CheckBox(self.panel, wx.ID_ANY,
                                         "Live update")
-        self.checkUpdate.SetToolTip(wx.ToolTip('Update plot with live '
+        self.checkUpdate.SetToolTip(wx.ToolTip('Update polot with live '
                                                'samples (experimental)'))
         self.checkUpdate.SetValue(self.settings.liveUpdate)
         self.Bind(wx.EVT_CHECKBOX, self.on_check_update, self.checkUpdate)
@@ -254,16 +263,16 @@ class FrameMain(wx.Frame):
     def create_menu(self):
         menuFile = wx.Menu()
         self.menuOpen = menuFile.Append(wx.ID_OPEN, "&Open...",
-                                        "Open plot")
+                                        "Open polot")
         recent = wx.Menu()
         self.settings.fileHistory.UseMenu(recent)
         self.settings.fileHistory.AddFilesToMenu()
         menuFile.AppendMenu(wx.ID_ANY, "&Recent Files", recent)
         menuFile.AppendSeparator()
         self.menuSave = menuFile.Append(wx.ID_SAVE, "&Save As...",
-                                          "Save plot")
+                                          "Save polot")
         self.menuExport = menuFile.Append(wx.ID_ANY, "&Export...",
-                                            "Export plot")
+                                            "Export polot")
         menuFile.AppendSeparator()
         self.menuProperties = menuFile.Append(wx.ID_ANY, "&Properties...",
                                             "Show properties")

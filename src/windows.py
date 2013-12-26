@@ -28,8 +28,8 @@ from urlparse import urlparse
 
 import matplotlib
 from matplotlib.backends.backend_wx import _load_bitmap
-from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as \
-    FigureCanvas, NavigationToolbar2WxAgg
+from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas, \
+    NavigationToolbar2WxAgg
 from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
 import numpy
 import rtlsdr
@@ -37,8 +37,7 @@ import wx
 
 from constants import *
 from events import EventThreadStatus, Event
-from misc import split_spectrum, nearest
-from plot import open_plot
+from misc import split_spectrum, nearest, open_plot
 from rtltcp import RtlTcp
 import wx.grid as grid
 import wx.lib.masked as masked
@@ -129,7 +128,6 @@ class PanelGraph(wx.Panel):
         wx.Panel.__init__(self, self.parent)
 
         self.figure = matplotlib.figure.Figure(facecolor='white')
-        self.axes = self.figure.add_subplot(111)
         self.canvas = FigureCanvas(self, -1, self.figure)
         self.canvas.mpl_connect('motion_notify_event', self.on_motion)
         self.canvas.mpl_connect('draw_event', self.on_draw)
@@ -193,9 +191,6 @@ class PanelGraph(wx.Panel):
 
     def get_canvas(self):
         return self.canvas
-
-    def get_axes(self):
-        return self.axes
 
     def get_toolbar(self):
         return self.toolbar
