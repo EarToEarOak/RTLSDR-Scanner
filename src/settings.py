@@ -25,6 +25,7 @@
 
 import wx
 
+from constants import Mode
 from devices import Device, format_device_name
 
 
@@ -43,7 +44,7 @@ class Settings():
 
         self.start = 87
         self.stop = 108
-        self.mode = 0
+        self.mode = Mode.SINGLE
         self.dwell = 0.1
         self.nfft = 1024
         self.liveUpdate = False
