@@ -43,12 +43,13 @@ class Plotter():
         self.currentPlot = None
         self.lastPlot = None
         self.setup_plot()
-        self.clear_plots()
         self.set_grid(grid)
         self.redraw()
 
     def setup_plot(self):
         self.axes = self.graph.get_figure().add_subplot(111)
+        self.create_plot()
+
         if len(self.settings.devices) > 0:
             gain = self.settings.devices[self.settings.index].gain
         else:
@@ -121,6 +122,12 @@ class Plotter():
                         child.set_alpha(child.get_alpha() - 1.0 \
                                         / self.settings.maxScans)
 
+    def create_plot(self):
+        with self.lock:
+            self.lastPlot = self.currentPlot
+            self.currentPlot, = self.axes.plot([], [], linewidth=0.4,
+                                               color='b', alpha=1, gid="plot")
+
     def redraw(self):
         self.graph.get_figure().tight_layout()
         if os.name == "nt":
@@ -130,13 +137,14 @@ class Plotter():
             wx.PostEvent(self.notify, EventThreadStatus(Event.DRAW))
 
     def set_plot(self, plot):
-        xs, ys = split_spectrum(plot)
-        with self.lock:
-            self.currentPlot.set_data(xs, ys)
-            self.axes.relim()
-            self.axes.autoscale_view()
-        self.scale_plot()
-        self.redraw()
+        if len(plot) > 0:
+            xs, ys = split_spectrum(plot)
+            with self.lock:
+                self.currentPlot.set_data(xs, ys)
+                self.axes.relim()
+                self.axes.autoscale_view()
+            self.scale_plot()
+            self.redraw()
 
     def new_plot(self):
         if self.settings.retainScans:
@@ -146,10 +154,8 @@ class Plotter():
         if self.settings.retainScans and self.settings.fadeScans:
             self.fade_plots()
 
-        with self.lock:
-            self.lastPlot = self.currentPlot
-            self.currentPlot, = self.axes.plot([], [], linewidth=0.4,
-                                               color='b', alpha=1, gid="plot")
+        self.create_plot()
+
         self.redraw()
 
     def annotate_plot(self):
@@ -188,7 +194,7 @@ class Plotter():
                     if child.get_gid() == "plot" or child.get_gid() == "peak":
                         child.remove()
 
-        self.new_plot()
+        self.create_plot()
         self.lastPlot = None
 
     def set_grid(self, on):

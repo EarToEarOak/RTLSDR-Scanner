@@ -166,7 +166,8 @@ class FrameMain(wx.Frame):
 #                                 self.lock)
 #         else:
 #             self.plot = Spectrogram(self, self.graph, self.settings, self.lock)
-        self.plot = Spectrogram(self, self.graph, self.settings, self.lock)
+        self.plot = Spectrogram(self, self.graph, self.settings, self.grid,
+                                self.lock)
 
         self.buttonStart = wx.Button(self.panel, wx.ID_ANY, 'Start')
         self.buttonStop = wx.Button(self.panel, wx.ID_ANY, 'Stop')
