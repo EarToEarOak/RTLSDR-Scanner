@@ -149,9 +149,9 @@ class PanelGraph(wx.Panel):
         xpos = event.xdata
         ypos = event.ydata
         text = ""
-        if xpos is not None and ypos is not None:
-            # TODO:
-            spectrum = self.main.spectrum
+        if xpos is not None and ypos is not None and len(self.main.spectrum) > 0:
+            timeStamp = max(self.main.spectrum)
+            spectrum = self.main.spectrum[timeStamp]
             if len(spectrum) > 0:
                 x = min(spectrum.keys(), key=lambda freq: abs(freq - xpos))
                 if(xpos <= max(spectrum.keys(), key=float)):
