@@ -50,7 +50,7 @@ class Spectrogram:
         self.plot = None
         self.setup_plot()
         self.set_grid(grid)
-        self.redraw()
+        self.redraw_plot()
 
     def setup_plot(self):
         gs = GridSpec(1, 2, width_ratios=[9.5, 0.5])
@@ -86,7 +86,7 @@ class Spectrogram:
         with self.lock:
             self.plot = self.axes.pcolormesh(numpy.array(self.data), vmin=-50, vmax=0)
 
-    def redraw(self):
+    def redraw_plot(self):
         if os.name == "nt":
             thread = Thread(target=thread_plot, args=(self.graph, self.lock,))
             thread.start()
@@ -117,7 +117,7 @@ class Spectrogram:
 
     def set_grid(self, on):
         self.axes.grid(on)
-        self.redraw()
+        self.redraw_plot()
 
 
 def thread_plot(graph, lock):

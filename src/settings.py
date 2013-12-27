@@ -42,7 +42,9 @@ class Settings():
 
         self.retainScans = False
         self.fadeScans = True
-        self.maxScans = 5
+        self.fadeMax = 5
+
+        self.specMax = 100
 
         self.start = 87
         self.stop = 108
@@ -69,7 +71,8 @@ class Settings():
         self.annotate = self.cfg.ReadBool('annotate', self.annotate)
         self.retainScans = self.cfg.ReadBool('retainScans', self.retainScans)
         self.fadeScans = self.cfg.ReadBool('fadeScans', self.fadeScans)
-        self.maxScans = self.cfg.ReadInt('maxScans', self.maxScans)
+        self.fadeMax = self.cfg.ReadInt('fadeMax', self.fadeMax)
+        self.specMax = self.cfg.ReadInt('specMax', self.specMax)
         self.start = self.cfg.ReadInt('start', self.start)
         self.stop = self.cfg.ReadInt('stop', self.stop)
         self.mode = self.cfg.ReadInt('mode', self.mode)
@@ -117,7 +120,8 @@ class Settings():
         self.cfg.WriteBool('annotate', self.annotate)
         self.cfg.WriteBool('retainScans', self.retainScans)
         self.cfg.WriteBool('fadeScans', self.fadeScans)
-        self.cfg.WriteInt('maxScans', self.maxScans)
+        self.cfg.WriteInt('fadeMax', self.fadeMax)
+        self.cfg.WriteInt('specMax', self.specMax)
         self.cfg.WriteInt('start', self.start)
         self.cfg.WriteInt('stop', self.stop)
         self.cfg.WriteInt('mode', self.mode)

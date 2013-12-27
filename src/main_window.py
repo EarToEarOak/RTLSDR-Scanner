@@ -22,6 +22,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from collections import OrderedDict
 
 try:
     input = raw_input
@@ -123,7 +124,7 @@ class FrameMain(wx.Frame):
         self.filename = ""
         self.dirname = "."
 
-        self.spectrum = {}
+        self.spectrum = OrderedDict()
         self.scanInfo = ScanInfo()
         self.isSaved = True
 
@@ -160,14 +161,11 @@ class FrameMain(wx.Frame):
         self.panel = wx.Panel(panel)
         self.graph = PanelGraph(panel, self)
 
-#         TODO:
-#         if self.settings.display == Display.PLOT:
-#             self.plot = Plotter(self, self.graph, self.settings, self.grid,
-#                                 self.lock)
-#         else:
-#             self.plot = Spectrogram(self, self.graph, self.settings, self.lock)
-        self.plot = Spectrogram(self, self.graph, self.settings, self.grid,
+        if self.settings.display == Display.PLOT:
+            self.plot = Plotter(self, self.graph, self.settings, self.grid,
                                 self.lock)
+        else:
+            self.plot = Spectrogram(self, self.graph, self.settings, self.lock)
 
         self.buttonStart = wx.Button(self.panel, wx.ID_ANY, 'Start')
         self.buttonStop = wx.Button(self.panel, wx.ID_ANY, 'Stop')
@@ -465,6 +463,7 @@ class FrameMain(wx.Frame):
             wx.MessageBox('No devices found',
                           'Error', wx.OK | wx.ICON_ERROR)
         else:
+            self.spectrum.clear()
             self.start_scan()
 
     def on_stop(self, _event):
@@ -524,10 +523,13 @@ class FrameMain(wx.Frame):
         elif status == Event.PROCESSED:
             offset = self.settings.devices[self.settings.index].offset
             with self.lock:
-                update_spectrum(self.settings.start, self.settings.stop, freq,
-                                data, offset, self.spectrum)
-            if self.settings.liveUpdate:
-                self.plot.set_plot(self.spectrum)
+                updated = update_spectrum(self.settings.start,
+                                          self.settings.stop, freq,
+                                          data, offset, self.spectrum)
+            if updated and self.settings.liveUpdate:
+                self.plot.set_plot(self.spectrum,
+                                   self.settings.annotate and \
+                                   self.settings.mode == Mode.CONTIN)
             self.progress()
         elif status == Event.DRAW:
             self.graph.get_canvas().draw()
@@ -535,8 +537,9 @@ class FrameMain(wx.Frame):
         wx.YieldIfNeeded()
 
     def on_process_done(self, data):
-        freq, scan = data
-        wx.PostEvent(self, EventThreadStatus(Event.PROCESSED, freq, scan))
+        timeStamp, freq, scan = data
+        wx.PostEvent(self, EventThreadStatus(Event.PROCESSED, freq,
+                                             (timeStamp, scan)))
 
     def open(self, dirname, filename):
         if not os.path.exists(os.path.join(dirname, filename)):
@@ -557,7 +560,7 @@ class FrameMain(wx.Frame):
             self.set_controls()
             self.set_control_state(True)
             self.plot.clear_plots()
-            self.plot.set_plot(spectrum)
+            self.plot.set_plot(spectrum, self.settings.annotate)
             self.status.set_general("Finished")
             self.settings.fileHistory.AddFileToHistory(os.path.join(dirname,
                                                                     filename))
@@ -573,7 +576,7 @@ class FrameMain(wx.Frame):
                 self.oldCal = self.devices[self.settings.index].calibration
                 self.devices[self.settings.index].calibration = 0
                 self.get_controls()
-                self.plot.clear_plots()
+                self.spectrum.clear()
                 if not self.start_scan(isCal=True):
                     self.dlgCal.reset_cal()
             elif status == Cal.DONE:
@@ -606,7 +609,6 @@ class FrameMain(wx.Frame):
         if not self.threadScan:
             self.set_control_state(False)
             samples = calc_samples(self.settings.dwell)
-            self.spectrum.clear()
             self.status.set_info('')
             self.scanInfo.setFromSettings(self.settings)
             time = datetime.datetime.utcnow().replace(microsecond=0)
@@ -639,15 +641,14 @@ class FrameMain(wx.Frame):
             self.status.set_general("Scanning")
         else:
             self.status.hide_progress()
+            self.plot.set_plot(self.spectrum, self.settings.annotate)
             if self.settings.mode == Mode.SINGLE or self.stopAtEnd:
                 self.status.set_general("Finished")
-                self.plot.annotate_plot()
                 self.cleanup()
             else:
                 if self.settings.mode == Mode.CONTIN and not self.stopScan:
                     if self.dlgCal is None and not self.stopAtEnd:
-                        self.plot.new_plot()
-                        self.plot.annotate_plot()
+                        self.limit_spectrum()
                         self.start_scan()
                     else:
                         self.cleanup()
@@ -662,6 +663,17 @@ class FrameMain(wx.Frame):
         self.set_control_state(True)
         self.stopAtEnd = False
         self.stopScan = True
+
+    def limit_spectrum(self):
+        if self.settings.display == Display.PLOT:
+            limit = self.settings.fadeMax
+        else:
+            limit = self.settings.spectMax
+
+        with self.lock:
+            while len(self.spectrum) >= limit:
+                timeStamp = min(self.spectrum)
+                del self.spectrum[timeStamp]
 
     def set_control_state(self, state):
         self.spinCtrlStart.Enable(state)

@@ -27,6 +27,7 @@ import os
 from threading import Thread
 
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
+import numpy
 import wx
 
 from events import EventThreadStatus, Event
@@ -41,14 +42,12 @@ class Plotter():
         self.lock = lock
         self.axes = None
         self.currentPlot = None
-        self.lastPlot = None
         self.setup_plot()
         self.set_grid(grid)
-        self.redraw()
+        self.redraw_plot()
 
     def setup_plot(self):
         self.axes = self.graph.get_figure().add_subplot(111)
-        self.create_plot()
 
         if len(self.settings.devices) > 0:
             gain = self.settings.devices[self.settings.index].gain
@@ -81,54 +80,7 @@ class Plotter():
                 self.axes.set_xlim(auto=False)
                 self.axes.set_ylim(self.settings.yMin, self.settings.yMax)
 
-    def retain_plot(self):
-        if self.count_plots() >= self.settings.maxScans:
-            self.remove_first()
-
-    def remove_first(self):
-        with self.lock:
-            children = self.axes.get_children()
-            for child in children:
-                if child.get_gid() is not None:
-                    if child.get_gid() == "plot":
-                        child.remove()
-                    break
-
-    def remove_last(self):
-        with self.lock:
-            children = self.axes.get_children()
-            for child in reversed(children):
-                if child.get_gid() is not None:
-                    if child.get_gid() == "plot":
-                        child.remove()
-                    break
-
-    def count_plots(self):
-        with self.lock:
-            children = self.axes.get_children()
-            count = 0
-            for child in children:
-                if child.get_gid() is not None:
-                    if child.get_gid() == "plot":
-                        count += 1
-            return count
-
-    def fade_plots(self):
-        with self.lock:
-            children = self.axes.get_children()
-            for child in children:
-                if child.get_gid() is not None:
-                    if child.get_gid() == "plot":
-                        child.set_alpha(child.get_alpha() - 1.0 \
-                                        / self.settings.maxScans)
-
-    def create_plot(self):
-        with self.lock:
-            self.lastPlot = self.currentPlot
-            self.currentPlot, = self.axes.plot([], [], linewidth=0.4,
-                                               color='b', alpha=1, gid="plot")
-
-    def redraw(self):
+    def redraw_plot(self):
         self.graph.get_figure().tight_layout()
         if os.name == "nt":
             thread = Thread(target=thread_plot, args=(self.graph, self.lock,))
@@ -136,47 +88,51 @@ class Plotter():
         else:
             wx.PostEvent(self.notify, EventThreadStatus(Event.DRAW))
 
-    def set_plot(self, plot):
-        if len(plot) > 0:
-            xs, ys = split_spectrum(plot)
+    def set_plot(self, plot, annotate=False):
+        total = len(plot)
+        if total > 0:
+            self.clear_plots()
+            count = 1.0
             with self.lock:
-                self.currentPlot.set_data(xs, ys)
+                for timeStamp in plot:
+                    xs, ys = split_spectrum(plot[timeStamp])
+                    alpha = count / total
+                    self.axes.plot(xs, ys, linewidth=0.4, gid="plot",
+                                   color='b', alpha=alpha)
+                    count += 1
+
                 self.axes.relim()
                 self.axes.autoscale_view()
             self.scale_plot()
-            self.redraw()
+            if annotate:
+                self.annotate_plot()
+            self.redraw_plot()
 
-    def new_plot(self):
-        if self.settings.retainScans:
-            self.retain_plot()
-        else:
-            self.remove_first()
-        if self.settings.retainScans and self.settings.fadeScans:
-            self.fade_plots()
-
-        self.create_plot()
-
-        self.redraw()
-
-    def annotate_plot(self):
+    def get_plots(self):
+        plots = []
         with self.lock:
-            if not self.settings.annotate:
-                return
             children = self.axes.get_children()
             for child in children:
-                    if child.get_gid() is not None:
-                        if child.get_gid() == 'peak':
-                            child.remove()
+                if child.get_gid() is not None:
+                    if child.get_gid() == "plot":
+                        plots.append(child)
 
-            if self.lastPlot is not None:
-                line = self.lastPlot
+        return plots
+
+    def annotate_plot(self):
+        self.clear_markers()
+
+        plots = self.get_plots()
+        with self.lock:
+            if len(plots) == 1:
+                plot = plots[0]
             else:
-                line = self.currentPlot
+                plot = plots[len(plots) - 2]
+            xData, yData = plot.get_data()
+            pos = numpy.argmax(yData)
+            x = xData[pos]
+            y = yData[pos]
 
-        data = line.get_data()
-        y = max(data[1])
-        pos = data[1].index(y)
-        x = data[0][pos]
         start, stop = self.axes.get_xlim()
         textX = ((stop - start) / 50.0) + x
         self.axes.annotate('{0:.3f}MHz\n{1:.2f}dB'.format(x, y),
@@ -184,7 +140,8 @@ class Plotter():
                            ha='left', va='top', size='small', gid='peak')
         self.axes.plot(x, y, marker='x', markersize=10, color='r',
                        gid='peak')
-        self.redraw()
+        self.redraw_plot()
+        pass
 
     def clear_plots(self):
         with self.lock:
@@ -194,12 +151,17 @@ class Plotter():
                     if child.get_gid() == "plot" or child.get_gid() == "peak":
                         child.remove()
 
-        self.create_plot()
-        self.lastPlot = None
+    def clear_markers(self):
+        with self.lock:
+            children = self.axes.get_children()
+            for child in children:
+                    if child.get_gid() is not None:
+                        if child.get_gid() == 'peak':
+                            child.remove()
 
     def set_grid(self, on):
         self.axes.grid(on)
-        self.redraw()
+        self.redraw_plot()
 
 
 def thread_plot(graph, lock):

@@ -110,7 +110,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         dlg = DialogRange(self, self.main)
         if dlg.ShowModal() == wx.ID_OK:
             self.main.plot.scale_plot()
-            self.main.plot.redraw()
+            self.main.plot.redraw_plot()
         dlg.Destroy()
 
 
@@ -150,6 +150,7 @@ class PanelGraph(wx.Panel):
         ypos = event.ydata
         text = ""
         if xpos is not None and ypos is not None:
+            # TODO:
             spectrum = self.main.spectrum
             if len(spectrum) > 0:
                 x = min(spectrum.keys(), key=lambda freq: abs(freq - xpos))
@@ -817,7 +818,7 @@ class DialogPrefs(wx.Dialog):
                                  label="Max scans")
         self.spinCtrlMaxScans = wx.SpinCtrl(self)
         self.spinCtrlMaxScans.SetRange(2, 500)
-        self.spinCtrlMaxScans.SetValue(self.settings.maxScans)
+        self.spinCtrlMaxScans.SetValue(self.settings.fadeMax)
         self.spinCtrlMaxScans.SetToolTip(wx.ToolTip('Maximum previous scans to display'))
 
         self.on_check(None)
@@ -960,7 +961,7 @@ class DialogPrefs(wx.Dialog):
         self.settings.annotate = self.checkAnnotate.GetValue()
         self.settings.retainScans = self.checkRetain.GetValue()
         self.settings.fadeScans = self.checkFade.GetValue()
-        self.settings.maxScans = self.spinCtrlMaxScans.GetValue()
+        self.settings.fadeMax = self.spinCtrlMaxScans.GetValue()
         for i in range(0, self.gridDev.GetNumberRows()):
             if not self.devices[i].isDevice:
                 server = self.gridDev.GetCellValue(i, self.COL_DEV)
