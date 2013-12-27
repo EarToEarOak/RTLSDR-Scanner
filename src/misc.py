@@ -107,8 +107,6 @@ def open_plot(dirname, filename):
             version = data[1]['Version']
             start = data[1]['Start']
             stop = data[1]['Stop']
-            for key, value in data[1]['Spectrum'].iteritems():
-                spectrum[float(key)] = value
             if version > 1:
                 dwell = data[1]['Dwell']
                 nfft = data[1]['Nfft']
@@ -123,6 +121,16 @@ def open_plot(dirname, filename):
                 time = data[1]['Time']
                 lat = data[1]['Latitude']
                 lon = data[1]['Longitude']
+            if version < 7:
+                spectrum[0] = {}
+                for f, p in data[1]['Spectrum'].iteritems():
+                    spectrum[0][float(f)] = p
+            else:
+                for t, s in data[1]['Spectrum'].iteritems():
+                    spectrum[t] = {}
+                    for f, p in s.iteritems():
+                        spectrum[t][float(f)] = p
+
         except ValueError:
             error = True
         except KeyError:
