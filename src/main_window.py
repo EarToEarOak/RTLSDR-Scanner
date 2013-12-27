@@ -634,7 +634,7 @@ class FrameMain(wx.Frame):
 
     def progress(self):
         self.steps -= 1
-        if self.steps > -1:
+        if self.steps > -1 and not self.stopScan:
             self.status.set_progress((self.stepsTotal - self.steps) * 100
                     / self.stepsTotal)
             self.status.show_progress()
@@ -642,15 +642,19 @@ class FrameMain(wx.Frame):
         else:
             self.status.hide_progress()
             self.plot.set_plot(self.spectrum, self.settings.annotate)
-            if self.settings.mode == Mode.SINGLE or self.stopAtEnd:
+            if self.stopScan:
+                self.status.set_general("Stopped")
+                self.cleanup()
+            elif self.settings.mode == Mode.SINGLE:
                 self.status.set_general("Finished")
                 self.cleanup()
             else:
-                if self.settings.mode == Mode.CONTIN and not self.stopScan:
+                if self.settings.mode == Mode.CONTIN:
                     if self.dlgCal is None and not self.stopAtEnd:
                         self.limit_spectrum()
                         self.start_scan()
                     else:
+                        self.status.set_general("Stopped")
                         self.cleanup()
 
     def cleanup(self):
