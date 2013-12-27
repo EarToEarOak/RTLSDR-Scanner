@@ -167,8 +167,9 @@ class Cli():
             self.progress()
 
     def on_process_done(self, data):
-        freq, scan = data
-        post_event(self.queue, EventThreadStatus(Event.PROCESSED, freq, scan))
+        timeStamp, freq, scan = data
+        post_event(self.queue, EventThreadStatus(Event.PROCESSED, freq,
+                                                 (timeStamp, scan)))
 
     def progress(self):
         self.steps -= 1

@@ -309,8 +309,9 @@ class PanelGraphCompare(wx.Panel):
         self.axesDiff.autoscale_view()
 
     def set_spectrum1(self, spectrum):
-        self.spectrum1 = spectrum
-        freqs, powers = split_spectrum(spectrum)
+        timeStamp = max(spectrum)
+        self.spectrum1 = spectrum[timeStamp]
+        freqs, powers = split_spectrum(self.spectrum1)
         self.plotScan1.set_xdata(freqs)
         self.plotScan1.set_ydata(powers)
         self.plot_diff()
@@ -319,8 +320,9 @@ class PanelGraphCompare(wx.Panel):
         self.canvas.draw()
 
     def set_spectrum2(self, spectrum):
-        self.spectrum2 = spectrum
-        freqs, powers = split_spectrum(spectrum)
+        timeStamp = max(spectrum)
+        self.spectrum2 = spectrum[timeStamp]
+        freqs, powers = split_spectrum(self.spectrum2)
         self.plotScan2.set_xdata(freqs)
         self.plotScan2.set_ydata(powers)
         self.plot_diff()
