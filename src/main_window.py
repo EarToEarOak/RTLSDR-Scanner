@@ -593,11 +593,13 @@ class FrameMain(wx.Frame):
                     self.devices[self.settings.index].calibration = self.oldCal
 
     def calc_ppm(self, freq):
-        spectrum = self.spectrum.copy()
-        for x, y in spectrum.iteritems():
-            spectrum[x] = (((x - freq) * (x - freq)) + 1) * y
+        with self.lock:
+            timeStamp = max(self.spectrum)
+            spectrum = self.spectrum[timeStamp].copy()
 
-        peak = max(spectrum, key=spectrum.get)
+            for x, y in spectrum.iteritems():
+                spectrum[x] = (((x - freq) * (x - freq)) + 1) * y
+                peak = max(spectrum, key=spectrum.get)
 
         return ((freq - peak) / freq) * 1e6
 
