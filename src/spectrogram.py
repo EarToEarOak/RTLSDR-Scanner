@@ -113,16 +113,16 @@ class Spectrogram:
             c = np.ma.masked_all((10, height))
             self.clear_plots()
             with self.lock:
-                j = 0
+                j = 10
                 for ys in reversed(plot):
-                    _timeStamp, zs = split_spectrum(plot[ys])
+                    j -= 1
+                    _xs, zs = split_spectrum(plot[ys])
                     for i in range(len(zs)):
                         c[j, i] = zs[i]
-                    j += 1
 
-                self.plot = self.axes.pcolormesh(c,
-                                                 cmap=cm.get_cmap('jet'),
-                                                 gid="plot")
+                self.plot = self.axes.imshow(c, aspect='auto',
+                                             cmap=cm.get_cmap('jet'),
+                                             gid="plot")
                 self.axes.grid(self.grid)
 
             self.scale_plot()
