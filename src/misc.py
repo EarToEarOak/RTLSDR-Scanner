@@ -182,11 +182,11 @@ def save_plot(dirname, filename, scanInfo, spectrum):
 
 
 def export_plot(dirname, filename, spectrum):
-    # TODO:
     handle = open(os.path.join(dirname, filename), 'wb')
-    handle.write("Frequency (MHz),Level (dB)\n")
-    for freq, pwr in spectrum.iteritems():
-        handle.write("{0},{1}\n".format(freq, pwr))
+    handle.write("Time (UTC), Frequency (MHz),Level (dB)\n")
+    for plot in spectrum.iteritems():
+        for freq, pwr in plot[1].iteritems():
+            handle.write("{0}, {1}, {2}\n".format(plot[0], freq, pwr))
     handle.close()
 
 
