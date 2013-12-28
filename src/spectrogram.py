@@ -73,7 +73,7 @@ class Spectrogram:
         self.axes.yaxis.set_major_formatter(formatter)
         self.axes.xaxis.set_minor_locator(AutoMinorLocator(10))
         self.axes.yaxis.set_minor_locator(AutoMinorLocator(10))
-#         self.axes.set_xlim(self.settings.start, self.settings.stop)
+        self.axes.set_xlim(self.settings.start, self.settings.stop)
 
         self.bar = self.figure.add_subplot(gs[1])
         norm = Normalize(vmin=-50, vmax=0)
@@ -108,9 +108,17 @@ class Spectrogram:
         total = len(plot)
 
         if total > 0:
-            timeStamp = min(plot)
-            height = len(plot[timeStamp])
-            c = np.ma.masked_all((10, height))
+            firstPlot = plot.items()[0]
+            timeMin = firstPlot[0]
+            timeMax = plot.items()[len(plot) - 1][0]
+            xMin = min(firstPlot[1])
+            xMax = max(firstPlot[1])
+            if total == 1:
+                timeMax += 1
+            extent = [xMin, xMax, timeMax, timeMin]
+            width = len(firstPlot[1])
+
+            c = np.ma.masked_all((10, width))
             self.clear_plots()
             with self.lock:
                 j = 10
@@ -121,6 +129,7 @@ class Spectrogram:
                         c[j, i] = zs[i]
 
                 self.plot = self.axes.imshow(c, aspect='auto',
+                                             extent=extent,
                                              cmap=cm.get_cmap('jet'),
                                              gid="plot")
                 self.axes.grid(self.grid)
