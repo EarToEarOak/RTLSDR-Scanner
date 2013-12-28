@@ -97,6 +97,7 @@ class Spectrogram:
         self.barBase.draw_all()
 
     def redraw_plot(self):
+        self.graph.get_figure().tight_layout()
         if os.name == "nt":
             thread = Thread(target=thread_plot, args=(self.graph, self.lock,))
             thread.start()
@@ -108,18 +109,18 @@ class Spectrogram:
 
         if total > 0:
             timeStamp = min(plot)
-            width = len(plot[timeStamp])
-            data = np.ma.masked_all((width, 10))
+            height = len(plot[timeStamp])
+            c = np.ma.masked_all((10, height))
             self.clear_plots()
             with self.lock:
                 j = 0
-                for timeStamp in reversed(plot):
-                    _x, z = split_spectrum(plot[timeStamp])
-                    for i in range(len(z)):
-                        data[i, j] = z[i]
+                for ys in reversed(plot):
+                    _timeStamp, zs = split_spectrum(plot[ys])
+                    for i in range(len(zs)):
+                        c[j, i] = zs[i]
                     j += 1
 
-                self.plot = self.axes.pcolormesh(data.T,
+                self.plot = self.axes.pcolormesh(c,
                                                  cmap=cm.get_cmap('jet'),
                                                  gid="plot")
                 self.axes.grid(self.grid)
