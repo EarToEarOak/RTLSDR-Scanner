@@ -47,9 +47,10 @@ class Spectrogram:
         self.data = [[], [], []]
         self.index = 0
         self.figure = self.graph.get_figure()
+        self.grid = grid
+        self.lock = lock
         self.axes = None
         self.plot = None
-        self.lock = lock
         self.setup_plot()
         self.set_grid(grid)
         self.redraw_plot()
@@ -85,13 +86,15 @@ class Spectrogram:
             if self.settings.autoScale:
                 self.axes.set_ylim(auto=True)
                 self.axes.set_xlim(auto=True)
-                self.axes.relim()
-                self.axes.autoscale_view()
-                self.settings.yMin, self.settings.yMax = self.axes.get_ylim()
+                self.settings.yMin, self.settings.yMax = self.plot.get_clim()
             else:
                 self.axes.set_ylim(auto=False)
                 self.axes.set_xlim(auto=False)
-                self.axes.set_ylim(self.settings.yMin, self.settings.yMax)
+                self.plot.set_clim(self.settings.yMin, self.settings.yMax)
+
+        vmin, vmax = self.plot.get_clim()
+        self.barBase.set_clim(vmin, vmax)
+        self.barBase.draw_all()
 
     def redraw_plot(self):
         if os.name == "nt":
@@ -115,13 +118,13 @@ class Spectrogram:
                     for i in range(len(z)):
                         data[i, j] = z[i]
                     j += 1
+
                 self.plot = self.axes.pcolormesh(data.T,
                                                  cmap=cm.get_cmap('jet'),
                                                  gid="plot")
-                vmin, vmax = self.plot.get_clim()
-                self.barBase.set_clim(vmin, vmax)
-                self.barBase.draw_all()
+                self.axes.grid(self.grid)
 
+            self.scale_plot()
             self.redraw_plot()
 
     def annotate_plot(self):
@@ -136,6 +139,7 @@ class Spectrogram:
                         child.remove()
 
     def set_grid(self, on):
+        self.grid = on
         self.axes.grid(on)
         self.redraw_plot()
 
