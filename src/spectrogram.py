@@ -30,8 +30,7 @@ import time
 from matplotlib import cm
 from matplotlib.colorbar import ColorbarBase
 from matplotlib.colors import Normalize
-from matplotlib.dates import AutoDateFormatter, AutoDateLocator, DateFormatter, \
-    MinuteLocator
+from matplotlib.dates import DateFormatter
 from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 import wx
@@ -120,7 +119,7 @@ class Spectrogram:
             xMin = min(firstPlot[1])
             xMax = max(firstPlot[1])
             if total == 1:
-                timeMax += 60
+                timeMax += 10
             extent = [xMin, xMax,
                       epoch_to_mpl(timeMax), epoch_to_mpl(timeMin)]
             width = len(firstPlot[1])
