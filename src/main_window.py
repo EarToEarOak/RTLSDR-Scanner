@@ -387,11 +387,10 @@ class FrameMain(wx.Frame):
 
     def on_export(self, _event):
         dlg = wx.FileDialog(self, "Export a scan", self.dirname,
-                            self.filename + ".csv", File.CSV, wx.SAVE)
+                            self.filename + ".csv", File.CSV,
+                            wx.SAVE | wx.OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
             self.status.set_general("Exporting")
-            self.filename = dlg.GetFilename()
-            self.dirname = dlg.GetDirectory()
             export_plot(self.dirname, self.filename, self.spectrum)
             self.status.set_general("Finished")
         dlg.Destroy()
