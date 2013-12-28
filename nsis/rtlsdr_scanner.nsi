@@ -169,6 +169,7 @@ Section Uninstall
     Delete "$INSTDIR\uninst.exe"
     Delete "$INSTDIR\license.txt"
     Delete "$INSTDIR\windows.py"
+    Delete "$INSTDIR\spectrogram.py"
     Delete "$INSTDIR\settings.py"
     Delete "$INSTDIR\scan.py"
     Delete "$INSTDIR\rtltcp.py"
