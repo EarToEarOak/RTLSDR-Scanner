@@ -27,14 +27,15 @@ import os
 from threading import Thread
 
 from matplotlib import cm
+from matplotlib.colorbar import ColorbarBase
+from matplotlib.colors import Normalize
 from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
-import numpy
-from numpy.ma.bench import xs
 import wx
 
 from events import EventThreadStatus, Event
 from misc import split_spectrum
+import numpy as np
 from plot import thread_plot
 
 
@@ -45,24 +46,23 @@ class Spectrogram:
         self.graph = graph
         self.data = [[], [], []]
         self.index = 0
+        self.figure = self.graph.get_figure()
         self.axes = None
-        self.lock = lock
         self.plot = None
+        self.lock = lock
         self.setup_plot()
         self.set_grid(grid)
         self.redraw_plot()
 
     def setup_plot(self):
         gs = GridSpec(1, 2, width_ratios=[9.5, 0.5])
-        figure = self.graph.get_figure()
-        self.axes = figure.add_subplot(gs[0])
-        self.create_plot()
+        self.axes = self.figure.add_subplot(gs[0])
 
         if len(self.settings.devices) > 0:
             gain = self.settings.devices[self.settings.index].gain
         else:
             gain = 0
-        self.axes.set_title("Frequency Scan\n{0} - {1} MHz,"
+        self.axes.set_title("Frequency Spectrogram\n{0} - {1} MHz,"
                             " gain = {2}dB".format(self.settings.start,
                                                    self.settings.stop, gain))
         self.axes.set_xlabel("Frequency (MHz)")
@@ -72,19 +72,26 @@ class Spectrogram:
         self.axes.yaxis.set_major_formatter(formatter)
         self.axes.xaxis.set_minor_locator(AutoMinorLocator(10))
         self.axes.yaxis.set_minor_locator(AutoMinorLocator(10))
-        self.axes.set_xlim(self.settings.start, self.settings.stop)
-        self.axes.set_ylim(-50, 0)
+#         self.axes.set_xlim(self.settings.start, self.settings.stop)
 
-        self.bar = figure.add_subplot(gs[1])
-        figure.colorbar(self.plot, cax=self.bar)
-        self.bar.set_ylabel('Level (dB)')
+        self.bar = self.figure.add_subplot(gs[1])
+        norm = Normalize(vmin=-50, vmax=0)
+        self.barBase = ColorbarBase(self.bar, norm=norm,
+                                    cmap=cm.get_cmap('jet'))
+        self.barBase.set_label('Level (dB)')
 
     def scale_plot(self):
-        pass
-
-    def create_plot(self):
         with self.lock:
-            self.plot = self.axes.pcolormesh(numpy.array(self.data), vmin=-50, vmax=0)
+            if self.settings.autoScale:
+                self.axes.set_ylim(auto=True)
+                self.axes.set_xlim(auto=True)
+                self.axes.relim()
+                self.axes.autoscale_view()
+                self.settings.yMin, self.settings.yMax = self.axes.get_ylim()
+            else:
+                self.axes.set_ylim(auto=False)
+                self.axes.set_xlim(auto=False)
+                self.axes.set_ylim(self.settings.yMin, self.settings.yMax)
 
     def redraw_plot(self):
         if os.name == "nt":
@@ -93,27 +100,40 @@ class Spectrogram:
         else:
             wx.PostEvent(self.notify, EventThreadStatus(Event.DRAW))
 
-    def set_plot(self, plot):
-        # TODO:
-        pass
+    def set_plot(self, plot, _annotate):
+        total = len(plot)
 
-    def new_plot(self):
-        self.index += 1
+        if total > 0:
+            timeStamp = min(plot)
+            width = len(plot[timeStamp])
+            data = np.ma.masked_all((width, 10))
+            self.clear_plots()
+            with self.lock:
+                j = 0
+                for timeStamp in reversed(plot):
+                    _x, z = split_spectrum(plot[timeStamp])
+                    for i in range(len(z)):
+                        data[i, j] = z[i]
+                    j += 1
+                self.plot = self.axes.pcolormesh(data.T,
+                                                 cmap=cm.get_cmap('jet'),
+                                                 gid="plot")
+                vmin, vmax = self.plot.get_clim()
+                self.barBase.set_clim(vmin, vmax)
+                self.barBase.draw_all()
+
+            self.redraw_plot()
 
     def annotate_plot(self):
         pass
 
     def clear_plots(self):
         with self.lock:
-            self.data = [[], [], []]
-            self.index = 0
             children = self.axes.get_children()
             for child in children:
                 if child.get_gid() is not None:
-                    if child.get_gid() == "spec" :
+                    if child.get_gid() == "plot":
                         child.remove()
-
-        self.create_plot()
 
     def set_grid(self, on):
         self.axes.grid(on)

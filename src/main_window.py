@@ -161,11 +161,12 @@ class FrameMain(wx.Frame):
         self.panel = wx.Panel(panel)
         self.graph = PanelGraph(panel, self)
 
-        if self.settings.display == Display.PLOT:
-            self.plot = Plotter(self, self.graph, self.settings, self.grid,
-                                self.lock)
-        else:
-            self.plot = Spectrogram(self, self.graph, self.settings, self.lock)
+#         if self.settings.display == Display.PLOT:
+#             self.plot = Plotter(self, self.graph, self.settings, self.grid,
+#                                 self.lock)
+#         else:
+#             self.plot = Spectrogram(self, self.graph, self.settings, self.grid, self.lock)
+        self.plot = Spectrogram(self, self.graph, self.settings, self.grid, self.lock)
 
         self.buttonStart = wx.Button(self.panel, wx.ID_ANY, 'Start')
         self.buttonStop = wx.Button(self.panel, wx.ID_ANY, 'Stop')
