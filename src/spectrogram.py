@@ -25,18 +25,20 @@
 
 import os
 from threading import Thread
+import time
 
 from matplotlib import cm
 from matplotlib.colorbar import ColorbarBase
 from matplotlib.colors import Normalize
+from matplotlib.dates import AutoDateFormatter, AutoDateLocator, DateFormatter, \
+    MinuteLocator
 from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 import wx
 
 from events import EventThreadStatus, Event
-from misc import split_spectrum
+from misc import split_spectrum, epoch_to_mpl
 import numpy as np
-from plot import thread_plot
 
 
 class Spectrogram:
@@ -68,12 +70,16 @@ class Spectrogram:
                                                    self.settings.stop, gain))
         self.axes.set_xlabel("Frequency (MHz)")
         self.axes.set_ylabel('Time')
-        formatter = ScalarFormatter(useOffset=False)
-        self.axes.xaxis.set_major_formatter(formatter)
-        self.axes.yaxis.set_major_formatter(formatter)
+        numFormatter = ScalarFormatter(useOffset=False)
+        timeFormatter = DateFormatter("%H:%M:%S")
+
+        self.axes.xaxis.set_major_formatter(numFormatter)
+        self.axes.yaxis.set_major_formatter(timeFormatter)
         self.axes.xaxis.set_minor_locator(AutoMinorLocator(10))
         self.axes.yaxis.set_minor_locator(AutoMinorLocator(10))
         self.axes.set_xlim(self.settings.start, self.settings.stop)
+        now = time.time()
+        self.axes.set_ylim(epoch_to_mpl(now), epoch_to_mpl(now - 10))
 
         self.bar = self.figure.add_subplot(gs[1])
         norm = Normalize(vmin=-50, vmax=0)
@@ -114,8 +120,9 @@ class Spectrogram:
             xMin = min(firstPlot[1])
             xMax = max(firstPlot[1])
             if total == 1:
-                timeMax += 1
-            extent = [xMin, xMax, timeMax, timeMin]
+                timeMax += 60
+            extent = [xMin, xMax,
+                      epoch_to_mpl(timeMax), epoch_to_mpl(timeMin)]
             width = len(firstPlot[1])
 
             c = np.ma.masked_all((10, width))

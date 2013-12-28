@@ -23,9 +23,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import cPickle
+import datetime
 import json
 import os
 
+from matplotlib.dates import date2num
 import wx
 
 from constants import SAMPLE_RATE, File
@@ -223,6 +225,11 @@ def calc_real_dwell(dwell):
 def nearest(value, values):
     offset = [abs(value - v) for v in values]
     return values[offset.index(min(offset))]
+
+
+def epoch_to_mpl(epoch):
+    dt = datetime.datetime.fromtimestamp(epoch)
+    return date2num(dt)
 
 if __name__ == '__main__':
     print 'Please run rtlsdr_scan.py'
