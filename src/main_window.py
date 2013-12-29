@@ -203,6 +203,8 @@ class FrameMain(wx.Frame):
         textDisplay = wx.StaticText(self.panel, label="Display")
         self.choiceDisplay = wx.Choice(self.panel, choices=DISPLAY[::2])
         self.Bind(wx.EVT_CHOICE, self.on_choice, self.choiceDisplay)
+        self.choiceDisplay.SetToolTip(wx.ToolTip('Spectrogram available in'
+                                                 'continuous mode'))
 
         self.set_controls()
 
@@ -324,7 +326,8 @@ class FrameMain(wx.Frame):
             self.plot = Plotter(self, self.graph, self.settings, self.grid,
                                 self.lock)
         else:
-            self.plot = Spectrogram(self, self.graph, self.settings, self.grid, self.lock)
+            self.plot = Spectrogram(self, self.graph, self.settings, self.grid,
+                                    self.lock)
 
     def create_popup_menu(self):
         self.popupMenu = wx.Menu()
@@ -446,14 +449,18 @@ class FrameMain(wx.Frame):
     def on_choice(self, event):
         control = event.GetEventObject()
         if control == self.choiceMode:
-            if self.choiceMode.GetSelection() == Display.PLOT:
+            if self.choiceMode.GetSelection() == Mode.SINGLE:
                 self.choiceDisplay.Enable(False)
-                self.choiceDisplay
+                self.choiceDisplay.SetSelection(Display.PLOT)
+                self.get_controls()
+                self.create_plot()
             else:
                 self.choiceDisplay.Enable(True)
         elif control == self.choiceDisplay:
             self.get_controls()
             self.create_plot()
+
+        self.plot.set_plot(self.spectrum, self.settings.annotate)
 
     def on_start(self, _event):
         if self.settings.start >= self.settings.stop:
