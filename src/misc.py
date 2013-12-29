@@ -31,7 +31,6 @@ from matplotlib.dates import date2num
 import wx
 
 from constants import SAMPLE_RATE, File
-from collections import OrderedDict
 
 
 class ScanInfo():
@@ -80,7 +79,7 @@ def open_plot(dirname, filename):
     lo = None
     calibration = None
     tuner = 0
-    spectrum = OrderedDict()
+    spectrum = {}
     time = None
     lat = None
     lon = None

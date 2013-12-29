@@ -113,22 +113,22 @@ class Spectrogram:
         total = len(plot)
 
         if total > 0:
-            firstPlot = plot.items()[0]
-            timeMin = firstPlot[0]
-            timeMax = plot.items()[len(plot) - 1][0]
-            xMin = min(firstPlot[1])
-            xMax = max(firstPlot[1])
+            timeMin = min(plot)
+            timeMax = max(plot)
+            plotFirst = plot[timeMin]
+            xMin = min(plotFirst)
+            xMax = max(plotFirst)
+            width = len(plotFirst)
             if total == 1:
                 timeMax += 1
             extent = [xMin, xMax,
                       epoch_to_mpl(timeMax), epoch_to_mpl(timeMin)]
-            width = len(firstPlot[1])
 
             c = np.ma.masked_all((self.settings.retainMax, width))
             self.clear_plots()
             with self.lock:
                 j = self.settings.retainMax
-                for ys in reversed(plot):
+                for ys in reversed(sorted(plot)):
                     j -= 1
                     _xs, zs = split_spectrum(plot[ys])
                     for i in range(len(zs)):

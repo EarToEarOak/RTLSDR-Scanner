@@ -95,7 +95,7 @@ class Plotter():
             self.clear_plots()
             count = 1.0
             with self.lock:
-                for timeStamp in plot:
+                for timeStamp in sorted(plot):
                     xs, ys = split_spectrum(plot[timeStamp])
                     alpha = count / total
                     self.axes.plot(xs, ys, linewidth=0.4, gid="plot",

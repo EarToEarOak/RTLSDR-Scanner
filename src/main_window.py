@@ -22,7 +22,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from collections import OrderedDict
 
 try:
     input = raw_input
@@ -126,7 +125,7 @@ class FrameMain(wx.Frame):
         self.filename = ""
         self.dirname = "."
 
-        self.spectrum = OrderedDict()
+        self.spectrum = {}
         self.scanInfo = ScanInfo()
         self.isSaved = True
 
