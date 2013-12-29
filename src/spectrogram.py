@@ -86,15 +86,14 @@ class Spectrogram:
                                     cmap=cm.get_cmap('jet'))
         self.barBase.set_label('Level (dB)')
 
-    def scale_plot(self):
+    def scale_plot(self, force=False):
         with self.lock:
-            if self.settings.autoScale:
-                self.axes.set_ylim(auto=True)
-                self.axes.set_xlim(auto=True)
+            if self.settings.autoScale or force:
+                extent = self.plot.get_extent()
+                self.axes.set_xlim(extent[0], extent[1])
+                self.axes.set_ylim(extent[2], extent[3])
                 self.settings.yMin, self.settings.yMax = self.plot.get_clim()
             else:
-                self.axes.set_ylim(auto=False)
-                self.axes.set_xlim(auto=False)
                 self.plot.set_clim(self.settings.yMin, self.settings.yMax)
 
         vmin, vmax = self.plot.get_clim()

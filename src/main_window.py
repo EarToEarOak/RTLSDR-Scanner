@@ -561,8 +561,8 @@ class FrameMain(wx.Frame):
             self.isSaved = True
             self.set_controls()
             self.set_control_state(True)
-            self.plot.clear_plots()
             self.plot.set_plot(spectrum, self.settings.annotate)
+            self.plot.scale_plot(True)
             self.status.set_general("Finished")
             self.settings.fileHistory.AddFileToHistory(os.path.join(dirname,
                                                                     filename))

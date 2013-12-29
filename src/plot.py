@@ -68,9 +68,9 @@ class Plotter():
         self.axes.set_xlim(self.settings.start, self.settings.stop)
         self.axes.set_ylim(-50, 0)
 
-    def scale_plot(self):
+    def scale_plot(self, force=False):
         with self.lock:
-            if self.settings.autoScale:
+            if self.settings.autoScale or force:
                 self.axes.set_ylim(auto=True)
                 self.axes.set_xlim(auto=True)
                 self.axes.relim()
