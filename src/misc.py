@@ -31,6 +31,7 @@ from matplotlib.dates import date2num
 import wx
 
 from constants import SAMPLE_RATE, File
+from collections import OrderedDict
 
 
 class ScanInfo():
@@ -79,7 +80,7 @@ def open_plot(dirname, filename):
     lo = None
     calibration = None
     tuner = 0
-    spectrum = {}
+    spectrum = OrderedDict()
     time = None
     lat = None
     lon = None
@@ -92,13 +93,16 @@ def open_plot(dirname, filename):
         header = cPickle.load(handle)
     except cPickle.UnpicklingError:
         pickle = False
+    except EOFError:
+        pickle = False
 
     if pickle:
         try:
             _version = cPickle.load(handle)
             start = cPickle.load(handle)
             stop = cPickle.load(handle)
-            spectrum = cPickle.load(handle)
+            spectrum[0] = {}
+            spectrum[0] = cPickle.load(handle)
         except pickle.PickleError:
             error = True
     else:
@@ -129,9 +133,9 @@ def open_plot(dirname, filename):
                     spectrum[0][float(f)] = p
             else:
                 for t, s in data[1]['Spectrum'].iteritems():
-                    spectrum[t] = {}
+                    spectrum[float(t)] = {}
                     for f, p in s.iteritems():
-                        spectrum[t][float(f)] = p
+                        spectrum[float(t)][float(f)] = p
 
         except ValueError:
             error = True
