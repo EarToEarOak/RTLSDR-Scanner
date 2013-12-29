@@ -54,6 +54,9 @@ DWELL = ["16 ms", 0.016,
          "2 s", 2,
          "8 s", 8]
 
+DISPLAY = ["Plot", 0,
+           "Spectrogram", 1]
+
 TUNER = ["Unknown",
          "Elonics E4000",
          "Fitipower FC0012",

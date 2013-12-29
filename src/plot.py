@@ -40,6 +40,7 @@ class Plotter():
         self.settings = settings
         self.graph = graph
         self.lock = lock
+        self.figure = self.graph.get_figure()
         self.axes = None
         self.currentPlot = None
         self.setup_plot()
@@ -47,7 +48,7 @@ class Plotter():
         self.redraw_plot()
 
     def setup_plot(self):
-        self.axes = self.graph.get_figure().add_subplot(111)
+        self.axes = self.figure.add_subplot(111)
 
         if len(self.settings.devices) > 0:
             gain = self.settings.devices[self.settings.index].gain
@@ -162,6 +163,9 @@ class Plotter():
     def set_grid(self, on):
         self.axes.grid(on)
         self.redraw_plot()
+
+    def close(self):
+        self.figure.clear()
 
 
 def thread_plot(graph, lock):

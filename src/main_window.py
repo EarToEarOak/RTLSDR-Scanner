@@ -87,6 +87,8 @@ class FrameMain(wx.Frame):
         self.sdr = None
         self.threadScan = None
 
+        self.plot = None
+
         self.stopAtEnd = False
         self.stopScan = False
 
@@ -161,12 +163,7 @@ class FrameMain(wx.Frame):
         self.panel = wx.Panel(panel)
         self.graph = PanelGraph(panel, self)
 
-#         if self.settings.display == Display.PLOT:
-#             self.plot = Plotter(self, self.graph, self.settings, self.grid,
-#                                 self.lock)
-#         else:
-#             self.plot = Spectrogram(self, self.graph, self.settings, self.grid, self.lock)
-        self.plot = Spectrogram(self, self.graph, self.settings, self.grid, self.lock)
+        self.create_plot()
 
         self.buttonStart = wx.Button(self.panel, wx.ID_ANY, 'Start')
         self.buttonStop = wx.Button(self.panel, wx.ID_ANY, 'Stop')
@@ -192,6 +189,7 @@ class FrameMain(wx.Frame):
         textMode = wx.StaticText(self.panel, label="Mode")
         self.choiceMode = wx.Choice(self.panel, choices=MODE[::2])
         self.choiceMode.SetToolTip(wx.ToolTip('Scanning mode'))
+        self.Bind(wx.EVT_CHOICE, self.on_choice, self.choiceMode)
 
         textDwell = wx.StaticText(self.panel, label="Dwell")
         self.choiceDwell = wx.Choice(self.panel, choices=DWELL[::2])
@@ -201,6 +199,11 @@ class FrameMain(wx.Frame):
         self.choiceNfft = wx.Choice(self.panel, choices=map(str, NFFT))
         self.choiceNfft.SetToolTip(wx.ToolTip('Higher values for greater'
                                               'precision'))
+
+        textDisplay = wx.StaticText(self.panel, label="Display")
+        self.choiceDisplay = wx.Choice(self.panel, choices=DISPLAY[::2])
+        self.Bind(wx.EVT_CHOICE, self.on_choice, self.choiceDisplay)
+
         self.set_controls()
 
         grid = wx.GridBagSizer(5, 5)
@@ -228,6 +231,11 @@ class FrameMain(wx.Frame):
 
         grid.Add(textNfft, pos=(0, 10), flag=wx.ALIGN_CENTER)
         grid.Add(self.choiceNfft, pos=(1, 10), flag=wx.ALIGN_CENTER)
+
+        grid.Add((20, 1), pos=(0, 11))
+
+        grid.Add(textDisplay, pos=(0, 12), flag=wx.ALIGN_CENTER)
+        grid.Add(self.choiceDisplay, pos=(1, 12), flag=wx.ALIGN_CENTER)
 
         self.panel.SetSizer(grid)
 
@@ -307,6 +315,16 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_help, id=idF1)
         accelTable = wx.AcceleratorTable([(wx.ACCEL_NORMAL, wx.WXK_F1, idF1)])
         self.SetAcceleratorTable(accelTable)
+
+    def create_plot(self):
+        if self.plot is not None:
+            self.plot.close()
+
+        if self.settings.display == Display.PLOT:
+            self.plot = Plotter(self, self.graph, self.settings, self.grid,
+                                self.lock)
+        else:
+            self.plot = Spectrogram(self, self.graph, self.settings, self.grid, self.lock)
 
     def create_popup_menu(self):
         self.popupMenu = wx.Menu()
@@ -424,6 +442,18 @@ class FrameMain(wx.Frame):
         if control == self.spinCtrlStart:
             self.spinCtrlStop.SetRange(self.spinCtrlStart.GetValue() + 1,
                                           F_MAX)
+
+    def on_choice(self, event):
+        control = event.GetEventObject()
+        if control == self.choiceMode:
+            if self.choiceMode.GetSelection() == Display.PLOT:
+                self.choiceDisplay.Enable(False)
+                self.choiceDisplay
+            else:
+                self.choiceDisplay.Enable(True)
+        elif control == self.choiceDisplay:
+            self.get_controls()
+            self.create_plot()
 
     def on_start(self, _event):
         if self.settings.start >= self.settings.stop:
@@ -637,13 +667,8 @@ class FrameMain(wx.Frame):
         self.stopScan = True
 
     def limit_spectrum(self):
-        if self.settings.display == Display.PLOT:
-            limit = self.settings.fadeMax
-        else:
-            limit = self.settings.spectMax
-
         with self.lock:
-            while len(self.spectrum) >= limit:
+            while len(self.spectrum) >= self.settings.retainMax:
                 timeStamp = min(self.spectrum)
                 del self.spectrum[timeStamp]
 
@@ -659,17 +684,19 @@ class FrameMain(wx.Frame):
         self.menuSave.Enable(state and len(self.spectrum) > 0)
         self.menuExport.Enable(state and len(self.spectrum) > 0)
         self.menuStart.Enable(state)
-        self.popupMenuStart.Enable(state)
         self.menuStop.Enable(not state)
+        self.menuPref.Enable(state)
+        self.menuCal.Enable(state)
         self.popupMenuStop.Enable(not state)
+        self.popupMenuStart.Enable(state)
         if self.settings.mode == Mode.CONTIN:
             self.menuStopEnd.Enable(not state)
             self.popupMenuStopEnd.Enable(not state)
+            self.choiceDisplay.Enable(True)
         else:
             self.menuStopEnd.Enable(False)
             self.popupMenuStopEnd.Enable(False)
-        self.menuPref.Enable(state)
-        self.menuCal.Enable(state)
+            self.choiceDisplay.Enable(False)
 
     def set_controls(self):
         self.spinCtrlStart.SetValue(self.settings.start)
@@ -678,6 +705,7 @@ class FrameMain(wx.Frame):
         dwell = calc_real_dwell(self.settings.dwell)
         self.choiceDwell.SetSelection(DWELL[1::2].index(dwell))
         self.choiceNfft.SetSelection(NFFT.index(self.settings.nfft))
+        self.choiceDisplay.SetSelection(DISPLAY[1::2].index(self.settings.display))
 
     def get_controls(self):
         self.settings.start = self.spinCtrlStart.GetValue()
@@ -685,6 +713,7 @@ class FrameMain(wx.Frame):
         self.settings.mode = MODE[1::2][self.choiceMode.GetSelection()]
         self.settings.dwell = DWELL[1::2][self.choiceDwell.GetSelection()]
         self.settings.nfft = NFFT[self.choiceNfft.GetSelection()]
+        self.settings.display = DISPLAY[1::2][self.choiceDisplay.GetSelection()]
 
     def save_warn(self, warnType):
         if self.settings.saveWarn and not self.isSaved:

@@ -107,6 +107,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
 
         self.AddSeparator()
 
+        # TODO: bitmaps
         autoId = wx.NewId()
         self.AddCheckTool(autoId, _load_bitmap('hand.png'),
                           shortHelp='Auto range',
@@ -853,7 +854,7 @@ class DialogPrefs(wx.Dialog):
                                  label="Max scans")
         self.spinCtrlMaxScans = wx.SpinCtrl(self)
         self.spinCtrlMaxScans.SetRange(2, 500)
-        self.spinCtrlMaxScans.SetValue(self.settings.fadeMax)
+        self.spinCtrlMaxScans.SetValue(self.settings.retainMax)
         self.spinCtrlMaxScans.SetToolTip(wx.ToolTip('Maximum previous scans to display'))
 
         self.on_check(None)
@@ -996,7 +997,7 @@ class DialogPrefs(wx.Dialog):
         self.settings.annotate = self.checkAnnotate.GetValue()
         self.settings.retainScans = self.checkRetain.GetValue()
         self.settings.fadeScans = self.checkFade.GetValue()
-        self.settings.fadeMax = self.spinCtrlMaxScans.GetValue()
+        self.settings.retainMax = self.spinCtrlMaxScans.GetValue()
         for i in range(0, self.gridDev.GetNumberRows()):
             if not self.devices[i].isDevice:
                 server = self.gridDev.GetCellValue(i, self.COL_DEV)

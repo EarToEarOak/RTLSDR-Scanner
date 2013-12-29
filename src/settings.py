@@ -41,10 +41,8 @@ class Settings():
         self.annotate = True
 
         self.retainScans = False
+        self.retainMax = 20
         self.fadeScans = True
-        self.fadeMax = 5
-
-        self.specMax = 100
 
         self.start = 87
         self.stop = 108
@@ -66,13 +64,13 @@ class Settings():
     def load(self):
         servers = 0
         self.cfg = wx.Config('rtlsdr-scanner')
+        self.display = self.cfg.ReadInt('display', self.display)
         self.saveWarn = self.cfg.ReadBool('saveWarn', self.saveWarn)
         self.fileHistory.Load(self.cfg)
         self.annotate = self.cfg.ReadBool('annotate', self.annotate)
         self.retainScans = self.cfg.ReadBool('retainScans', self.retainScans)
         self.fadeScans = self.cfg.ReadBool('fadeScans', self.fadeScans)
-        self.fadeMax = self.cfg.ReadInt('fadeMax', self.fadeMax)
-        self.specMax = self.cfg.ReadInt('specMax', self.specMax)
+        self.retainMax = self.cfg.ReadInt('retainMax', self.retainMax)
         self.start = self.cfg.ReadInt('start', self.start)
         self.stop = self.cfg.ReadInt('stop', self.stop)
         self.mode = self.cfg.ReadInt('mode', self.mode)
@@ -115,13 +113,13 @@ class Settings():
 
     def save(self):
         self.cfg.SetPath("/")
+        self.cfg.WriteInt('display', self.display)
         self.cfg.WriteBool('saveWarn', self.saveWarn)
         self.fileHistory.Save(self.cfg)
         self.cfg.WriteBool('annotate', self.annotate)
         self.cfg.WriteBool('retainScans', self.retainScans)
         self.cfg.WriteBool('fadeScans', self.fadeScans)
-        self.cfg.WriteInt('fadeMax', self.fadeMax)
-        self.cfg.WriteInt('specMax', self.specMax)
+        self.cfg.WriteInt('retainMax', self.retainMax)
         self.cfg.WriteInt('start', self.start)
         self.cfg.WriteInt('stop', self.stop)
         self.cfg.WriteInt('mode', self.mode)

@@ -124,7 +124,7 @@ class Spectrogram:
                       epoch_to_mpl(timeMax), epoch_to_mpl(timeMin)]
             width = len(firstPlot[1])
 
-            c = np.ma.masked_all((10, width))
+            c = np.ma.masked_all((self.settings.retainMax, width))
             self.clear_plots()
             with self.lock:
                 j = 10
@@ -158,6 +158,9 @@ class Spectrogram:
         self.grid = on
         self.axes.grid(on)
         self.redraw_plot()
+
+    def close(self):
+        self.figure.clear()
 
 
 def thread_plot(graph, lock):
