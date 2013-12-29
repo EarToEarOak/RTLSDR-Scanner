@@ -203,24 +203,6 @@ class FrameMain(wx.Frame):
                                               'precision'))
         self.set_controls()
 
-        self.checkAuto = wx.CheckBox(self.panel, wx.ID_ANY,
-                                        "Auto range")
-        self.checkAuto.SetToolTip(wx.ToolTip('Scale the axes to fit all data'))
-        self.checkAuto.SetValue(self.settings.autoScale)
-        self.Bind(wx.EVT_CHECKBOX, self.on_check_auto, self.checkAuto)
-
-        self.checkUpdate = wx.CheckBox(self.panel, wx.ID_ANY,
-                                        "Live update")
-        self.checkUpdate.SetToolTip(wx.ToolTip('Update polot with live '
-                                               'samples (experimental)'))
-        self.checkUpdate.SetValue(self.settings.liveUpdate)
-        self.Bind(wx.EVT_CHECKBOX, self.on_check_update, self.checkUpdate)
-
-        self.checkGrid = wx.CheckBox(self.panel, wx.ID_ANY, "Grid")
-        self.checkGrid.SetToolTip(wx.ToolTip('Draw grid'))
-        self.checkGrid.SetValue(self.grid)
-        self.Bind(wx.EVT_CHECKBOX, self.on_check_grid, self.checkGrid)
-
         grid = wx.GridBagSizer(5, 5)
 
         grid.Add(self.buttonStart, pos=(0, 0), span=(3, 1),
@@ -246,12 +228,6 @@ class FrameMain(wx.Frame):
 
         grid.Add(textNfft, pos=(0, 10), flag=wx.ALIGN_CENTER)
         grid.Add(self.choiceNfft, pos=(1, 10), flag=wx.ALIGN_CENTER)
-
-        grid.Add((20, 1), pos=(0, 11))
-
-        grid.Add(self.checkAuto, pos=(0, 12), flag=wx.ALIGN_CENTER_VERTICAL)
-        grid.Add(self.checkUpdate, pos=(1, 12), flag=wx.ALIGN_CENTER_VERTICAL)
-        grid.Add(self.checkGrid, pos=(2, 12), flag=wx.ALIGN_CENTER_VERTICAL)
 
         self.panel.SetSizer(grid)
 
@@ -473,16 +449,6 @@ class FrameMain(wx.Frame):
 
     def on_stop_end(self, _event):
         self.stopAtEnd = True
-
-    def on_check_auto(self, _event):
-        self.settings.autoScale = self.checkAuto.GetValue()
-
-    def on_check_update(self, _event):
-        self.settings.liveUpdate = self.checkUpdate.GetValue()
-
-    def on_check_grid(self, _event):
-        self.grid = self.checkGrid.GetValue()
-        self.plot.set_grid(self.grid)
 
     def on_event(self, event):
         status = event.data.get_status()

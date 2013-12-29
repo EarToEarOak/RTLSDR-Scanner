@@ -97,14 +97,36 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
     def __init__(self, canvas, main):
         self.main = main
 
-        navId = wx.NewId()
         NavigationToolbar2WxAgg.__init__(self, canvas)
-#         self.DeleteTool(self.wx_ids['Back'])
-#         self.DeleteTool(self.wx_ids['Forward'])
-#         self.DeleteTool(self.wx_ids['Subplots'])
+        self.AddSeparator()
+
+        navId = wx.NewId()
         self.AddSimpleTool(navId, _load_bitmap('hand.png'),
                            'Range', 'Set plot range')
         wx.EVT_TOOL(self, navId, self.on_range)
+
+        self.AddSeparator()
+
+        autoId = wx.NewId()
+        self.AddCheckTool(autoId, _load_bitmap('hand.png'),
+                          shortHelp='Auto range',
+                          longHelp='Scale plot to all measurements')
+        self.ToggleTool(autoId, self.main.settings.autoScale)
+        wx.EVT_TOOL(self, autoId, self.on_check_auto)
+
+        liveId = wx.NewId()
+        self.AddCheckTool(liveId, _load_bitmap('hand.png'),
+                          shortHelp='Live update',
+                          longHelp='Update plot in realtime (slow)')
+        self.ToggleTool(liveId, self.main.settings.liveUpdate)
+        wx.EVT_TOOL(self, liveId, self.on_check_update)
+
+        gridId = wx.NewId()
+        self.AddCheckTool(gridId, _load_bitmap('hand.png'),
+                          shortHelp='Grid',
+                          longHelp='Toggle grid')
+        self.ToggleTool(gridId, self.main.grid)
+        wx.EVT_TOOL(self, gridId, self.on_check_grid)
 
     def on_range(self, _event):
         dlg = DialogRange(self, self.main)
@@ -112,6 +134,17 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
             self.main.plot.scale_plot()
             self.main.plot.redraw_plot()
         dlg.Destroy()
+
+    def on_check_auto(self, event):
+        self.main.settings.autoScale = event.Checked()
+        self.main.plot.redraw_plot()
+
+    def on_check_update(self, event):
+        self.main.settings.liveUpdate = event.Checked()
+
+    def on_check_grid(self, event):
+        self.grid = event.Checked()
+        self.main.plot.set_grid(self.grid)
 
 
 class NavigationToolbarCompare(NavigationToolbar2WxAgg):
