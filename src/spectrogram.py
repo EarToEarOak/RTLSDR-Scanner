@@ -119,7 +119,7 @@ class Spectrogram:
             xMin = min(firstPlot[1])
             xMax = max(firstPlot[1])
             if total == 1:
-                timeMax += 10
+                timeMax += 1
             extent = [xMin, xMax,
                       epoch_to_mpl(timeMax), epoch_to_mpl(timeMin)]
             width = len(firstPlot[1])
@@ -127,7 +127,7 @@ class Spectrogram:
             c = np.ma.masked_all((self.settings.retainMax, width))
             self.clear_plots()
             with self.lock:
-                j = 10
+                j = self.settings.retainMax
                 for ys in reversed(plot):
                     j -= 1
                     _xs, zs = split_spectrum(plot[ys])
