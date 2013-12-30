@@ -31,6 +31,8 @@
 !include "nsDialogs_createTextMultiline.nsh"
 !include "fileassoc.nsh"
 
+!define INSTALLER_VERSION "1"
+
 !define PRODUCT_NAME "RTLSDR Scanner"
 !define PRODUCT_VERSION ""
 !define PRODUCT_PUBLISHER "Ear to Ear Oak"
@@ -45,6 +47,7 @@
 !define MUI_ICON "rtlsdr_scan.ico"
 !define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
 !insertmacro MUI_PAGE_WELCOME
+Page custom page_update
 Page custom page_info
 !insertmacro MUI_PAGE_LICENSE "license.txt"
 Page custom page_type page_type_end
@@ -57,11 +60,17 @@ Page custom page_type page_type_end
 
 !define TYPE_FULL "Full"
 !define TYPE_UPDATE "Update"
-!define INFO '"This will install RTLSDR Scanner and its Python dependencies $\r$\n$\r$\n \
-When asked it is recommended to use the default options for all software $\r$\n$\r$\n \
-It will add the new installation of Python to the path, potentially causing problems $\r$\n \
-to previous Python installs $\r$\n$\r$\n \
-You can update to the latest versions of RTLSDR-Scanner, $\r$\n \
+!define UPDATE_CHECK '"Checking for updates..."'
+!define UPDATE_PROBLEM '"There was a problem checking for an updated installer"'
+!define UPDATE_NONE '"You are using an up to date installer"'
+!define UPDATE_FOUND '"An updated installer is available at: $\r$\n$\r$\n\
+http://sourceforge.net/projects/rtlsdrscanner/files/latest/download $\r$\n$\r$\n\
+Updating is highly recommended"'
+!define INFO '"This will install RTLSDR Scanner and its Python dependencies $\r$\n$\r$\n\
+When asked it is recommended to use the default options for all software $\r$\n$\r$\n\
+It will add the new installation of Python to the path, potentially causing problems $\r$\n\
+to previous Python installs $\r$\n$\r$\n\
+You can update to the latest versions of RTLSDR-Scanner, $\r$\n\
 the rtlsdr driver and pyrtlsdr by running this installer again $\r$\n"'
 
 !define FILE_CLASS "RTLSDRScanner.Scan"
@@ -76,11 +85,14 @@ InstallDir "$PROGRAMFILES\RTLSDR Scanner"
 ShowInstDetails show
 ShowUnInstDetails show
 
+Var Version
 Var Type
 Var Page
 Var Text
 Var Radio1
 Var Radio2
+Var UpdateText
+Var UpdateNext
 
 Section "RTLSDR Scanner (Required)" SEC_SCAN
     SetOutPath "$INSTDIR"
@@ -220,6 +232,23 @@ Function .onInit
     SectionSetFlags ${SEC_SCAN} $0
 FunctionEnd
 
+Function page_update
+    !insertmacro MUI_HEADER_TEXT "Updates" "Checking for installer updates"
+
+    nsDialogs::Create 1018
+    Pop $Page
+    ${If} $Page == error
+        Abort
+    ${EndIf}
+    ${NSD_CreateTextMultiline} 0 0% 100% 100% ${UPDATE_CHECK}
+    Pop $UpdateText
+        SendMessage $Text ${EM_SETREADONLY} 1 0
+    GetDlgItem $UpdateNext $HWNDPARENT 1
+    EnableWindow $UpdateNext 0
+    ${NSD_CreateTimer} update_check 1000
+    nsDialogs::Show
+FunctionEnd
+
 Function page_info
     !insertmacro MUI_HEADER_TEXT "Information" "Please read before continuing"
     nsDialogs::Create 1018
@@ -269,6 +298,29 @@ Function page_type_end
         !insertmacro SelectSection ${SEC_RTLSDR}
         !insertmacro SelectSection ${SEC_PYRTLSDR}
     ${EndIf}
+FunctionEnd
+
+Function update_check
+    ${NSD_KillTimer} update_check
+    inetc::get "https://raw.github.com/EarToEarOak/RTLSDR-Scanner/master/nsis/_version" "$TEMP\_version" /end
+    ${If} ${FileExists} "$TEMP\_version"
+        FileOpen $0 "$TEMP\_version" r
+        FileRead $0 $Version
+        FileClose $0
+        Delete "$TEMP\_version"
+        ${If} $Version > ${INSTALLER_VERSION}
+            ${NSD_SetText} $UpdateText ${UPDATE_FOUND}
+            MessageBox MB_YESNO "Installer update found, download now (recommended)?" IDYES download IDNO skip
+            download:
+                ExecShell "open" "http://sourceforge.net/projects/rtlsdrscanner/files/latest/download"
+            skip:
+        ${Else}
+            ${NSD_SetText} $UpdateText ${UPDATE_NONE}
+        ${EndIf}
+    ${Else}
+        ${NSD_SetText} $UpdateText ${UPDATE_PROBLEM}
+    ${EndIf}
+    EnableWindow $UpdateNext 1
 FunctionEnd
 
 Function get_rtlsdr_scanner
