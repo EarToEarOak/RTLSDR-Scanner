@@ -80,8 +80,7 @@ Var Type
 Var Page
 Var Text
 Var Radio1
-Var radio2
-
+Var Radio2
 
 Section "RTLSDR Scanner (Required)" SEC_SCAN
     SetOutPath "$INSTDIR"
@@ -182,6 +181,14 @@ Section Uninstall
     Delete "$INSTDIR\devices.py"
     Delete "$INSTDIR\constants.py"
     Delete "$INSTDIR\cli.py"
+    Delete "$INSTDIR\res\range.png"
+    Delete "$INSTDIR\res\grid.png"
+    Delete "$INSTDIR\res\auto_refresh.png"
+    Delete "$INSTDIR\res\auto_range.png"
+    Delete "$INSTDIR\*.pyc"
+    Delete "$INSTDIR\libusb-1.0.dll"
+    Delete "$INSTDIR\pthreadVC2-w32.dll"
+    Delete "$INSTDIR\rtlsdr.dll"
 
     ; Obsolete
     Delete "$INSTDIR\threads.py"
@@ -194,6 +201,8 @@ Section Uninstall
     Delete "$SMPROGRAMS\RTLSDR Scanner\RTLSDR Scanner.lnk"
 
     RMDir "$SMPROGRAMS\RTLSDR Scanner"
+
+    RMDir "$INSTDIR\res"
     RMDir "$INSTDIR"
 
     DeleteRegKey ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}"
