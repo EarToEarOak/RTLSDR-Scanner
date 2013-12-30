@@ -130,6 +130,8 @@ class Plotter():
             else:
                 plot = plots[len(plots) - 2]
             xData, yData = plot.get_data()
+            if len(yData) == 0:
+                return
             pos = numpy.argmax(yData)
             x = xData[pos]
             y = yData[pos]
@@ -142,7 +144,6 @@ class Plotter():
         self.axes.plot(x, y, marker='x', markersize=10, color='r',
                        gid='peak')
         self.redraw_plot()
-        pass
 
     def clear_plots(self):
         with self.lock:
