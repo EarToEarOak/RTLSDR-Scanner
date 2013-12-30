@@ -837,29 +837,31 @@ class DialogPrefs(wx.Dialog):
                                       "Save warning")
         self.checkSaved.SetValue(self.settings.saveWarn)
         self.checkSaved.SetToolTip(wx.ToolTip('Prompt to save scan on exit'))
-        self.checkAnnotate = wx.CheckBox(self, wx.ID_ANY,
-                                      "Label peak level")
-        self.checkAnnotate.SetValue(self.settings.annotate)
-        self.checkAnnotate.SetToolTip(wx.ToolTip('Annotate scan peak value'))
 
         self.checkRetain = wx.CheckBox(self, wx.ID_ANY,
                                       "Display previous scans")
         self.checkRetain.SetToolTip(wx.ToolTip('Can be slow'))
         self.checkRetain.SetValue(self.settings.retainScans)
         self.Bind(wx.EVT_CHECKBOX, self.on_check, self.checkRetain)
-        self.checkFade = wx.CheckBox(self, wx.ID_ANY,
-                                      "Fade previous scans")
-        self.checkFade.SetValue(self.settings.fadeScans)
+        textWarn = wx.StaticText(self,
+                                 label="(Needed for Spectrogram view)")
         textMaxScans = wx.StaticText(self,
                                  label="Max scans")
         self.spinCtrlMaxScans = wx.SpinCtrl(self)
         self.spinCtrlMaxScans.SetRange(2, 500)
         self.spinCtrlMaxScans.SetValue(self.settings.retainMax)
-        self.spinCtrlMaxScans.SetToolTip(wx.ToolTip('Maximum previous scans to display'))
+        self.spinCtrlMaxScans.SetToolTip(wx.ToolTip('Maximum previous scans'
+                                                    ' to display'))
+
+        self.checkAnnotate = wx.CheckBox(self, wx.ID_ANY,
+                                      "Label peak level")
+        self.checkAnnotate.SetValue(self.settings.annotate)
+        self.checkAnnotate.SetToolTip(wx.ToolTip('Annotate scan peak value'))
+        self.checkFade = wx.CheckBox(self, wx.ID_ANY,
+                                      "Fade previous scans")
+        self.checkFade.SetValue(self.settings.fadeScans)
 
         self.on_check(None)
-        textWarn = wx.StaticText(self,
-                                 label="(Only the most recent scan is saved)")
 
         self.devices = devices
         self.gridDev = grid.Grid(self)
@@ -941,31 +943,34 @@ class DialogPrefs(wx.Dialog):
         sizerButtons.Realize()
         self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
 
-        optbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "General"),
+        genbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "General"),
                                      wx.VERTICAL)
-        optbox.Add(self.checkSaved, 0, wx.ALL | wx.EXPAND, 10)
-        optbox.Add(self.checkAnnotate, 0, wx.ALL | wx.EXPAND, 10)
+        genbox.Add(self.checkSaved, 0, wx.ALL | wx.EXPAND, 10)
 
         congrid = wx.GridBagSizer(10, 10)
         congrid.Add(self.checkRetain, pos=(0, 0), flag=wx.ALL)
         congrid.Add(textWarn, pos=(0, 1), flag=wx.ALL)
-        congrid.Add(self.checkFade, pos=(1, 0), flag=wx.ALL)
-        congrid.Add(textMaxScans, pos=(2, 0), flag=wx.ALL)
-        congrid.Add(self.spinCtrlMaxScans, pos=(2, 1), flag=wx.ALL)
-
+        congrid.Add(textMaxScans, pos=(1, 0), flag=wx.ALL)
+        congrid.Add(self.spinCtrlMaxScans, pos=(1, 1), flag=wx.ALL)
         conbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY,
-                                                "Continuous scans"),
+                                                "Continuous Scans"),
                                    wx.VERTICAL)
         conbox.Add(congrid, 0, wx.ALL | wx.EXPAND, 10)
+
+        plotbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Plot View"),
+                                     wx.HORIZONTAL)
+        plotbox.Add(self.checkAnnotate, 0, wx.ALL | wx.EXPAND, 10)
+        plotbox.Add(self.checkFade, 0, wx.ALL | wx.EXPAND, 10)
 
         devbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Devices"),
                                      wx.VERTICAL)
         devbox.Add(self.gridDev, 0, wx.ALL | wx.EXPAND, 10)
 
         vbox = wx.BoxSizer(wx.VERTICAL)
-        vbox.Add(optbox, 0, wx.ALL | wx.EXPAND, 10)
-        vbox.Add(conbox, 0, wx.ALL | wx.EXPAND, 10)
-        vbox.Add(devbox, 0, wx.ALL | wx.EXPAND, 10)
+        vbox.Add(genbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        vbox.Add(conbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        vbox.Add(plotbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        vbox.Add(devbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
         vbox.Add(sizerButtons, 0, wx.ALL | wx.EXPAND, 10)
 
         self.SetSizerAndFit(vbox)
