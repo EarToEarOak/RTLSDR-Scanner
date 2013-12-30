@@ -840,7 +840,7 @@ class DialogPrefs(wx.Dialog):
         self.checkSaved.SetToolTip(wx.ToolTip('Prompt to save scan on exit'))
 
         self.checkRetain = wx.CheckBox(self, wx.ID_ANY,
-                                      "Display previous scans")
+                                      "Retain previous scans")
         self.checkRetain.SetToolTip(wx.ToolTip('Can be slow'))
         self.checkRetain.SetValue(self.settings.retainScans)
         self.Bind(wx.EVT_CHECKBOX, self.on_check, self.checkRetain)

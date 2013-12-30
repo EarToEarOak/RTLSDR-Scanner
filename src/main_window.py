@@ -673,8 +673,12 @@ class FrameMain(wx.Frame):
         self.stopScan = True
 
     def limit_spectrum(self):
+        if self.settings.retainScans:
+            limit = self.settings.retainMax
+        else:
+            limit = 1
         with self.lock:
-            while len(self.spectrum) >= self.settings.retainMax:
+            while len(self.spectrum) >= limit:
                 timeStamp = min(self.spectrum)
                 del self.spectrum[timeStamp]
 
