@@ -87,18 +87,19 @@ class Spectrogram:
         self.barBase.set_label('Level (dB)')
 
     def scale_plot(self, force=False):
-        with self.lock:
-            if self.settings.autoScale or force:
-                extent = self.plot.get_extent()
-                self.axes.set_xlim(extent[0], extent[1])
-                self.axes.set_ylim(extent[2], extent[3])
-                self.settings.yMin, self.settings.yMax = self.plot.get_clim()
-            else:
-                self.plot.set_clim(self.settings.yMin, self.settings.yMax)
+        if self.plot is not None:
+            with self.lock:
+                if self.settings.autoScale or force:
+                    extent = self.plot.get_extent()
+                    self.axes.set_xlim(extent[0], extent[1])
+                    self.axes.set_ylim(extent[2], extent[3])
+                    self.settings.yMin, self.settings.yMax = self.plot.get_clim()
+                else:
+                    self.plot.set_clim(self.settings.yMin, self.settings.yMax)
 
-        vmin, vmax = self.plot.get_clim()
-        self.barBase.set_clim(vmin, vmax)
-        self.barBase.draw_all()
+            vmin, vmax = self.plot.get_clim()
+            self.barBase.set_clim(vmin, vmax)
+            self.barBase.draw_all()
 
     def redraw_plot(self):
         self.graph.get_figure().tight_layout()

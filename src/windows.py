@@ -108,12 +108,12 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.AddSeparator()
 
         # TODO: bitmaps
-        autoId = wx.NewId()
-        self.AddCheckTool(autoId, _load_bitmap('hand.png'),
+        self.autoId = wx.NewId()
+        self.AddCheckTool(self.autoId, _load_bitmap('hand.png'),
                           shortHelp='Auto range',
                           longHelp='Scale plot to all measurements')
-        self.ToggleTool(autoId, self.main.settings.autoScale)
-        wx.EVT_TOOL(self, autoId, self.on_check_auto)
+        self.ToggleTool(self.autoId, self.main.settings.autoScale)
+        wx.EVT_TOOL(self, self.autoId, self.on_check_auto)
 
         liveId = wx.NewId()
         self.AddCheckTool(liveId, _load_bitmap('hand.png'),
@@ -133,6 +133,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         dlg = DialogRange(self, self.main)
         if dlg.ShowModal() == wx.ID_OK:
             self.main.plot.scale_plot()
+            self.ToggleTool(self.autoId, self.main.settings.autoScale)
             self.main.plot.redraw_plot()
         dlg.Destroy()
 
@@ -1129,7 +1130,6 @@ class DialogRange(wx.Dialog):
     def on_auto(self, _event):
         state = self.checkAuto.GetValue()
         self.set_enabled(not state)
-        self.main.checkAuto.SetValue(state)
 
     def on_ok(self, _event):
         self.main.settings.autoScale = self.checkAuto.GetValue()
