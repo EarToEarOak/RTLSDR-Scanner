@@ -531,6 +531,7 @@ class FrameMain(wx.Frame):
             if updated and self.settings.liveUpdate:
                 self.plot.set_plot(self.spectrum,
                                    self.settings.annotate and \
+                                   self.settings.retainScans and \
                                    self.settings.mode == Mode.CONTIN)
             self.progress()
         elif status == Event.DRAW:
