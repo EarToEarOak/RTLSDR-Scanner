@@ -37,7 +37,7 @@ import wx
 
 from constants import *
 from events import EventThreadStatus, Event
-from misc import split_spectrum, nearest, open_plot
+from misc import split_spectrum, nearest, open_plot, load_bitmap
 from rtltcp import RtlTcp
 import wx.grid as grid
 import wx.lib.masked as masked
@@ -101,29 +101,28 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.AddSeparator()
 
         navId = wx.NewId()
-        self.AddSimpleTool(navId, _load_bitmap('hand.png'),
+        self.AddSimpleTool(navId, load_bitmap('range'),
                            'Range', 'Set plot range')
         wx.EVT_TOOL(self, navId, self.on_range)
 
         self.AddSeparator()
 
-        # TODO: bitmaps
         self.autoId = wx.NewId()
-        self.AddCheckTool(self.autoId, _load_bitmap('hand.png'),
+        self.AddCheckTool(self.autoId, load_bitmap('auto_range'),
                           shortHelp='Auto range',
                           longHelp='Scale plot to all measurements')
         self.ToggleTool(self.autoId, self.main.settings.autoScale)
         wx.EVT_TOOL(self, self.autoId, self.on_check_auto)
 
         liveId = wx.NewId()
-        self.AddCheckTool(liveId, _load_bitmap('hand.png'),
+        self.AddCheckTool(liveId, load_bitmap('auto_refresh'),
                           shortHelp='Live update',
                           longHelp='Update plot in realtime (slow)')
         self.ToggleTool(liveId, self.main.settings.liveUpdate)
         wx.EVT_TOOL(self, liveId, self.on_check_update)
 
         gridId = wx.NewId()
-        self.AddCheckTool(gridId, _load_bitmap('hand.png'),
+        self.AddCheckTool(gridId, load_bitmap('grid'),
                           shortHelp='Grid',
                           longHelp='Toggle grid')
         self.ToggleTool(gridId, self.main.grid)

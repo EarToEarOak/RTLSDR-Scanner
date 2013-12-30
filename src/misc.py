@@ -26,6 +26,7 @@ import cPickle
 import datetime
 import json
 import os
+import sys
 
 from matplotlib.dates import date2num
 import wx
@@ -233,6 +234,17 @@ def nearest(value, values):
 def epoch_to_mpl(epoch):
     dt = datetime.datetime.fromtimestamp(epoch)
     return date2num(dt)
+
+
+def load_bitmap(name):
+    scriptDir = os.path.dirname(os.path.realpath(sys.argv[0]))
+    if(os.path.isdir(scriptDir + '/res')):
+        resDir = os.path.normpath(scriptDir + '/res')
+    else:
+        resDir = os.path.normpath(scriptDir + '/../res')
+
+    return wx.Bitmap(resDir + '/' + name + '.png', wx.BITMAP_TYPE_PNG)
+
 
 if __name__ == '__main__':
     print 'Please run rtlsdr_scan.py'
