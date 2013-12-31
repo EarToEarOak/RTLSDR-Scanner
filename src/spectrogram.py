@@ -51,6 +51,7 @@ class Spectrogram:
         self.lock = lock
         self.axes = None
         self.plot = None
+        self.threadPlot = None
         self.setup_plot()
         self.set_grid(grid)
         self.redraw_plot()
@@ -112,8 +113,10 @@ class Spectrogram:
                 post_event(self.notify, EventThreadStatus(Event.DRAW))
 
     def set_plot(self, data, _annotate):
-        Thread(target=self.thread_plot, name='Plot',
-               args=(data,)).start()
+        # TODO cancel current update
+        if self.threadPlot is None:
+            self.threadPlot = Thread(target=self.thread_plot, name='Plot',
+                                    args=(data,)).start()
 
     def annotate_plot(self):
         pass
@@ -168,6 +171,7 @@ class Spectrogram:
 
         self.scale_plot()
         self.redraw_plot()
+        self.threadPlot = None
 
     def thread_draw(self):
         with self.lock:
