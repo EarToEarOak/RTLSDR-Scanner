@@ -127,7 +127,6 @@ class Plotter():
         self.redraw_plot()
 
     def clear_plots(self):
-#         with self.lock:
             children = self.axes.get_children()
             for child in children:
                 if child.get_gid() is not None:
