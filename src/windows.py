@@ -167,7 +167,6 @@ class PanelGraph(wx.Panel):
         self.canvas = FigureCanvas(self, -1, self.figure)
         self.canvas.mpl_connect('motion_notify_event', self.on_motion)
         self.canvas.mpl_connect('draw_event', self.on_draw)
-        self.canvas.Bind(wx.EVT_ENTER_WINDOW, self.on_enter)
         self.toolbar = NavigationToolbar(self.canvas, self.main)
         self.toolbar.Realize()
 
@@ -197,9 +196,6 @@ class PanelGraph(wx.Panel):
 
     def on_draw(self, _event):
         post_event(self.main, EventThreadStatus(Event.PLOTTED))
-
-    def on_enter(self, _event):
-        self.canvas.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
 
     def get_figure(self):
         return self.figure
@@ -244,7 +240,6 @@ class PanelGraphCompare(wx.Panel):
         self.axesDiff.set_ylabel('Difference (db)')
 
         self.canvas = FigureCanvas(self, -1, figure)
-        self.canvas.Bind(wx.EVT_ENTER_WINDOW, self.on_enter)
 
         self.check1 = wx.CheckBox(self, wx.ID_ANY, "Scan 1")
         self.check2 = wx.CheckBox(self, wx.ID_ANY, "Scan 2")
@@ -278,9 +273,6 @@ class PanelGraphCompare(wx.Panel):
 
         self.SetSizer(vbox)
         vbox.Fit(self)
-
-    def on_enter(self, _event):
-        self.canvas.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
 
     def on_check1(self, _event):
         self.plotScan1.set_visible(self.check1.GetValue())
@@ -517,7 +509,6 @@ class DialogOffset(wx.Dialog):
         figure = matplotlib.figure.Figure(facecolor='white')
         self.axes = figure.add_subplot(111)
         self.canvas = FigureCanvas(self, -1, figure)
-        self.canvas.Bind(wx.EVT_ENTER_WINDOW, self.on_enter)
 
         textHelp = wx.StaticText(self,
             label="Remove the aerial and press refresh, "
@@ -578,11 +569,7 @@ class DialogOffset(wx.Dialog):
         self.SetSizerAndFit(gridSizer)
         self.draw_limits()
 
-    def on_enter(self, _event):
-        self.canvas.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
-
     def on_ok(self, _event):
-
         self.EndModal(wx.ID_OK)
 
     def on_refresh(self, _event):
