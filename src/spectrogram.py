@@ -115,12 +115,11 @@ class Spectrogram:
         pass
 
     def clear_plots(self):
-        with self.lock:
-            children = self.axes.get_children()
-            for child in children:
-                if child.get_gid() is not None:
-                    if child.get_gid() == "plot":
-                        child.remove()
+        children = self.axes.get_children()
+        for child in children:
+            if child.get_gid() is not None:
+                if child.get_gid() == "plot":
+                    child.remove()
 
     def set_grid(self, on):
         self.grid = on
@@ -131,22 +130,22 @@ class Spectrogram:
         self.figure.clear()
 
     def thread_plot(self, data):
-        total = len(data)
-        if total > 0:
-            timeMin = min(data)
-            timeMax = max(data)
-            plotFirst = data[timeMin]
-            xMin = min(plotFirst)
-            xMax = max(plotFirst)
-            width = len(plotFirst)
-            if total == 1:
-                timeMax += 1
-            extent = [xMin, xMax,
-                      epoch_to_mpl(timeMax), epoch_to_mpl(timeMin)]
+        with self.lock:
+            total = len(data)
+            if total > 0:
+                timeMin = min(data)
+                timeMax = max(data)
+                plotFirst = data[timeMin]
+                xMin = min(plotFirst)
+                xMax = max(plotFirst)
+                width = len(plotFirst)
+                if total == 1:
+                    timeMax += 1
+                extent = [xMin, xMax,
+                          epoch_to_mpl(timeMax), epoch_to_mpl(timeMin)]
 
-            c = np.ma.masked_all((self.settings.retainMax, width))
-            self.clear_plots()
-            with self.lock:
+                c = np.ma.masked_all((self.settings.retainMax, width))
+                self.clear_plots()
                 j = self.settings.retainMax
                 for ys in reversed(sorted(data)):
                     j -= 1
@@ -160,8 +159,8 @@ class Spectrogram:
                                              gid="plot")
                 self.axes.grid(self.grid)
 
-            self.scale_plot()
-            self.redraw_plot()
+        self.scale_plot()
+        self.redraw_plot()
 
     def thread_draw(self):
         with self.lock:

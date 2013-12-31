@@ -126,7 +126,7 @@ class Plotter():
         self.redraw_plot()
 
     def clear_plots(self):
-        with self.lock:
+#         with self.lock:
             children = self.axes.get_children()
             for child in children:
                 if child.get_gid() is not None:
@@ -148,11 +148,11 @@ class Plotter():
         self.figure.clear()
 
     def thread_plot(self, data, annotate):
-        total = len(data)
-        if total > 0:
-            self.clear_plots()
-            count = 1.0
-            with self.lock:
+        with self.lock:
+            total = len(data)
+            if total > 0:
+                self.clear_plots()
+                count = 1.0
                 for timeStamp in sorted(data):
                     xs, ys = split_spectrum(data[timeStamp])
                     alpha = count / total
@@ -162,10 +162,8 @@ class Plotter():
 
                 if annotate:
                     self.annotate_plot()
-                self.axes.relim()
-                self.axes.autoscale_view()
-            self.scale_plot()
-            self.redraw_plot()
+        self.scale_plot()
+        self.redraw_plot()
 
     def thread_draw(self):
         with self.lock:
