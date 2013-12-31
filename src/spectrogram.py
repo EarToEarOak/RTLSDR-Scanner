@@ -58,6 +58,7 @@ class Spectrogram:
     def setup_plot(self):
         gs = GridSpec(1, 2, width_ratios=[9.5, 0.5])
         self.axes = self.figure.add_subplot(gs[0])
+        self.axes.set_axis_bgcolor('Gainsboro')
 
         if len(self.settings.devices) > 0:
             gain = self.settings.devices[self.settings.index].gain
@@ -126,7 +127,7 @@ class Spectrogram:
 
     def set_grid(self, on):
         self.grid = on
-        self.axes.grid(on)
+        self.axes.grid(on, color='w')
         self.redraw_plot()
 
     def close(self):
