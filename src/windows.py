@@ -27,7 +27,6 @@ import itertools
 from urlparse import urlparse
 
 import matplotlib
-from matplotlib.backends.backend_wx import _load_bitmap
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas, \
     NavigationToolbar2WxAgg
 from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
@@ -36,7 +35,7 @@ import rtlsdr
 import wx
 
 from constants import *
-from events import EventThreadStatus, Event
+from events import EventThreadStatus, Event, post_event
 from misc import split_spectrum, nearest, open_plot, load_bitmap
 from rtltcp import RtlTcp
 import wx.grid as grid
@@ -197,7 +196,7 @@ class PanelGraph(wx.Panel):
         self.main.status.SetStatusText(text, 1)
 
     def on_draw(self, _event):
-        wx.PostEvent(self.main, EventThreadStatus(Event.PLOTTED))
+        post_event(self.main, EventThreadStatus(Event.PLOTTED))
 
     def on_enter(self, _event):
         self.canvas.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))

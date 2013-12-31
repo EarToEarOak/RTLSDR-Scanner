@@ -27,12 +27,13 @@ import Queue
 
 import wx
 
+
 EVT_THREAD_STATUS = wx.NewId()
 
 
 class Event:
     STARTING, STEPS, INFO, DATA, CAL, STOPPED, ERROR, FINISHED, PROCESSED, \
-    DRAW, PLOTTED, PLOTTED_FULL = range(12)
+    UPDATED, DRAW, PLOTTED, PLOTTED_FULL = range(13)
 
 
 class Status():

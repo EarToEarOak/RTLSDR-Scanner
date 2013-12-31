@@ -33,9 +33,8 @@ from matplotlib.colors import Normalize
 from matplotlib.dates import DateFormatter
 from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
-import wx
 
-from events import EventThreadStatus, Event
+from events import EventThreadStatus, Event, post_event
 from misc import split_spectrum, epoch_to_mpl
 import numpy as np
 
@@ -97,51 +96,20 @@ class Spectrogram:
                 else:
                     self.plot.set_clim(self.settings.yMin, self.settings.yMax)
 
-            vmin, vmax = self.plot.get_clim()
-            self.barBase.set_clim(vmin, vmax)
-            self.barBase.draw_all()
+                vmin, vmax = self.plot.get_clim()
+                self.barBase.set_clim(vmin, vmax)
+                self.barBase.draw_all()
 
     def redraw_plot(self):
         self.graph.get_figure().tight_layout()
         if os.name == "nt":
-            thread = Thread(target=thread_plot, args=(self.graph, self.lock,))
-            thread.start()
+            Thread(target=self.thread_draw, name='Draw').start()
         else:
-            wx.PostEvent(self.notify, EventThreadStatus(Event.DRAW))
+            post_event(self.notify, EventThreadStatus(Event.DRAW))
 
-    def set_plot(self, plot, _annotate):
-        total = len(plot)
-
-        if total > 0:
-            timeMin = min(plot)
-            timeMax = max(plot)
-            plotFirst = plot[timeMin]
-            xMin = min(plotFirst)
-            xMax = max(plotFirst)
-            width = len(plotFirst)
-            if total == 1:
-                timeMax += 1
-            extent = [xMin, xMax,
-                      epoch_to_mpl(timeMax), epoch_to_mpl(timeMin)]
-
-            c = np.ma.masked_all((self.settings.retainMax, width))
-            self.clear_plots()
-            with self.lock:
-                j = self.settings.retainMax
-                for ys in reversed(sorted(plot)):
-                    j -= 1
-                    _xs, zs = split_spectrum(plot[ys])
-                    for i in range(len(zs)):
-                        c[j, i] = zs[i]
-
-                self.plot = self.axes.imshow(c, aspect='auto',
-                                             extent=extent,
-                                             cmap=cm.get_cmap('jet'),
-                                             gid="plot")
-                self.axes.grid(self.grid)
-
-            self.scale_plot()
-            self.redraw_plot()
+    def set_plot(self, data, _annotate):
+        Thread(target=self.thread_plot, name='Plot',
+               args=(data,)).start()
 
     def annotate_plot(self):
         pass
@@ -162,10 +130,42 @@ class Spectrogram:
     def close(self):
         self.figure.clear()
 
+    def thread_plot(self, data):
+        total = len(data)
+        if total > 0:
+            timeMin = min(data)
+            timeMax = max(data)
+            plotFirst = data[timeMin]
+            xMin = min(plotFirst)
+            xMax = max(plotFirst)
+            width = len(plotFirst)
+            if total == 1:
+                timeMax += 1
+            extent = [xMin, xMax,
+                      epoch_to_mpl(timeMax), epoch_to_mpl(timeMin)]
 
-def thread_plot(graph, lock):
-    with lock:
-        graph.get_canvas().draw()
+            c = np.ma.masked_all((self.settings.retainMax, width))
+            self.clear_plots()
+            with self.lock:
+                j = self.settings.retainMax
+                for ys in reversed(sorted(data)):
+                    j -= 1
+                    _xs, zs = split_spectrum(data[ys])
+                    for i in range(len(zs)):
+                        c[j, i] = zs[i]
+
+                self.plot = self.axes.imshow(c, aspect='auto',
+                                             extent=extent,
+                                             cmap=cm.get_cmap('jet'),
+                                             gid="plot")
+                self.axes.grid(self.grid)
+
+            self.scale_plot()
+            self.redraw_plot()
+
+    def thread_draw(self):
+        with self.lock:
+            self.graph.get_canvas().draw()
 
 
 if __name__ == '__main__':

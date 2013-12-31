@@ -108,7 +108,7 @@ class RtlTcp():
 
 
 class ThreadBuffer(threading.Thread):
-    name = 'ThreadBuffer'
+    name = 'Buffer'
     buffer = ""
     cancel = False
     readLen = 0

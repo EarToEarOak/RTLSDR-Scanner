@@ -41,12 +41,14 @@ except ImportError as error:
 
 import datetime
 import os.path
+from threading import Thread
 import threading
+import time
 import webbrowser
 
 from constants import *
 from devices import get_devices
-from events import EVT_THREAD_STATUS, Event, EventThreadStatus
+from events import EVT_THREAD_STATUS, Event, EventThreadStatus, post_event
 from misc import ScanInfo, calc_samples, calc_real_dwell, open_plot, save_plot, \
     export_plot
 from plot import Plotter
@@ -524,11 +526,12 @@ class FrameMain(wx.Frame):
                 self.dlgCal = None
         elif status == Event.PROCESSED:
             offset = self.settings.devices[self.settings.index].offset
-            with self.lock:
-                updated = update_spectrum(self.settings.start,
-                                          self.settings.stop, freq,
-                                          data, offset, self.spectrum)
-            if updated and self.settings.liveUpdate:
+            Thread(target=update_spectrum, name='Update',
+                   args=(self, self.lock, self.settings.start,
+                         self.settings.stop, freq,
+                         data, offset, self.spectrum,)).start()
+        elif status == Event.UPDATED:
+            if freq and self.settings.liveUpdate:
                 self.plot.set_plot(self.spectrum,
                                    self.settings.annotate and \
                                    self.settings.retainScans and \
@@ -541,7 +544,7 @@ class FrameMain(wx.Frame):
 
     def on_process_done(self, data):
         timeStamp, freq, scan = data
-        wx.PostEvent(self, EventThreadStatus(Event.PROCESSED, freq,
+        post_event(self, EventThreadStatus(Event.PROCESSED, freq,
                                              (timeStamp, scan)))
 
     def open(self, dirname, filename):

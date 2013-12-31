@@ -39,7 +39,7 @@ import rtltcp
 class ThreadScan(threading.Thread):
     def __init__(self, notify, sdr, settings, device, samples, isCal):
         threading.Thread.__init__(self)
-        self.name = 'ThreadScan'
+        self.name = 'Scan'
         self.notify = notify
         self.sdr = sdr
         self.fstart = settings.start * 1e6
@@ -171,34 +171,37 @@ def anaylse_data(freq, data, cal, nfft):
     return (timeStamp, freq, spectrum)
 
 
-def update_spectrum(start, stop, freqCentre, data, offset, spectrum):
-    updated = False
-    timeStamp = data[0]
-    scan = data[1]
+def update_spectrum(notify, lock, start, stop, freqCentre, data, offset,
+                    spectrum):
+    with lock:
+        updated = False
+        timeStamp = data[0]
+        scan = data[1]
 
-    upperStart = freqCentre + offset
-    upperEnd = freqCentre + offset + BANDWIDTH / 2
-    lowerStart = freqCentre - offset - BANDWIDTH / 2
-    lowerEnd = freqCentre - offset
+        upperStart = freqCentre + offset
+        upperEnd = freqCentre + offset + BANDWIDTH / 2
+        lowerStart = freqCentre - offset - BANDWIDTH / 2
+        lowerEnd = freqCentre - offset
 
-    if not timeStamp in spectrum:
-        spectrum[timeStamp] = {}
+        if not timeStamp in spectrum:
+            spectrum[timeStamp] = {}
 
-    for freq in scan:
-        if start <= freq < stop:
-            power = 10 * math.log10(scan[freq])
-            if upperStart <= freq * 1e6 <= upperEnd:
-                spectrum[timeStamp][freq] = power
-                updated = True
-            if lowerStart <= freq * 1e6 <= lowerEnd:
-                if freq in spectrum[timeStamp]:
-                    spectrum[timeStamp][freq] = (spectrum[timeStamp][freq] + power) / 2
-                    updated = True
-                else:
+        for freq in scan:
+            if start <= freq < stop:
+                power = 10 * math.log10(scan[freq])
+                if upperStart <= freq * 1e6 <= upperEnd:
                     spectrum[timeStamp][freq] = power
                     updated = True
+                if lowerStart <= freq * 1e6 <= lowerEnd:
+                    if freq in spectrum[timeStamp]:
+                        spectrum[timeStamp][freq] = \
+                            (spectrum[timeStamp][freq] + power) / 2
+                        updated = True
+                    else:
+                        spectrum[timeStamp][freq] = power
+                        updated = True
 
-    return updated
+    post_event(notify, EventThreadStatus(Event.UPDATED, None, updated))
 
 
 if __name__ == '__main__':
