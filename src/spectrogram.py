@@ -166,6 +166,7 @@ class Spectrogram:
                 self.plot = self.axes.imshow(c, aspect='auto',
                                              extent=extent,
                                              cmap=cm.get_cmap(self.settings.colourMap),
+                                             interpolation = 'spline16',
                                              gid="plot")
                 self.axes.grid(self.grid)
 
