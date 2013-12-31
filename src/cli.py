@@ -25,6 +25,8 @@
 
 import os
 import sys
+from threading import Thread
+import threading
 from urlparse import urlparse
 
 from constants import SAMPLE_RATE
@@ -48,6 +50,8 @@ class Cli():
         remote = args.remote
         directory, filename = os.path.split(args.file)
         _null, ext = os.path.splitext(args.file)
+
+        self.lock = threading.Lock()
 
         self.stepsTotal = 0
         self.steps = 0
@@ -162,8 +166,11 @@ class Cli():
             exit(1)
         elif status == Event.PROCESSED:
             offset = self.settings.devices[self.settings.index].offset
-            update_spectrum(self.settings.start, self.settings.stop, freq,
-                            data, offset, self.spectrum)
+            Thread(target=update_spectrum, name='Update',
+                   args=(queue, self.lock, self.settings.start,
+                         self.settings.stop, freq,
+                         data, offset, self.spectrum,)).start()
+        elif status == Event.UPDATED:
             self.progress()
 
     def on_process_done(self, data):
