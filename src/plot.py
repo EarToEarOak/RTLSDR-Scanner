@@ -24,7 +24,7 @@
 #
 
 import os
-from threading import Thread
+import threading
 
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 import numpy
@@ -42,6 +42,8 @@ class Plotter():
         self.figure = self.graph.get_figure()
         self.axes = None
         self.currentPlot = None
+        self.threadPlot = None
+        self.interrupt = False
         self.setup_plot()
         self.set_grid(grid)
         self.redraw_plot()
@@ -84,23 +86,73 @@ class Plotter():
     def redraw_plot(self):
         if self.figure is not None:
             if os.name == "nt":
-                Thread(target=self.thread_draw, name='Draw').start()
+                threading.Thread(target=self.thread_draw, name='Draw').start()
             else:
                 post_event(self.notify, EventThreadStatus(Event.DRAW))
 
     def set_plot(self, data, annotate=False):
-        Thread(target=self.thread_plot, name='Plot',
-               args=(data, annotate,)).start()
+        if self.threadPlot is not None and self.threadPlot.isAlive():
+            self.threadPlot.cancel()
+            self.threadPlot.join()
 
-    def get_plots(self):
-        plots = []
+        self.threadPlot = ThreadPlot(self, self.lock, self.axes,
+                                     data, annotate).start()
+
+    def clear_plots(self):
         children = self.axes.get_children()
         for child in children:
             if child.get_gid() is not None:
-                if child.get_gid() == "plot":
-                    plots.append(child)
+                if child.get_gid() == "plot" or child.get_gid() == "peak":
+                    child.remove()
 
-        return plots
+    def set_grid(self, on):
+        self.axes.grid(on)
+        self.redraw_plot()
+
+    def close(self):
+        self.figure.clear()
+        self.figure = None
+
+    def thread_draw(self):
+        with self.lock:
+            if self.figure is not None:
+                try:
+                    self.graph.get_figure().tight_layout()
+                    self.graph.get_canvas().draw()
+                except:
+                    pass
+
+
+class ThreadPlot(threading.Thread):
+    def __init__(self, parent, lock, axes, data, annotate):
+        threading.Thread.__init__(self)
+        self.name = "Plot"
+        self.parent = parent
+        self.lock = lock
+        self.axes = axes
+        self.data = data
+        self.annotate = annotate
+        self.abort = False
+
+    def run(self):
+        with self.lock:
+            total = len(self.data)
+            if total > 0:
+                self.parent.clear_plots()
+                count = 1.0
+                for timeStamp in sorted(self.data):
+                    if self.abort:
+                        return
+                    xs, ys = split_spectrum(self.data[timeStamp])
+                    alpha = count / total
+                    self.axes.plot(xs, ys, linewidth=0.4, gid="plot",
+                                   color='b', alpha=alpha)
+                    count += 1
+
+                if self.annotate:
+                    self.annotate_plot()
+        self.parent.scale_plot()
+        self.parent.redraw_plot()
 
     def annotate_plot(self):
         self.clear_markers()
@@ -124,14 +176,16 @@ class Plotter():
                            ha='left', va='top', size='small', gid='peak')
         self.axes.plot(x, y, marker='x', markersize=10, color='r',
                        gid='peak')
-        self.redraw_plot()
 
-    def clear_plots(self):
-            children = self.axes.get_children()
-            for child in children:
-                if child.get_gid() is not None:
-                    if child.get_gid() == "plot" or child.get_gid() == "peak":
-                        child.remove()
+    def get_plots(self):
+        plots = []
+        children = self.axes.get_children()
+        for child in children:
+            if child.get_gid() is not None:
+                if child.get_gid() == "plot":
+                    plots.append(child)
+
+        return plots
 
     def clear_markers(self):
         children = self.axes.get_children()
@@ -140,40 +194,8 @@ class Plotter():
                     if child.get_gid() == 'peak':
                         child.remove()
 
-    def set_grid(self, on):
-        self.axes.grid(on)
-        self.redraw_plot()
-
-    def close(self):
-        self.figure.clear()
-        self.figure = None
-
-    def thread_plot(self, data, annotate):
-        with self.lock:
-            total = len(data)
-            if total > 0:
-                self.clear_plots()
-                count = 1.0
-                for timeStamp in sorted(data):
-                    xs, ys = split_spectrum(data[timeStamp])
-                    alpha = count / total
-                    self.axes.plot(xs, ys, linewidth=0.4, gid="plot",
-                                   color='b', alpha=alpha)
-                    count += 1
-
-                if annotate:
-                    self.annotate_plot()
-        self.scale_plot()
-        self.redraw_plot()
-
-    def thread_draw(self):
-        with self.lock:
-            if self.figure is not None:
-                try:
-                    self.graph.get_figure().tight_layout()
-                    self.graph.get_canvas().draw()
-                except:
-                    pass
+    def cancel(self):
+        self.abort = True
 
 
 if __name__ == '__main__':
