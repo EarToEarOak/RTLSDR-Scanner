@@ -86,7 +86,7 @@ class Spectrogram:
         self.barBase.set_label('Level (dB)')
 
     def scale_plot(self, force=False):
-        if self.plot is not None:
+        if self.figure is not None and self.plot is not None:
             with self.lock:
                 if self.settings.autoScale or force:
                     extent = self.plot.get_extent()
@@ -98,14 +98,17 @@ class Spectrogram:
 
                 vmin, vmax = self.plot.get_clim()
                 self.barBase.set_clim(vmin, vmax)
-                self.barBase.draw_all()
+                try:
+                    self.barBase.draw_all()
+                except:
+                    pass
 
     def redraw_plot(self):
-        self.graph.get_figure().tight_layout()
-        if os.name == "nt":
-            Thread(target=self.thread_draw, name='Draw').start()
-        else:
-            post_event(self.notify, EventThreadStatus(Event.DRAW))
+        if self.figure is not None:
+            if os.name == "nt":
+                Thread(target=self.thread_draw, name='Draw').start()
+            else:
+                post_event(self.notify, EventThreadStatus(Event.DRAW))
 
     def set_plot(self, data, _annotate):
         Thread(target=self.thread_plot, name='Plot',
@@ -128,6 +131,7 @@ class Spectrogram:
 
     def close(self):
         self.figure.clear()
+        self.figure = None
 
     def thread_plot(self, data):
         with self.lock:
@@ -136,6 +140,8 @@ class Spectrogram:
                 timeMin = min(data)
                 timeMax = max(data)
                 plotFirst = data[timeMin]
+                if len(plotFirst) == 0:
+                    return
                 xMin = min(plotFirst)
                 xMax = max(plotFirst)
                 width = len(plotFirst)
@@ -164,8 +170,12 @@ class Spectrogram:
 
     def thread_draw(self):
         with self.lock:
-            self.graph.get_canvas().draw()
-
+            if self.figure is not None:
+                try:
+                    self.graph.get_figure().tight_layout()
+                    self.graph.get_canvas().draw()
+                except:
+                    pass
 
 if __name__ == '__main__':
     print 'Please run rtlsdr_scan.py'

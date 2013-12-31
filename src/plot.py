@@ -68,24 +68,25 @@ class Plotter():
         self.axes.set_ylim(-50, 0)
 
     def scale_plot(self, force=False):
-        with self.lock:
-            if self.settings.autoScale or force:
-                self.axes.set_ylim(auto=True)
-                self.axes.set_xlim(auto=True)
-                self.axes.relim()
-                self.axes.autoscale_view()
-                self.settings.yMin, self.settings.yMax = self.axes.get_ylim()
-            else:
-                self.axes.set_ylim(auto=False)
-                self.axes.set_xlim(auto=False)
-                self.axes.set_ylim(self.settings.yMin, self.settings.yMax)
+        if self.figure is not None:
+            with self.lock:
+                if self.settings.autoScale or force:
+                    self.axes.set_ylim(auto=True)
+                    self.axes.set_xlim(auto=True)
+                    self.axes.relim()
+                    self.axes.autoscale_view()
+                    self.settings.yMin, self.settings.yMax = self.axes.get_ylim()
+                else:
+                    self.axes.set_ylim(auto=False)
+                    self.axes.set_xlim(auto=False)
+                    self.axes.set_ylim(self.settings.yMin, self.settings.yMax)
 
     def redraw_plot(self):
-        self.graph.get_figure().tight_layout()
-        if os.name == "nt":
-            Thread(target=self.thread_draw, name='Draw').start()
-        else:
-            post_event(self.notify, EventThreadStatus(Event.DRAW))
+        if self.figure is not None:
+            if os.name == "nt":
+                Thread(target=self.thread_draw, name='Draw').start()
+            else:
+                post_event(self.notify, EventThreadStatus(Event.DRAW))
 
     def set_plot(self, data, annotate=False):
         Thread(target=self.thread_plot, name='Plot',
@@ -146,6 +147,7 @@ class Plotter():
 
     def close(self):
         self.figure.clear()
+        self.figure = None
 
     def thread_plot(self, data, annotate):
         with self.lock:
@@ -167,7 +169,12 @@ class Plotter():
 
     def thread_draw(self):
         with self.lock:
-            self.graph.get_canvas().draw()
+            if self.figure is not None:
+                try:
+                    self.graph.get_figure().tight_layout()
+                    self.graph.get_canvas().draw()
+                except:
+                    pass
 
 
 if __name__ == '__main__':
