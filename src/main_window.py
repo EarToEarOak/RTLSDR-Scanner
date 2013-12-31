@@ -135,9 +135,7 @@ class FrameMain(wx.Frame):
         self.devices = get_devices(self.settings.devices)
         self.oldCal = 0
 
-        displaySize = wx.DisplaySize()
-        wx.Frame.__init__(self, None, title=title, size=(displaySize[0] / 1.5,
-                                                         displaySize[1] / 2))
+        wx.Frame.__init__(self, None, title=title)
 
         self.Bind(wx.EVT_CLOSE, self.on_exit)
 
@@ -150,9 +148,10 @@ class FrameMain(wx.Frame):
         self.set_control_state(True)
         self.Show()
 
-        size = self.panel.GetSize()
-        size[1] += displaySize[1] / 4
-        self.SetMinSize(size)
+        displaySize = wx.DisplaySize()
+        toolbarSize = self.panel.GetBestSize()
+        self.SetClientSize((toolbarSize[0] + 10, displaySize[1] / 2))
+        self.SetMinSize((displaySize[0] / 4, displaySize[1] / 4))
 
         self.Connect(-1, -1, EVT_THREAD_STATUS, self.on_event)
 
