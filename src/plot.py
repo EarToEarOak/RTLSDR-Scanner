@@ -43,7 +43,6 @@ class Plotter():
         self.axes = None
         self.currentPlot = None
         self.threadPlot = None
-        self.interrupt = False
         self.setup_plot()
         self.set_grid(grid)
         self.redraw_plot()
@@ -136,6 +135,8 @@ class ThreadPlot(threading.Thread):
 
     def run(self):
         with self.lock:
+            if self.abort:
+                return
             total = len(self.data)
             if total > 0:
                 self.parent.clear_plots()
