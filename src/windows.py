@@ -30,6 +30,8 @@ from matplotlib import cm
 import matplotlib
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas, \
     NavigationToolbar2WxAgg
+from matplotlib.colorbar import ColorbarBase
+from matplotlib.colors import Normalize
 from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
 import numpy
 import rtlsdr
@@ -340,6 +342,27 @@ class PanelGraphCompare(wx.Panel):
         self.plot_diff()
         self.axesScan.relim()
         self.axesScan.autoscale_view()
+        self.canvas.draw()
+
+
+class PanelColourBar(wx.Panel):
+    def __init__(self, parent, colourMap):
+        wx.Panel.__init__(self, parent)
+        dpi = wx.ScreenDC().GetPPI()[0]
+        figure = matplotlib.figure.Figure(facecolor='white', dpi=dpi)
+        figure.set_size_inches(200.0 / dpi, 25.0 / dpi)
+        self.canvas = FigureCanvas(self, -1, figure)
+        axes = figure.add_subplot(111)
+        figure.subplots_adjust(0, 0, 1, 1)
+        norm = Normalize(vmin=0, vmax=1)
+        self.bar = ColorbarBase(axes, norm=norm, orientation='horizontal',
+                                cmap=cm.get_cmap(colourMap))
+        axes.xaxis.set_visible(False)
+
+    def set_map(self, colourMap):
+        self.bar.set_cmap(colourMap)
+        self.bar.changed()
+        self.bar.draw_all()
         self.canvas.draw()
 
 
@@ -844,6 +867,8 @@ class DialogPrefs(wx.Dialog):
         textColour = wx.StaticText(self, label="Colour map")
         self.choiceColour = wx.Choice(self, choices=self.colours)
         self.choiceColour.SetSelection(self.colours.index(self.settings.colourMap))
+        self.Bind(wx.EVT_CHOICE, self.on_choice, self.choiceColour)
+        self.colourBar = PanelColourBar(self, self.settings.colourMap)
 
         self.on_check(None)
 
@@ -951,6 +976,7 @@ class DialogPrefs(wx.Dialog):
                                     wx.HORIZONTAL)
         specbox.Add(textColour, 0, wx.ALL | wx.EXPAND, 10)
         specbox.Add(self.choiceColour, 0, wx.ALL | wx.EXPAND, 10)
+        specbox.Add(self.colourBar, 0, wx.ALL | wx.EXPAND, 10)
 
         devbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Devices"),
                                      wx.VERTICAL)
@@ -970,6 +996,10 @@ class DialogPrefs(wx.Dialog):
         enabled = self.checkRetain.GetValue()
         self.checkFade.Enable(enabled)
         self.spinCtrlMaxScans.Enable(enabled)
+
+    def on_choice(self, _event):
+        self.colourBar.set_map(self.colours[self.choiceColour.GetSelection()])
+        self.choiceColour.SetFocus()
 
     def on_click(self, event):
         col = event.GetCol()
