@@ -43,6 +43,7 @@ class Settings():
         self.retainScans = False
         self.retainMax = 20
         self.fadeScans = True
+        self.colourMap = 'jet'
 
         self.start = 87
         self.stop = 108
@@ -71,6 +72,7 @@ class Settings():
         self.retainScans = self.cfg.ReadBool('retainScans', self.retainScans)
         self.fadeScans = self.cfg.ReadBool('fadeScans', self.fadeScans)
         self.retainMax = self.cfg.ReadInt('retainMax', self.retainMax)
+        self.colourMap = self.cfg.Read('colourMap', self.colourMap)
         self.start = self.cfg.ReadInt('start', self.start)
         self.stop = self.cfg.ReadInt('stop', self.stop)
         self.mode = self.cfg.ReadInt('mode', self.mode)
@@ -120,6 +122,7 @@ class Settings():
         self.cfg.WriteBool('retainScans', self.retainScans)
         self.cfg.WriteBool('fadeScans', self.fadeScans)
         self.cfg.WriteInt('retainMax', self.retainMax)
+        self.cfg.Write('colourMap', self.colourMap)
         self.cfg.WriteInt('start', self.start)
         self.cfg.WriteInt('stop', self.stop)
         self.cfg.WriteInt('mode', self.mode)

@@ -83,7 +83,7 @@ class Spectrogram:
         self.bar = self.figure.add_subplot(gs[1])
         norm = Normalize(vmin=-50, vmax=0)
         self.barBase = ColorbarBase(self.bar, norm=norm,
-                                    cmap=cm.get_cmap('jet'))
+                                    cmap=cm.get_cmap(self.settings.colourMap))
         self.barBase.set_label('Level (dB)')
 
     def scale_plot(self, force=False):
@@ -162,7 +162,7 @@ class Spectrogram:
 
                 self.plot = self.axes.imshow(c, aspect='auto',
                                              extent=extent,
-                                             cmap=cm.get_cmap('jet'),
+                                             cmap=cm.get_cmap(self.settings.colourMap),
                                              gid="plot")
                 self.axes.grid(self.grid)
 

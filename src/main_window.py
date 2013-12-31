@@ -417,6 +417,7 @@ class FrameMain(wx.Frame):
         if dlg.ShowModal() == wx.ID_OK:
             self.devices = dlg.get_devices()
             self.settings.index = dlg.get_index()
+            self.create_plot()
         dlg.Destroy()
 
     def on_compare(self, _event):

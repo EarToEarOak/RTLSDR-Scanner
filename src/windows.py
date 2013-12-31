@@ -26,6 +26,7 @@
 import itertools
 from urlparse import urlparse
 
+from matplotlib import cm
 import matplotlib
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas, \
     NavigationToolbar2WxAgg
@@ -810,6 +811,9 @@ class DialogPrefs(wx.Dialog):
 
         wx.Dialog.__init__(self, parent=parent, title="Preferences")
 
+        self.colours = [colour for colour in cm.datad]
+        self.colours.sort()
+
         self.checkSaved = wx.CheckBox(self, wx.ID_ANY,
                                       "Save warning")
         self.checkSaved.SetValue(self.settings.saveWarn)
@@ -822,8 +826,7 @@ class DialogPrefs(wx.Dialog):
         self.Bind(wx.EVT_CHECKBOX, self.on_check, self.checkRetain)
         textWarn = wx.StaticText(self,
                                  label="(Needed for Spectrogram view)")
-        textMaxScans = wx.StaticText(self,
-                                 label="Max scans")
+        textMaxScans = wx.StaticText(self, label="Max scans")
         self.spinCtrlMaxScans = wx.SpinCtrl(self)
         self.spinCtrlMaxScans.SetRange(2, 500)
         self.spinCtrlMaxScans.SetValue(self.settings.retainMax)
@@ -837,6 +840,10 @@ class DialogPrefs(wx.Dialog):
         self.checkFade = wx.CheckBox(self, wx.ID_ANY,
                                       "Fade previous scans")
         self.checkFade.SetValue(self.settings.fadeScans)
+
+        textColour = wx.StaticText(self, label="Colour map")
+        self.choiceColour = wx.Choice(self, choices=self.colours)
+        self.choiceColour.SetSelection(self.colours.index(self.settings.colourMap))
 
         self.on_check(None)
 
@@ -939,6 +946,12 @@ class DialogPrefs(wx.Dialog):
         plotbox.Add(self.checkAnnotate, 0, wx.ALL | wx.EXPAND, 10)
         plotbox.Add(self.checkFade, 0, wx.ALL | wx.EXPAND, 10)
 
+        specbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY,
+                                                 "Spectrogram View"),
+                                    wx.HORIZONTAL)
+        specbox.Add(textColour, 0, wx.ALL | wx.EXPAND, 10)
+        specbox.Add(self.choiceColour, 0, wx.ALL | wx.EXPAND, 10)
+
         devbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Devices"),
                                      wx.VERTICAL)
         devbox.Add(self.gridDev, 0, wx.ALL | wx.EXPAND, 10)
@@ -947,6 +960,7 @@ class DialogPrefs(wx.Dialog):
         vbox.Add(genbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
         vbox.Add(conbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
         vbox.Add(plotbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        vbox.Add(specbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
         vbox.Add(devbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
         vbox.Add(sizerButtons, 0, wx.ALL | wx.EXPAND, 10)
 
@@ -980,6 +994,7 @@ class DialogPrefs(wx.Dialog):
         self.settings.retainScans = self.checkRetain.GetValue()
         self.settings.fadeScans = self.checkFade.GetValue()
         self.settings.retainMax = self.spinCtrlMaxScans.GetValue()
+        self.settings.colourMap = self.colours[self.choiceColour.GetSelection()]
         for i in range(0, self.gridDev.GetNumberRows()):
             if not self.devices[i].isDevice:
                 server = self.gridDev.GetCellValue(i, self.COL_DEV)
