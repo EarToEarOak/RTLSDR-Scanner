@@ -531,7 +531,7 @@ class FrameMain(wx.Frame):
                          self.settings.stop, freq,
                          data, offset, self.spectrum,)).start()
         elif status == Event.UPDATED:
-            if freq and self.settings.liveUpdate:
+            if data and self.settings.liveUpdate:
                 self.plot.set_plot(self.spectrum,
                                    self.settings.annotate and \
                                    self.settings.retainScans and \
