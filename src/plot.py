@@ -41,7 +41,6 @@ class Plotter():
         self.lock = lock
         self.figure = self.graph.get_figure()
         self.axes = None
-        self.currentPlot = None
         self.threadPlot = None
         self.setup_plot()
         self.set_grid(grid)
@@ -152,8 +151,10 @@ class ThreadPlot(threading.Thread):
 
                 if self.annotate:
                     self.annotate_plot()
-        self.parent.scale_plot()
-        self.parent.redraw_plot()
+
+        if total > 0:
+            self.parent.scale_plot()
+            self.parent.redraw_plot()
 
     def annotate_plot(self):
         self.clear_markers()

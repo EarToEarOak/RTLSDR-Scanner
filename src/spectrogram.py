@@ -24,7 +24,7 @@
 #
 
 import os
-from threading import Thread
+import threading
 import time
 
 from matplotlib import cm
@@ -88,35 +88,37 @@ class Spectrogram:
         self.barBase.set_label('Level (dB)')
 
     def scale_plot(self, force=False):
-        if self.figure is not None and self.plot is not None:
-            with self.lock:
-                if self.settings.autoScale or force:
-                    extent = self.plot.get_extent()
-                    self.axes.set_xlim(extent[0], extent[1])
-                    self.axes.set_ylim(extent[2], extent[3])
-                    self.settings.yMin, self.settings.yMax = self.plot.get_clim()
-                else:
-                    self.plot.set_clim(self.settings.yMin, self.settings.yMax)
+        with self.lock:
+            if self.settings.autoScale or force:
+                extent = self.plot.get_extent()
+                self.axes.set_xlim(extent[0], extent[1])
+                self.axes.set_ylim(extent[2], extent[3])
+                self.settings.yMin, self.settings.yMax = self.plot.get_clim()
+            else:
+                self.plot.set_clim(self.settings.yMin, self.settings.yMax)
 
-                vmin, vmax = self.plot.get_clim()
-                self.barBase.set_clim(vmin, vmax)
-                try:
-                    self.barBase.draw_all()
-                except:
-                    pass
+            vmin, vmax = self.plot.get_clim()
+            self.barBase.set_clim(vmin, vmax)
+            try:
+                self.barBase.draw_all()
+            except:
+                pass
 
     def redraw_plot(self):
         if self.figure is not None:
             if os.name == "nt":
-                Thread(target=self.thread_draw, name='Draw').start()
+                threading.Thread(target=self.thread_draw, name='Draw').start()
             else:
                 post_event(self.notify, EventThreadStatus(Event.DRAW))
 
     def set_plot(self, data, _annotate):
-        # TODO cancel current update
-        if self.threadPlot is None:
-            self.threadPlot = Thread(target=self.thread_plot, name='Plot',
-                                    args=(data,)).start()
+        if self.threadPlot is not None and self.threadPlot.isAlive():
+            self.threadPlot.cancel()
+            self.threadPlot.join()
+
+        self.threadPlot = ThreadPlot(self, self.lock, self.axes,
+                                     data, self.settings.retainMax,
+                                     self.settings.colourMap).start()
 
     def annotate_plot(self):
         pass
@@ -137,13 +139,37 @@ class Spectrogram:
         self.figure.clear()
         self.figure = None
 
-    def thread_plot(self, data):
+    def thread_draw(self):
         with self.lock:
-            total = len(data)
+            if self.figure is not None:
+                try:
+                    self.graph.get_figure().tight_layout()
+                    self.graph.get_canvas().draw()
+                except:
+                    pass
+
+
+class ThreadPlot(threading.Thread):
+    def __init__(self, parent, lock, axes, data, retainMax, colourMap):
+        threading.Thread.__init__(self)
+        self.name = "Plot"
+        self.parent = parent
+        self.lock = lock
+        self.axes = axes
+        self.data = data
+        self.retainMax = retainMax
+        self.colourMap = colourMap
+        self.abort = False
+
+    def run(self):
+        with self.lock:
+            if self.abort:
+                return
+            total = len(self.data)
             if total > 0:
-                timeMin = min(data)
-                timeMax = max(data)
-                plotFirst = data[timeMin]
+                timeMin = min(self.data)
+                timeMax = max(self.data)
+                plotFirst = self.data[timeMin]
                 if len(plotFirst) == 0:
                     return
                 xMin = min(plotFirst)
@@ -154,34 +180,30 @@ class Spectrogram:
                 extent = [xMin, xMax,
                           epoch_to_mpl(timeMax), epoch_to_mpl(timeMin)]
 
-                c = np.ma.masked_all((self.settings.retainMax, width))
-                self.clear_plots()
-                j = self.settings.retainMax
-                for ys in reversed(sorted(data)):
+                c = np.ma.masked_all((self.retainMax, width))
+                self.parent.clear_plots()
+                j = self.retainMax
+                for ys in reversed(sorted(self.data)):
                     j -= 1
-                    _xs, zs = split_spectrum(data[ys])
+                    _xs, zs = split_spectrum(self.data[ys])
                     for i in range(len(zs)):
+                        if self.abort:
+                            return
                         c[j, i] = zs[i]
 
-                self.plot = self.axes.imshow(c, aspect='auto',
-                                             extent=extent,
-                                             cmap=cm.get_cmap(self.settings.colourMap),
-                                             interpolation = 'spline16',
-                                             gid="plot")
-                self.axes.grid(self.grid)
+                self.parent.plot = self.axes.imshow(c, aspect='auto',
+                                                    extent=extent,
+                                                    cmap=cm.get_cmap(self.colourMap),
+                                                    interpolation='spline36',
+                                                    gid="plot")
 
-        self.scale_plot()
-        self.redraw_plot()
-        self.threadPlot = None
+        if total > 0:
+            self.parent.scale_plot()
+            self.parent.redraw_plot()
 
-    def thread_draw(self):
-        with self.lock:
-            if self.figure is not None:
-                try:
-                    self.graph.get_figure().tight_layout()
-                    self.graph.get_canvas().draw()
-                except:
-                    pass
+    def cancel(self):
+        self.abort = True
+
 
 if __name__ == '__main__':
     print 'Please run rtlsdr_scan.py'
