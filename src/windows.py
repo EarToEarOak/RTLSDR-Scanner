@@ -220,6 +220,9 @@ class PanelGraph(wx.Panel):
     def get_toolbar(self):
         return self.toolbar
 
+    def close(self):
+        close_modeless()
+
 
 class PanelGraphCompare(wx.Panel):
     def __init__(self, parent):
@@ -414,6 +417,8 @@ class DialogCompare(wx.Dialog):
         sizer.Add(grid, 0, wx.EXPAND | wx.ALL, border=5)
         self.SetSizerAndFit(sizer)
 
+        close_modeless()
+
     def on_load_plot(self, event):
         dlg = wx.FileDialog(self, "Open a scan", self.dirname, self.filename,
                             File.RFS, wx.OPEN)
@@ -432,6 +437,7 @@ class DialogCompare(wx.Dialog):
         dlg.Destroy()
 
     def on_close(self, _event):
+        close_modeless()
         self.EndModal(wx.ID_CLOSE)
 
 
@@ -1229,6 +1235,12 @@ class ValidatorCoord(wx.PyValidator):
 
     def Clone(self):
         return ValidatorCoord(self.isLat)
+
+
+def close_modeless():
+    for child in wx.GetTopLevelWindows():
+        if child.Title == 'Configure subplots':
+            child.Close()
 
 
 if __name__ == '__main__':

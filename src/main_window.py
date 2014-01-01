@@ -405,6 +405,7 @@ class FrameMain(wx.Frame):
         self.stop_scan()
         self.wait_background()
         self.get_controls()
+        self.graph.close()
         self.settings.dwell = DWELL[1::2][self.choiceDwell.GetSelection()]
         self.settings.nfft = NFFT[self.choiceNfft.GetSelection()]
         self.settings.devices = self.devices
