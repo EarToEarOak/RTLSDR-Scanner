@@ -320,15 +320,17 @@ class PanelGraphCompare(wx.Panel):
             self.plotDiff.set_ydata(powers)
         elif self.spectrum1 is None:
             freqs, powers = split_spectrum(self.spectrum2)
+            intersections = len(freqs)
             self.plotDiff.set_xdata(freqs)
-            self.plotDiff.set_ydata([0] * len(freqs))
+            self.plotDiff.set_ydata([0] * intersections)
         else:
             freqs, powers = split_spectrum(self.spectrum1)
+            intersections = len(freqs)
             self.plotDiff.set_xdata(freqs)
-            self.plotDiff.set_ydata([0] * len(freqs))
+            self.plotDiff.set_ydata([0] * intersections)
 
-        self.axesDiff.relim()
-        self.axesDiff.autoscale_view()
+        if intersections > 0:
+            self.axesDiff.relim()
         self.textIntersect.SetLabel('Intersections: {0}'.format(intersections))
 
     def set_spectrum1(self, spectrum):
@@ -337,10 +339,9 @@ class PanelGraphCompare(wx.Panel):
         freqs, powers = split_spectrum(self.spectrum1)
         self.plotScan1.set_xdata(freqs)
         self.plotScan1.set_ydata(powers)
-        self.plot_diff()
         self.axesScan.relim()
-        self.axesScan.autoscale_view()
-        self.canvas.draw()
+        self.plot_diff()
+        self.autoscale()
 
     def set_spectrum2(self, spectrum):
         timeStamp = max(spectrum)
@@ -348,9 +349,13 @@ class PanelGraphCompare(wx.Panel):
         freqs, powers = split_spectrum(self.spectrum2)
         self.plotScan2.set_xdata(freqs)
         self.plotScan2.set_ydata(powers)
-        self.plot_diff()
         self.axesScan.relim()
+        self.plot_diff()
+        self.autoscale()
+
+    def autoscale(self):
         self.axesScan.autoscale_view()
+        self.axesDiff.autoscale_view()
         self.canvas.draw()
 
 
