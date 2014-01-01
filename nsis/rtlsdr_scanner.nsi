@@ -234,7 +234,6 @@ FunctionEnd
 
 Function page_update
     !insertmacro MUI_HEADER_TEXT "Updates" "Checking for installer updates"
-
     nsDialogs::Create 1018
     Pop $Page
     ${If} $Page == error
