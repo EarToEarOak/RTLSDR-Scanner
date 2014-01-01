@@ -255,6 +255,8 @@ class PanelGraphCompare(wx.Panel):
         self.Bind(wx.EVT_CHECKBOX, self.on_check_diff, self.checkDiff)
         self.Bind(wx.EVT_CHECKBOX, self.on_check_grid, self.checkGrid)
 
+        self.textIntersect = wx.StaticText(self, label="Intersections: ")
+
         grid = wx.GridBagSizer(5, 5)
         grid.Add(self.check1, pos=(0, 0), flag=wx.ALIGN_CENTER)
         grid.Add(self.check2, pos=(0, 1), flag=wx.ALIGN_CENTER)
@@ -262,6 +264,8 @@ class PanelGraphCompare(wx.Panel):
         grid.Add(self.checkDiff, pos=(0, 3), flag=wx.ALIGN_CENTER)
         grid.Add((20, 1), pos=(0, 4))
         grid.Add(self.checkGrid, pos=(0, 5), flag=wx.ALIGN_CENTER)
+        grid.Add((20, 1), pos=(0, 6))
+        grid.Add(self.textIntersect, pos=(0, 7), span=(1, 1))
 
         toolbar = NavigationToolbarCompare(self.canvas)
         toolbar.Realize()
@@ -292,11 +296,13 @@ class PanelGraphCompare(wx.Panel):
 
     def plot_diff(self):
         diff = {}
+        intersections = 0
 
         if self.spectrum1 is not None and self.spectrum2 is not None:
             set1 = set(self.spectrum1)
             set2 = set(self.spectrum2)
             intersect = set1.intersection(set2)
+            intersections = len(intersect)
             for freq in intersect:
                 diff[freq] = self.spectrum1[freq] - self.spectrum2[freq]
             freqs, powers = split_spectrum(diff)
@@ -313,6 +319,7 @@ class PanelGraphCompare(wx.Panel):
 
         self.axesDiff.relim()
         self.axesDiff.autoscale_view()
+        self.textIntersect.SetLabel('Intersections: {0}'.format(intersections))
 
     def set_spectrum1(self, spectrum):
         timeStamp = max(spectrum)
@@ -406,6 +413,7 @@ class DialogCompare(wx.Dialog):
             else:
                 self.textPlot2.SetLabel(self.filename)
                 self.graph.set_spectrum2(spectrum)
+
         dlg.Destroy()
 
     def on_close(self, _event):
