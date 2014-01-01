@@ -195,7 +195,7 @@ class ThreadPlot(threading.Thread):
                 self.parent.plot = self.axes.imshow(c, aspect='auto',
                                                     extent=extent,
                                                     cmap=cm.get_cmap(self.colourMap),
-                                                    interpolation='spline36',
+                                                    interpolation='spline16',
                                                     gid="plot")
 
         if total > 0:
