@@ -47,14 +47,12 @@ class Spectrogram:
         self.data = [[], [], []]
         self.index = 0
         self.figure = self.graph.get_figure()
-        self.grid = grid
         self.lock = lock
         self.axes = None
         self.plot = None
         self.threadPlot = None
         self.setup_plot()
         self.set_grid(grid)
-        self.redraw_plot()
 
     def setup_plot(self):
         gs = GridSpec(1, 2, width_ratios=[9.5, 0.5])
@@ -88,21 +86,22 @@ class Spectrogram:
         self.barBase.set_label('Level (dB)')
 
     def scale_plot(self, force=False):
-        with self.lock:
-            if self.settings.autoScale or force:
-                extent = self.plot.get_extent()
-                self.axes.set_xlim(extent[0], extent[1])
-                self.axes.set_ylim(extent[2], extent[3])
-                self.settings.yMin, self.settings.yMax = self.plot.get_clim()
-            else:
-                self.plot.set_clim(self.settings.yMin, self.settings.yMax)
+        if self.figure is not None and self.plot is not None:
+            with self.lock:
+                if self.settings.autoScale or force:
+                    extent = self.plot.get_extent()
+                    self.axes.set_xlim(extent[0], extent[1])
+                    self.axes.set_ylim(extent[2], extent[3])
+                    self.settings.yMin, self.settings.yMax = self.plot.get_clim()
+                else:
+                    self.plot.set_clim(self.settings.yMin, self.settings.yMax)
 
-            vmin, vmax = self.plot.get_clim()
-            self.barBase.set_clim(vmin, vmax)
-            try:
-                self.barBase.draw_all()
-            except:
-                pass
+                vmin, vmax = self.plot.get_clim()
+                self.barBase.set_clim(vmin, vmax)
+                try:
+                    self.barBase.draw_all()
+                except:
+                    pass
 
     def redraw_plot(self):
         if self.figure is not None:
@@ -131,8 +130,10 @@ class Spectrogram:
                     child.remove()
 
     def set_grid(self, on):
-        self.grid = on
-        self.axes.grid(on, color='w')
+        if on:
+            self.axes.grid(True, color='w')
+        else:
+            self.axes.grid(False)
         self.redraw_plot()
 
     def close(self):

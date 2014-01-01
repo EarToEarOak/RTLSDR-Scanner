@@ -44,7 +44,6 @@ class Plotter():
         self.threadPlot = None
         self.setup_plot()
         self.set_grid(grid)
-        self.redraw_plot()
 
     def setup_plot(self):
         self.axes = self.figure.add_subplot(111)
