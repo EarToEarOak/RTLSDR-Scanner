@@ -151,8 +151,22 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
 
 
 class NavigationToolbarCompare(NavigationToolbar2WxAgg):
-    def __init__(self, canvas):
+    def __init__(self, canvas, main):
         NavigationToolbar2WxAgg.__init__(self, canvas)
+        self.main = main
+
+        self.AddSeparator()
+
+        gridId = wx.NewId()
+        self.AddCheckTool(gridId, load_bitmap('grid'),
+                          shortHelp='Grid',
+                          longHelp='Toggle grid')
+        self.ToggleTool(gridId, True)
+        wx.EVT_TOOL(self, gridId, self.on_check_grid)
+
+    def on_check_grid(self, event):
+        self.grid = event.Checked()
+        self.main.set_grid(self.grid)
 
 
 class PanelGraph(wx.Panel):
@@ -244,16 +258,13 @@ class PanelGraphCompare(wx.Panel):
         self.check1 = wx.CheckBox(self, wx.ID_ANY, "Scan 1")
         self.check2 = wx.CheckBox(self, wx.ID_ANY, "Scan 2")
         self.checkDiff = wx.CheckBox(self, wx.ID_ANY, "Difference")
-        self.checkGrid = wx.CheckBox(self, wx.ID_ANY, "Grid")
         self.check1.SetValue(True)
         self.check2.SetValue(True)
         self.checkDiff.SetValue(True)
-        self.checkGrid.SetValue(True)
-        self.on_check_grid(None)
+        self.set_grid(True)
         self.Bind(wx.EVT_CHECKBOX, self.on_check1, self.check1)
         self.Bind(wx.EVT_CHECKBOX, self.on_check2, self.check2)
         self.Bind(wx.EVT_CHECKBOX, self.on_check_diff, self.checkDiff)
-        self.Bind(wx.EVT_CHECKBOX, self.on_check_grid, self.checkGrid)
 
         self.textIntersect = wx.StaticText(self, label="Intersections: ")
 
@@ -263,11 +274,10 @@ class PanelGraphCompare(wx.Panel):
         grid.Add((20, 1), pos=(0, 2))
         grid.Add(self.checkDiff, pos=(0, 3), flag=wx.ALIGN_CENTER)
         grid.Add((20, 1), pos=(0, 4))
-        grid.Add(self.checkGrid, pos=(0, 5), flag=wx.ALIGN_CENTER)
-        grid.Add((20, 1), pos=(0, 6))
-        grid.Add(self.textIntersect, pos=(0, 7), span=(1, 1))
+        grid.Add((20, 1), pos=(0, 5))
+        grid.Add(self.textIntersect, pos=(0, 6), span=(1, 1))
 
-        toolbar = NavigationToolbarCompare(self.canvas)
+        toolbar = NavigationToolbarCompare(self.canvas, self)
         toolbar.Realize()
 
         vbox = wx.BoxSizer(wx.VERTICAL)
@@ -290,8 +300,8 @@ class PanelGraphCompare(wx.Panel):
         self.plotDiff.set_visible(self.checkDiff.GetValue())
         self.canvas.draw()
 
-    def on_check_grid(self, _event):
-        self.axesDiff.grid(self.checkGrid.GetValue())
+    def set_grid(self, grid):
+        self.axesDiff.grid(grid)
         self.canvas.draw()
 
     def plot_diff(self):
