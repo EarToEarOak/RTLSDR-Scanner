@@ -3,7 +3,7 @@
 #
 # http://eartoearoak.com/software/rtlsdr-scanner
 #
-# Copyright 2012, 2013 Al Brown
+# Copyright 2012 - 2014 Al Brown
 #
 # A frequency scanning GUI for the OsmoSDR rtl-sdr library at
 # http://sdr.osmocom.org/trac/wiki/rtl-sdr
@@ -108,7 +108,7 @@ class RtlTcp():
 
 
 class ThreadBuffer(threading.Thread):
-    name = 'ThreadBuffer'
+    name = 'Buffer'
     buffer = ""
     cancel = False
     readLen = 0

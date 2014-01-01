@@ -3,7 +3,7 @@
 #
 # http://eartoearoak.com/software/rtlsdr-scanner
 #
-# Copyright 2012, 2013 Al Brown
+# Copyright 2012 - 2014 Al Brown
 #
 # A frequency scanning GUI for the OsmoSDR rtl-sdr library at
 # http://sdr.osmocom.org/trac/wiki/rtl-sdr
@@ -26,19 +26,20 @@
 import itertools
 from urlparse import urlparse
 
+from matplotlib import cm
 import matplotlib
-from matplotlib.backends.backend_wx import _load_bitmap
-from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as \
-    FigureCanvas, NavigationToolbar2WxAgg
+from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas, \
+    NavigationToolbar2WxAgg
+from matplotlib.colorbar import ColorbarBase
+from matplotlib.colors import Normalize
 from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
 import numpy
 import rtlsdr
 import wx
 
 from constants import *
-from events import EventThreadStatus, Event
-from misc import split_spectrum, nearest
-from plot import open_plot
+from events import EventThreadStatus, Event, post_event
+from misc import split_spectrum, nearest, open_plot, load_bitmap
 from rtltcp import RtlTcp
 import wx.grid as grid
 import wx.lib.masked as masked
@@ -98,26 +99,74 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
     def __init__(self, canvas, main):
         self.main = main
 
-        navId = wx.NewId()
         NavigationToolbar2WxAgg.__init__(self, canvas)
-#         self.DeleteTool(self.wx_ids['Back'])
-#         self.DeleteTool(self.wx_ids['Forward'])
-#         self.DeleteTool(self.wx_ids['Subplots'])
-        self.AddSimpleTool(navId, _load_bitmap('hand.png'),
+        self.AddSeparator()
+
+        navId = wx.NewId()
+        self.AddSimpleTool(navId, load_bitmap('range'),
                            'Range', 'Set plot range')
         wx.EVT_TOOL(self, navId, self.on_range)
+
+        self.AddSeparator()
+
+        self.autoId = wx.NewId()
+        self.AddCheckTool(self.autoId, load_bitmap('auto_range'),
+                          shortHelp='Auto range',
+                          longHelp='Scale plot to all measurements')
+        self.ToggleTool(self.autoId, self.main.settings.autoScale)
+        wx.EVT_TOOL(self, self.autoId, self.on_check_auto)
+
+        liveId = wx.NewId()
+        self.AddCheckTool(liveId, load_bitmap('auto_refresh'),
+                          shortHelp='Live update',
+                          longHelp='Update plot in realtime (slow)')
+        self.ToggleTool(liveId, self.main.settings.liveUpdate)
+        wx.EVT_TOOL(self, liveId, self.on_check_update)
+
+        gridId = wx.NewId()
+        self.AddCheckTool(gridId, load_bitmap('grid'),
+                          shortHelp='Grid',
+                          longHelp='Toggle grid')
+        self.ToggleTool(gridId, self.main.grid)
+        wx.EVT_TOOL(self, gridId, self.on_check_grid)
 
     def on_range(self, _event):
         dlg = DialogRange(self, self.main)
         if dlg.ShowModal() == wx.ID_OK:
             self.main.plot.scale_plot()
-            self.main.plot.redraw()
+            self.ToggleTool(self.autoId, self.main.settings.autoScale)
+            self.main.plot.redraw_plot()
         dlg.Destroy()
+
+    def on_check_auto(self, event):
+        self.main.settings.autoScale = event.Checked()
+        self.main.plot.redraw_plot()
+
+    def on_check_update(self, event):
+        self.main.settings.liveUpdate = event.Checked()
+
+    def on_check_grid(self, event):
+        self.grid = event.Checked()
+        self.main.plot.set_grid(self.grid)
 
 
 class NavigationToolbarCompare(NavigationToolbar2WxAgg):
-    def __init__(self, canvas):
+    def __init__(self, canvas, main):
         NavigationToolbar2WxAgg.__init__(self, canvas)
+        self.main = main
+
+        self.AddSeparator()
+
+        gridId = wx.NewId()
+        self.AddCheckTool(gridId, load_bitmap('grid'),
+                          shortHelp='Grid',
+                          longHelp='Toggle grid')
+        self.ToggleTool(gridId, True)
+        wx.EVT_TOOL(self, gridId, self.on_check_grid)
+
+    def on_check_grid(self, event):
+        self.grid = event.Checked()
+        self.main.set_grid(self.grid)
 
 
 class PanelGraph(wx.Panel):
@@ -129,20 +178,15 @@ class PanelGraph(wx.Panel):
         wx.Panel.__init__(self, self.parent)
 
         self.figure = matplotlib.figure.Figure(facecolor='white')
-        self.axes = self.figure.add_subplot(111)
         self.canvas = FigureCanvas(self, -1, self.figure)
         self.canvas.mpl_connect('motion_notify_event', self.on_motion)
         self.canvas.mpl_connect('draw_event', self.on_draw)
-        self.canvas.Bind(wx.EVT_ENTER_WINDOW, self.on_enter)
         self.toolbar = NavigationToolbar(self.canvas, self.main)
         self.toolbar.Realize()
 
         vbox = wx.BoxSizer(wx.VERTICAL)
         vbox.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
         vbox.Add(self.toolbar, 0, wx.EXPAND)
-
-#         self.Bind(wx.EVT_IDLE, self.on_idle)
-#         self.Bind(wx.EVT_SIZE, self.on_size)
 
         self.SetSizer(vbox)
         vbox.Fit(self)
@@ -151,8 +195,9 @@ class PanelGraph(wx.Panel):
         xpos = event.xdata
         ypos = event.ydata
         text = ""
-        if xpos is not None and ypos is not None:
-            spectrum = self.main.spectrum
+        if xpos is not None and ypos is not None and len(self.main.spectrum) > 0:
+            timeStamp = max(self.main.spectrum)
+            spectrum = self.main.spectrum[timeStamp]
             if len(spectrum) > 0:
                 x = min(spectrum.keys(), key=lambda freq: abs(freq - xpos))
                 if(xpos <= max(spectrum.keys(), key=float)):
@@ -164,29 +209,7 @@ class PanelGraph(wx.Panel):
         self.main.status.SetStatusText(text, 1)
 
     def on_draw(self, _event):
-        wx.PostEvent(self.main, EventThreadStatus(Event.PLOTTED))
-
-    def on_enter(self, _event):
-        self.canvas.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
-
-    def on_size(self, event):
-        self.resize = True
-        event.Skip()
-
-    def on_idle(self, _event):
-        if self.resize:
-            self.resize = False
-            self.set_size()
-
-    def set_size(self):
-        self.Unbind(wx.EVT_SIZE)
-        window = self.GetClientSize()
-        toolbar = self.toolbar.GetClientSize()
-        self.canvas.SetSize(window)
-        window[1] -= toolbar[1]
-        self.figure.set_size_inches(float(window[0]) / self.figure.get_dpi(),
-                                    float(window[1]) / self.figure.get_dpi())
-        self.Bind(wx.EVT_SIZE, self.on_size)
+        post_event(self.main, EventThreadStatus(Event.PLOTTED))
 
     def get_figure(self):
         return self.figure
@@ -194,11 +217,11 @@ class PanelGraph(wx.Panel):
     def get_canvas(self):
         return self.canvas
 
-    def get_axes(self):
-        return self.axes
-
     def get_toolbar(self):
         return self.toolbar
+
+    def close(self):
+        close_modeless()
 
 
 class PanelGraphCompare(wx.Panel):
@@ -234,21 +257,19 @@ class PanelGraphCompare(wx.Panel):
         self.axesDiff.set_ylabel('Difference (db)')
 
         self.canvas = FigureCanvas(self, -1, figure)
-        self.canvas.Bind(wx.EVT_ENTER_WINDOW, self.on_enter)
 
         self.check1 = wx.CheckBox(self, wx.ID_ANY, "Scan 1")
         self.check2 = wx.CheckBox(self, wx.ID_ANY, "Scan 2")
         self.checkDiff = wx.CheckBox(self, wx.ID_ANY, "Difference")
-        self.checkGrid = wx.CheckBox(self, wx.ID_ANY, "Grid")
         self.check1.SetValue(True)
         self.check2.SetValue(True)
         self.checkDiff.SetValue(True)
-        self.checkGrid.SetValue(True)
-        self.on_check_grid(None)
+        self.set_grid(True)
         self.Bind(wx.EVT_CHECKBOX, self.on_check1, self.check1)
         self.Bind(wx.EVT_CHECKBOX, self.on_check2, self.check2)
         self.Bind(wx.EVT_CHECKBOX, self.on_check_diff, self.checkDiff)
-        self.Bind(wx.EVT_CHECKBOX, self.on_check_grid, self.checkGrid)
+
+        self.textIntersect = wx.StaticText(self, label="Intersections: ")
 
         grid = wx.GridBagSizer(5, 5)
         grid.Add(self.check1, pos=(0, 0), flag=wx.ALIGN_CENTER)
@@ -256,9 +277,10 @@ class PanelGraphCompare(wx.Panel):
         grid.Add((20, 1), pos=(0, 2))
         grid.Add(self.checkDiff, pos=(0, 3), flag=wx.ALIGN_CENTER)
         grid.Add((20, 1), pos=(0, 4))
-        grid.Add(self.checkGrid, pos=(0, 5), flag=wx.ALIGN_CENTER)
+        grid.Add((20, 1), pos=(0, 5))
+        grid.Add(self.textIntersect, pos=(0, 6), span=(1, 1))
 
-        toolbar = NavigationToolbarCompare(self.canvas)
+        toolbar = NavigationToolbarCompare(self.canvas, self)
         toolbar.Realize()
 
         vbox = wx.BoxSizer(wx.VERTICAL)
@@ -268,9 +290,6 @@ class PanelGraphCompare(wx.Panel):
 
         self.SetSizer(vbox)
         vbox.Fit(self)
-
-    def on_enter(self, _event):
-        self.canvas.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
 
     def on_check1(self, _event):
         self.plotScan1.set_visible(self.check1.GetValue())
@@ -284,17 +303,19 @@ class PanelGraphCompare(wx.Panel):
         self.plotDiff.set_visible(self.checkDiff.GetValue())
         self.canvas.draw()
 
-    def on_check_grid(self, _event):
-        self.axesDiff.grid(self.checkGrid.GetValue())
+    def set_grid(self, grid):
+        self.axesDiff.grid(grid)
         self.canvas.draw()
 
     def plot_diff(self):
         diff = {}
+        intersections = 0
 
         if self.spectrum1 is not None and self.spectrum2 is not None:
             set1 = set(self.spectrum1)
             set2 = set(self.spectrum2)
             intersect = set1.intersection(set2)
+            intersections = len(intersect)
             for freq in intersect:
                 diff[freq] = self.spectrum1[freq] - self.spectrum2[freq]
             freqs, powers = split_spectrum(diff)
@@ -302,34 +323,63 @@ class PanelGraphCompare(wx.Panel):
             self.plotDiff.set_ydata(powers)
         elif self.spectrum1 is None:
             freqs, powers = split_spectrum(self.spectrum2)
+            intersections = len(freqs)
             self.plotDiff.set_xdata(freqs)
-            self.plotDiff.set_ydata([0] * len(freqs))
+            self.plotDiff.set_ydata([0] * intersections)
         else:
             freqs, powers = split_spectrum(self.spectrum1)
+            intersections = len(freqs)
             self.plotDiff.set_xdata(freqs)
-            self.plotDiff.set_ydata([0] * len(freqs))
+            self.plotDiff.set_ydata([0] * intersections)
 
-        self.axesDiff.relim()
-        self.axesDiff.autoscale_view()
+        if intersections > 0:
+            self.axesDiff.relim()
+        self.textIntersect.SetLabel('Intersections: {0}'.format(intersections))
 
     def set_spectrum1(self, spectrum):
-        self.spectrum1 = spectrum
-        freqs, powers = split_spectrum(spectrum)
+        timeStamp = max(spectrum)
+        self.spectrum1 = spectrum[timeStamp]
+        freqs, powers = split_spectrum(self.spectrum1)
         self.plotScan1.set_xdata(freqs)
         self.plotScan1.set_ydata(powers)
-        self.plot_diff()
         self.axesScan.relim()
-        self.axesScan.autoscale_view()
-        self.canvas.draw()
+        self.plot_diff()
+        self.autoscale()
 
     def set_spectrum2(self, spectrum):
-        self.spectrum2 = spectrum
-        freqs, powers = split_spectrum(spectrum)
+        timeStamp = max(spectrum)
+        self.spectrum2 = spectrum[timeStamp]
+        freqs, powers = split_spectrum(self.spectrum2)
         self.plotScan2.set_xdata(freqs)
         self.plotScan2.set_ydata(powers)
-        self.plot_diff()
         self.axesScan.relim()
+        self.plot_diff()
+        self.autoscale()
+
+    def autoscale(self):
         self.axesScan.autoscale_view()
+        self.axesDiff.autoscale_view()
+        self.canvas.draw()
+
+
+class PanelColourBar(wx.Panel):
+    def __init__(self, parent, colourMap):
+        wx.Panel.__init__(self, parent)
+        dpi = wx.ScreenDC().GetPPI()[0]
+        figure = matplotlib.figure.Figure(facecolor='white', dpi=dpi)
+        figure.set_size_inches(200.0 / dpi, 25.0 / dpi)
+        self.canvas = FigureCanvas(self, -1, figure)
+        axes = figure.add_subplot(111)
+        figure.subplots_adjust(0, 0, 1, 1)
+        norm = Normalize(vmin=0, vmax=1)
+        self.bar = ColorbarBase(axes, norm=norm, orientation='horizontal',
+                                cmap=cm.get_cmap(colourMap))
+        axes.xaxis.set_visible(False)
+
+    def set_map(self, colourMap):
+        self.bar.set_cmap(colourMap)
+        self.bar.changed()
+        self.bar.draw_all()
         self.canvas.draw()
 
 
@@ -367,6 +417,8 @@ class DialogCompare(wx.Dialog):
         sizer.Add(grid, 0, wx.EXPAND | wx.ALL, border=5)
         self.SetSizerAndFit(sizer)
 
+        close_modeless()
+
     def on_load_plot(self, event):
         dlg = wx.FileDialog(self, "Open a scan", self.dirname, self.filename,
                             File.RFS, wx.OPEN)
@@ -381,9 +433,11 @@ class DialogCompare(wx.Dialog):
             else:
                 self.textPlot2.SetLabel(self.filename)
                 self.graph.set_spectrum2(spectrum)
+
         dlg.Destroy()
 
     def on_close(self, _event):
+        close_modeless()
         self.EndModal(wx.ID_CLOSE)
 
 
@@ -484,7 +538,6 @@ class DialogOffset(wx.Dialog):
         figure = matplotlib.figure.Figure(facecolor='white')
         self.axes = figure.add_subplot(111)
         self.canvas = FigureCanvas(self, -1, figure)
-        self.canvas.Bind(wx.EVT_ENTER_WINDOW, self.on_enter)
 
         textHelp = wx.StaticText(self,
             label="Remove the aerial and press refresh, "
@@ -545,11 +598,7 @@ class DialogOffset(wx.Dialog):
         self.SetSizerAndFit(gridSizer)
         self.draw_limits()
 
-    def on_enter(self, _event):
-        self.canvas.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
-
     def on_ok(self, _event):
-
         self.EndModal(wx.ID_OK)
 
     def on_refresh(self, _event):
@@ -801,33 +850,43 @@ class DialogPrefs(wx.Dialog):
 
         wx.Dialog.__init__(self, parent=parent, title="Preferences")
 
+        self.colours = [colour for colour in cm.datad]
+        self.colours.sort()
+
         self.checkSaved = wx.CheckBox(self, wx.ID_ANY,
                                       "Save warning")
         self.checkSaved.SetValue(self.settings.saveWarn)
         self.checkSaved.SetToolTip(wx.ToolTip('Prompt to save scan on exit'))
+
+        self.checkRetain = wx.CheckBox(self, wx.ID_ANY,
+                                      "Retain previous scans")
+        self.checkRetain.SetToolTip(wx.ToolTip('Can be slow'))
+        self.checkRetain.SetValue(self.settings.retainScans)
+        self.Bind(wx.EVT_CHECKBOX, self.on_check, self.checkRetain)
+        textWarn = wx.StaticText(self,
+                                 label="(Needed for Spectrogram view)")
+        textMaxScans = wx.StaticText(self, label="Max scans")
+        self.spinCtrlMaxScans = wx.SpinCtrl(self)
+        self.spinCtrlMaxScans.SetRange(2, 500)
+        self.spinCtrlMaxScans.SetValue(self.settings.retainMax)
+        self.spinCtrlMaxScans.SetToolTip(wx.ToolTip('Maximum previous scans'
+                                                    ' to display'))
+
         self.checkAnnotate = wx.CheckBox(self, wx.ID_ANY,
                                       "Label peak level")
         self.checkAnnotate.SetValue(self.settings.annotate)
         self.checkAnnotate.SetToolTip(wx.ToolTip('Annotate scan peak value'))
-
-        self.checkRetain = wx.CheckBox(self, wx.ID_ANY,
-                                      "Display previous scans")
-        self.checkRetain.SetToolTip(wx.ToolTip('Can be slow'))
-        self.checkRetain.SetValue(self.settings.retainScans)
-        self.Bind(wx.EVT_CHECKBOX, self.on_check, self.checkRetain)
         self.checkFade = wx.CheckBox(self, wx.ID_ANY,
                                       "Fade previous scans")
         self.checkFade.SetValue(self.settings.fadeScans)
-        textMaxScans = wx.StaticText(self,
-                                 label="Max scans")
-        self.spinCtrlMaxScans = wx.SpinCtrl(self)
-        self.spinCtrlMaxScans.SetRange(2, 500)
-        self.spinCtrlMaxScans.SetValue(self.settings.maxScans)
-        self.spinCtrlMaxScans.SetToolTip(wx.ToolTip('Maximum previous scans to display'))
+
+        textColour = wx.StaticText(self, label="Colour map")
+        self.choiceColour = wx.Choice(self, choices=self.colours)
+        self.choiceColour.SetSelection(self.colours.index(self.settings.colourMap))
+        self.Bind(wx.EVT_CHOICE, self.on_choice, self.choiceColour)
+        self.colourBar = PanelColourBar(self, self.settings.colourMap)
 
         self.on_check(None)
-        textWarn = wx.StaticText(self,
-                                 label="(Only the most recent scan is saved)")
 
         self.devices = devices
         self.gridDev = grid.Grid(self)
@@ -909,31 +968,42 @@ class DialogPrefs(wx.Dialog):
         sizerButtons.Realize()
         self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
 
-        optbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "General"),
+        genbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "General"),
                                      wx.VERTICAL)
-        optbox.Add(self.checkSaved, 0, wx.ALL | wx.EXPAND, 10)
-        optbox.Add(self.checkAnnotate, 0, wx.ALL | wx.EXPAND, 10)
+        genbox.Add(self.checkSaved, 0, wx.ALL | wx.EXPAND, 10)
 
         congrid = wx.GridBagSizer(10, 10)
         congrid.Add(self.checkRetain, pos=(0, 0), flag=wx.ALL)
         congrid.Add(textWarn, pos=(0, 1), flag=wx.ALL)
-        congrid.Add(self.checkFade, pos=(1, 0), flag=wx.ALL)
-        congrid.Add(textMaxScans, pos=(2, 0), flag=wx.ALL)
-        congrid.Add(self.spinCtrlMaxScans, pos=(2, 1), flag=wx.ALL)
-
+        congrid.Add(textMaxScans, pos=(1, 0), flag=wx.ALL)
+        congrid.Add(self.spinCtrlMaxScans, pos=(1, 1), flag=wx.ALL)
         conbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY,
-                                                "Continuous scans"),
+                                                "Continuous Scans"),
                                    wx.VERTICAL)
         conbox.Add(congrid, 0, wx.ALL | wx.EXPAND, 10)
+
+        plotbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Plot View"),
+                                     wx.HORIZONTAL)
+        plotbox.Add(self.checkAnnotate, 0, wx.ALL | wx.EXPAND, 10)
+        plotbox.Add(self.checkFade, 0, wx.ALL | wx.EXPAND, 10)
+
+        specbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY,
+                                                 "Spectrogram View"),
+                                    wx.HORIZONTAL)
+        specbox.Add(textColour, 0, wx.ALL | wx.EXPAND, 10)
+        specbox.Add(self.choiceColour, 0, wx.ALL | wx.EXPAND, 10)
+        specbox.Add(self.colourBar, 0, wx.ALL | wx.EXPAND, 10)
 
         devbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Devices"),
                                      wx.VERTICAL)
         devbox.Add(self.gridDev, 0, wx.ALL | wx.EXPAND, 10)
 
         vbox = wx.BoxSizer(wx.VERTICAL)
-        vbox.Add(optbox, 0, wx.ALL | wx.EXPAND, 10)
-        vbox.Add(conbox, 0, wx.ALL | wx.EXPAND, 10)
-        vbox.Add(devbox, 0, wx.ALL | wx.EXPAND, 10)
+        vbox.Add(genbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        vbox.Add(conbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        vbox.Add(plotbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        vbox.Add(specbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        vbox.Add(devbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
         vbox.Add(sizerButtons, 0, wx.ALL | wx.EXPAND, 10)
 
         self.SetSizerAndFit(vbox)
@@ -942,6 +1012,10 @@ class DialogPrefs(wx.Dialog):
         enabled = self.checkRetain.GetValue()
         self.checkFade.Enable(enabled)
         self.spinCtrlMaxScans.Enable(enabled)
+
+    def on_choice(self, _event):
+        self.colourBar.set_map(self.colours[self.choiceColour.GetSelection()])
+        self.choiceColour.SetFocus()
 
     def on_click(self, event):
         col = event.GetCol()
@@ -965,7 +1039,8 @@ class DialogPrefs(wx.Dialog):
         self.settings.annotate = self.checkAnnotate.GetValue()
         self.settings.retainScans = self.checkRetain.GetValue()
         self.settings.fadeScans = self.checkFade.GetValue()
-        self.settings.maxScans = self.spinCtrlMaxScans.GetValue()
+        self.settings.retainMax = self.spinCtrlMaxScans.GetValue()
+        self.settings.colourMap = self.colours[self.choiceColour.GetSelection()]
         for i in range(0, self.gridDev.GetNumberRows()):
             if not self.devices[i].isDevice:
                 server = self.gridDev.GetCellValue(i, self.COL_DEV)
@@ -1092,7 +1167,6 @@ class DialogRange(wx.Dialog):
     def on_auto(self, _event):
         state = self.checkAuto.GetValue()
         self.set_enabled(not state)
-        self.main.checkAuto.SetValue(state)
 
     def on_ok(self, _event):
         self.main.settings.autoScale = self.checkAuto.GetValue()
@@ -1161,6 +1235,12 @@ class ValidatorCoord(wx.PyValidator):
 
     def Clone(self):
         return ValidatorCoord(self.isLat)
+
+
+def close_modeless():
+    for child in wx.GetTopLevelWindows():
+        if child.Title == 'Configure subplots':
+            child.Close()
 
 
 if __name__ == '__main__':

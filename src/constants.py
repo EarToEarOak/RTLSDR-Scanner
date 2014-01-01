@@ -3,7 +3,7 @@
 #
 # http://eartoearoak.com/software/rtlsdr-scanner
 #
-# Copyright 2012, 2013 Al Brown
+# Copyright 2012 - 2014 Al Brown
 #
 # A frequency scanning GUI for the OsmoSDR rtl-sdr library at
 # http://sdr.osmocom.org/trac/wiki/rtl-sdr
@@ -46,13 +46,16 @@ NFFT = [16,
 
 DWELL = ["16 ms", 0.016,
          "32 ms", 0.032,
-         "65 ms", 0.064,
+         "65 ms", 0.065,
          "131 ms", 0.131,
          "262 ms", 0.262,
          "524 ms", 0.524,
-         "1 s", 1,
-         "2 s", 2,
-         "8 s", 8]
+         "1 s", 1.048,
+         "2 s", 2.097,
+         "8 s", 8.388]
+
+DISPLAY = ["Plot", 0,
+           "Spectrogram", 1]
 
 TUNER = ["Unknown",
          "Elonics E4000",
@@ -71,6 +74,10 @@ class Cal:
     START, DONE, OK, CANCEL = range(4)
 
 
+class Display:
+    PLOT, SPECT = range(2)
+
+
 class Mode:
     SINGLE, CONTIN = range(2)
 
@@ -84,7 +91,7 @@ class File:
     RFS = "RTLSDR frequency scan (*.rfs)|*.rfs"
     CSV = "CSV table (*.csv)|*.csv"
     HEADER = "RTLSDR Scanner"
-    VERSION = 6
+    VERSION = 7
 
 
 if __name__ == '__main__':

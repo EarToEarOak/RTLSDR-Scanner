@@ -3,7 +3,7 @@
 #
 # http://eartoearoak.com/software/rtlsdr-scanner
 #
-# Copyright 2012, 2013 Al Brown
+# Copyright 2012 - 2014 Al Brown
 #
 # A frequency scanning GUI for the OsmoSDR rtl-sdr library at
 # http://sdr.osmocom.org/trac/wiki/rtl-sdr
@@ -25,13 +25,15 @@
 
 import os
 import sys
+from threading import Thread
+import threading
 from urlparse import urlparse
 
 from constants import SAMPLE_RATE
 from devices import Device, get_devices
 from events import *
-from misc import nearest, calc_real_dwell, next_2_to_pow
-from plot import save_plot, export_plot, ScanInfo
+from misc import ScanInfo, save_plot, export_plot, nearest, calc_real_dwell, \
+    next_2_to_pow
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
 
@@ -48,6 +50,8 @@ class Cli():
         remote = args.remote
         directory, filename = os.path.split(args.file)
         _null, ext = os.path.splitext(args.file)
+
+        self.lock = threading.Lock()
 
         self.stepsTotal = 0
         self.steps = 0
@@ -162,13 +166,17 @@ class Cli():
             exit(1)
         elif status == Event.PROCESSED:
             offset = self.settings.devices[self.settings.index].offset
-            update_spectrum(self.settings.start, self.settings.stop, freq,
-                            data, offset, self.spectrum)
+            Thread(target=update_spectrum, name='Update',
+                   args=(queue, self.lock, self.settings.start,
+                         self.settings.stop, freq,
+                         data, offset, self.spectrum,)).start()
+        elif status == Event.UPDATED:
             self.progress()
 
     def on_process_done(self, data):
-        freq, scan = data
-        post_event(self.queue, EventThreadStatus(Event.PROCESSED, freq, scan))
+        timeStamp, freq, scan = data
+        post_event(self.queue, EventThreadStatus(Event.PROCESSED, freq,
+                                                 (timeStamp, scan)))
 
     def progress(self):
         self.steps -= 1

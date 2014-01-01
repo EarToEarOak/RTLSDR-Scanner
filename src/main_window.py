@@ -3,7 +3,7 @@
 #
 # http://eartoearoak.com/software/rtlsdr-scanner
 #
-# Copyright 2012, 2013 Al Brown
+# Copyright 2012 - 2014 Al Brown
 #
 # A frequency scanning GUI for the OsmoSDR rtl-sdr library at
 # http://sdr.osmocom.org/trac/wiki/rtl-sdr
@@ -22,6 +22,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+
 try:
     input = raw_input
 except:
@@ -40,16 +41,20 @@ except ImportError as error:
 
 import datetime
 import os.path
+from threading import Thread
 import threading
+import time
 import webbrowser
 
 from constants import *
 from devices import get_devices
-from events import EVT_THREAD_STATUS, Event, EventThreadStatus
-from misc import calc_samples, calc_real_dwell
-from plot import open_plot, save_plot, export_plot, ScanInfo, Plotter
+from events import EVT_THREAD_STATUS, Event, EventThreadStatus, post_event
+from misc import ScanInfo, calc_samples, calc_real_dwell, open_plot, save_plot, \
+    export_plot
+from plot import Plotter
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
+from spectrogram import Spectrogram
 from windows import PanelGraph, DialogPrefs, DialogCompare, DialogAutoCal, \
     DialogSaveWarn, Statusbar, DialogProperties
 
@@ -82,6 +87,8 @@ class FrameMain(wx.Frame):
 
         self.sdr = None
         self.threadScan = None
+
+        self.plot = None
 
         self.stopAtEnd = False
         self.stopScan = False
@@ -128,9 +135,7 @@ class FrameMain(wx.Frame):
         self.devices = get_devices(self.settings.devices)
         self.oldCal = 0
 
-        displaySize = wx.DisplaySize()
-        wx.Frame.__init__(self, None, title=title, size=(displaySize[0] / 1.5,
-                                                         displaySize[1] / 2))
+        wx.Frame.__init__(self, None, title=title)
 
         self.Bind(wx.EVT_CLOSE, self.on_exit)
 
@@ -143,9 +148,10 @@ class FrameMain(wx.Frame):
         self.set_control_state(True)
         self.Show()
 
-        size = self.panel.GetSize()
-        size[1] += displaySize[1] / 4
-        self.SetMinSize(size)
+        displaySize = wx.DisplaySize()
+        toolbarSize = self.panel.GetBestSize()
+        self.SetClientSize((toolbarSize[0] + 10, displaySize[1] / 2))
+        self.SetMinSize((displaySize[0] / 4, displaySize[1] / 4))
 
         self.Connect(-1, -1, EVT_THREAD_STATUS, self.on_event)
 
@@ -156,8 +162,8 @@ class FrameMain(wx.Frame):
 
         self.panel = wx.Panel(panel)
         self.graph = PanelGraph(panel, self)
-        self.plot = Plotter(self, self.graph, self.settings, self.grid,
-                            self.lock)
+
+        self.create_plot()
 
         self.buttonStart = wx.Button(self.panel, wx.ID_ANY, 'Start')
         self.buttonStop = wx.Button(self.panel, wx.ID_ANY, 'Stop')
@@ -183,6 +189,7 @@ class FrameMain(wx.Frame):
         textMode = wx.StaticText(self.panel, label="Mode")
         self.choiceMode = wx.Choice(self.panel, choices=MODE[::2])
         self.choiceMode.SetToolTip(wx.ToolTip('Scanning mode'))
+        self.Bind(wx.EVT_CHOICE, self.on_choice, self.choiceMode)
 
         textDwell = wx.StaticText(self.panel, label="Dwell")
         self.choiceDwell = wx.Choice(self.panel, choices=DWELL[::2])
@@ -192,25 +199,14 @@ class FrameMain(wx.Frame):
         self.choiceNfft = wx.Choice(self.panel, choices=map(str, NFFT))
         self.choiceNfft.SetToolTip(wx.ToolTip('Higher values for greater'
                                               'precision'))
+
+        textDisplay = wx.StaticText(self.panel, label="Display")
+        self.choiceDisplay = wx.Choice(self.panel, choices=DISPLAY[::2])
+        self.Bind(wx.EVT_CHOICE, self.on_choice, self.choiceDisplay)
+        self.choiceDisplay.SetToolTip(wx.ToolTip('Spectrogram available in'
+                                                 'continuous mode'))
+
         self.set_controls()
-
-        self.checkAuto = wx.CheckBox(self.panel, wx.ID_ANY,
-                                        "Auto range")
-        self.checkAuto.SetToolTip(wx.ToolTip('Scale the axes to fit all data'))
-        self.checkAuto.SetValue(self.settings.autoScale)
-        self.Bind(wx.EVT_CHECKBOX, self.on_check_auto, self.checkAuto)
-
-        self.checkUpdate = wx.CheckBox(self.panel, wx.ID_ANY,
-                                        "Live update")
-        self.checkUpdate.SetToolTip(wx.ToolTip('Update plot with live '
-                                               'samples (experimental)'))
-        self.checkUpdate.SetValue(self.settings.liveUpdate)
-        self.Bind(wx.EVT_CHECKBOX, self.on_check_update, self.checkUpdate)
-
-        self.checkGrid = wx.CheckBox(self.panel, wx.ID_ANY, "Grid")
-        self.checkGrid.SetToolTip(wx.ToolTip('Draw grid'))
-        self.checkGrid.SetValue(self.grid)
-        self.Bind(wx.EVT_CHECKBOX, self.on_check_grid, self.checkGrid)
 
         grid = wx.GridBagSizer(5, 5)
 
@@ -240,9 +236,8 @@ class FrameMain(wx.Frame):
 
         grid.Add((20, 1), pos=(0, 11))
 
-        grid.Add(self.checkAuto, pos=(0, 12), flag=wx.ALIGN_CENTER_VERTICAL)
-        grid.Add(self.checkUpdate, pos=(1, 12), flag=wx.ALIGN_CENTER_VERTICAL)
-        grid.Add(self.checkGrid, pos=(2, 12), flag=wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(textDisplay, pos=(0, 12), flag=wx.ALIGN_CENTER)
+        grid.Add(self.choiceDisplay, pos=(1, 12), flag=wx.ALIGN_CENTER)
 
         self.panel.SetSizer(grid)
 
@@ -254,16 +249,16 @@ class FrameMain(wx.Frame):
     def create_menu(self):
         menuFile = wx.Menu()
         self.menuOpen = menuFile.Append(wx.ID_OPEN, "&Open...",
-                                        "Open plot")
+                                        "Open polot")
         recent = wx.Menu()
         self.settings.fileHistory.UseMenu(recent)
         self.settings.fileHistory.AddFilesToMenu()
         menuFile.AppendMenu(wx.ID_ANY, "&Recent Files", recent)
         menuFile.AppendSeparator()
         self.menuSave = menuFile.Append(wx.ID_SAVE, "&Save As...",
-                                          "Save plot")
+                                          "Save polot")
         self.menuExport = menuFile.Append(wx.ID_ANY, "&Export...",
-                                            "Export plot")
+                                            "Export polot")
         menuFile.AppendSeparator()
         self.menuProperties = menuFile.Append(wx.ID_ANY, "&Properties...",
                                             "Show properties")
@@ -323,6 +318,17 @@ class FrameMain(wx.Frame):
         accelTable = wx.AcceleratorTable([(wx.ACCEL_NORMAL, wx.WXK_F1, idF1)])
         self.SetAcceleratorTable(accelTable)
 
+    def create_plot(self):
+        if self.plot is not None:
+            self.plot.close()
+
+        if self.settings.display == Display.PLOT:
+            self.plot = Plotter(self, self.graph, self.settings, self.grid,
+                                self.lock)
+        else:
+            self.plot = Spectrogram(self, self.graph, self.settings, self.grid,
+                                    self.lock)
+
     def create_popup_menu(self):
         self.popupMenu = wx.Menu()
         self.popupMenuStart = self.popupMenu.Append(wx.ID_ANY, "&Start",
@@ -370,7 +376,7 @@ class FrameMain(wx.Frame):
             self.dirname = dlg.GetDirectory()
             save_plot(self.dirname, self.filename, self.scanInfo,
                       self.spectrum)
-            self.isSaved = True
+            self.saved(True)
             self.status.set_general("Finished")
             self.settings.fileHistory.AddFileToHistory(os.path.join(self.dirname,
                                                                     self.filename))
@@ -378,11 +384,10 @@ class FrameMain(wx.Frame):
 
     def on_export(self, _event):
         dlg = wx.FileDialog(self, "Export a scan", self.dirname,
-                            self.filename + ".csv", File.CSV, wx.SAVE)
+                            self.filename + ".csv", File.CSV,
+                            wx.SAVE | wx.OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
             self.status.set_general("Exporting")
-            self.filename = dlg.GetFilename()
-            self.dirname = dlg.GetDirectory()
             export_plot(self.dirname, self.filename, self.spectrum)
             self.status.set_general("Finished")
         dlg.Destroy()
@@ -400,6 +405,7 @@ class FrameMain(wx.Frame):
         self.stop_scan()
         self.wait_background()
         self.get_controls()
+        self.graph.close()
         self.settings.dwell = DWELL[1::2][self.choiceDwell.GetSelection()]
         self.settings.nfft = NFFT[self.choiceNfft.GetSelection()]
         self.settings.devices = self.devices
@@ -412,6 +418,7 @@ class FrameMain(wx.Frame):
         if dlg.ShowModal() == wx.ID_OK:
             self.devices = dlg.get_devices()
             self.settings.index = dlg.get_index()
+            self.create_plot()
         dlg.Destroy()
 
     def on_compare(self, _event):
@@ -441,6 +448,22 @@ class FrameMain(wx.Frame):
             self.spinCtrlStop.SetRange(self.spinCtrlStart.GetValue() + 1,
                                           F_MAX)
 
+    def on_choice(self, event):
+        control = event.GetEventObject()
+        if control == self.choiceMode:
+            if self.choiceMode.GetSelection() == Mode.SINGLE:
+                self.choiceDisplay.Enable(False)
+                self.choiceDisplay.SetSelection(Display.PLOT)
+                self.get_controls()
+                self.create_plot()
+            else:
+                self.choiceDisplay.Enable(True)
+        elif control == self.choiceDisplay:
+            self.get_controls()
+            self.create_plot()
+
+        self.plot.set_plot(self.spectrum, self.settings.annotate)
+
     def on_start(self, _event):
         if self.settings.start >= self.settings.stop:
             wx.MessageBox('Stop frequency must be greater that start',
@@ -455,6 +478,7 @@ class FrameMain(wx.Frame):
             wx.MessageBox('No devices found',
                           'Error', wx.OK | wx.ICON_ERROR)
         else:
+            self.spectrum.clear()
             self.start_scan()
 
     def on_stop(self, _event):
@@ -464,16 +488,6 @@ class FrameMain(wx.Frame):
 
     def on_stop_end(self, _event):
         self.stopAtEnd = True
-
-    def on_check_auto(self, _event):
-        self.settings.autoScale = self.checkAuto.GetValue()
-
-    def on_check_update(self, _event):
-        self.settings.liveUpdate = self.checkUpdate.GetValue()
-
-    def on_check_grid(self, _event):
-        self.grid = self.checkGrid.GetValue()
-        self.plot.set_grid(self.grid)
 
     def on_event(self, event):
         status = event.data.get_status()
@@ -494,7 +508,7 @@ class FrameMain(wx.Frame):
                 self.devices[self.settings.index].tuner = data
                 self.scanInfo.tuner = data
         elif status == Event.DATA:
-            self.isSaved = False
+            self.saved(False)
             cal = self.devices[self.settings.index].calibration
             self.pool.apply_async(anaylse_data,
                                   (freq, data, cal, self.settings.nfft),
@@ -513,11 +527,16 @@ class FrameMain(wx.Frame):
                 self.dlgCal = None
         elif status == Event.PROCESSED:
             offset = self.settings.devices[self.settings.index].offset
-            with self.lock:
-                update_spectrum(self.settings.start, self.settings.stop, freq,
-                                data, offset, self.spectrum)
-            if self.settings.liveUpdate:
-                self.plot.set_plot(self.spectrum)
+            Thread(target=update_spectrum, name='Update',
+                   args=(self, self.lock, self.settings.start,
+                         self.settings.stop, freq,
+                         data, offset, self.spectrum,)).start()
+        elif status == Event.UPDATED:
+            if data and self.settings.liveUpdate:
+                self.plot.set_plot(self.spectrum,
+                                   self.settings.annotate and \
+                                   self.settings.retainScans and \
+                                   self.settings.mode == Mode.CONTIN)
             self.progress()
         elif status == Event.DRAW:
             self.graph.get_canvas().draw()
@@ -525,8 +544,9 @@ class FrameMain(wx.Frame):
         wx.YieldIfNeeded()
 
     def on_process_done(self, data):
-        freq, scan = data
-        wx.PostEvent(self, EventThreadStatus(Event.PROCESSED, freq, scan))
+        timeStamp, freq, scan = data
+        post_event(self, EventThreadStatus(Event.PROCESSED, freq,
+                                             (timeStamp, scan)))
 
     def open(self, dirname, filename):
         if not os.path.exists(os.path.join(dirname, filename)):
@@ -543,11 +563,11 @@ class FrameMain(wx.Frame):
             self.spectrum.clear()
             self.scanInfo.setToSettings(self.settings)
             self.spectrum = spectrum
-            self.isSaved = True
+            self.saved(True)
             self.set_controls()
             self.set_control_state(True)
-            self.plot.clear_plots()
-            self.plot.set_plot(spectrum)
+            self.plot.set_plot(spectrum, self.settings.annotate)
+            self.plot.scale_plot(True)
             self.status.set_general("Finished")
             self.settings.fileHistory.AddFileToHistory(os.path.join(dirname,
                                                                     filename))
@@ -563,7 +583,7 @@ class FrameMain(wx.Frame):
                 self.oldCal = self.devices[self.settings.index].calibration
                 self.devices[self.settings.index].calibration = 0
                 self.get_controls()
-                self.plot.clear_plots()
+                self.spectrum.clear()
                 if not self.start_scan(isCal=True):
                     self.dlgCal.reset_cal()
             elif status == Cal.DONE:
@@ -580,11 +600,13 @@ class FrameMain(wx.Frame):
                     self.devices[self.settings.index].calibration = self.oldCal
 
     def calc_ppm(self, freq):
-        spectrum = self.spectrum.copy()
-        for x, y in spectrum.iteritems():
-            spectrum[x] = (((x - freq) * (x - freq)) + 1) * y
+        with self.lock:
+            timeStamp = max(self.spectrum)
+            spectrum = self.spectrum[timeStamp].copy()
 
-        peak = max(spectrum, key=spectrum.get)
+            for x, y in spectrum.iteritems():
+                spectrum[x] = (((x - freq) * (x - freq)) + 1) * y
+                peak = max(spectrum, key=spectrum.get)
 
         return ((freq - peak) / freq) * 1e6
 
@@ -596,7 +618,6 @@ class FrameMain(wx.Frame):
         if not self.threadScan:
             self.set_control_state(False)
             samples = calc_samples(self.settings.dwell)
-            self.spectrum.clear()
             self.status.set_info('')
             self.scanInfo.setFromSettings(self.settings)
             time = datetime.datetime.utcnow().replace(microsecond=0)
@@ -622,24 +643,27 @@ class FrameMain(wx.Frame):
 
     def progress(self):
         self.steps -= 1
-        if self.steps > -1:
+        if self.steps > -1 and not self.stopScan:
             self.status.set_progress((self.stepsTotal - self.steps) * 100
                     / self.stepsTotal)
             self.status.show_progress()
             self.status.set_general("Scanning")
         else:
             self.status.hide_progress()
-            if self.settings.mode == Mode.SINGLE or self.stopAtEnd:
+            self.plot.set_plot(self.spectrum, self.settings.annotate)
+            if self.stopScan:
+                self.status.set_general("Stopped")
+                self.cleanup()
+            elif self.settings.mode == Mode.SINGLE:
                 self.status.set_general("Finished")
-                self.plot.annotate_plot()
                 self.cleanup()
             else:
-                if self.settings.mode == Mode.CONTIN and not self.stopScan:
+                if self.settings.mode == Mode.CONTIN:
                     if self.dlgCal is None and not self.stopAtEnd:
-                        self.plot.new_plot()
-                        self.plot.annotate_plot()
+                        self.limit_spectrum()
                         self.start_scan()
                     else:
+                        self.status.set_general("Stopped")
                         self.cleanup()
 
     def cleanup(self):
@@ -653,6 +677,23 @@ class FrameMain(wx.Frame):
         self.stopAtEnd = False
         self.stopScan = True
 
+    def limit_spectrum(self):
+        if self.settings.retainScans:
+            limit = self.settings.retainMax
+        else:
+            limit = 1
+        with self.lock:
+            while len(self.spectrum) >= limit:
+                timeStamp = min(self.spectrum)
+                del self.spectrum[timeStamp]
+
+    def saved(self, isSaved):
+        self.isSaved = isSaved
+        title = "RTLSDR Scanner - " + self.filename
+        if not isSaved:
+            title += "*"
+        self.SetTitle(title)
+
     def set_control_state(self, state):
         self.spinCtrlStart.Enable(state)
         self.spinCtrlStop.Enable(state)
@@ -665,17 +706,19 @@ class FrameMain(wx.Frame):
         self.menuSave.Enable(state and len(self.spectrum) > 0)
         self.menuExport.Enable(state and len(self.spectrum) > 0)
         self.menuStart.Enable(state)
-        self.popupMenuStart.Enable(state)
         self.menuStop.Enable(not state)
+        self.menuPref.Enable(state)
+        self.menuCal.Enable(state)
         self.popupMenuStop.Enable(not state)
+        self.popupMenuStart.Enable(state)
         if self.settings.mode == Mode.CONTIN:
             self.menuStopEnd.Enable(not state)
             self.popupMenuStopEnd.Enable(not state)
+            self.choiceDisplay.Enable(True)
         else:
             self.menuStopEnd.Enable(False)
             self.popupMenuStopEnd.Enable(False)
-        self.menuPref.Enable(state)
-        self.menuCal.Enable(state)
+            self.choiceDisplay.Enable(False)
 
     def set_controls(self):
         self.spinCtrlStart.SetValue(self.settings.start)
@@ -684,6 +727,7 @@ class FrameMain(wx.Frame):
         dwell = calc_real_dwell(self.settings.dwell)
         self.choiceDwell.SetSelection(DWELL[1::2].index(dwell))
         self.choiceNfft.SetSelection(NFFT.index(self.settings.nfft))
+        self.choiceDisplay.SetSelection(DISPLAY[1::2].index(self.settings.display))
 
     def get_controls(self):
         self.settings.start = self.spinCtrlStart.GetValue()
@@ -691,6 +735,7 @@ class FrameMain(wx.Frame):
         self.settings.mode = MODE[1::2][self.choiceMode.GetSelection()]
         self.settings.dwell = DWELL[1::2][self.choiceDwell.GetSelection()]
         self.settings.nfft = NFFT[self.choiceNfft.GetSelection()]
+        self.settings.display = DISPLAY[1::2][self.choiceDisplay.GetSelection()]
 
     def save_warn(self, warnType):
         if self.settings.saveWarn and not self.isSaved:

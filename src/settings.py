@@ -3,7 +3,7 @@
 #
 # http://eartoearoak.com/software/rtlsdr-scanner
 #
-# Copyright 2012, 2013 Al Brown
+# Copyright 2012 - 2014 Al Brown
 #
 # A frequency scanning GUI for the OsmoSDR rtl-sdr library at
 # http://sdr.osmocom.org/trac/wiki/rtl-sdr
@@ -25,6 +25,7 @@
 
 import wx
 
+from constants import Display, Mode
 from devices import Device, format_device_name
 
 
@@ -35,15 +36,18 @@ class Settings():
         self.saveWarn = True
         self.fileHistory = wx.FileHistory(5)
 
+        self.display = Display.PLOT
+
         self.annotate = True
 
         self.retainScans = False
+        self.retainMax = 20
         self.fadeScans = True
-        self.maxScans = 5
+        self.colourMap = 'jet'
 
         self.start = 87
         self.stop = 108
-        self.mode = 0
+        self.mode = Mode.SINGLE
         self.dwell = 0.1
         self.nfft = 1024
         self.liveUpdate = False
@@ -61,12 +65,14 @@ class Settings():
     def load(self):
         servers = 0
         self.cfg = wx.Config('rtlsdr-scanner')
+        self.display = self.cfg.ReadInt('display', self.display)
         self.saveWarn = self.cfg.ReadBool('saveWarn', self.saveWarn)
         self.fileHistory.Load(self.cfg)
         self.annotate = self.cfg.ReadBool('annotate', self.annotate)
         self.retainScans = self.cfg.ReadBool('retainScans', self.retainScans)
         self.fadeScans = self.cfg.ReadBool('fadeScans', self.fadeScans)
-        self.maxScans = self.cfg.ReadInt('maxScans', self.maxScans)
+        self.retainMax = self.cfg.ReadInt('retainMax', self.retainMax)
+        self.colourMap = self.cfg.Read('colourMap', self.colourMap)
         self.start = self.cfg.ReadInt('start', self.start)
         self.stop = self.cfg.ReadInt('stop', self.stop)
         self.mode = self.cfg.ReadInt('mode', self.mode)
@@ -109,12 +115,14 @@ class Settings():
 
     def save(self):
         self.cfg.SetPath("/")
+        self.cfg.WriteInt('display', self.display)
         self.cfg.WriteBool('saveWarn', self.saveWarn)
         self.fileHistory.Save(self.cfg)
         self.cfg.WriteBool('annotate', self.annotate)
         self.cfg.WriteBool('retainScans', self.retainScans)
         self.cfg.WriteBool('fadeScans', self.fadeScans)
-        self.cfg.WriteInt('maxScans', self.maxScans)
+        self.cfg.WriteInt('retainMax', self.retainMax)
+        self.cfg.Write('colourMap', self.colourMap)
         self.cfg.WriteInt('start', self.start)
         self.cfg.WriteInt('stop', self.stop)
         self.cfg.WriteInt('mode', self.mode)

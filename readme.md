@@ -1,6 +1,6 @@
 # RTLSDR Scanner #
 
-Copyright 2012, 2013 Al Brown
+Copyright 2012 - 2014 Al Brown
 
 al [at] eartoearoak.com
 

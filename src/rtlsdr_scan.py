@@ -4,7 +4,7 @@
 #
 # http://eartoearoak.com/software/rtlsdr-scanner
 #
-# Copyright 2012, 2013 Al Brown
+# Copyright 2012 - 2014 Al Brown
 #
 # A frequency scanning GUI for the OsmoSDR rtl-sdr library at
 # http://sdr.osmocom.org/trac/wiki/rtl-sdr
@@ -51,7 +51,8 @@ def arguments():
     group.add_argument("-i", "--index", help="Device index (from 0)", type=int,
                        default=0)
     group.add_argument("-r", "--remote", help="Server IP and port", type=str)
-    parser.add_argument("file", help="Input file (.rfs) or output file (.rfs or .cvs) when scanning",
+    parser.add_argument("file", help="Input file (.rfs) or output file"
+                        " (.rfs or .cvs) when scanning",
                         nargs='?')
     args = parser.parse_args()
 

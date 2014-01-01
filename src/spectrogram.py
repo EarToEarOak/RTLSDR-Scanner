@@ -25,60 +25,83 @@
 
 import os
 import threading
+import time
 
+from matplotlib import cm
+from matplotlib.colorbar import ColorbarBase
+from matplotlib.colors import Normalize
+from matplotlib.dates import DateFormatter
+from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
-import numpy
 
 from events import EventThreadStatus, Event, post_event
-from misc import split_spectrum
+from misc import split_spectrum, epoch_to_mpl
+import numpy as np
 
 
-class Plotter():
+class Spectrogram:
     def __init__(self, notify, graph, settings, grid, lock):
         self.notify = notify
         self.settings = settings
         self.graph = graph
-        self.lock = lock
+        self.data = [[], [], []]
+        self.index = 0
         self.figure = self.graph.get_figure()
+        self.lock = lock
         self.axes = None
+        self.plot = None
         self.threadPlot = None
         self.setup_plot()
         self.set_grid(grid)
 
     def setup_plot(self):
-        self.axes = self.figure.add_subplot(111)
+        gs = GridSpec(1, 2, width_ratios=[9.5, 0.5])
+        self.axes = self.figure.add_subplot(gs[0])
+        self.axes.set_axis_bgcolor('Gainsboro')
 
         if len(self.settings.devices) > 0:
             gain = self.settings.devices[self.settings.index].gain
         else:
             gain = 0
-        formatter = ScalarFormatter(useOffset=False)
-
-        self.axes.set_title("Frequency Scan\n{0} - {1} MHz,"
+        self.axes.set_title("Frequency Spectrogram\n{0} - {1} MHz,"
                             " gain = {2}dB".format(self.settings.start,
                                                    self.settings.stop, gain))
         self.axes.set_xlabel("Frequency (MHz)")
-        self.axes.set_ylabel('Level (dB)')
-        self.axes.xaxis.set_major_formatter(formatter)
-        self.axes.yaxis.set_major_formatter(formatter)
+        self.axes.set_ylabel('Time')
+        numFormatter = ScalarFormatter(useOffset=False)
+        timeFormatter = DateFormatter("%H:%M:%S")
+
+        self.axes.xaxis.set_major_formatter(numFormatter)
+        self.axes.yaxis.set_major_formatter(timeFormatter)
         self.axes.xaxis.set_minor_locator(AutoMinorLocator(10))
         self.axes.yaxis.set_minor_locator(AutoMinorLocator(10))
         self.axes.set_xlim(self.settings.start, self.settings.stop)
-        self.axes.set_ylim(-50, 0)
+        now = time.time()
+        self.axes.set_ylim(epoch_to_mpl(now), epoch_to_mpl(now - 10))
+
+        self.bar = self.figure.add_subplot(gs[1])
+        norm = Normalize(vmin=-50, vmax=0)
+        self.barBase = ColorbarBase(self.bar, norm=norm,
+                                    cmap=cm.get_cmap(self.settings.colourMap))
+        self.barBase.set_label('Level (dB)')
 
     def scale_plot(self, force=False):
-        if self.figure is not None:
+        if self.figure is not None and self.plot is not None:
             with self.lock:
                 if self.settings.autoScale or force:
-                    self.axes.set_ylim(auto=True)
-                    self.axes.set_xlim(auto=True)
-                    self.axes.relim()
-                    self.axes.autoscale_view()
-                    self.settings.yMin, self.settings.yMax = self.axes.get_ylim()
+                    extent = self.plot.get_extent()
+                    self.axes.set_xlim(extent[0], extent[1])
+                    self.axes.set_ylim(extent[2], extent[3])
+                    self.settings.yMin, self.settings.yMax = self.plot.get_clim()
                 else:
-                    self.axes.set_ylim(auto=False)
-                    self.axes.set_xlim(auto=False)
-                    self.axes.set_ylim(self.settings.yMin, self.settings.yMax)
+                    self.plot.set_clim(self.settings.yMin, self.settings.yMax)
+
+                vmin, vmax = self.plot.get_clim()
+                self.barBase.set_clim(vmin, vmax)
+                try:
+                    self.barBase.draw_all()
+                except:
+                    pass
 
     def redraw_plot(self):
         if self.figure is not None:
@@ -87,23 +110,30 @@ class Plotter():
             else:
                 post_event(self.notify, EventThreadStatus(Event.DRAW))
 
-    def set_plot(self, data, annotate=False):
+    def set_plot(self, data, _annotate):
         if self.threadPlot is not None and self.threadPlot.isAlive():
             self.threadPlot.cancel()
             self.threadPlot.join()
 
         self.threadPlot = ThreadPlot(self, self.lock, self.axes,
-                                     data, annotate).start()
+                                     data, self.settings.retainMax,
+                                     self.settings.colourMap).start()
+
+    def annotate_plot(self):
+        pass
 
     def clear_plots(self):
         children = self.axes.get_children()
         for child in children:
             if child.get_gid() is not None:
-                if child.get_gid() == "plot" or child.get_gid() == "peak":
+                if child.get_gid() == "plot":
                     child.remove()
 
     def set_grid(self, on):
-        self.axes.grid(on)
+        if on:
+            self.axes.grid(True, color='w')
+        else:
+            self.axes.grid(False)
         self.redraw_plot()
 
     def close(self):
@@ -121,14 +151,15 @@ class Plotter():
 
 
 class ThreadPlot(threading.Thread):
-    def __init__(self, parent, lock, axes, data, annotate):
+    def __init__(self, parent, lock, axes, data, retainMax, colourMap):
         threading.Thread.__init__(self)
         self.name = "Plot"
         self.parent = parent
         self.lock = lock
         self.axes = axes
         self.data = data
-        self.annotate = annotate
+        self.retainMax = retainMax
+        self.colourMap = colourMap
         self.abort = False
 
     def run(self):
@@ -137,63 +168,39 @@ class ThreadPlot(threading.Thread):
                 return
             total = len(self.data)
             if total > 0:
-                self.parent.clear_plots()
-                count = 1.0
-                for timeStamp in sorted(self.data):
-                    if self.abort:
-                        return
-                    xs, ys = split_spectrum(self.data[timeStamp])
-                    alpha = count / total
-                    self.axes.plot(xs, ys, linewidth=0.4, gid="plot",
-                                   color='b', alpha=alpha)
-                    count += 1
+                timeMin = min(self.data)
+                timeMax = max(self.data)
+                plotFirst = self.data[timeMin]
+                if len(plotFirst) == 0:
+                    return
+                xMin = min(plotFirst)
+                xMax = max(plotFirst)
+                width = len(plotFirst)
+                if total == 1:
+                    timeMax += 1
+                extent = [xMin, xMax,
+                          epoch_to_mpl(timeMax), epoch_to_mpl(timeMin)]
 
-                if self.annotate:
-                    self.annotate_plot()
+                c = np.ma.masked_all((self.retainMax, width))
+                self.parent.clear_plots()
+                j = self.retainMax
+                for ys in reversed(sorted(self.data)):
+                    j -= 1
+                    _xs, zs = split_spectrum(self.data[ys])
+                    for i in range(len(zs)):
+                        if self.abort:
+                            return
+                        c[j, i] = zs[i]
+
+                self.parent.plot = self.axes.imshow(c, aspect='auto',
+                                                    extent=extent,
+                                                    cmap=cm.get_cmap(self.colourMap),
+                                                    interpolation='spline16',
+                                                    gid="plot")
 
         if total > 0:
             self.parent.scale_plot()
             self.parent.redraw_plot()
-
-    def annotate_plot(self):
-        self.clear_markers()
-
-        plots = self.get_plots()
-        if len(plots) == 1:
-            plot = plots[0]
-        else:
-            plot = plots[len(plots) - 2]
-        xData, yData = plot.get_data()
-        if len(yData) == 0:
-            return
-        pos = numpy.argmax(yData)
-        x = xData[pos]
-        y = yData[pos]
-
-        start, stop = self.axes.get_xlim()
-        textX = ((stop - start) / 50.0) + x
-        self.axes.annotate('{0:.3f}MHz\n{1:.2f}dB'.format(x, y),
-                           xy=(x, y), xytext=(textX, y),
-                           ha='left', va='top', size='small', gid='peak')
-        self.axes.plot(x, y, marker='x', markersize=10, color='r',
-                       gid='peak')
-
-    def get_plots(self):
-        plots = []
-        children = self.axes.get_children()
-        for child in children:
-            if child.get_gid() is not None:
-                if child.get_gid() == "plot":
-                    plots.append(child)
-
-        return plots
-
-    def clear_markers(self):
-        children = self.axes.get_children()
-        for child in children:
-                if child.get_gid() is not None:
-                    if child.get_gid() == 'peak':
-                        child.remove()
 
     def cancel(self):
         self.abort = True

@@ -3,7 +3,7 @@
 #
 # http://eartoearoak.com/software/rtlsdr-scanner
 #
-# Copyright 2012, 2013 Al Brown
+# Copyright 2012 - 2014 Al Brown
 #
 # A frequency scanning GUI for the OsmoSDR rtl-sdr library at
 # http://sdr.osmocom.org/trac/wiki/rtl-sdr
@@ -26,13 +26,15 @@
 import Queue
 
 import wx
+from wxPython._core import wxEvtHandler
+
 
 EVT_THREAD_STATUS = wx.NewId()
 
 
 class Event:
     STARTING, STEPS, INFO, DATA, CAL, STOPPED, ERROR, FINISHED, PROCESSED, \
-    DRAW, PLOTTED, PLOTTED_FULL = range(12)
+    UPDATED, DRAW, PLOTTED, PLOTTED_FULL = range(13)
 
 
 class Status():
@@ -61,7 +63,7 @@ class EventThreadStatus(wx.PyEvent):
 def post_event(destination, status):
     if isinstance(destination, Queue.Queue):
         destination.put(status)
-    else:
+    elif isinstance(destination, wxEvtHandler):
         wx.PostEvent(destination, status)
 
 
