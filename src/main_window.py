@@ -376,7 +376,7 @@ class FrameMain(wx.Frame):
             self.dirname = dlg.GetDirectory()
             save_plot(self.dirname, self.filename, self.scanInfo,
                       self.spectrum)
-            self.isSaved = True
+            self.saved(True)
             self.status.set_general("Finished")
             self.settings.fileHistory.AddFileToHistory(os.path.join(self.dirname,
                                                                     self.filename))
@@ -507,7 +507,7 @@ class FrameMain(wx.Frame):
                 self.devices[self.settings.index].tuner = data
                 self.scanInfo.tuner = data
         elif status == Event.DATA:
-            self.isSaved = False
+            self.saved(False)
             cal = self.devices[self.settings.index].calibration
             self.pool.apply_async(anaylse_data,
                                   (freq, data, cal, self.settings.nfft),
@@ -562,7 +562,7 @@ class FrameMain(wx.Frame):
             self.spectrum.clear()
             self.scanInfo.setToSettings(self.settings)
             self.spectrum = spectrum
-            self.isSaved = True
+            self.saved(True)
             self.set_controls()
             self.set_control_state(True)
             self.plot.set_plot(spectrum, self.settings.annotate)
@@ -685,6 +685,13 @@ class FrameMain(wx.Frame):
             while len(self.spectrum) >= limit:
                 timeStamp = min(self.spectrum)
                 del self.spectrum[timeStamp]
+
+    def saved(self, isSaved):
+        self.isSaved = isSaved
+        title = "RTLSDR Scanner - " + self.filename
+        if not isSaved:
+            title += "*"
+        self.SetTitle(title)
 
     def set_control_state(self, state):
         self.spinCtrlStart.Enable(state)
