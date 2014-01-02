@@ -1071,7 +1071,7 @@ class DialogPrefs(wx.Dialog):
         self.spinCtrlMaxScans.Enable(enabled)
 
     def on_choice(self, _event):
-        self.colourBar.set_map(self.colours[self.choiceColour.GetSelection()])
+        self.colourBar.set_map(self.choiceColour.GetStringSelection())
         self.choiceColour.SetFocus()
 
     def on_click(self, event):
@@ -1097,7 +1097,7 @@ class DialogPrefs(wx.Dialog):
         self.settings.retainScans = self.checkRetain.GetValue()
         self.settings.fadeScans = self.checkFade.GetValue()
         self.settings.retainMax = self.spinCtrlMaxScans.GetValue()
-        self.settings.colourMap = self.colours[self.choiceColour.GetSelection()]
+        self.settings.colourMap = self.choiceColour.GetStringSelection()
         for i in range(0, self.gridDev.GetNumberRows()):
             if not self.devices[i].isDevice:
                 server = self.gridDev.GetCellValue(i, self.COL_DEV)
