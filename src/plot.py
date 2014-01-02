@@ -93,7 +93,8 @@ class Plotter():
             self.threadPlot.join()
 
         self.threadPlot = ThreadPlot(self, self.lock, self.axes,
-                                     data, annotate).start()
+                                     data, self.settings.fadeScans,
+                                     annotate).start()
 
     def clear_plots(self):
         children = self.axes.get_children()
@@ -121,7 +122,7 @@ class Plotter():
 
 
 class ThreadPlot(threading.Thread):
-    def __init__(self, parent, lock, axes, data, annotate):
+    def __init__(self, parent, lock, axes, data, fade, annotate):
         threading.Thread.__init__(self)
         self.name = "Plot"
         self.parent = parent
@@ -129,6 +130,7 @@ class ThreadPlot(threading.Thread):
         self.axes = axes
         self.data = data
         self.annotate = annotate
+        self.fade = fade
         self.abort = False
 
     def run(self):
@@ -143,7 +145,10 @@ class ThreadPlot(threading.Thread):
                     if self.abort:
                         return
                     xs, ys = split_spectrum(self.data[timeStamp])
-                    alpha = count / total
+                    if self.fade:
+                        alpha = count / total
+                    else:
+                        alpha = 1
                     self.axes.plot(xs, ys, linewidth=0.4, gid="plot",
                                    color='b', alpha=alpha)
                     count += 1
