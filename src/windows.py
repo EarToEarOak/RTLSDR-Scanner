@@ -156,10 +156,10 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.main.plot.redraw_plot()
 
     def set_type(self, isSpectrogram):
-        if isSpectrogram and self.peakId is not None:
+        if self.peakId is not None:
             self.DeleteTool(self.peakId)
             self.peakId = None
-        elif self.peakId is None:
+        if not isSpectrogram:
             self.peakId = wx.NewId()
             self.AddCheckTool(self.peakId, load_bitmap('peak'),
                               shortHelp='Label peak',
