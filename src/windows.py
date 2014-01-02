@@ -98,6 +98,7 @@ class Statusbar(wx.StatusBar):
 class NavigationToolbar(NavigationToolbar2WxAgg):
     def __init__(self, canvas, main):
         self.main = main
+        self.peakId = None
 
         NavigationToolbar2WxAgg.__init__(self, canvas)
         self.AddSeparator()
@@ -146,8 +147,28 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.main.settings.liveUpdate = event.Checked()
 
     def on_check_grid(self, event):
-        self.grid = event.Checked()
-        self.main.plot.set_grid(self.grid)
+        grid = event.Checked()
+        self.main.plot.set_grid(grid)
+
+    def on_check_peak(self, event):
+        peak = event.Checked()
+        self.main.settings.annotate = peak
+        self.main.plot.redraw_plot()
+
+    def set_type(self, isSpectrogram):
+        if isSpectrogram and self.peakId is not None:
+            self.DeleteTool(self.peakId)
+            self.peakId = None
+        elif self.peakId is None:
+            self.peakId = wx.NewId()
+            self.AddCheckTool(self.peakId, load_bitmap('peak'),
+                              shortHelp='Label peak',
+                              longHelp='Label peak')
+            wx.EVT_TOOL(self, self.peakId, self.on_check_peak)
+        if self.peakId is not None:
+            self.ToggleTool(self.peakId, self.main.settings.annotate)
+
+        self.Realize()
 
 
 class NavigationToolbarCompare(NavigationToolbar2WxAgg):
@@ -210,6 +231,9 @@ class PanelGraph(wx.Panel):
 
     def on_draw(self, _event):
         post_event(self.main, EventThreadStatus(Event.PLOTTED))
+
+    def set_type(self, isSpectrogram):
+        self.toolbar.set_type(isSpectrogram)
 
     def get_figure(self):
         return self.figure
