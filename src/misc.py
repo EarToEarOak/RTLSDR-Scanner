@@ -28,6 +28,7 @@ import json
 import os
 import sys
 
+from matplotlib import cm
 from matplotlib.dates import date2num
 import wx
 
@@ -244,6 +245,13 @@ def load_bitmap(name):
         resDir = os.path.normpath(scriptDir + '/../res')
 
     return wx.Bitmap(resDir + '/' + name + '.png', wx.BITMAP_TYPE_PNG)
+
+
+def get_colours():
+    colours = [colour for colour in cm.datad]
+    colours.sort()
+
+    return colours
 
 
 if __name__ == '__main__':

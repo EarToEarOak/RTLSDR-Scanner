@@ -140,6 +140,15 @@ class Spectrogram:
             self.axes.grid(False)
         self.redraw_plot()
 
+    def set_colourmap(self, colourMap):
+        if self.plot is not None:
+            self.plot.set_cmap(colourMap)
+        self.barBase.set_cmap(colourMap)
+        try:
+            self.barBase.draw_all()
+        except:
+            pass
+
     def close(self):
         self.figure.clear()
         self.figure = None

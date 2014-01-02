@@ -39,7 +39,7 @@ import wx
 
 from constants import *
 from events import EventThreadStatus, Event, post_event
-from misc import split_spectrum, nearest, open_plot, load_bitmap
+from misc import split_spectrum, nearest, open_plot, load_bitmap, get_colours
 from rtltcp import RtlTcp
 import wx.grid as grid
 import wx.lib.masked as masked
@@ -98,8 +98,7 @@ class Statusbar(wx.StatusBar):
 class NavigationToolbar(NavigationToolbar2WxAgg):
     def __init__(self, canvas, main):
         self.main = main
-        self.peakId = None
-        self.fadeId = None
+        self.extraTools = []
 
         NavigationToolbar2WxAgg.__init__(self, canvas)
         self.AddSeparator()
@@ -161,27 +160,47 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.main.settings.fadeScans = fade
         self.main.plot.redraw_plot()
 
+    def on_colour(self, event):
+        colourMap = event.GetString()
+        self.main.settings.colourMap = colourMap
+        self.main.plot.set_colourmap(colourMap)
+        self.main.plot.redraw_plot()
+
     def set_type(self, isSpectrogram):
-        if self.peakId is not None:
-            self.DeleteTool(self.peakId)
-            self.peakId = None
-        if self.fadeId is not None:
-            self.DeleteTool(self.fadeId)
-            self.fadeId = None
+        for toolId in self.extraTools:
+            self.DeleteTool(toolId)
+        self.extraTools = []
 
         if not isSpectrogram:
-            self.peakId = wx.NewId()
-            self.AddCheckTool(self.peakId, load_bitmap('peak'),
+            peakId = wx.NewId()
+            self.AddCheckTool(peakId, load_bitmap('peak'),
                               shortHelp='Label peak',
                               longHelp='Label peak')
-            wx.EVT_TOOL(self, self.peakId, self.on_check_peak)
-            self.ToggleTool(self.peakId, self.main.settings.annotate)
-            self.fadeId = wx.NewId()
-            self.AddCheckTool(self.fadeId, load_bitmap('fade'),
+            wx.EVT_TOOL(self, peakId, self.on_check_peak)
+            self.ToggleTool(peakId, self.main.settings.annotate)
+            self.extraTools.append(peakId)
+
+            fadeId = wx.NewId()
+            self.AddCheckTool(fadeId, load_bitmap('fade'),
                               shortHelp='Fade plots',
                               longHelp='Fade plots')
-            wx.EVT_TOOL(self, self.fadeId, self.on_check_fade)
-            self.ToggleTool(self.fadeId, self.main.settings.fadeScans)
+            wx.EVT_TOOL(self, fadeId, self.on_check_fade)
+            self.ToggleTool(fadeId, self.main.settings.fadeScans)
+            self.extraTools.append(fadeId)
+        else:
+            separator = self.AddSeparator()
+            separatorId = separator.GetId()
+            self.extraTools.append(separatorId)
+            self.extraTools.append(separatorId)
+
+            colours = get_colours()
+            colourId = wx.NewId()
+            control = wx.Choice(self, id=colourId, choices=colours)
+            control.SetSelection(colours.index(self.main.settings.colourMap))
+            self.AddControl(control)
+            self.Bind(wx.EVT_CHOICE, self.on_colour, control)
+#             wx.EVT_TOOL(self, colourId, self.on_colour)
+            self.extraTools.append(colourId)
 
         self.Realize()
 
@@ -889,8 +908,7 @@ class DialogPrefs(wx.Dialog):
 
         wx.Dialog.__init__(self, parent=parent, title="Preferences")
 
-        self.colours = [colour for colour in cm.datad]
-        self.colours.sort()
+        self.colours = get_colours()
 
         self.checkSaved = wx.CheckBox(self, wx.ID_ANY,
                                       "Save warning")
