@@ -23,21 +23,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-try:
-    input = raw_input
-except:
-    pass
-
-try:
-    import matplotlib
-    matplotlib.interactive(True)
-    matplotlib.use('WXAgg')
-    import rtlsdr
-    import wx
-except ImportError as error:
-    print 'Import error: {0}'.format(error)
-    input('\nError importing libraries\nPress [Return] to exit')
-    exit(1)
 
 import datetime
 import os.path
@@ -45,6 +30,8 @@ from threading import Thread
 import threading
 import time
 import webbrowser
+
+import wx
 
 from constants import *
 from devices import get_devices

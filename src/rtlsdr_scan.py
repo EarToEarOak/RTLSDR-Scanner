@@ -25,6 +25,22 @@
 #
 
 
+try:
+    input = raw_input
+except:
+    pass
+
+try:
+    import matplotlib
+    matplotlib.interactive(True)
+    matplotlib.use('WXAgg')
+    import rtlsdr
+    import wx
+except ImportError as error:
+    print 'Import error: {0}'.format(error)
+    input('\nError importing libraries\nPress [Return] to exit')
+    exit(1)
+
 import argparse
 import multiprocessing
 import os.path
