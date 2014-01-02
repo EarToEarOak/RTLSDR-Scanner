@@ -94,7 +94,8 @@ class Spectrogram:
                     self.axes.set_ylim(extent[2], extent[3])
                     self.settings.yMin, self.settings.yMax = self.plot.get_clim()
                 else:
-                    self.plot.set_clim(self.settings.yMin, self.settings.yMax)
+                    self.plot.norm.vmin = self.settings.yMin
+                    self.plot.norm.vmax = self.settings.yMax
 
                 vmin, vmax = self.plot.get_clim()
                 self.barBase.set_clim(vmin, vmax)
@@ -117,7 +118,10 @@ class Spectrogram:
 
         self.threadPlot = ThreadPlot(self, self.lock, self.axes,
                                      data, self.settings.retainMax,
-                                     self.settings.colourMap).start()
+                                     self.settings.colourMap,
+                                     self.settings.autoScale,
+                                     self.settings.yMin,
+                                     self.settings.yMax).start()
 
     def annotate_plot(self):
         pass
@@ -151,7 +155,8 @@ class Spectrogram:
 
 
 class ThreadPlot(threading.Thread):
-    def __init__(self, parent, lock, axes, data, retainMax, colourMap):
+    def __init__(self, parent, lock, axes, data, retainMax, colourMap,
+                 autoScale, min, max):
         threading.Thread.__init__(self)
         self.name = "Plot"
         self.parent = parent
@@ -160,6 +165,9 @@ class ThreadPlot(threading.Thread):
         self.data = data
         self.retainMax = retainMax
         self.colourMap = colourMap
+        self.autoScale = autoScale
+        self.min = min
+        self.max = max
         self.abort = False
 
     def run(self):
@@ -192,8 +200,13 @@ class ThreadPlot(threading.Thread):
                             return
                         c[j, i] = zs[i]
 
+                norm = None
+                if not self.autoScale:
+                    norm = Normalize(vmin=self.min, vmax=self.max)
+
                 self.parent.plot = self.axes.imshow(c, aspect='auto',
                                                     extent=extent,
+                                                    norm=norm,
                                                     cmap=cm.get_cmap(self.colourMap),
                                                     interpolation='spline16',
                                                     gid="plot")
