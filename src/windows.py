@@ -165,7 +165,6 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
                               shortHelp='Label peak',
                               longHelp='Label peak')
             wx.EVT_TOOL(self, self.peakId, self.on_check_peak)
-        if self.peakId is not None:
             self.ToggleTool(self.peakId, self.main.settings.annotate)
 
         self.Realize()
