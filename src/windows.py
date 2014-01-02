@@ -99,6 +99,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
     def __init__(self, canvas, main):
         self.main = main
         self.peakId = None
+        self.fadeId = None
 
         NavigationToolbar2WxAgg.__init__(self, canvas)
         self.AddSeparator()
@@ -155,10 +156,19 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.main.settings.annotate = peak
         self.main.plot.redraw_plot()
 
+    def on_check_fade(self, event):
+        fade = event.Checked()
+        self.main.settings.fadeScans = fade
+        self.main.plot.redraw_plot()
+
     def set_type(self, isSpectrogram):
         if self.peakId is not None:
             self.DeleteTool(self.peakId)
             self.peakId = None
+        if self.fadeId is not None:
+            self.DeleteTool(self.fadeId)
+            self.fadeId = None
+
         if not isSpectrogram:
             self.peakId = wx.NewId()
             self.AddCheckTool(self.peakId, load_bitmap('peak'),
@@ -166,6 +176,12 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
                               longHelp='Label peak')
             wx.EVT_TOOL(self, self.peakId, self.on_check_peak)
             self.ToggleTool(self.peakId, self.main.settings.annotate)
+            self.fadeId = wx.NewId()
+            self.AddCheckTool(self.fadeId, load_bitmap('fade'),
+                              shortHelp='Fade plots',
+                              longHelp='Fade plots')
+            wx.EVT_TOOL(self, self.fadeId, self.on_check_fade)
+            self.ToggleTool(self.fadeId, self.main.settings.fadeScans)
 
         self.Realize()
 
