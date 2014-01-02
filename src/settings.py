@@ -40,7 +40,7 @@ class Settings():
 
         self.annotate = True
 
-        self.retainScans = False
+        self.retainScans = True
         self.retainMax = 20
         self.fadeScans = True
         self.colourMap = 'jet'
