@@ -45,10 +45,6 @@ import wx.grid as grid
 import wx.lib.masked as masked
 
 
-matplotlib.interactive(True)
-matplotlib.use('WXAgg')
-
-
 class CellRenderer(grid.PyGridCellRenderer):
     def __init__(self):
         grid.PyGridCellRenderer.__init__(self)
