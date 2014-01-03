@@ -97,6 +97,7 @@ class Plotter3d():
                     self.axes.set_xlim(self.extent.get_x())
                     self.axes.set_ylim(self.extent.get_y())
                     self.axes.set_zlim(self.extent.get_z())
+                    self.plot.set_clim(self.extent.get_z())
                     self.settings.yMin, self.settings.yMax = self.extent.get_z()
                 else:
                     self.axes.set_zlim(self.settings.yMin, self.settings.yMax)
