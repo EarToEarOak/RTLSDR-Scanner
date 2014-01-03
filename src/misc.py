@@ -102,8 +102,8 @@ def open_plot(dirname, filename):
             _version = cPickle.load(handle)
             start = cPickle.load(handle)
             stop = cPickle.load(handle)
-            spectrum[0] = {}
-            spectrum[0] = cPickle.load(handle)
+            spectrum[1] = {}
+            spectrum[1] = cPickle.load(handle)
         except pickle.PickleError:
             error = True
     else:
@@ -129,9 +129,9 @@ def open_plot(dirname, filename):
                 lat = data[1]['Latitude']
                 lon = data[1]['Longitude']
             if version < 7:
-                spectrum[0] = {}
+                spectrum[1] = {}
                 for f, p in data[1]['Spectrum'].iteritems():
-                    spectrum[0][float(f)] = p
+                    spectrum[1][float(f)] = p
             else:
                 for t, s in data[1]['Spectrum'].iteritems():
                     spectrum[float(t)] = {}
