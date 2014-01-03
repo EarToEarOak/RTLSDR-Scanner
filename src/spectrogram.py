@@ -27,7 +27,8 @@ import os
 import threading
 import time
 
-from matplotlib import cm
+from matplotlib import cm, patheffects
+import matplotlib
 from matplotlib.colorbar import ColorbarBase
 from matplotlib.colors import Normalize
 from matplotlib.dates import DateFormatter
@@ -244,16 +245,29 @@ class ThreadPlot(threading.Thread):
         y = epoch_to_mpl(timeStamp)
         textX = ((stop - start) / 50.0) + xMax
         when = time.strftime('%H:%M:%S', time.gmtime(timeStamp + 1))
-        self.axes.annotate('{0:.6f}MHz\n{1:.2f}dB\n{2}'.format(xMax,
-                                                               yMax,
-                                                               when),
-                           xy=(xMax, y), xytext=(textX, y),
-                           ha='left', va='bottom', size='small',
-                           color='w', gid='peak')
-        self.axes.plot(xMax, y, marker='x', markersize=10, color='w',
-                       mew=3, gid='peak')
-        self.axes.plot(xMax, y, marker='x', markersize=10, color='r',
-                       gid='peak')
+
+        if(matplotlib.__version__ < '1.3'):
+            self.axes.annotate('{0:.6f}MHz\n{1:.2f}dB\n{2}'.format(xMax,
+                                                                   yMax,
+                                                                   when),
+                               xy=(xMax, y), xytext=(textX, y),
+                               ha='left', va='bottom', size='small',
+                               color='w', gid='peak')
+            self.axes.plot(xMax, y, marker='x', markersize=10, color='w',
+                           mew=3, gid='peak')
+            self.axes.plot(xMax, y, marker='x', markersize=10, color='r',
+                           gid='peak')
+        else:
+            effect = patheffects.withStroke(linewidth=3, foreground="w",
+                                            alpha=0.75)
+            self.axes.annotate('{0:.6f}MHz\n{1:.2f}dB\n{2}'.format(xMax,
+                                                                   yMax,
+                                                                   when),
+                               xy=(xMax, y), xytext=(textX, y),
+                               ha='left', va='bottom', size='small',
+                               path_effects=[effect], gid='peak')
+            self.axes.plot(xMax, y, marker='x', markersize=10, color='r',
+                           path_effects=[effect], gid='peak')
 
     def clear_markers(self):
         children = self.axes.get_children()
