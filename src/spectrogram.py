@@ -244,7 +244,7 @@ class ThreadPlot(threading.Thread):
         y = epoch_to_mpl(timeStamp)
         textX = ((stop - start) / 50.0) + xMax
         when = time.strftime('%H:%M:%S', time.gmtime(timeStamp + 1))
-        self.axes.annotate('{0:.3f}MHz\n{1:.2f}dB\n{2}'.format(xMax,
+        self.axes.annotate('{0:.6f}MHz\n{1:.2f}dB\n{2}'.format(xMax,
                                                                yMax,
                                                                when),
                            xy=(xMax, y), xytext=(textX, y),

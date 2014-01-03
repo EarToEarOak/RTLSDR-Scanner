@@ -251,9 +251,9 @@ class PanelGraph(wx.Panel):
                 x = min(spectrum.keys(), key=lambda freq: abs(freq - xpos))
                 if(xpos <= max(spectrum.keys(), key=float)):
                     y = spectrum[x]
-                    text = "f = {0:.3f}MHz, p = {1:.2f}dB".format(x, y)
+                    text = "f = {0:.6f}MHz, p = {1:.2f}dB".format(x, y)
                 else:
-                    text = "f = {0:.3f}MHz".format(xpos)
+                    text = "f = {0:.6f}MHz".format(xpos)
 
         self.main.status.SetStatusText(text, 1)
 

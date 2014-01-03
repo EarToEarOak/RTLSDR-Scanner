@@ -177,7 +177,7 @@ class ThreadPlot(threading.Thread):
 
         start, stop = self.axes.get_xlim()
         textX = ((stop - start) / 50.0) + x
-        self.axes.annotate('{0:.3f}MHz\n{1:.2f}dB'.format(x, y),
+        self.axes.annotate('{0:.6f}MHz\n{1:.2f}dB'.format(x, y),
                            xy=(x, y), xytext=(textX, y),
                            ha='left', va='top', size='small',
                            gid='peak')
