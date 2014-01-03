@@ -31,7 +31,7 @@
 !include "nsDialogs_createTextMultiline.nsh"
 !include "fileassoc.nsh"
 
-!define INSTALLER_VERSION "1"
+!define INSTALLER_VERSION "2"
 
 !define PRODUCT_NAME "RTLSDR Scanner"
 !define PRODUCT_VERSION ""
