@@ -271,7 +271,7 @@ class Extent():
 
     def get_y(self):
         if self.yMin == self.yMax:
-            return epoch_to_mpl(self.yMax), epoch_to_mpl(self.yMin - 1)
+            return epoch_to_mpl(self.yMax + 10), epoch_to_mpl(self.yMin - 10)
         return epoch_to_mpl(self.yMax), epoch_to_mpl(self.yMin)
 
     def get_z(self):

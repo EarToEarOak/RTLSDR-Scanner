@@ -177,7 +177,6 @@ class FrameMain(wx.Frame):
         textMode = wx.StaticText(self.panel, label="Mode")
         self.choiceMode = wx.Choice(self.panel, choices=MODE[::2])
         self.choiceMode.SetToolTip(wx.ToolTip('Scanning mode'))
-        self.Bind(wx.EVT_CHOICE, self.on_choice, self.choiceMode)
 
         textDwell = wx.StaticText(self.panel, label="Dwell")
         self.choiceDwell = wx.Choice(self.panel, choices=DWELL[::2])
@@ -444,18 +443,8 @@ class FrameMain(wx.Frame):
                                           F_MAX)
 
     def on_choice(self, event):
-        control = event.GetEventObject()
-        if control == self.choiceMode:
-            if self.choiceMode.GetSelection() == Mode.SINGLE:
-                self.choiceDisplay.Enable(False)
-                self.choiceDisplay.SetSelection(Display.PLOT)
-                self.get_controls()
-                self.create_plot()
-            else:
-                self.choiceDisplay.Enable(True)
-        elif control == self.choiceDisplay:
-            self.get_controls()
-            self.create_plot()
+        self.get_controls()
+        self.create_plot()
 
         self.plot.set_plot(self.spectrum, self.settings.annotate)
 
@@ -709,11 +698,9 @@ class FrameMain(wx.Frame):
         if self.settings.mode == Mode.CONTIN:
             self.menuStopEnd.Enable(not state)
             self.popupMenuStopEnd.Enable(not state)
-            self.choiceDisplay.Enable(True)
         else:
             self.menuStopEnd.Enable(False)
             self.popupMenuStopEnd.Enable(False)
-            self.choiceDisplay.Enable(False)
 
     def set_controls(self):
         self.spinCtrlStart.SetValue(self.settings.start)
