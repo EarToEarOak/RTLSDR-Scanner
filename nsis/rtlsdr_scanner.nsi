@@ -194,6 +194,8 @@ Section Uninstall
     Delete "$INSTDIR\constants.py"
     Delete "$INSTDIR\cli.py"
     Delete "$INSTDIR\res\range.png"
+    Delete "$INSTDIR\res\peak.png"
+    Delete "$INSTDIR\res\fade.png"
     Delete "$INSTDIR\res\grid.png"
     Delete "$INSTDIR\res\auto_refresh.png"
     Delete "$INSTDIR\res\auto_range.png"
