@@ -331,6 +331,7 @@ Function get_rtlsdr_scanner
     exists:
     ZipDLL::extractall "$TEMP\rtlsdr_scanner.zip" "$TEMP"
     CopyFiles "$TEMP\RTLSDR-Scanner-master\src\*.py" "$INSTDIR"
+    CreateDirectory "$INSTDIR\res"
     CopyFiles "$TEMP\RTLSDR-Scanner-master\res\*.png" "$INSTDIR\res"
     CopyFiles "$TEMP\RTLSDR-Scanner-master\*.ico" "$INSTDIR"
     ;Delete "$TEMP\master.zip"
