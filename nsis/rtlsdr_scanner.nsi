@@ -186,6 +186,7 @@ Section Uninstall
     Delete "$INSTDIR\rtltcp.py"
     Delete "$INSTDIR\rtlsdr_scan_diag.py"
     Delete "$INSTDIR\rtlsdr_scan.py"
+    Delete "$INSTDIR\plot3d.py"
     Delete "$INSTDIR\plot.py"
     Delete "$INSTDIR\misc.py"
     Delete "$INSTDIR\main_window.py"
