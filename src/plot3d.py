@@ -29,7 +29,7 @@ import time
 from matplotlib import cm
 from matplotlib.colorbar import ColorbarBase
 from matplotlib.colors import Normalize
-from matplotlib.dates import DateFormatter
+from matplotlib.dates import DateFormatter, seconds
 from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 import numpy
@@ -37,6 +37,8 @@ import numpy
 from events import post_event, EventThreadStatus, Event
 from misc import epoch_to_mpl, split_spectrum
 from mpl_toolkits.mplot3d import Axes3D  # @UnresolvedImport @UnusedImport
+
+MPL_SECOND = seconds(1)
 
 
 class Plotter3d():
@@ -189,22 +191,27 @@ class ThreadPlot(threading.Thread):
                     return
                 width = len(plotFirst)
 
-                x = numpy.empty((width, total)) * numpy.nan
-                y = numpy.empty((width, total)) * numpy.nan
-                z = numpy.empty((width, total)) * numpy.nan
+                x = numpy.empty((width, total + 1)) * numpy.nan
+                y = numpy.empty((width, total + 1)) * numpy.nan
+                z = numpy.empty((width, total + 1)) * numpy.nan
                 self.parent.clear_plots()
-                j = 0
+                j = 1
                 extent = Extent()
                 for ys in sorted(self.data):
+                    mplTime = epoch_to_mpl(ys)
                     xs, zs = split_spectrum(self.data[ys])
                     extent.update(xs, ys, zs)
                     for i in range(len(xs)):
                         if self.abort:
                             return
                         x[i, j] = xs[i]
-                        y[i, j] = epoch_to_mpl(ys)
+                        y[i, j] = mplTime
                         z[i, j] = zs[i]
                     j += 1
+
+                x[:, 0] = x[:, 1]
+                y[:, 0] = y[:, 1] - MPL_SECOND
+                z[:, 0] = z[:, 1]
 
                 if self.autoScale:
                     vmin = self.min
@@ -221,7 +228,8 @@ class ThreadPlot(threading.Thread):
                                                           linewidth=0,
                                                           cmap=cm.get_cmap(self.colourMap),
                                                           gid='peak',
-                                                          antialiased=True)
+                                                          antialiased=True,
+                                                          alpha=1)
                 self.parent.extent = extent
 
         if total > 0:
@@ -270,9 +278,7 @@ class Extent():
         return self.xMin, self.xMax
 
     def get_y(self):
-        if self.yMin == self.yMax:
-            return epoch_to_mpl(self.yMax + 10), epoch_to_mpl(self.yMin - 10)
-        return epoch_to_mpl(self.yMax), epoch_to_mpl(self.yMin)
+        return epoch_to_mpl(self.yMax), epoch_to_mpl(self.yMin - 1)
 
     def get_z(self):
         if self.yMin == self.yMax:
