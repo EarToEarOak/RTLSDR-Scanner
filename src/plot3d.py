@@ -36,7 +36,7 @@ import numpy
 
 from events import post_event, EventThreadStatus, Event
 from misc import epoch_to_mpl, split_spectrum
-from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d import Axes3D  # @UnresolvedImport @UnusedImport
 
 
 class Plotter3d():
