@@ -131,6 +131,13 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.ToggleTool(gridId, self.main.grid)
         wx.EVT_TOOL(self, gridId, self.on_check_grid)
 
+        peakId = wx.NewId()
+        self.AddCheckTool(peakId, load_bitmap('peak'),
+                          shortHelp='Label peak',
+                          longHelp='Label peak')
+        wx.EVT_TOOL(self, peakId, self.on_check_peak)
+        self.ToggleTool(peakId, self.main.settings.annotate)
+
     def on_range(self, _event):
         dlg = DialogRange(self, self.main)
         if dlg.ShowModal() == wx.ID_OK:
@@ -172,14 +179,6 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.extraTools = []
 
         if not isSpectrogram:
-            peakId = wx.NewId()
-            self.AddCheckTool(peakId, load_bitmap('peak'),
-                              shortHelp='Label peak',
-                              longHelp='Label peak')
-            wx.EVT_TOOL(self, peakId, self.on_check_peak)
-            self.ToggleTool(peakId, self.main.settings.annotate)
-            self.extraTools.append(peakId)
-
             fadeId = wx.NewId()
             self.AddCheckTool(fadeId, load_bitmap('fade'),
                               shortHelp='Fade plots',
@@ -199,7 +198,6 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
             control.SetSelection(colours.index(self.main.settings.colourMap))
             self.AddControl(control)
             self.Bind(wx.EVT_CHOICE, self.on_colour, control)
-#             wx.EVT_TOOL(self, colourId, self.on_colour)
             self.extraTools.append(colourId)
 
         self.Realize()
@@ -929,10 +927,6 @@ class DialogPrefs(wx.Dialog):
         self.spinCtrlMaxScans.SetToolTip(wx.ToolTip('Maximum previous scans'
                                                     ' to display'))
 
-        self.checkAnnotate = wx.CheckBox(self, wx.ID_ANY,
-                                      "Label peak level")
-        self.checkAnnotate.SetValue(self.settings.annotate)
-        self.checkAnnotate.SetToolTip(wx.ToolTip('Annotate scan peak value'))
         self.checkFade = wx.CheckBox(self, wx.ID_ANY,
                                       "Fade previous scans")
         self.checkFade.SetValue(self.settings.fadeScans)
@@ -1041,7 +1035,6 @@ class DialogPrefs(wx.Dialog):
 
         plotbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Plot View"),
                                      wx.HORIZONTAL)
-        plotbox.Add(self.checkAnnotate, 0, wx.ALL | wx.EXPAND, 10)
         plotbox.Add(self.checkFade, 0, wx.ALL | wx.EXPAND, 10)
 
         specbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY,
@@ -1093,7 +1086,6 @@ class DialogPrefs(wx.Dialog):
 
     def on_ok(self, _event):
         self.settings.saveWarn = self.checkSaved.GetValue()
-        self.settings.annotate = self.checkAnnotate.GetValue()
         self.settings.retainScans = self.checkRetain.GetValue()
         self.settings.fadeScans = self.checkFade.GetValue()
         self.settings.retainMax = self.spinCtrlMaxScans.GetValue()

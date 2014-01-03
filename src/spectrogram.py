@@ -111,7 +111,7 @@ class Spectrogram:
             else:
                 post_event(self.notify, EventThreadStatus(Event.DRAW))
 
-    def set_plot(self, data, _annotate):
+    def set_plot(self, data, annotate=False):
         if self.threadPlot is not None and self.threadPlot.isAlive():
             self.threadPlot.cancel()
             self.threadPlot.join()
@@ -121,16 +121,14 @@ class Spectrogram:
                                      self.settings.colourMap,
                                      self.settings.autoScale,
                                      self.settings.yMin,
-                                     self.settings.yMax).start()
-
-    def annotate_plot(self):
-        pass
+                                     self.settings.yMax,
+                                     annotate).start()
 
     def clear_plots(self):
         children = self.axes.get_children()
         for child in children:
             if child.get_gid() is not None:
-                if child.get_gid() == "plot":
+                if child.get_gid() == "plot" or child.get_gid() == "peak":
                     child.remove()
 
     def set_grid(self, on):
@@ -165,7 +163,7 @@ class Spectrogram:
 
 class ThreadPlot(threading.Thread):
     def __init__(self, parent, lock, axes, data, retainMax, colourMap,
-                 autoScale, min, max):
+                 autoScale, minZ, maxZ, annotate):
         threading.Thread.__init__(self)
         self.name = "Plot"
         self.parent = parent
@@ -175,8 +173,9 @@ class ThreadPlot(threading.Thread):
         self.retainMax = retainMax
         self.colourMap = colourMap
         self.autoScale = autoScale
-        self.min = min
-        self.max = max
+        self.min = minZ
+        self.max = maxZ
+        self.annotate = annotate
         self.abort = False
 
     def run(self):
@@ -220,9 +219,48 @@ class ThreadPlot(threading.Thread):
                                                     interpolation='spline16',
                                                     gid="plot")
 
+                if self.annotate:
+                    self.annotate_plot()
+
         if total > 0:
             self.parent.scale_plot()
             self.parent.redraw_plot()
+
+    def annotate_plot(self):
+        times = self.data.keys()
+        if len(times) > 1:
+            times.sort()
+            timeStamp = times[-2]
+            plot = self.data[timeStamp]
+        else:
+            timeStamp = times[0]
+            plot = self.data[timeStamp]
+
+        self.clear_markers()
+        xMax = max(plot, key=plot.get)
+        yMax = plot[xMax]
+
+        start, stop = self.axes.get_xlim()
+        y = epoch_to_mpl(timeStamp)
+        textX = ((stop - start) / 50.0) + xMax
+        when = time.strftime('%H:%M:%S', time.gmtime(timeStamp + 1))
+        self.axes.annotate('{0:.3f}MHz\n{1:.2f}dB\n{2}'.format(xMax,
+                                                               yMax,
+                                                               when),
+                           xy=(xMax, y), xytext=(textX, y),
+                           ha='left', va='bottom', size='small',
+                           color='w', gid='peak')
+        self.axes.plot(xMax, y, marker='x', markersize=10, color='w',
+                       mew=3, gid='peak')
+        self.axes.plot(xMax, y, marker='x', markersize=10, color='r',
+                       gid='peak')
+
+    def clear_markers(self):
+        children = self.axes.get_children()
+        for child in children:
+                if child.get_gid() is not None:
+                    if child.get_gid() == 'peak':
+                        child.remove()
 
     def cancel(self):
         self.abort = True

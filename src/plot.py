@@ -26,7 +26,6 @@
 import os
 import threading
 
-from matplotlib import patheffects
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 import numpy
 
@@ -178,13 +177,14 @@ class ThreadPlot(threading.Thread):
 
         start, stop = self.axes.get_xlim()
         textX = ((stop - start) / 50.0) + x
-        effect = patheffects.withStroke(linewidth=3, foreground="w")
         self.axes.annotate('{0:.3f}MHz\n{1:.2f}dB'.format(x, y),
                            xy=(x, y), xytext=(textX, y),
                            ha='left', va='top', size='small',
-                           path_effects=[effect], gid='peak')
+                           gid='peak')
+        self.axes.plot(x, y, marker='x', markersize=10, color='w',
+                       mew=3, gid='peak')
         self.axes.plot(x, y, marker='x', markersize=10, color='r',
-                       path_effects=[effect], gid='peak')
+                       gid='peak')
 
     def get_plots(self):
         plots = []
