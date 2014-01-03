@@ -39,6 +39,7 @@ from events import EVT_THREAD_STATUS, Event, EventThreadStatus, post_event
 from misc import ScanInfo, calc_samples, calc_real_dwell, open_plot, save_plot, \
     export_plot
 from plot import Plotter
+from plot3d import Plotter3d
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
 from spectrogram import Spectrogram
@@ -312,14 +313,15 @@ class FrameMain(wx.Frame):
         if self.settings.display == Display.PLOT:
             self.plot = Plotter(self, self.graph, self.settings, self.grid,
                                 self.lock)
-            self.plot.set_plot(self.spectrum, self.settings.annotate)
-            self.graph.set_type(False)
-        else:
+        elif self.settings.display == Display.SPECT:
             self.plot = Spectrogram(self, self.graph, self.settings, self.grid,
                                     self.lock)
-            self.plot.set_plot(self.spectrum, None)
-            self.graph.set_type(True)
+        else:
+            self.plot = Plotter3d(self, self.graph, self.settings, self.grid,
+                                  self.lock)
 
+        self.plot.set_plot(self.spectrum, self.settings.annotate)
+        self.graph.set_type(self.settings.display)
         self.plot.scale_plot(True)
 
     def create_popup_menu(self):

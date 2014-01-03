@@ -169,12 +169,12 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.main.plot.set_colourmap(colourMap)
         self.main.plot.redraw_plot()
 
-    def set_type(self, isSpectrogram):
+    def set_type(self, display):
         for toolId in self.extraTools:
             self.DeleteTool(toolId)
         self.extraTools = []
 
-        if not isSpectrogram:
+        if display == Display.PLOT:
             fadeId = wx.NewId()
             self.AddCheckTool(fadeId, load_bitmap('fade'),
                               shortHelp='Fade plots',
@@ -260,8 +260,8 @@ class PanelGraph(wx.Panel):
     def on_draw(self, _event):
         post_event(self.main, EventThreadStatus(Event.PLOTTED))
 
-    def set_type(self, isSpectrogram):
-        self.toolbar.set_type(isSpectrogram)
+    def set_type(self, display):
+        self.toolbar.set_type(display)
 
     def get_figure(self):
         return self.figure
