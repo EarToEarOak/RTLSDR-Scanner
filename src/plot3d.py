@@ -26,7 +26,8 @@ import os
 import threading
 import time
 
-from matplotlib import cm
+from matplotlib import cm, patheffects
+import matplotlib
 from matplotlib.colorbar import ColorbarBase
 from matplotlib.colors import Normalize
 from matplotlib.dates import DateFormatter, seconds
@@ -37,6 +38,7 @@ import numpy
 from events import post_event, EventThreadStatus, Event
 from misc import epoch_to_mpl, split_spectrum
 from mpl_toolkits.mplot3d import Axes3D  # @UnresolvedImport @UnusedImport
+
 
 MPL_SECOND = seconds(1)
 
@@ -182,6 +184,10 @@ class ThreadPlot(threading.Thread):
         self.abort = False
 
     def run(self):
+        peakX = None
+        peakY = None
+        peakZ = None
+
         with self.lock:
             if self.abort:
                 return
@@ -199,6 +205,7 @@ class ThreadPlot(threading.Thread):
                 self.parent.clear_plots()
                 j = 1
                 extent = Extent()
+                peakY = max(self.data)
                 for ys in sorted(self.data):
                     mplTime = epoch_to_mpl(ys)
                     xs, zs = split_spectrum(self.data[ys])
@@ -214,6 +221,10 @@ class ThreadPlot(threading.Thread):
                 x[:, 0] = x[:, 1]
                 y[:, 0] = y[:, 1] - MPL_SECOND
                 z[:, 0] = z[:, 1]
+
+                pos = numpy.argmax(z[:, 1])
+                peakX = x[:, 1][pos]
+                peakZ = z[:, 1][pos]
 
                 if self.autoScale:
                     vmin = self.min
@@ -243,12 +254,33 @@ class ThreadPlot(threading.Thread):
                                            alpha=1)
                 self.parent.extent = extent
 
+                if self.annotate:
+                    self.annotate_plot(peakX, peakY, peakZ)
+
         if total > 0:
             self.parent.scale_plot()
             self.parent.redraw_plot()
 
-    def annotate_plot(self):
-        pass
+    def annotate_plot(self, x, y, z):
+        when = time.strftime('%H:%M:%S', time.gmtime(y))
+        yPos = epoch_to_mpl(y)
+        if(matplotlib.__version__ < '1.3'):
+            self.axes.text(x, yPos, z,
+                           '{0:.6f}MHz\n{1:.2f}dB\n{2}'.format(x, z, when),
+                           ha='left', va='bottom', size='small', gid='peak')
+            self.axes.plot([x], [yPos], [z], marker='x', markersize=10,
+                           mew=3, color='w', gid='peak')
+            self.axes.plot([x], [yPos], [z], marker='x', markersize=10,
+                           color='r', gid='peak')
+        else:
+            effect = patheffects.withStroke(linewidth=3, foreground="w",
+                                            alpha=0.75)
+            self.axes.text(x, epoch_to_mpl(y), z,
+                           '{0:.6f}MHz\n{1:.2f}dB\n{2}'.format(x, z, when),
+                           ha='left', va='bottom', size='small', gid='peak',
+                           path_effects=[effect])
+            self.axes.plot([x], [yPos], [z], marker='x', markersize=10,
+                           color='r', gid='peak', path_effects=[effect])
 
     def clear_markers(self):
         children = self.axes.get_children()
