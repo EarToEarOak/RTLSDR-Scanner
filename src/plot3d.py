@@ -52,6 +52,7 @@ class Plotter3d():
         self.plot = None
         self.threadPlot = None
         self.extent = None
+        self.wireframe = settings.wireframe
         self.setup_plot()
         self.set_grid(grid)
 
@@ -221,16 +222,25 @@ class ThreadPlot(threading.Thread):
                     zExtent = extent.get_z()
                     vmin = zExtent[0]
                     vmax = zExtent[1]
-                self.parent.plot = self.axes.plot_surface(x, y, z,
-                                                          rstride=1,
-                                                          cstride=1,
-                                                          vmin=vmin,
-                                                          vmax=vmax,
-                                                          linewidth=0,
-                                                          cmap=cm.get_cmap(self.colourMap),
-                                                          gid='peak',
-                                                          antialiased=True,
-                                                          alpha=1)
+                if self.parent.wireframe:
+                    self.parent.plot = \
+                    self.axes.plot_wireframe(x, y, z,
+                                             rstride=1, cstride=1,
+                                             linewidth=0.1,
+                                             cmap=cm.get_cmap(self.colourMap),
+                                             gid='plot',
+                                             antialiased=True,
+                                             alpha=1)
+                else:
+                    self.parent.plot = \
+                    self.axes.plot_surface(x, y, z,
+                                           rstride=1, cstride=1,
+                                           vmin=vmin, vmax=vmax,
+                                           linewidth=0.1,
+                                           cmap=cm.get_cmap(self.colourMap),
+                                           gid='plot',
+                                           antialiased=True,
+                                           alpha=1)
                 self.parent.extent = extent
 
         if total > 0:

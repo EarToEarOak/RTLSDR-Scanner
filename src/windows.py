@@ -100,39 +100,34 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.AddSeparator()
 
         navId = wx.NewId()
-        self.AddSimpleTool(navId, load_bitmap('range'),
-                           'Range', 'Set plot range')
+        self.AddSimpleTool(navId, load_bitmap('range'), 'Range')
         wx.EVT_TOOL(self, navId, self.on_range)
 
         self.AddSeparator()
 
         self.autoId = wx.NewId()
         self.AddCheckTool(self.autoId, load_bitmap('auto_range'),
-                          shortHelp='Auto range',
-                          longHelp='Scale plot to all measurements')
+                          shortHelp='Auto range')
         self.ToggleTool(self.autoId, self.main.settings.autoScale)
         wx.EVT_TOOL(self, self.autoId, self.on_check_auto)
 
         liveId = wx.NewId()
         self.AddCheckTool(liveId, load_bitmap('auto_refresh'),
-                          shortHelp='Live update',
-                          longHelp='Update plot in realtime (slow)')
+                          shortHelp='Live update')
         self.ToggleTool(liveId, self.main.settings.liveUpdate)
         wx.EVT_TOOL(self, liveId, self.on_check_update)
 
         gridId = wx.NewId()
         self.AddCheckTool(gridId, load_bitmap('grid'),
-                          shortHelp='Grid',
-                          longHelp='Toggle grid')
+                          shortHelp='Grid')
         self.ToggleTool(gridId, self.main.grid)
         wx.EVT_TOOL(self, gridId, self.on_check_grid)
 
         peakId = wx.NewId()
         self.AddCheckTool(peakId, load_bitmap('peak'),
-                          shortHelp='Label peak',
-                          longHelp='Label peak')
-        wx.EVT_TOOL(self, peakId, self.on_check_peak)
+                          shortHelp='Label peak')
         self.ToggleTool(peakId, self.main.settings.annotate)
+        wx.EVT_TOOL(self, peakId, self.on_check_peak)
 
     def on_range(self, _event):
         dlg = DialogRange(self, self.main)
@@ -162,6 +157,11 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         fade = event.Checked()
         self.main.settings.fadeScans = fade
         self.main.plot.redraw_plot()
+
+    def on_check_wire(self, event):
+        wire = event.Checked()
+        self.main.settings.wireframe = wire
+        self.main.create_plot()
 
     def on_colour(self, event):
         colourMap = event.GetString()
@@ -195,6 +195,18 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
             self.AddControl(control)
             self.Bind(wx.EVT_CHOICE, self.on_colour, control)
             self.extraTools.append(colourId)
+
+        if display == Display.SURFACE:
+            separator = self.AddSeparator()
+            self.extraTools.append(separator.GetId())
+
+            wireId = wx.NewId()
+            self.AddCheckTool(wireId, load_bitmap('wireframe'),
+                              shortHelp='Wireframe',
+                              longHelp='Wireframe')
+            wx.EVT_TOOL(self, wireId, self.on_check_wire)
+            self.ToggleTool(wireId, self.main.settings.wireframe)
+            self.extraTools.append(wireId)
 
         self.Realize()
 
