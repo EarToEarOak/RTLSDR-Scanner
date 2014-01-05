@@ -366,23 +366,24 @@ class FrameMain(wx.Frame):
                             wx.SAVE | wx.OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
             self.status.set_general("Saving")
-            self.filename = dlg.GetFilename()
+            self.filename = os.path.splitext(dlg.GetFilename())[0]
             self.dirname = dlg.GetDirectory()
-            save_plot(self.dirname, self.filename, self.scanInfo,
+            save_plot(self.dirname, dlg.GetFilename(), self.scanInfo,
                       self.spectrum)
             self.saved(True)
             self.status.set_general("Finished")
             self.settings.fileHistory.AddFileToHistory(os.path.join(self.dirname,
-                                                                    self.filename))
+                                                                    dlg.GetFilename()))
         dlg.Destroy()
 
     def on_export(self, _event):
         dlg = wx.FileDialog(self, "Export a scan", self.dirname,
-                            self.filename + ".csv", File.CSV,
+                            self.filename, File.CSV,
                             wx.SAVE | wx.OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
             self.status.set_general("Exporting")
-            export_plot(self.dirname, self.filename, self.spectrum)
+            export_plot(dlg.GetDirectory(), dlg.GetFilename(),
+                        dlg.GetFilterIndex(), self.spectrum)
             self.status.set_general("Finished")
         dlg.Destroy()
 
@@ -537,7 +538,7 @@ class FrameMain(wx.Frame):
                 wx.MessageBox('File not found',
                               'Error', wx.OK | wx.ICON_ERROR)
 
-        self.filename = filename
+        self.filename = os.path.splitext(filename)[0]
         self.dirname = dirname
         self.status.set_general("Opening: {0}".format(filename))
 
