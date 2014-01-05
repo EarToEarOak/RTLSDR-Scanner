@@ -236,7 +236,7 @@ class ThreadPlot(threading.Thread):
                     self.axes.plot_surface(x, y, z,
                                            rstride=1, cstride=1,
                                            vmin=vmin, vmax=vmax,
-                                           linewidth=0.1,
+                                           linewidth=0,
                                            cmap=cm.get_cmap(self.colourMap),
                                            gid='plot',
                                            antialiased=True,
