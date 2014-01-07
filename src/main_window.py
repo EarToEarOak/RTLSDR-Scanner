@@ -382,8 +382,7 @@ class FrameMain(wx.Frame):
                             wx.SAVE | wx.OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
             self.status.set_general("Exporting")
-            export_plot(dlg.GetDirectory(), dlg.GetFilename(),
-                        dlg.GetFilterIndex(), self.spectrum)
+            export_plot(dlg.GetDirectory(), dlg.GetFilename(), self.spectrum)
             self.status.set_general("Finished")
         dlg.Destroy()
 
