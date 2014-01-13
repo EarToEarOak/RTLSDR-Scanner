@@ -32,6 +32,7 @@ from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas,
     NavigationToolbar2WxAgg
 from matplotlib.colorbar import ColorbarBase
 from matplotlib.colors import Normalize
+from matplotlib.dates import num2epoch
 from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
 import numpy
 import rtlsdr
@@ -235,6 +236,7 @@ class PanelGraph(wx.Panel):
         self.parent = parent
         self.main = main
         self.resize = False
+        self.display = None
 
         wx.Panel.__init__(self, self.parent)
 
@@ -256,16 +258,27 @@ class PanelGraph(wx.Panel):
         xpos = event.xdata
         ypos = event.ydata
         text = ""
-        if xpos is not None and ypos is not None and len(self.main.spectrum) > 0:
+        if xpos is None or ypos is  None or  len(self.main.spectrum) == 0:
+            return
+
+        if self.display == Display.PLOT:
             timeStamp = max(self.main.spectrum)
             spectrum = self.main.spectrum[timeStamp]
-            if len(spectrum) > 0:
-                x = min(spectrum.keys(), key=lambda freq: abs(freq - xpos))
-                if(xpos <= max(spectrum.keys(), key=float)):
-                    y = spectrum[x]
-                    text = "f = {0:.6f}MHz, p = {1:.2f}dB".format(x, y)
-                else:
-                    text = "f = {0:.6f}MHz".format(xpos)
+        elif self.display == Display.SPECT:
+            timeStamp = num2epoch(ypos)
+            if timeStamp in self.main.spectrum:
+                spectrum = self.main.spectrum[timeStamp]
+            else:
+                nearest = min(self.main.spectrum.keys(), key=lambda k: abs(k - timeStamp))
+                spectrum = self.main.spectrum[nearest]
+
+        if spectrum is not None and len(spectrum) > 0:
+            x = min(spectrum.keys(), key=lambda freq: abs(freq - xpos))
+            if(xpos <= max(spectrum.keys(), key=float)):
+                y = spectrum[x]
+                text = "f = {0:.6f}MHz, p = {1:.2f}dB".format(x, y)
+            else:
+                text = "f = {0:.6f}MHz".format(xpos)
 
         self.main.status.SetStatusText(text, 1)
 
@@ -273,6 +286,7 @@ class PanelGraph(wx.Panel):
         post_event(self.main, EventThreadStatus(Event.PLOTTED))
 
     def set_type(self, display):
+        self.display = display
         self.toolbar.set_type(display)
 
     def get_figure(self):

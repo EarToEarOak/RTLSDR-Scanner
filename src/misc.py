@@ -29,7 +29,7 @@ import os
 import sys
 
 from matplotlib import cm
-from matplotlib.dates import date2num
+from matplotlib.dates import date2num, num2epoch
 import wx
 
 from constants import SAMPLE_RATE, File
@@ -235,6 +235,10 @@ def nearest(value, values):
 def epoch_to_mpl(epoch):
     dt = datetime.datetime.fromtimestamp(epoch)
     return date2num(dt)
+
+
+def mpl_to_epoch(date):
+    return num2epoch(date)
 
 
 def load_bitmap(name):
