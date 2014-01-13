@@ -26,7 +26,6 @@
 import Queue
 
 import wx
-from wxPython._core import wxEvtHandler
 
 
 EVT_THREAD_STATUS = wx.NewId()
@@ -63,7 +62,7 @@ class EventThreadStatus(wx.PyEvent):
 def post_event(destination, status):
     if isinstance(destination, Queue.Queue):
         destination.put(status)
-    elif isinstance(destination, wxEvtHandler):
+    elif isinstance(destination, wx.EvtHandler):
         wx.PostEvent(destination, status)
 
 
