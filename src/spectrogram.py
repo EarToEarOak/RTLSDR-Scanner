@@ -60,13 +60,6 @@ class Spectrogram:
         self.axes = self.figure.add_subplot(gs[0])
         self.axes.set_axis_bgcolor('Gainsboro')
 
-        if len(self.settings.devices) > 0:
-            gain = self.settings.devices[self.settings.index].gain
-        else:
-            gain = 0
-        self.axes.set_title("Frequency Spectrogram\n{0} - {1} MHz,"
-                            " gain = {2}dB".format(self.settings.start,
-                                                   self.settings.stop, gain))
         self.axes.set_xlabel("Frequency (MHz)")
         self.axes.set_ylabel('Time')
         numFormatter = ScalarFormatter(useOffset=False)
@@ -111,6 +104,9 @@ class Spectrogram:
                 threading.Thread(target=self.thread_draw, name='Draw').start()
             else:
                 post_event(self.notify, EventThreadStatus(Event.DRAW))
+
+    def set_title(self, title):
+        self.axes.set_title(title)
 
     def set_plot(self, data, annotate=False):
         if self.threadPlot is not None and self.threadPlot.isAlive():

@@ -50,15 +50,8 @@ class Plotter():
     def setup_plot(self):
         self.axes = self.figure.add_subplot(111)
 
-        if len(self.settings.devices) > 0:
-            gain = self.settings.devices[self.settings.index].gain
-        else:
-            gain = 0
         formatter = ScalarFormatter(useOffset=False)
 
-        self.axes.set_title("Frequency Scan\n{0} - {1} MHz,"
-                            " gain = {2}dB".format(self.settings.start,
-                                                   self.settings.stop, gain))
         self.axes.set_xlabel("Frequency (MHz)")
         self.axes.set_ylabel('Level (dB)')
         self.axes.xaxis.set_major_formatter(formatter)
@@ -88,6 +81,9 @@ class Plotter():
                 threading.Thread(target=self.thread_draw, name='Draw').start()
             else:
                 post_event(self.notify, EventThreadStatus(Event.DRAW))
+
+    def set_title(self, title):
+        self.axes.set_title(title)
 
     def set_plot(self, data, annotate=False):
         if self.threadPlot is not None and self.threadPlot.isAlive():

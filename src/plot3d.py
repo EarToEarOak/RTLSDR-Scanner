@@ -62,17 +62,9 @@ class Plotter3d():
         gs = GridSpec(1, 2, width_ratios=[9.5, 0.5])
         self.axes = self.figure.add_subplot(gs[0], projection='3d')
 
-        if len(self.settings.devices) > 0:
-            gain = self.settings.devices[self.settings.index].gain
-        else:
-            gain = 0
-
         numformatter = ScalarFormatter(useOffset=False)
         timeFormatter = DateFormatter("%H:%M:%S")
 
-        self.axes.set_title("Frequency Scan\n{0} - {1} MHz,"
-                            " gain = {2}dB".format(self.settings.start,
-                                                   self.settings.stop, gain))
         self.axes.set_xlabel("Frequency (MHz)")
         self.axes.set_ylabel('Time')
         self.axes.set_zlabel('Level (dB)')
@@ -118,6 +110,9 @@ class Plotter3d():
                 threading.Thread(target=self.thread_draw, name='Draw').start()
             else:
                 post_event(self.notify, EventThreadStatus(Event.DRAW))
+
+    def set_title(self, title):
+        self.axes.set_title(title)
 
     def set_plot(self, data, annotate=False):
         if self.threadPlot is not None and self.threadPlot.isAlive():

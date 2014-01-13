@@ -319,6 +319,7 @@ class FrameMain(wx.Frame):
             self.plot = Plotter3d(self, self.graph, self.settings, self.grid,
                                   self.lock)
 
+        self.set_plot_title()
         self.plot.set_plot(self.spectrum, self.settings.annotate)
         self.graph.set_type(self.settings.display)
         self.plot.scale_plot(True)
@@ -614,6 +615,7 @@ class FrameMain(wx.Frame):
                                          self.settings.index, samples, isCal)
             self.filename = "Scan {0:.1f}-{1:.1f}MHz".format(self.settings.start,
                                                             self.settings.stop)
+            self.set_plot_title()
             return True
 
     def stop_scan(self):
@@ -677,6 +679,15 @@ class FrameMain(wx.Frame):
         if not isSaved:
             title += "*"
         self.SetTitle(title)
+
+    def set_plot_title(self):
+        if len(self.settings.devices) > 0:
+            gain = self.settings.devices[self.settings.index].gain
+        else:
+            gain = 0
+        self.plot.set_title("Frequency Spectrogram\n{0} - {1} MHz,"
+                            " gain = {2}dB".format(self.settings.start,
+                                                   self.settings.stop, gain))
 
     def set_control_state(self, state):
         self.spinCtrlStart.Enable(state)
