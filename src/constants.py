@@ -56,7 +56,7 @@ DWELL = ["16 ms", 0.016,
 
 DISPLAY = ["Plot", 0,
            "Spectrogram", 1,
-           "Surface", 2]
+           "3D Spectrogram", 2]
 
 TUNER = ["Unknown",
          "Elonics E4000",
