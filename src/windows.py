@@ -935,16 +935,18 @@ class DialogPrefs(wx.Dialog):
         self.checkSaved.SetValue(self.settings.saveWarn)
         self.checkSaved.SetToolTip(wx.ToolTip('Prompt to save scan on exit'))
 
-        self.checkRetain = wx.CheckBox(self, wx.ID_ANY,
-                                      "Retain previous scans")
-        self.checkRetain.SetToolTip(wx.ToolTip('Can be slow'))
-        self.checkRetain.SetValue(self.settings.retainScans)
-        self.Bind(wx.EVT_CHECKBOX, self.on_check, self.checkRetain)
-        textWarn = wx.StaticText(self,
-                                 label="(Needed for Spectrogram view)")
+        self.radioAvg = wx.RadioButton(self, wx.ID_ANY, 'Average Scans',
+                                       style=wx.RB_GROUP)
+        self.radioAvg.SetToolTip(wx.ToolTip('Average level with each scan'))
+        self.Bind(wx.EVT_RADIOBUTTON, self.on_radio, self.radioAvg)
+        self.radioRetain = wx.RadioButton(self, wx.ID_ANY, 'Retain previous scans')
+        self.radioRetain.SetToolTip(wx.ToolTip('Can be slow'))
+        self.Bind(wx.EVT_RADIOBUTTON, self.on_radio, self.radioRetain)
+        self.radioRetain.SetValue(self.settings.retainScans)
+
         textMaxScans = wx.StaticText(self, label="Max scans")
         self.spinCtrlMaxScans = wx.SpinCtrl(self)
-        self.spinCtrlMaxScans.SetRange(2, 500)
+        self.spinCtrlMaxScans.SetRange(1, 500)
         self.spinCtrlMaxScans.SetValue(self.settings.retainMax)
         self.spinCtrlMaxScans.SetToolTip(wx.ToolTip('Maximum previous scans'
                                                     ' to display'))
@@ -959,7 +961,7 @@ class DialogPrefs(wx.Dialog):
         self.Bind(wx.EVT_CHOICE, self.on_choice, self.choiceColour)
         self.colourBar = PanelColourBar(self, self.settings.colourMap)
 
-        self.on_check(None)
+        self.on_radio(None)
 
         self.devices = devices
         self.gridDev = grid.Grid(self)
@@ -1046,10 +1048,10 @@ class DialogPrefs(wx.Dialog):
         genbox.Add(self.checkSaved, 0, wx.ALL | wx.EXPAND, 10)
 
         congrid = wx.GridBagSizer(10, 10)
-        congrid.Add(self.checkRetain, pos=(0, 0), flag=wx.ALL)
-        congrid.Add(textWarn, pos=(0, 1), flag=wx.ALL)
-        congrid.Add(textMaxScans, pos=(1, 0), flag=wx.ALL)
-        congrid.Add(self.spinCtrlMaxScans, pos=(1, 1), flag=wx.ALL)
+        congrid.Add(self.radioAvg, pos=(0, 0), flag=wx.ALL)
+        congrid.Add(self.radioRetain, pos=(1, 0), flag=wx.ALL)
+        congrid.Add(textMaxScans, pos=(2, 0), flag=wx.ALL)
+        congrid.Add(self.spinCtrlMaxScans, pos=(2, 1), flag=wx.ALL)
         conbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY,
                                                 "Continuous Scans"),
                                    wx.VERTICAL)
@@ -1080,8 +1082,8 @@ class DialogPrefs(wx.Dialog):
 
         self.SetSizerAndFit(vbox)
 
-    def on_check(self, _event):
-        enabled = self.checkRetain.GetValue()
+    def on_radio(self, _event):
+        enabled = self.radioRetain.GetValue()
         self.checkFade.Enable(enabled)
         self.spinCtrlMaxScans.Enable(enabled)
 
@@ -1108,7 +1110,7 @@ class DialogPrefs(wx.Dialog):
 
     def on_ok(self, _event):
         self.settings.saveWarn = self.checkSaved.GetValue()
-        self.settings.retainScans = self.checkRetain.GetValue()
+        self.settings.retainScans = self.radioRetain.GetValue()
         self.settings.fadeScans = self.checkFade.GetValue()
         self.settings.retainMax = self.spinCtrlMaxScans.GetValue()
         self.settings.colourMap = self.choiceColour.GetStringSelection()

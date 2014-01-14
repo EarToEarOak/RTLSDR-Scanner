@@ -169,7 +169,7 @@ class Cli():
             Thread(target=update_spectrum, name='Update',
                    args=(queue, self.lock, self.settings.start,
                          self.settings.stop, freq,
-                         data, offset, self.spectrum,)).start()
+                         data, offset, self.spectrum, False,)).start()
         elif status == Event.UPDATED:
             self.progress()
 

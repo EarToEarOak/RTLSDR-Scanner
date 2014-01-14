@@ -515,7 +515,8 @@ class FrameMain(wx.Frame):
             Thread(target=update_spectrum, name='Update',
                    args=(self, self.lock, self.settings.start,
                          self.settings.stop, freq,
-                         data, offset, self.spectrum,)).start()
+                         data, offset, self.spectrum,
+                         not self.settings.retainScans)).start()
         elif status == Event.UPDATED:
             if data and self.settings.liveUpdate:
                 self.plot.set_plot(self.spectrum,
@@ -664,12 +665,8 @@ class FrameMain(wx.Frame):
         self.stopScan = True
 
     def limit_spectrum(self):
-        if self.settings.retainScans:
-            limit = self.settings.retainMax
-        else:
-            limit = 1
         with self.lock:
-            while len(self.spectrum) >= limit:
+            while len(self.spectrum) >= self.settings.retainMax:
                 timeStamp = min(self.spectrum)
                 del self.spectrum[timeStamp]
 

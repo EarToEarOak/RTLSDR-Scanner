@@ -172,10 +172,13 @@ def anaylse_data(freq, data, cal, nfft):
 
 
 def update_spectrum(notify, lock, start, stop, freqCentre, data, offset,
-                    spectrum):
+                    spectrum, average):
     with lock:
         updated = False
-        timeStamp = data[0]
+        if average:
+            timeStamp = 0
+        else:
+            timeStamp = data[0]
         scan = data[1]
 
         upperStart = freqCentre + offset
@@ -189,10 +192,8 @@ def update_spectrum(notify, lock, start, stop, freqCentre, data, offset,
         for freq in scan:
             if start <= freq < stop:
                 power = 10 * math.log10(scan[freq])
-                if upperStart <= freq * 1e6 <= upperEnd:
-                    spectrum[timeStamp][freq] = power
-                    updated = True
-                if lowerStart <= freq * 1e6 <= lowerEnd:
+                if upperStart <= freq * 1e6 <= upperEnd or \
+                   lowerStart <= freq * 1e6 <= lowerEnd:
                     if freq in spectrum[timeStamp]:
                         spectrum[timeStamp][freq] = \
                             (spectrum[timeStamp][freq] + power) / 2
