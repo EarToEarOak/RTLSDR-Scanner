@@ -23,16 +23,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import itertools
 import os
 import threading
 
+from matplotlib import patheffects
 import matplotlib
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 import numpy
 
 from events import EventThreadStatus, Event, post_event
 from misc import split_spectrum
-from matplotlib import patheffects
 
 
 class Plotter():
@@ -40,6 +41,7 @@ class Plotter():
         self.notify = notify
         self.settings = settings
         self.graph = graph
+        self.average = settings.average
         self.lock = lock
         self.figure = self.graph.get_figure()
         self.axes = None
@@ -92,7 +94,7 @@ class Plotter():
 
         self.threadPlot = ThreadPlot(self, self.lock, self.axes,
                                      data, self.settings.fadeScans,
-                                     annotate).start()
+                                     annotate, self.settings.average).start()
 
     def clear_plots(self):
         children = self.axes.get_children()
@@ -120,7 +122,7 @@ class Plotter():
 
 
 class ThreadPlot(threading.Thread):
-    def __init__(self, parent, lock, axes, data, fade, annotate):
+    def __init__(self, parent, lock, axes, data, fade, annotate, average):
         threading.Thread.__init__(self)
         self.name = "Plot"
         self.parent = parent
@@ -129,6 +131,7 @@ class ThreadPlot(threading.Thread):
         self.data = data
         self.annotate = annotate
         self.fade = fade
+        self.average = average
         self.abort = False
 
     def run(self):
@@ -138,18 +141,37 @@ class ThreadPlot(threading.Thread):
             total = len(self.data)
             if total > 0:
                 self.parent.clear_plots()
-                count = 1.0
-                for timeStamp in sorted(self.data):
-                    if self.abort:
-                        return
-                    xs, ys = split_spectrum(self.data[timeStamp])
-                    if self.fade:
-                        alpha = count / total
-                    else:
-                        alpha = 1
+                if self.average:
+                    avg = {}
+                    count = len(self.data)
+                    length = len(self.data[(sorted(self.data))[0]])
+                    for timeStamp in sorted(self.data):
+                        if self.abort:
+                            return
+                        xs, ys = split_spectrum(self.data[timeStamp])
+                        if len(xs) < length:
+                            continue
+                        for x, y in itertools.izip_longest(xs, ys):
+                            if x in avg:
+                                avg[x] = avg[x] + y / count
+                            else:
+                                avg[x] = y / count
+                    xs, ys = split_spectrum(avg)
                     self.axes.plot(xs, ys, linewidth=0.4, gid="plot",
-                                   color='b', alpha=alpha)
-                    count += 1
+                                   color='b')
+                else:
+                    count = 1.0
+                    for timeStamp in sorted(self.data):
+                        if self.abort:
+                            return
+                        xs, ys = split_spectrum(self.data[timeStamp])
+                        if self.fade:
+                            alpha = count / total
+                        else:
+                            alpha = 1
+                        self.axes.plot(xs, ys, linewidth=0.4, gid="plot",
+                                       color='b', alpha=alpha)
+                        count += 1
 
                 if self.annotate:
                     self.annotate_plot()

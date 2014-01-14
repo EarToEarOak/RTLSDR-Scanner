@@ -164,6 +164,11 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.main.settings.wireframe = wire
         self.main.create_plot()
 
+    def on_check_avg(self, event):
+        avg = event.Checked()
+        self.main.settings.average = avg
+        self.main.create_plot()
+
     def on_colour(self, event):
         colourMap = event.GetString()
         self.main.settings.colourMap = colourMap
@@ -183,6 +188,14 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
             wx.EVT_TOOL(self, fadeId, self.on_check_fade)
             self.ToggleTool(fadeId, self.main.settings.fadeScans)
             self.extraTools.append(fadeId)
+
+            avgId = wx.NewId()
+            self.AddCheckTool(avgId, load_bitmap('fade'),
+                              shortHelp='Average plots',
+                              longHelp='Average plots')
+            wx.EVT_TOOL(self, avgId, self.on_check_avg)
+            self.ToggleTool(avgId, self.main.settings.average)
+            self.extraTools.append(avgId)
         else:
             separator = self.AddSeparator()
             separatorId = separator.GetId()
