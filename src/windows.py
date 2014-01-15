@@ -190,7 +190,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
             self.extraTools.append(fadeId)
 
             avgId = wx.NewId()
-            self.AddCheckTool(avgId, load_bitmap('fade'),
+            self.AddCheckTool(avgId, load_bitmap('average'),
                               shortHelp='Average plots',
                               longHelp='Average plots')
             wx.EVT_TOOL(self, avgId, self.on_check_avg)
