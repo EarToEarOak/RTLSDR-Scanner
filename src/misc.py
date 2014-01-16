@@ -23,7 +23,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import cPickle
-import calendar
 import datetime
 import json
 import os
@@ -48,6 +47,8 @@ class ScanInfo():
     calibration = None
     tuner = 0
     time = None
+    timeFirst = None
+    timeLast = None
     lat = None
     lon = None
 
@@ -243,6 +244,13 @@ def epoch_to_mpl(epoch):
     epoch = epoch_to_local(epoch)
     dt = datetime.datetime.fromtimestamp(epoch)
     return date2num(dt)
+
+
+def format_time(timeStamp, withDate=False):
+    if withDate:
+        return time.strftime('%c', time.localtime(timeStamp))
+
+    return time.strftime('%H:%M:%S', time.localtime(timeStamp))
 
 
 def load_bitmap(name):

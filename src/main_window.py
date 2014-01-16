@@ -388,6 +388,10 @@ class FrameMain(wx.Frame):
         dlg.Destroy()
 
     def on_properties(self, _event):
+        if len(self.spectrum) > 0:
+            self.scanInfo.timeFirst = min(self.spectrum)
+            self.scanInfo.timeLast = max(self.spectrum)
+
         dlg = DialogProperties(self, self.scanInfo)
         dlg.ShowModal()
         dlg.Destroy()

@@ -36,7 +36,7 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 
 from events import EventThreadStatus, Event, post_event
-from misc import split_spectrum, epoch_to_mpl
+from misc import split_spectrum, epoch_to_mpl, format_time
 import numpy as np
 
 
@@ -240,7 +240,7 @@ class ThreadPlot(threading.Thread):
         start, stop = self.axes.get_xlim()
         y = epoch_to_mpl(timeStamp)
         textX = ((stop - start) / 50.0) + xMax
-        when = time.strftime('%H:%M:%S', time.localtime(timeStamp))
+        when = format_time(timeStamp)
 
         if(matplotlib.__version__ < '1.3'):
             self.axes.annotate('{0:.6f}MHz\n{1:.2f}dB\n{2}'.format(xMax,

@@ -36,8 +36,8 @@ from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 import numpy
 
 from events import post_event, EventThreadStatus, Event
-from misc import epoch_to_mpl, split_spectrum
-from mpl_toolkits.mplot3d import Axes3D  # @UnresolvedImport @UnusedImport
+from misc import epoch_to_mpl, split_spectrum, format_time
+from mpl_toolkits.mplot3d import Axes3D # @UnresolvedImport @UnusedImport
 
 
 MPL_SECOND = seconds(1)
@@ -257,7 +257,7 @@ class ThreadPlot(threading.Thread):
             self.parent.redraw_plot()
 
     def annotate_plot(self, x, y, z):
-        when = time.strftime('%H:%M:%S', time.localtime(y))
+        when = format_time(y)
         yPos = epoch_to_mpl(y)
         if(matplotlib.__version__ < '1.3'):
             self.axes.text(x, yPos, z,

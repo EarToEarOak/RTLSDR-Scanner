@@ -40,7 +40,8 @@ import wx
 
 from constants import *
 from events import EventThreadStatus, Event, post_event
-from misc import split_spectrum, nearest, open_plot, load_bitmap, get_colours
+from misc import split_spectrum, nearest, open_plot, load_bitmap, get_colours, \
+    format_time
 from rtltcp import RtlTcp
 import wx.grid as grid
 import wx.lib.masked as masked
@@ -817,28 +818,35 @@ class DialogProperties(wx.Dialog):
             textCtrlNfft.SetValue(str(scanInfo.nfft))
         gridScan.Add(textCtrlNfft, (3, 1), (1, 1), wx.ALL, 5)
 
-        textTime = wx.StaticText(self, label="Time")
+        textTime = wx.StaticText(self, label="First scan")
         gridScan.Add(textTime, (4, 0), (1, 1), wx.ALL, 5)
         textCtrlTime = wx.TextCtrl(self, value="Unknown", style=wx.TE_READONLY)
-        if scanInfo.time is not None:
-            textCtrlTime.SetValue(scanInfo.time)
+        if scanInfo.timeFirst is not None:
+            textCtrlTime.SetValue(format_time(scanInfo.timeFirst, True))
         gridScan.Add(textCtrlTime, (4, 1), (1, 1), wx.ALL, 5)
 
+        textTime = wx.StaticText(self, label="Last scan")
+        gridScan.Add(textTime, (5, 0), (1, 1), wx.ALL, 5)
+        textCtrlTime = wx.TextCtrl(self, value="Unknown", style=wx.TE_READONLY)
+        if scanInfo.timeLast is not None:
+            textCtrlTime.SetValue(format_time(scanInfo.timeLast, True))
+        gridScan.Add(textCtrlTime, (5, 1), (1, 1), wx.ALL, 5)
+
         textLat = wx.StaticText(self, label="Latitude")
-        gridScan.Add(textLat, (5, 0), (1, 1), wx.ALL, 5)
+        gridScan.Add(textLat, (6, 0), (1, 1), wx.ALL, 5)
         self.textCtrlLat = wx.TextCtrl(self, value="Unknown")
         self.textCtrlLat.SetValidator(ValidatorCoord(True))
         if scanInfo.lat is not None:
             self.textCtrlLat.SetValue(str(scanInfo.lat))
-        gridScan.Add(self.textCtrlLat, (5, 1), (1, 1), wx.ALL, 5)
+        gridScan.Add(self.textCtrlLat, (6, 1), (1, 1), wx.ALL, 5)
 
         textLon = wx.StaticText(self, label="Longitude")
-        gridScan.Add(textLon, (6, 0), (1, 1), wx.ALL, 5)
+        gridScan.Add(textLon, (7, 0), (1, 1), wx.ALL, 5)
         self.textCtrlLon = wx.TextCtrl(self, value="Unknown")
         self.textCtrlLon.SetValidator(ValidatorCoord(False))
         if scanInfo.lon is not None:
             self.textCtrlLon.SetValue(str(scanInfo.lon))
-        gridScan.Add(self.textCtrlLon, (6, 1), (1, 1), wx.ALL, 5)
+        gridScan.Add(self.textCtrlLon, (7, 1), (1, 1), wx.ALL, 5)
 
         boxScan.Add(gridScan, 0, 0, 5)
 
