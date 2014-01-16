@@ -284,6 +284,8 @@ class PanelGraph(wx.Panel):
             else:
                 nearest = min(self.main.spectrum.keys(), key=lambda k: abs(k - timeStamp))
                 spectrum = self.main.spectrum[nearest]
+        else:
+            spectrum = None
 
         if spectrum is not None and len(spectrum) > 0:
             x = min(spectrum.keys(), key=lambda freq: abs(freq - xpos))
