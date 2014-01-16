@@ -23,10 +23,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import cPickle
+import calendar
 import datetime
 import json
 import os
 import sys
+import time
 
 from matplotlib import cm
 from matplotlib.dates import date2num, num2epoch
@@ -232,13 +234,15 @@ def nearest(value, values):
     return values[offset.index(min(offset))]
 
 
+def epoch_to_local(epoch):
+    local = time.localtime(epoch)
+    return time.mktime(local)
+
+
 def epoch_to_mpl(epoch):
+    epoch = epoch_to_local(epoch)
     dt = datetime.datetime.fromtimestamp(epoch)
     return date2num(dt)
-
-
-def mpl_to_epoch(date):
-    return num2epoch(date)
 
 
 def load_bitmap(name):

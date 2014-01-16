@@ -257,7 +257,7 @@ class ThreadPlot(threading.Thread):
             self.parent.redraw_plot()
 
     def annotate_plot(self, x, y, z):
-        when = time.strftime('%H:%M:%S', time.gmtime(y))
+        when = time.strftime('%H:%M:%S', time.localtime(y))
         yPos = epoch_to_mpl(y)
         if(matplotlib.__version__ < '1.3'):
             self.axes.text(x, yPos, z,
