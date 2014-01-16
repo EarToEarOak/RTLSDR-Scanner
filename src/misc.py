@@ -247,6 +247,9 @@ def epoch_to_mpl(epoch):
 
 
 def format_time(timeStamp, withDate=False):
+    if timeStamp <= 1:
+        return 'Unknown'
+
     if withDate:
         return time.strftime('%c', time.localtime(timeStamp))
 
