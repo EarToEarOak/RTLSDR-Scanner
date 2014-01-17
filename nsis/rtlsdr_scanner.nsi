@@ -31,7 +31,7 @@
 !include "nsDialogs_createTextMultiline.nsh"
 !include "fileassoc.nsh"
 
-!define INSTALLER_VERSION "2"
+!define INSTALLER_VERSION "3"
 
 !define PRODUCT_NAME "RTLSDR Scanner"
 !define PRODUCT_VERSION ""
@@ -112,7 +112,7 @@ SectionGroup "/e" "Dependencies" SEC_DEP
         Call get_rtlsdr
     SectionEnd
     SectionGroup "/e" "Python" SEC_PYDEP
-        Section "Python 2.7.5" SEC_PYTHON
+        Section "Python 2.7.6" SEC_PYTHON
            Call get_python
            Call set_installer_path
         SectionEnd
@@ -122,19 +122,19 @@ SectionGroup "/e" "Dependencies" SEC_DEP
         Section "wxPython 2.8.12.1"
             Call get_wxpython
         SectionEnd
-        Section "matplotlib 1.3.0"
+        Section "matplotlib 1.3.1"
             Call get_matplotlib
         SectionEnd
-        Section "numpy 1.7.1"
+        Section "numpy 1.8.0"
             Call get_numpy
         SectionEnd
         Section "pyparsing 2.0.1"
             Call get_pyparsing
         SectionEnd
-        Section "setuptools 1.1.6"
+        Section "setuptools 2.1"
             Call get_setuptools
         SectionEnd
-        Section "dateutils 2.1"
+        Section "dateutil 2.2"
             Call get_dateutil
         SectionEnd
         Section "pyrtlsdr" SEC_PYRTLSDR
@@ -355,15 +355,15 @@ Function get_rtlsdr
 FunctionEnd
 
 Function get_python
-    IfFileExists "$TEMP\python.msi" exists download
+    IfFileExists "$TEMP\python-2.7.6.msi" exists download
     download:
-    inetc::get "http://www.python.org/ftp/python/2.7.5/python-2.7.5.msi" "$TEMP\python.msi"  /end
+    inetc::get "http://www.python.org/ftp/python/2.7.6/python-2.7.6.msi" "$TEMP\python-2.7.6.msi"  /end
     Pop $R0
     StrCmp $R0 "OK" exists
     MessageBox MB_OK "Python download failed: $R0"
     return
     exists:
-    ExecWait '"msiexec" /i "$TEMP\python.msi"'
+    ExecWait '"msiexec" /i "$TEMP\python-2.7.6.msi"'
     ;Delete "$TEMP\python.msi"
 FunctionEnd
 
@@ -381,29 +381,29 @@ Function get_wxpython
 FunctionEnd
 
 Function get_matplotlib
-    IfFileExists "$TEMP\matplotlib-1.3.0.win32-py2.7.exe" exists download
+    IfFileExists "$TEMP\matplotlib-1.3.1.win32-py2.7.exe" exists download
     download:
-    inetc::get "http://downloads.sourceforge.net/project/matplotlib/matplotlib/matplotlib-1.3.0/matplotlib-1.3.0.win32-py2.7.exe" "$TEMP\matplotlib-1.3.0.win32-py2.7.exe"  /end
+    inetc::get "http://downloads.sourceforge.net/project/matplotlib/matplotlib/matplotlib-1.3.1/matplotlib-1.3.1.win32-py2.7.exe" "$TEMP\matplotlib-1.3.1.win32-py2.7.exe"  /end
     Pop $R0
     StrCmp $R0 "OK" exists
     MessageBox MB_OK "matplotlib download failed: $R0"
     return
     exists:
-    ExecWait "$TEMP\matplotlib-1.3.0.win32-py2.7.exe"
-    ;Delete "$TEMP\matplotlib-1.3.0.win32-py2.7.exe"
+    ExecWait "$TEMP\matplotlib-1.3.1.win32-py2.7.exe"
+    ;Delete "$TEMP\matplotlib-1.3.1.win32-py2.7.exe"
 FunctionEnd
 
 Function get_numpy
-    IfFileExists "$TEMP\numpy-1.7.1.win32-py2.7.exe" exists download
+    IfFileExists "$TEMP\numpy-1.8.0-win32-superpack-python2.7.exe" exists download
     download:
-    inetc::get "https://pypi.python.org/packages/2.7/n/numpy/numpy-1.7.1.win32-py2.7.exe" "$TEMP\numpy-1.7.1.win32-py2.7.exe"  /end
+    inetc::get "http://downloads.sourceforge.net/project/numpy/NumPy/1.8.0/numpy-1.8.0-win32-superpack-python2.7.exe" "$TEMP\numpy-1.8.0-win32-superpack-python2.7.exe"  /end
     Pop $R0
     StrCmp $R0 "OK" exists
     MessageBox MB_OK "NumPy download failed: $R0"
     return
     exists:
-    ExecWait "$TEMP\numpy-1.7.1.win32-py2.7.exe"
-    ;Delete "$TEMP\numpy-1.7.1.win32-py2.7.exe"
+    ExecWait "$TEMP\numpy-1.8.0-win32-superpack-python2.7.exe"
+    ;Delete "$TEMP\numpy-1.8.0-win32-superpack-python2.7.exe"
 FunctionEnd
 
 Function get_pyparsing
@@ -420,35 +420,35 @@ Function get_pyparsing
 FunctionEnd
 
 Function get_setuptools
-    IfFileExists "$TEMP\setuptools-1.1.6.tar.gz" exists download
+    IfFileExists "$TEMP\setuptools-2.1.tar.gz" exists download
     download:
-    inetc::get "http://pypi.python.org/packages/source/s/setuptools/setuptools-1.1.6.tar.gz" "$TEMP\setuptools-1.1.6.tar.gz"  /end
+    inetc::get "http://pypi.python.org/packages/source/s/setuptools/setuptools-2.1.tar.gz" "$TEMP\setuptools-2.1.tar.gz"  /end
     Pop $R0
     StrCmp $R0 "OK" exists
     MessageBox MB_OK "setuptools download failed: $R0"
     return
     exists:
-    untgz::extract "-d" "$TEMP" "$TEMP\setuptools-1.1.6.tar.gz"
-    SetOutPath "$TEMP\setuptools-1.1.6"
-    ExecWait "python $TEMP\setuptools-1.1.6\setup.py install"
-    ;Delete "$TEMP\setuptools-1.1.6.tar.gz"
-    RmDir /r "$TEMP\setuptools-1.1.6"
+    untgz::extract "-d" "$TEMP" "$TEMP\setuptools-2.1.tar.gz"
+    SetOutPath "$TEMP\setuptools-2.1"
+    ExecWait "python $TEMP\setuptools-2.1\setup.py install"
+    ;Delete "$TEMP\setuptools-2.1.tar.gz"
+    RmDir /r "$TEMP\setuptools-2.1"
 FunctionEnd
 
 Function get_dateutil
-    IfFileExists "$TEMP\python-dateutil-2.1.tar.gz" exists download
+    IfFileExists "$TEMP\python-dateutil-2.2.tar.gz" exists download
     download:
-    inetc::get "http://pypi.python.org/packages/source/p/python-dateutil/python-dateutil-2.1.tar.gz" "$TEMP\python-dateutil-2.1.tar.gz" /end
+    inetc::get "http://pypi.python.org/packages/source/p/python-dateutil/python-dateutil-2.2.tar.gz" "$TEMP\python-dateutil-2.2.tar.gz" /end
     Pop $R0
     StrCmp $R0 "OK" exists
     MessageBox MB_OK "dateutil download failed: $R0"
     return
     exists:
-    untgz::extract "-d" "$TEMP" "$TEMP\python-dateutil-2.1.tar.gz"
-    SetOutPath "$TEMP\python-dateutil-2.1"
-    ExecWait "python $TEMP\python-dateutil-2.1\setup.py install"
-    ;Delete "$TEMP\python-dateutil-2.1.tar.gz"
-    RmDir /r "$TEMP\python-dateutil-2.1.tar.gz"
+    untgz::extract "-d" "$TEMP" "$TEMP\python-dateutil-2.2.tar.gz"
+    SetOutPath "$TEMP\python-dateutil-2.2"
+    ExecWait "python $TEMP\python-dateutil-2.2\setup.py install"
+    ;Delete "$TEMP\python-dateutil-2.2.tar.gz"
+    RmDir /r "$TEMP\python-dateutil-2.2.tar.gz"
 FunctionEnd
 
 Function get_pyrtlsdr
