@@ -64,8 +64,18 @@ class Settings():
         if load:
             self.load()
 
+    def clear_servers(self):
+        self.cfg.SetPath("/Devices")
+        group = self.cfg.GetFirstGroup()
+        while group[0]:
+            key = "/Devices/" + group[1]
+            self.cfg.SetPath(key)
+            if not self.cfg.ReadBool('isDevice', True):
+                self.cfg.DeleteGroup(key)
+            self.cfg.SetPath("/Devices")
+            group = self.cfg.GetNextGroup(group[2])
+
     def load(self):
-        servers = 0
         self.cfg = wx.Config('rtlsdr-scanner')
         self.display = self.cfg.ReadInt('display', self.display)
         self.saveWarn = self.cfg.ReadBool('saveWarn', self.saveWarn)
@@ -96,8 +106,6 @@ class Settings():
             device.name = group[1]
             device.serial = self.cfg.Read('serial', '')
             device.isDevice = self.cfg.ReadBool('isDevice', True)
-            if not device.isDevice:
-                servers += 1
             device.server = self.cfg.Read('server', 'localhost')
             device.port = self.cfg.ReadInt('port', 1234)
             device.gain = self.cfg.ReadFloat('gain', 0)
@@ -108,14 +116,6 @@ class Settings():
             self.devices.append(device)
             self.cfg.SetPath("/Devices")
             group = self.cfg.GetNextGroup(group[2])
-
-        if servers == 0:
-            device = Device()
-            device.name = 'Server'
-            device.isDevice = False
-            device.server = 'localhost'
-            device.port = 1234
-            self.devices.append(device)
 
     def save(self):
         self.cfg.SetPath("/")
@@ -140,9 +140,14 @@ class Settings():
         self.cfg.WriteInt('yMax', self.yMax)
         self.cfg.WriteInt('yMin', self.yMin)
         self.cfg.WriteInt('index', self.index)
+        self.clear_servers()
         if self.devices:
             for device in self.devices:
-                self.cfg.SetPath("/Devices/" + format_device_name(device.name))
+                if device.isDevice:
+                    name = device.name
+                else:
+                    name = "{0}:{1}".format(device.server, device.port)
+                self.cfg.SetPath("/Devices/" + format_device_name(name))
                 self.cfg.Write('serial', device.serial)
                 self.cfg.WriteBool('isDevice', device.isDevice)
                 self.cfg.Write('server', device.server)

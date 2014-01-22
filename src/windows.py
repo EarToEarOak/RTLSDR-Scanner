@@ -39,6 +39,7 @@ import rtlsdr
 import wx
 
 from constants import *
+from devices import Device
 from events import EventThreadStatus, Event, post_event
 from misc import split_spectrum, nearest, open_plot, load_bitmap, get_colours, \
     format_time
@@ -987,6 +988,7 @@ class DialogPrefs(wx.Dialog):
         self.on_radio(None)
 
         self.devices = devices
+
         self.gridDev = grid.Grid(self)
         self.gridDev.CreateGrid(len(self.devices), 9)
         self.gridDev.SetRowLabelSize(0)
@@ -1004,10 +1006,75 @@ class DialogPrefs(wx.Dialog):
         self.gridDev.SetColFormatFloat(self.COL_LO, -1, 3)
         self.gridDev.SetColFormatFloat(self.COL_OFF, -1, 0)
 
+        self.set_dev_grid()
+
+        self.Bind(grid.EVT_GRID_CELL_LEFT_CLICK, self.on_click)
+
+        sizerButtons = wx.StdDialogButtonSizer()
+        buttonOk = wx.Button(self, wx.ID_OK)
+        buttonCancel = wx.Button(self, wx.ID_CANCEL)
+        sizerButtons.AddButton(buttonOk)
+        sizerButtons.AddButton(buttonCancel)
+        sizerButtons.Realize()
+        self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
+
+        genbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "General"),
+                                     wx.VERTICAL)
+        genbox.Add(self.checkSaved, 0, wx.ALL | wx.EXPAND, 10)
+
+        congrid = wx.GridBagSizer(10, 10)
+        congrid.Add(self.radioAvg, pos=(0, 0), flag=wx.ALL)
+        congrid.Add(self.radioRetain, pos=(1, 0), flag=wx.ALL)
+        congrid.Add(textMaxScans, pos=(2, 0), flag=wx.ALL)
+        congrid.Add(self.spinCtrlMaxScans, pos=(2, 1), flag=wx.ALL)
+        conbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY,
+                                                "Continuous Scans"),
+                                   wx.VERTICAL)
+        conbox.Add(congrid, 0, wx.ALL | wx.EXPAND, 10)
+
+        plotbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Plot View"),
+                                     wx.HORIZONTAL)
+        plotbox.Add(self.checkFade, 0, wx.ALL | wx.EXPAND, 10)
+
+        specbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY,
+                                                 "Spectrogram View"),
+                                    wx.HORIZONTAL)
+        specbox.Add(textColour, 0, wx.ALL | wx.EXPAND, 10)
+        specbox.Add(self.choiceColour, 0, wx.ALL | wx.EXPAND, 10)
+        specbox.Add(self.colourBar, 0, wx.ALL | wx.EXPAND, 10)
+
+        devbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Devices"),
+                                     wx.VERTICAL)
+
+        serverSizer = wx.BoxSizer(wx.HORIZONTAL)
+        buttonAdd = wx.Button(self, wx.ID_ADD)
+        self.buttonDel = wx.Button(self, wx.ID_DELETE)
+        self.Bind(wx.EVT_BUTTON, self.on_add, buttonAdd)
+        self.Bind(wx.EVT_BUTTON, self.on_del, self.buttonDel)
+        serverSizer.Add(buttonAdd, 0, wx.ALL)
+        serverSizer.Add(self.buttonDel, 0, wx.ALL)
+        self.button_state()
+
+        devbox.Add(self.gridDev, 0, wx.ALL | wx.EXPAND, 10)
+        devbox.Add(serverSizer, 0, wx.ALL | wx.EXPAND, 10)
+
+        self.vbox = wx.BoxSizer(wx.VERTICAL)
+        self.vbox.Add(genbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        self.vbox.Add(conbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        self.vbox.Add(plotbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        self.vbox.Add(specbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        self.vbox.Add(devbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        self.vbox.Add(sizerButtons, 0, wx.ALL | wx.EXPAND, 10)
+
+        self.SetSizerAndFit(self.vbox)
+
+    def set_dev_grid(self):
         colourBackground = self.gridDev.GetLabelBackgroundColour()
         attributes = grid.GridCellAttr()
         attributes.SetBackgroundColour(colourBackground)
         self.gridDev.SetColAttr(self.COL_IND, attributes)
+
+        self.gridDev.ClearGrid()
 
         i = 0
         for device in self.devices:
@@ -1049,61 +1116,54 @@ class DialogPrefs(wx.Dialog):
             self.gridDev.SetCellValue(i, self.COL_OFF, str(device.offset / 1e3))
             i += 1
 
-        if settings.index >= len(self.devices):
-            settings.index = len(self.devices) - 1
-        self.select_row(settings.index)
-        self.index = settings.index
+        if self.settings.index >= len(self.devices):
+            self.settings.index = len(self.devices) - 1
+        self.select_row(self.settings.index)
+        self.index = self.settings.index
 
         self.gridDev.AutoSize()
 
-        self.Bind(grid.EVT_GRID_CELL_LEFT_CLICK, self.on_click)
+    def get_dev_grid(self):
+        for i in range(0, len(self.devices)):
+            if not self.devices[i].isDevice:
+                server = self.gridDev.GetCellValue(i, self.COL_DEV)
+                server = '//' + server
+                url = urlparse(server)
+                if url.hostname is not None:
+                    self.devices[i].server = url.hostname
+                else:
+                    self.devices[i].port = 'localhost'
+                if url.port is not None:
+                    self.devices[i].port = url.port
+                else:
+                    self.devices[i].port = 1234
+            self.devices[i].gain = float(self.gridDev.GetCellValue(i, self.COL_GAIN))
+            self.devices[i].calibration = float(self.gridDev.GetCellValue(i, self.COL_CAL))
+            self.devices[i].lo = float(self.gridDev.GetCellValue(i, self.COL_LO))
+            self.devices[i].offset = float(self.gridDev.GetCellValue(i, self.COL_OFF)) * 1e3
 
-        sizerButtons = wx.StdDialogButtonSizer()
-        buttonOk = wx.Button(self, wx.ID_OK)
-        buttonCancel = wx.Button(self, wx.ID_CANCEL)
-        sizerButtons.AddButton(buttonOk)
-        sizerButtons.AddButton(buttonCancel)
-        sizerButtons.Realize()
-        self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
+    def button_state(self):
+        if self.devices[self.index].isDevice:
+            self.buttonDel.Disable()
+        else:
+            self.buttonDel.Enable()
 
-        genbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "General"),
-                                     wx.VERTICAL)
-        genbox.Add(self.checkSaved, 0, wx.ALL | wx.EXPAND, 10)
+    def warn_duplicates(self):
+        servers = []
+        for device in self.devices:
+            if not device.isDevice:
+                servers.append("{0}:{1}".format(device.server, device.port))
 
-        congrid = wx.GridBagSizer(10, 10)
-        congrid.Add(self.radioAvg, pos=(0, 0), flag=wx.ALL)
-        congrid.Add(self.radioRetain, pos=(1, 0), flag=wx.ALL)
-        congrid.Add(textMaxScans, pos=(2, 0), flag=wx.ALL)
-        congrid.Add(self.spinCtrlMaxScans, pos=(2, 1), flag=wx.ALL)
-        conbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY,
-                                                "Continuous Scans"),
-                                   wx.VERTICAL)
-        conbox.Add(congrid, 0, wx.ALL | wx.EXPAND, 10)
+        dupes = set(servers)
+        if len(dupes) != len(servers):
+            message = "Duplicate server found:\n'{0}'".format(dupes.pop())
+            dlg = wx.MessageDialog(self, message, "Warning",
+                                   wx.OK | wx.ICON_WARNING)
+            dlg.ShowModal()
+            dlg.Destroy()
+            return True
 
-        plotbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Plot View"),
-                                     wx.HORIZONTAL)
-        plotbox.Add(self.checkFade, 0, wx.ALL | wx.EXPAND, 10)
-
-        specbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY,
-                                                 "Spectrogram View"),
-                                    wx.HORIZONTAL)
-        specbox.Add(textColour, 0, wx.ALL | wx.EXPAND, 10)
-        specbox.Add(self.choiceColour, 0, wx.ALL | wx.EXPAND, 10)
-        specbox.Add(self.colourBar, 0, wx.ALL | wx.EXPAND, 10)
-
-        devbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Devices"),
-                                     wx.VERTICAL)
-        devbox.Add(self.gridDev, 0, wx.ALL | wx.EXPAND, 10)
-
-        vbox = wx.BoxSizer(wx.VERTICAL)
-        vbox.Add(genbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
-        vbox.Add(conbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
-        vbox.Add(plotbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
-        vbox.Add(specbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
-        vbox.Add(devbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
-        vbox.Add(sizerButtons, 0, wx.ALL | wx.EXPAND, 10)
-
-        self.SetSizerAndFit(vbox)
+        return False
 
     def on_radio(self, _event):
         enabled = self.radioRetain.GetValue()
@@ -1131,35 +1191,37 @@ class DialogPrefs(wx.Dialog):
             self.gridDev.ForceRefresh()
             event.Skip()
 
+        self.button_state()
+
+    def on_add(self, _event):
+        device = Device()
+        device.isDevice = False
+        self.devices.append(device)
+        self.gridDev.AppendRows(1)
+        self.set_dev_grid()
+        self.SetSizerAndFit(self.vbox)
+
+    def on_del(self, _event):
+        del self.devices[self.index]
+        self.gridDev.DeleteRows(self.index)
+        self.set_dev_grid()
+        self.button_state()
+
     def on_ok(self, _event):
+        self.get_dev_grid()
+        if self.warn_duplicates():
+            return
         self.settings.saveWarn = self.checkSaved.GetValue()
         self.settings.retainScans = self.radioRetain.GetValue()
         self.settings.fadeScans = self.checkFade.GetValue()
         self.settings.retainMax = self.spinCtrlMaxScans.GetValue()
         self.settings.colourMap = self.choiceColour.GetStringSelection()
-        for i in range(0, self.gridDev.GetNumberRows()):
-            if not self.devices[i].isDevice:
-                server = self.gridDev.GetCellValue(i, self.COL_DEV)
-                server = '//' + server
-                url = urlparse(server)
-                if url.hostname is not None:
-                    self.devices[i].server = url.hostname
-                else:
-                    self.devices[i].port = 'localhost'
-                if url.port is not None:
-                    self.devices[i].port = url.port
-                else:
-                    self.devices[i].port = 1234
-            self.devices[i].gain = float(self.gridDev.GetCellValue(i, self.COL_GAIN))
-            self.devices[i].calibration = float(self.gridDev.GetCellValue(i, self.COL_CAL))
-            self.devices[i].lo = float(self.gridDev.GetCellValue(i, self.COL_LO))
-            self.devices[i].offset = float(self.gridDev.GetCellValue(i, self.COL_OFF)) * 1e3
 
         self.EndModal(wx.ID_OK)
 
     def select_row(self, index):
         self.gridDev.ClearSelection()
-        for i in range(0, self.gridDev.GetNumberRows()):
+        for i in range(0, len(self.devices)):
             tick = "0"
             if i == index:
                 tick = "1"
