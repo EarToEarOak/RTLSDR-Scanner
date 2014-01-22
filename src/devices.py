@@ -50,7 +50,10 @@ class Device():
         self.tuner = device.tuner
 
 
-def get_devices(currentDevices=[]):
+def get_devices(currentDevices=[], statusBar = None):
+    if statusBar is not None:
+        statusBar.set_general("Refreshing device list...")
+
     devices = []
     count = rtlsdr.librtlsdr.rtlsdr_get_device_count()
 
@@ -80,6 +83,9 @@ def get_devices(currentDevices=[]):
     for conf in currentDevices:
         if not conf.isDevice:
             devices.append(conf)
+
+    if statusBar is not None:
+        statusBar.set_general("")
 
     return devices
 
