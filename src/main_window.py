@@ -447,7 +447,7 @@ class FrameMain(wx.Frame):
             self.spinCtrlStop.SetRange(self.spinCtrlStart.GetValue() + 1,
                                           F_MAX)
 
-    def on_choice(self, event):
+    def on_choice(self, _event):
         self.get_controls()
         self.create_plot()
 
