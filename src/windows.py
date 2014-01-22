@@ -1124,23 +1124,25 @@ class DialogPrefs(wx.Dialog):
         self.gridDev.AutoSize()
 
     def get_dev_grid(self):
-        for i in range(0, len(self.devices)):
-            if not self.devices[i].isDevice:
+        i = 0;
+        for device in self.devices:
+            if not device.isDevice:
                 server = self.gridDev.GetCellValue(i, self.COL_DEV)
                 server = '//' + server
                 url = urlparse(server)
                 if url.hostname is not None:
-                    self.devices[i].server = url.hostname
+                    device.server = url.hostname
                 else:
-                    self.devices[i].port = 'localhost'
+                    device.port = 'localhost'
                 if url.port is not None:
-                    self.devices[i].port = url.port
+                    device.port = url.port
                 else:
-                    self.devices[i].port = 1234
-            self.devices[i].gain = float(self.gridDev.GetCellValue(i, self.COL_GAIN))
-            self.devices[i].calibration = float(self.gridDev.GetCellValue(i, self.COL_CAL))
-            self.devices[i].lo = float(self.gridDev.GetCellValue(i, self.COL_LO))
-            self.devices[i].offset = float(self.gridDev.GetCellValue(i, self.COL_OFF)) * 1e3
+                    device.port = 1234
+            device.gain = float(self.gridDev.GetCellValue(i, self.COL_GAIN))
+            device.calibration = float(self.gridDev.GetCellValue(i, self.COL_CAL))
+            device.lo = float(self.gridDev.GetCellValue(i, self.COL_LO))
+            device.offset = float(self.gridDev.GetCellValue(i, self.COL_OFF)) * 1e3
+            i += 1
 
     def button_state(self):
         if self.devices[self.index].isDevice:
