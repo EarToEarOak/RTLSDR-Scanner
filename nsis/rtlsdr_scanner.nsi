@@ -23,13 +23,13 @@
 ; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;
 
-!include "EnvVarUpdate.nsh"
 !include "LogicLib.nsh"
 !include "Sections.nsh"
 !include "MUI.nsh"
 !include "nsDialogs.nsh"
-!include "nsDialogs_createTextMultiline.nsh"
-!include "fileassoc.nsh"
+!include "include\nsDialogs_createTextMultiline.nsh"
+!include "include\EnvVarUpdate.nsh"
+!include "include\fileassoc.nsh"
 
 !define INSTALLER_VERSION "3"
 
