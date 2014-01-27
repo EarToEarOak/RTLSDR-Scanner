@@ -1124,7 +1124,7 @@ class DialogPrefs(wx.Dialog):
         self.gridDev.AutoSize()
 
     def get_dev_grid(self):
-        i = 0;
+        i = 0
         for device in self.devices:
             if not device.isDevice:
                 server = self.gridDev.GetCellValue(i, self.COL_DEV)
