@@ -49,6 +49,13 @@ class Device():
         self.offset = device.offset
         self.tuner = device.tuner
 
+    def get_gains_str(self):
+        gainsStr = []
+        for gain in self.gains:
+            gainsStr.append(str(gain))
+
+        return gainsStr
+
 
 def get_devices(currentDevices=[], statusBar = None):
     if statusBar is not None:

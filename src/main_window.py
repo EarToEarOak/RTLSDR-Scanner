@@ -32,6 +32,7 @@ import time
 import webbrowser
 
 import wx
+from wx.lib.masked import NumCtrl
 
 from constants import *
 from devices import get_devices
@@ -104,6 +105,7 @@ class FrameMain(wx.Frame):
         self.canvas = None
         self.buttonStart = None
         self.buttonStop = None
+        self.choiceGain = None
         self.choiceMode = None
         self.choiceDwell = None
         self.choiceNfft = None
@@ -174,6 +176,9 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_SPINCTRL, self.on_spin, self.spinCtrlStart)
         self.Bind(wx.EVT_SPINCTRL, self.on_spin, self.spinCtrlStop)
 
+        textGain = wx.StaticText(self.panel, label="Gain (dB)")
+        self.controlGain = wx.Choice(self.panel, choices=[''])
+
         textMode = wx.StaticText(self.panel, label="Mode")
         self.choiceMode = wx.Choice(self.panel, choices=MODE[::2])
         self.choiceMode.SetToolTip(wx.ToolTip('Scanning mode'))
@@ -193,8 +198,6 @@ class FrameMain(wx.Frame):
         self.choiceDisplay.SetToolTip(wx.ToolTip('Spectrogram available in'
                                                  'continuous mode'))
 
-        self.set_controls()
-
         grid = wx.GridBagSizer(5, 5)
 
         grid.Add(self.buttonStart, pos=(0, 0), span=(3, 1),
@@ -210,27 +213,31 @@ class FrameMain(wx.Frame):
         grid.Add(textStop, pos=(1, 5), flag=wx.ALIGN_CENTER)
         grid.Add(self.spinCtrlStop, pos=(1, 6))
 
-        grid.Add((20, 1), pos=(0, 7))
+        grid.Add(textGain, pos=(0, 7), flag=wx.ALIGN_CENTER)
+        grid.Add(self.controlGain, pos=(1, 7), flag=wx.ALIGN_CENTER)
 
-        grid.Add(textMode, pos=(0, 8), flag=wx.ALIGN_CENTER)
-        grid.Add(self.choiceMode, pos=(1, 8), flag=wx.ALIGN_CENTER)
+        grid.Add((20, 1), pos=(0, 8))
 
-        grid.Add(textDwell, pos=(0, 9), flag=wx.ALIGN_CENTER)
-        grid.Add(self.choiceDwell, pos=(1, 9), flag=wx.ALIGN_CENTER)
+        grid.Add(textMode, pos=(0, 9), flag=wx.ALIGN_CENTER)
+        grid.Add(self.choiceMode, pos=(1, 9), flag=wx.ALIGN_CENTER)
 
-        grid.Add(textNfft, pos=(0, 10), flag=wx.ALIGN_CENTER)
-        grid.Add(self.choiceNfft, pos=(1, 10), flag=wx.ALIGN_CENTER)
+        grid.Add(textDwell, pos=(0, 10), flag=wx.ALIGN_CENTER)
+        grid.Add(self.choiceDwell, pos=(1, 10), flag=wx.ALIGN_CENTER)
 
-        grid.Add((20, 1), pos=(0, 11))
+        grid.Add(textNfft, pos=(0, 11), flag=wx.ALIGN_CENTER)
+        grid.Add(self.choiceNfft, pos=(1, 11), flag=wx.ALIGN_CENTER)
 
-        grid.Add(textDisplay, pos=(0, 12), flag=wx.ALIGN_CENTER)
-        grid.Add(self.choiceDisplay, pos=(1, 12), flag=wx.ALIGN_CENTER)
+        grid.Add((20, 1), pos=(0, 12))
+
+        grid.Add(textDisplay, pos=(0, 13), flag=wx.ALIGN_CENTER)
+        grid.Add(self.choiceDisplay, pos=(1, 13), flag=wx.ALIGN_CENTER)
 
         self.panel.SetSizer(grid)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.graph, 1, wx.EXPAND)
         sizer.Add(self.panel, 0, wx.ALIGN_CENTER)
+        self.set_controls()
         panel.SetSizer(sizer)
 
     def create_menu(self):
@@ -412,12 +419,14 @@ class FrameMain(wx.Frame):
         self.Close(True)
 
     def on_pref(self, _event):
+        self.get_controls()
         self.devices = self.refresh_devices()
         dlg = DialogPrefs(self, self.devices, self.settings)
         if dlg.ShowModal() == wx.ID_OK:
             self.devices = dlg.get_devices()
             self.settings.index = dlg.get_index()
             self.create_plot()
+            self.set_controls()
         dlg.Destroy()
 
     def on_compare(self, _event):
@@ -693,6 +702,7 @@ class FrameMain(wx.Frame):
     def set_control_state(self, state):
         self.spinCtrlStart.Enable(state)
         self.spinCtrlStop.Enable(state)
+        self.controlGain.Enable(state)
         self.choiceMode.Enable(state)
         self.choiceDwell.Enable(state)
         self.choiceNfft.Enable(state)
@@ -723,6 +733,28 @@ class FrameMain(wx.Frame):
         self.choiceNfft.SetSelection(NFFT.index(self.settings.nfft))
         self.choiceDisplay.SetSelection(DISPLAY[1::2].index(self.settings.display))
 
+        grid = self.controlGain.GetContainingSizer()
+        self.controlGain.Destroy()
+        device = self.devices[self.settings.index]
+        print device.gain
+        if device.isDevice:
+            gains = device.get_gains_str()
+            self.controlGain = wx.Choice(self.panel,
+                                         choices=gains)
+            self.controlGain.SetStringSelection(str(device.gain))
+        else:
+            self.controlGain = NumCtrl(self.panel, integerWidth=3,
+                                       fractionWidth=1)
+            font = self.controlGain.GetFont()
+            dc = wx.WindowDC(self.controlGain)
+            dc.SetFont(font)
+            size = dc.GetTextExtent('####.#')
+            self.controlGain.SetMinSize((size[0] * 1.2, -1))
+            self.controlGain.SetValue(device.gain)
+
+        grid.Add(self.controlGain, pos=(1, 7), flag=wx.ALIGN_CENTER)
+        grid.Layout()
+
     def get_controls(self):
         self.settings.start = self.spinCtrlStart.GetValue()
         self.settings.stop = self.spinCtrlStop.GetValue()
@@ -730,6 +762,12 @@ class FrameMain(wx.Frame):
         self.settings.dwell = DWELL[1::2][self.choiceDwell.GetSelection()]
         self.settings.nfft = NFFT[self.choiceNfft.GetSelection()]
         self.settings.display = DISPLAY[1::2][self.choiceDisplay.GetSelection()]
+
+        device = self.devices[self.settings.index]
+        if device.isDevice:
+            device.gain = float(self.controlGain.GetStringSelection())
+        else:
+            device.gain = self.controlGain.GetValue()
 
     def save_warn(self, warnType):
         if self.settings.saveWarn and not self.isSaved:
