@@ -74,6 +74,46 @@ class ScanInfo():
         settings.nfft = self.nfft
 
 
+class ValidatorCoord(wx.PyValidator):
+    def __init__(self, isLat):
+        wx.PyValidator.__init__(self)
+        self.isLat = isLat
+
+    def Validate(self, _window):
+        textCtrl = self.GetWindow()
+        text = textCtrl.GetValue()
+        if len(text) == 0 or text == '-' or text.lower() == 'unknown':
+            textCtrl.SetForegroundColour("black")
+            textCtrl.Refresh()
+            return True
+
+        value = None
+        try:
+            value = float(text)
+            if self.isLat and (value < -90 or value > 90):
+                raise ValueError()
+            elif value < -180 or value > 180:
+                raise ValueError()
+        except ValueError:
+            textCtrl.SetForegroundColour("red")
+            textCtrl.SetFocus()
+            textCtrl.Refresh()
+            return False
+
+        textCtrl.SetForegroundColour("black")
+        textCtrl.Refresh()
+        return True
+
+    def TransferToWindow(self):
+        return True
+
+    def TransferFromWindow(self):
+        return True
+
+    def Clone(self):
+        return ValidatorCoord(self.isLat)
+
+
 def open_plot(dirname, filename):
     pickle = True
     error = False
