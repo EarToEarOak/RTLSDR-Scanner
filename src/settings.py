@@ -58,6 +58,9 @@ class Settings():
         self.yMax = 20
         self.yMin = -60
 
+        self.alert = False
+        self.alertLevel = -20
+
         self.devices = []
         self.index = 0
 
@@ -97,6 +100,8 @@ class Settings():
         self.autoScale = self.cfg.ReadBool('autoScale', self.autoScale)
         self.yMax = self.cfg.ReadInt('yMax', self.yMax)
         self.yMin = self.cfg.ReadInt('yMin', self.yMin)
+        self.alert = self.cfg.ReadBool('alert', self.alert)
+        self.alertLevel = self.cfg.ReadFloat('alertLevel', self.alertLevel)
         self.index = self.cfg.ReadInt('index', self.index)
         self.cfg.SetPath("/Devices")
         group = self.cfg.GetFirstGroup()
@@ -139,6 +144,8 @@ class Settings():
         self.cfg.WriteBool('autoScale', self.autoScale)
         self.cfg.WriteInt('yMax', self.yMax)
         self.cfg.WriteInt('yMin', self.yMin)
+        self.cfg.WriteBool('alert', self.alert)
+        self.cfg.WriteFloat('alertLevel', self.alertLevel)
         self.cfg.WriteInt('index', self.index)
         self.clear_servers()
         if self.devices:

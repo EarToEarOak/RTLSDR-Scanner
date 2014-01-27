@@ -959,6 +959,16 @@ class DialogPrefs(wx.Dialog):
         self.checkSaved.SetValue(self.settings.saveWarn)
         self.checkSaved.SetToolTip(wx.ToolTip('Prompt to save scan on exit'))
 
+        self.checkAlert = wx.CheckBox(self, wx.ID_ANY,
+                                      "Level alert (dB)")
+        self.checkAlert.SetValue(self.settings.alert)
+        self.checkAlert.SetToolTip(wx.ToolTip('Play alert when level exceeded'))
+        self.Bind(wx.EVT_CHECKBOX, self.on_alert, self.checkAlert)
+        self.spinLevel = wx.SpinCtrl(self, wx.ID_ANY, min=-100, max=20)
+        self.spinLevel.SetValue(settings.alertLevel)
+        self.spinLevel.Enable(self.settings.alert)
+        self.spinLevel.SetToolTip(wx.ToolTip('Alert threshold'))
+
         self.radioAvg = wx.RadioButton(self, wx.ID_ANY, 'Average Scans',
                                        style=wx.RB_GROUP)
         self.radioAvg.SetToolTip(wx.ToolTip('Average level with each scan'))
@@ -1019,8 +1029,10 @@ class DialogPrefs(wx.Dialog):
         self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
 
         genbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "General"),
-                                     wx.VERTICAL)
+                                     wx.HORIZONTAL)
         genbox.Add(self.checkSaved, 0, wx.ALL | wx.EXPAND, 10)
+        genbox.Add(self.checkAlert, 0, wx.ALL | wx.EXPAND, 10)
+        genbox.Add(self.spinLevel, 0, wx.ALL | wx.EXPAND, 10)
 
         congrid = wx.GridBagSizer(10, 10)
         congrid.Add(self.radioAvg, pos=(0, 0), flag=wx.ALL)
@@ -1167,6 +1179,10 @@ class DialogPrefs(wx.Dialog):
 
         return False
 
+    def on_alert(self, _event):
+        enabled = self.checkAlert.GetValue()
+        self.spinLevel.Enable(enabled)
+
     def on_radio(self, _event):
         enabled = self.radioRetain.GetValue()
         self.checkFade.Enable(enabled)
@@ -1214,6 +1230,8 @@ class DialogPrefs(wx.Dialog):
         if self.warn_duplicates():
             return
         self.settings.saveWarn = self.checkSaved.GetValue()
+        self.settings.alert = self.checkAlert.GetValue()
+        self.settings.alertLevel = self.spinLevel.GetValue()
         self.settings.retainScans = self.radioRetain.GetValue()
         self.settings.fadeScans = self.checkFade.GetValue()
         self.settings.retainMax = self.spinCtrlMaxScans.GetValue()

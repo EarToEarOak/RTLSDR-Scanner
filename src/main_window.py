@@ -525,11 +525,18 @@ class FrameMain(wx.Frame):
                 self.dlgCal = None
         elif status == Event.PROCESSED:
             offset = self.settings.devices[self.settings.index].offset
+            if self.settings.alert:
+                alert = self.settings.alertLevel
+            else:
+                alert = None
             Thread(target=update_spectrum, name='Update',
                    args=(self, self.lock, self.settings.start,
                          self.settings.stop, freq,
                          data, offset, self.spectrum,
-                         not self.settings.retainScans)).start()
+                         not self.settings.retainScans,
+                         alert)).start()
+        elif status == Event.LEVEL:
+            wx.Bell()
         elif status == Event.UPDATED:
             if data and self.settings.liveUpdate:
                 self.plot.set_plot(self.spectrum,
@@ -736,7 +743,6 @@ class FrameMain(wx.Frame):
         grid = self.controlGain.GetContainingSizer()
         self.controlGain.Destroy()
         device = self.devices[self.settings.index]
-        print device.gain
         if device.isDevice:
             gains = device.get_gains_str()
             self.controlGain = wx.Choice(self.panel,

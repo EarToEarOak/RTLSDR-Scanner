@@ -172,7 +172,7 @@ def anaylse_data(freq, data, cal, nfft):
 
 
 def update_spectrum(notify, lock, start, stop, freqCentre, data, offset,
-                    spectrum, average):
+                    spectrum, average, alertLevel=None):
     with lock:
         updated = False
         if average:
@@ -197,6 +197,9 @@ def update_spectrum(notify, lock, start, stop, freqCentre, data, offset,
                     if freq in spectrum[timeStamp]:
                         spectrum[timeStamp][freq] = \
                             (spectrum[timeStamp][freq] + power) / 2
+                        if alertLevel is not None and \
+                        spectrum[timeStamp][freq] > alertLevel:
+                            post_event(notify, EventThreadStatus(Event.LEVEL))
                         updated = True
                     else:
                         spectrum[timeStamp][freq] = power
