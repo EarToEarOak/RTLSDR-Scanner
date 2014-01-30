@@ -77,6 +77,7 @@ class RtlTcp():
         iq = numpy.empty(len(raw) / 2, 'complex')
         iq.real, iq.imag = raw[::2], raw[1::2]
         iq /= (255 / 2)
+        iq -= 1
 
         return iq
 
