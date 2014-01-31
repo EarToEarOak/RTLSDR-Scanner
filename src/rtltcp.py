@@ -85,7 +85,7 @@ class RtlTcp():
         self.send_command(RtlTcpCmd.SET_SAMPLE_RATE, rate)
         self.rate = rate
 
-    def set_gain_mode(self, mode):
+    def set_manual_gain_enabled(self, mode):
         self.send_command(RtlTcpCmd.SET_GAIN_MODE, mode)
 
     def set_gain(self, gain):
