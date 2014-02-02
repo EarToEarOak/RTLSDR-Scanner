@@ -1291,11 +1291,15 @@ class DialogWinFunc(wx.Dialog):
         sizerButtons.Realize()
         self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
 
-        sizer = wx.wx.GridBagSizer(5, 5)
-        sizer.Add(self.canvas, pos=(0, 0), span=(1, 2), border=5)
-        sizer.Add(text, pos=(1, 0), flag=wx.ALL, border=5)
-        sizer.Add(self.choice, pos=(1, 1), flag=wx.ALL, border=5)
-        sizer.Add(sizerButtons, pos=(2, 1),
+        sizerFunction = wx.BoxSizer(wx.HORIZONTAL)
+        sizerFunction.Add(text, flag=wx.ALL, border=5)
+        sizerFunction.Add(self.choice, flag=wx.ALL, border=5)
+
+        sizerGrid = wx.GridBagSizer(5, 5)
+        sizerGrid.Add(self.canvas, pos=(0, 0), span=(1, 2), border=5)
+        sizerGrid.Add(sizerFunction, pos=(1, 0), span=(1, 2),
+                      flag=wx.ALIGN_CENTER | wx.ALL, border=5)
+        sizerGrid.Add(sizerButtons, pos=(2, 1),
                   flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
 
         self.Bind(wx.EVT_CHOICE, self.on_choice, self.choice)
@@ -1303,14 +1307,14 @@ class DialogWinFunc(wx.Dialog):
 
         self.plot()
 
-        self.SetSizerAndFit(sizer)
+        self.SetSizerAndFit(sizerGrid)
 
     def plot(self):
         pos = WINFUNC[::2].index(self.winFunc)
         function = WINFUNC[1::2][pos](512)
 
         self.axesWin.clear()
-        self.axesWin.plot(function)
+        self.axesWin.plot(function, 'g')
         self.axesWin.set_xlabel('Time')
         self.axesWin.set_ylabel('Multiplier')
         self.axesWin.set_xlim(0, 512)
