@@ -678,26 +678,48 @@ class DialogOffset(wx.Dialog):
 
         gridSizer = wx.GridBagSizer(5, 5)
         gridSizer.Add(self.canvas, pos=(0, 0), span=(1, 2),
-                  flag=wx.ALIGN_CENTER | wx.ALL)
+                  flag=wx.ALIGN_CENTER | wx.ALL, border=5)
         gridSizer.Add(textHelp, pos=(1, 0), span=(1, 2),
-                  flag=wx.ALIGN_CENTER | wx.ALL)
+                  flag=wx.ALIGN_CENTER | wx.ALL, border=5)
         gridSizer.Add(boxSizer1, pos=(2, 0), span=(1, 2),
-                  flag=wx.ALIGN_CENTER | wx.ALL)
+                  flag=wx.ALIGN_CENTER | wx.ALL, border=5)
         gridSizer.Add(refresh, pos=(3, 0), span=(1, 2),
-                  flag=wx.ALIGN_CENTER | wx.ALL)
+                  flag=wx.ALIGN_CENTER | wx.ALL, border=5)
         gridSizer.Add(boxSizer2, pos=(4, 0), span=(1, 2),
-                  flag=wx.ALIGN_CENTER | wx.ALL)
+                  flag=wx.ALIGN_CENTER | wx.ALL, border=5)
         gridSizer.Add(sizerButtons, pos=(5, 1), span=(1, 1),
-                  flag=wx.ALIGN_RIGHT | wx.ALL)
+                  flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
 
         self.SetSizerAndFit(gridSizer)
+        self.draw_limits()
+
+    def plot(self, capture):
+        powers, freqs = matplotlib.mlab.psd(capture,
+                         NFFT=1024,
+                         Fs=SAMPLE_RATE / 1e6,
+                         window=matplotlib.numpy.hamming(1024))
+
+        plot = []
+        for x, y in itertools.izip(freqs, powers):
+            x = x * SAMPLE_RATE / 2e6
+            plot.append((x, y))
+        plot.sort()
+        x, y = numpy.transpose(plot)
+
+        self.axes.clear()
+        self.band1 = None
+        self.band2 = None
+        self.axes.set_xlabel("Frequency (MHz)")
+        self.axes.set_ylabel('Level (dB)')
+        self.axes.set_yscale('log')
+        self.axes.plot(x, y, linewidth=0.4)
+        self.axes.grid(True)
         self.draw_limits()
 
     def on_ok(self, _event):
         self.EndModal(wx.ID_OK)
 
     def on_refresh(self, _event):
-        plot = []
 
         dlg = wx.BusyInfo('Please wait...')
 
@@ -725,26 +747,7 @@ class DialogOffset(wx.Dialog):
             dlg.Destroy()
             return
 
-        powers, freqs = matplotlib.mlab.psd(capture,
-                         NFFT=1024,
-                         Fs=SAMPLE_RATE / 1e6,
-                         window=matplotlib.numpy.hamming(1024))
-
-        for x, y in itertools.izip(freqs, powers):
-            x = x * SAMPLE_RATE / 2e6
-            plot.append((x, y))
-        plot.sort()
-        x, y = numpy.transpose(plot)
-
-        self.axes.clear()
-        self.band1 = None
-        self.band2 = None
-        self.axes.set_xlabel("Frequency (MHz)")
-        self.axes.set_ylabel('Level (dB)')
-        self.axes.set_yscale('log')
-        self.axes.plot(x, y, linewidth=0.4)
-        self.axes.grid(True)
-        self.draw_limits()
+        self.plot(capture)
 
         dlg.Destroy()
 
