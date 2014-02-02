@@ -29,6 +29,8 @@ from threading import Thread
 import threading
 from urlparse import urlparse
 
+import numpy
+
 from constants import SAMPLE_RATE
 from devices import Device, get_devices
 from events import *
@@ -158,7 +160,8 @@ class Cli():
         elif status == Event.DATA:
             cal = self.settings.devices[self.settings.index].calibration
             pool.apply_async(anaylse_data, (freq, data, cal,
-                                            self.settings.nfft),
+                                            self.settings.nfft,
+                                            numpy.hamming),
                              callback=self.on_process_done)
             self.progress()
         elif status == Event.ERROR:

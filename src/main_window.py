@@ -45,7 +45,7 @@ from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
 from spectrogram import Spectrogram
 from windows import PanelGraph, DialogPrefs, DialogCompare, DialogAutoCal, \
-    DialogSaveWarn, Statusbar, DialogProperties
+    DialogSaveWarn, Statusbar, DialogProperties, DialogWinFunc
 
 
 class DropTarget(wx.FileDropTarget):
@@ -262,6 +262,8 @@ class FrameMain(wx.Frame):
         menuEdit = wx.Menu()
         self.menuPref = menuEdit.Append(wx.ID_ANY, "&Preferences...",
                                    "Preferences")
+        self.menuWinFunc = menuEdit.Append(wx.ID_ANY, "&Window function...",
+                                           "Window function")
 
         menuScan = wx.Menu()
         self.menuStart = menuScan.Append(wx.ID_ANY, "&Start", "Start scan")
@@ -298,10 +300,11 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_export, self.menuExport)
         self.Bind(wx.EVT_MENU, self.on_properties, self.menuProperties)
         self.Bind(wx.EVT_MENU, self.on_exit, menuExit)
+        self.Bind(wx.EVT_MENU, self.on_pref, self.menuPref)
+        self.Bind(wx.EVT_MENU, self.on_winFunc, self.menuWinFunc)
         self.Bind(wx.EVT_MENU, self.on_start, self.menuStart)
         self.Bind(wx.EVT_MENU, self.on_stop, self.menuStop)
         self.Bind(wx.EVT_MENU, self.on_stop_end, self.menuStopEnd)
-        self.Bind(wx.EVT_MENU, self.on_pref, self.menuPref)
         self.Bind(wx.EVT_MENU, self.on_compare, self.menuCompare)
         self.Bind(wx.EVT_MENU, self.on_cal, self.menuCal)
         self.Bind(wx.EVT_MENU, self.on_about, menuAbout)
@@ -429,6 +432,12 @@ class FrameMain(wx.Frame):
             self.set_controls()
         dlg.Destroy()
 
+    def on_winFunc(self, _event):
+        dlg = DialogWinFunc(self, self.settings.winFunc)
+        if dlg.ShowModal() == wx.ID_OK:
+            self.settings.winFunc = dlg.get_win_func()
+        dlg.Destroy()
+
     def on_compare(self, _event):
         dlg = DialogCompare(self, self.dirname, self.filename)
         dlg.ShowModal()
@@ -509,7 +518,8 @@ class FrameMain(wx.Frame):
             self.saved(False)
             cal = self.devices[self.settings.index].calibration
             self.pool.apply_async(anaylse_data,
-                                  (freq, data, cal, self.settings.nfft),
+                                  (freq, data, cal, self.settings.nfft,
+                                   self.settings.winFunc),
                                   callback=self.on_process_done)
             self.progress()
         elif status == Event.STOPPED:

@@ -622,9 +622,10 @@ class DialogAutoCal(wx.Dialog):
 
 
 class DialogOffset(wx.Dialog):
-    def __init__(self, parent, device, offset):
+    def __init__(self, parent, device, offset, winFunc):
         self.device = device
         self.offset = offset
+        self.winFunc = winFunc
         self.band1 = None
         self.band2 = None
 
@@ -694,10 +695,12 @@ class DialogOffset(wx.Dialog):
         self.draw_limits()
 
     def plot(self, capture):
+        pos = WINFUNC[::2].index(self.winFunc)
+        function = WINFUNC[1::2][pos]
         powers, freqs = matplotlib.mlab.psd(capture,
                          NFFT=1024,
                          Fs=SAMPLE_RATE / 1e6,
-                         window=matplotlib.numpy.hamming(1024))
+                         window=function(1024))
 
         plot = []
         for x, y in itertools.izip(freqs, powers):
@@ -1204,9 +1207,12 @@ class DialogPrefs(wx.Dialog):
         elif col == self.COL_OFF:
             device = self.devices[index]
             dlg = DialogOffset(self, device,
-                               float(self.gridDev.GetCellValue(index, self.COL_OFF)))
+                               float(self.gridDev.GetCellValue(index,
+                                                               self.COL_OFF)),
+                               self.settings.winFunc)
             if dlg.ShowModal() == wx.ID_OK:
-                self.gridDev.SetCellValue(index, self.COL_OFF, str(dlg.get_offset()))
+                self.gridDev.SetCellValue(index, self.COL_OFF,
+                                          str(dlg.get_offset()))
             dlg.Destroy()
         else:
             self.gridDev.ForceRefresh()
@@ -1255,6 +1261,78 @@ class DialogPrefs(wx.Dialog):
 
     def get_devices(self):
         return self.devices
+
+
+class DialogWinFunc(wx.Dialog):
+    def __init__(self, parent, winFunc):
+        self.winFunc = winFunc
+        x = numpy.linspace(-numpy.pi, numpy.pi, 1000)
+        self.data = numpy.sin(x) + 0j
+
+        wx.Dialog.__init__(self, parent=parent, title="Window Function")
+
+        figure = matplotlib.figure.Figure(facecolor='white',
+                                          figsize=(5, 4), tight_layout=True)
+        figure.suptitle('Window Function')
+        self.canvas = FigureCanvas(self, -1, figure)
+        self.axesWin = figure.add_subplot(211)
+        self.axesFft = figure.add_subplot(212)
+
+        text = wx.StaticText(self, label='Function')
+
+        self.choice = wx.Choice(self, choices=WINFUNC[::2])
+        self.choice.SetSelection(WINFUNC[::2].index(winFunc))
+
+        sizerButtons = wx.StdDialogButtonSizer()
+        buttonOk = wx.Button(self, wx.ID_OK)
+        buttonCancel = wx.Button(self, wx.ID_CANCEL)
+        sizerButtons.AddButton(buttonOk)
+        sizerButtons.AddButton(buttonCancel)
+        sizerButtons.Realize()
+        self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
+
+        sizer = wx.wx.GridBagSizer(5, 5)
+        sizer.Add(self.canvas, pos=(0, 0), span=(1, 2), border=5)
+        sizer.Add(text, pos=(1, 0), flag=wx.ALL, border=5)
+        sizer.Add(self.choice, pos=(1, 1), flag=wx.ALL, border=5)
+        sizer.Add(sizerButtons, pos=(2, 1),
+                  flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
+
+        self.Bind(wx.EVT_CHOICE, self.on_choice, self.choice)
+        self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
+
+        self.plot()
+
+        self.SetSizerAndFit(sizer)
+
+    def plot(self):
+        pos = WINFUNC[::2].index(self.winFunc)
+        function = WINFUNC[1::2][pos](512)
+
+        self.axesWin.clear()
+        self.axesWin.plot(function)
+        self.axesWin.set_xlabel('Time')
+        self.axesWin.set_ylabel('Multiplier')
+        self.axesWin.set_xlim(0, 512)
+        self.axesWin.set_xticklabels([])
+        self.axesFft.clear()
+        self.axesFft.psd(self.data, NFFT=512, Fs=1000, window=function)
+        self.axesFft.set_xlabel('Frequency')
+        self.axesFft.set_ylabel('dB')
+        self.axesFft.set_xlim(-256, 256)
+        self.axesFft.set_xticklabels([])
+
+        self.canvas.draw()
+
+    def on_choice(self, _event):
+        self.winFunc = WINFUNC[::2][self.choice.GetSelection()]
+        self.plot()
+
+    def on_ok(self, _event):
+        self.EndModal(wx.ID_OK)
+
+    def get_win_func(self):
+        return self.winFunc
 
 
 class DialogSaveWarn(wx.Dialog):

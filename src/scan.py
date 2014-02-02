@@ -31,7 +31,7 @@ import time
 import matplotlib
 import rtlsdr
 
-from constants import SAMPLE_RATE, BANDWIDTH
+from constants import SAMPLE_RATE, BANDWIDTH, WINFUNC
 from events import EventThreadStatus, Event, post_event
 import rtltcp
 
@@ -155,15 +155,16 @@ class ThreadScan(threading.Thread):
         return self.sdr
 
 
-def anaylse_data(freq, data, cal, nfft):
+def anaylse_data(freq, data, cal, nfft, winFunc):
     spectrum = {}
     timeStamp = data[0]
     samples = data[1]
-    window = matplotlib.numpy.hamming(nfft)
+    pos = WINFUNC[::2].index(winFunc)
+    function = WINFUNC[1::2][pos]
     powers, freqs = matplotlib.mlab.psd(samples,
                      NFFT=nfft,
                      Fs=SAMPLE_RATE / 1e6,
-                     window=window)
+                     window=function(nfft))
     for freqPsd, pwr in itertools.izip(freqs, powers):
         xr = freqPsd + (freq / 1e6)
         xr = xr + (xr * cal / 1e6)

@@ -22,6 +22,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import numpy
+
 
 F_MIN = 0
 F_MAX = 9999
@@ -65,6 +67,11 @@ TUNER = ["Unknown",
          "FCI FC2580",
          "Rafael Micro R820T",
          "Rafael Micro R828D"]
+
+WINFUNC = ["Bartlett", numpy.bartlett,
+           "Blackman", numpy.blackman,
+           "Hamming", numpy.hamming,
+           "Hanning", numpy.hanning]
 
 
 class Warn:
