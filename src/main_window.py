@@ -88,10 +88,10 @@ class FrameMain(wx.Frame):
         self.menuSave = None
         self.menuExport = None
         self.menuProperties = None
+        self.menuPref = None
         self.menuStart = None
         self.menuStop = None
         self.menuStopEnd = None
-        self.menuPref = None
         self.menuCompare = None
         self.menuCal = None
 
@@ -259,6 +259,10 @@ class FrameMain(wx.Frame):
         menuFile.AppendSeparator()
         menuExit = menuFile.Append(wx.ID_EXIT, "E&xit", "Exit the program")
 
+        menuEdit = wx.Menu()
+        self.menuPref = menuEdit.Append(wx.ID_ANY, "&Preferences...",
+                                   "Preferences")
+
         menuScan = wx.Menu()
         self.menuStart = menuScan.Append(wx.ID_ANY, "&Start", "Start scan")
         self.menuStop = menuScan.Append(wx.ID_ANY, "S&top",
@@ -266,10 +270,6 @@ class FrameMain(wx.Frame):
         self.menuStopEnd = menuScan.Append(wx.ID_ANY, "Stop at &end",
                                            "Complete current sweep "
                                            "before stopping")
-
-        menuView = wx.Menu()
-        self.menuPref = menuView.Append(wx.ID_ANY, "&Preferences...",
-                                   "Preferences")
 
         menuTools = wx.Menu()
         self.menuCompare = menuTools.Append(wx.ID_ANY, "&Compare...",
@@ -285,8 +285,8 @@ class FrameMain(wx.Frame):
 
         menuBar = wx.MenuBar()
         menuBar.Append(menuFile, "&File")
+        menuBar.Append(menuEdit, "&Edit")
         menuBar.Append(menuScan, "&Scan")
-        menuBar.Append(menuView, "&View")
         menuBar.Append(menuTools, "&Tools")
         menuBar.Append(menuHelp, "&Help")
         self.SetMenuBar(menuBar)
