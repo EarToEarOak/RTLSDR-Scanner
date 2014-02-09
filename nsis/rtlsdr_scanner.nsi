@@ -46,6 +46,7 @@
 !define MUI_ABORTWARNING
 !define MUI_ICON "rtlsdr_scan.ico"
 !define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
+!define MUI_FINISHPAGE_NOAUTOCLOSE
 !insertmacro MUI_PAGE_WELCOME
 Page custom page_update
 Page custom page_info
