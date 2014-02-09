@@ -38,6 +38,13 @@ class RtlTcpCmd():
     SET_GAIN = 0x4
 
 
+def save_capture(raw):
+    f = open('capture-py.bin', 'wb')
+    f.write(raw)
+    f.close()
+    pass
+
+
 class RtlTcp():
     def __init__(self, host, port):
         self.host = host
@@ -71,7 +78,7 @@ class RtlTcp():
         self.threadBuffer.sendall(send)
 
     def read_raw(self, samples):
-        return self.threadBuffer.recv(samples)
+        return self.threadBuffer.recv(samples * 2)
 
     def raw_to_iq(self, raw):
         iq = numpy.empty(len(raw) / 2, 'complex')
@@ -101,6 +108,7 @@ class RtlTcp():
     def read_samples(self, samples):
 
         raw = self.read_raw(samples)
+        save_capture(raw)
         return self.raw_to_iq(raw)
 
     def close(self):
