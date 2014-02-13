@@ -734,7 +734,7 @@ class DialogOffset(wx.Dialog):
             sdr.set_sample_rate(SAMPLE_RATE)
             sdr.set_center_freq(self.spinFreq.GetValue() * 1e6)
             sdr.set_gain(self.spinGain.GetValue())
-            capture = sdr.read_samples(2 ** 18)
+            capture = sdr.read_samples(2 ** 21)
             sdr.close()
         except IOError as error:
             if self.device.isDevice:
