@@ -780,10 +780,13 @@ class FrameMain(wx.Frame):
         self.settings.display = DISPLAY[1::2][self.choiceDisplay.GetSelection()]
 
         device = self.devices[self.settings.index]
-        if device.isDevice:
-            device.gain = float(self.controlGain.GetStringSelection())
-        else:
-            device.gain = self.controlGain.GetValue()
+        try:
+            if device.isDevice:
+                device.gain = float(self.controlGain.GetStringSelection())
+            else:
+                device.gain = self.controlGain.GetValue()
+        except ValueError:
+            device.gain = 0
 
     def save_warn(self, warnType):
         if self.settings.saveWarn and not self.isSaved:
