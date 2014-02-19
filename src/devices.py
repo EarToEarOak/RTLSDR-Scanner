@@ -56,6 +56,11 @@ class Device():
 
         return gainsStr
 
+    def get_closest_gain_str(self, desired):
+        gain = min(self.gains, key=lambda n: abs(n - desired))
+
+        return str(gain)
+
 
 def get_devices(currentDevices=[], statusBar=None):
     if statusBar is not None:

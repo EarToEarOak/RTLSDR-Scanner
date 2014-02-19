@@ -760,7 +760,8 @@ class FrameMain(wx.Frame):
                 gains = device.get_gains_str()
                 self.controlGain = wx.Choice(self.panel,
                                              choices=gains)
-                self.controlGain.SetStringSelection(str(device.gain))
+                gain = device.get_closest_gain_str(device.gain)
+                self.controlGain.SetStringSelection(gain)
             else:
                 self.controlGain = NumCtrl(self.panel, integerWidth=3,
                                            fractionWidth=1)
