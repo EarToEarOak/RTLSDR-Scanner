@@ -429,6 +429,7 @@ class FrameMain(wx.Frame):
             self.devices = dlg.get_devices()
             self.settings.index = dlg.get_index()
             self.create_plot()
+            self.set_control_state(True)
             self.set_controls()
         dlg.Destroy()
 
@@ -717,14 +718,15 @@ class FrameMain(wx.Frame):
                                                    self.settings.stop, gain))
 
     def set_control_state(self, state):
+        hasDevices = len(self.devices) > 0
         self.spinCtrlStart.Enable(state)
         self.spinCtrlStop.Enable(state)
         self.controlGain.Enable(state)
         self.choiceMode.Enable(state)
         self.choiceDwell.Enable(state)
         self.choiceNfft.Enable(state)
-        self.buttonStart.Enable(state)
-        self.buttonStop.Enable(not state)
+        self.buttonStart.Enable(state and hasDevices)
+        self.buttonStop.Enable(not state and hasDevices)
         self.menuOpen.Enable(state)
         self.menuSave.Enable(state and len(self.spectrum) > 0)
         self.menuExport.Enable(state and len(self.spectrum) > 0)
@@ -751,25 +753,26 @@ class FrameMain(wx.Frame):
         self.choiceDisplay.SetSelection(DISPLAY[1::2].index(self.settings.display))
 
         grid = self.controlGain.GetContainingSizer()
-        self.controlGain.Destroy()
-        device = self.devices[self.settings.index]
-        if device.isDevice:
-            gains = device.get_gains_str()
-            self.controlGain = wx.Choice(self.panel,
-                                         choices=gains)
-            self.controlGain.SetStringSelection(str(device.gain))
-        else:
-            self.controlGain = NumCtrl(self.panel, integerWidth=3,
-                                       fractionWidth=1)
-            font = self.controlGain.GetFont()
-            dc = wx.WindowDC(self.controlGain)
-            dc.SetFont(font)
-            size = dc.GetTextExtent('####.#')
-            self.controlGain.SetMinSize((size[0] * 1.2, -1))
-            self.controlGain.SetValue(device.gain)
+        if len(self.devices) > 0:
+            self.controlGain.Destroy()
+            device = self.devices[self.settings.index]
+            if device.isDevice:
+                gains = device.get_gains_str()
+                self.controlGain = wx.Choice(self.panel,
+                                             choices=gains)
+                self.controlGain.SetStringSelection(str(device.gain))
+            else:
+                self.controlGain = NumCtrl(self.panel, integerWidth=3,
+                                           fractionWidth=1)
+                font = self.controlGain.GetFont()
+                dc = wx.WindowDC(self.controlGain)
+                dc.SetFont(font)
+                size = dc.GetTextExtent('####.#')
+                self.controlGain.SetMinSize((size[0] * 1.2, -1))
+                self.controlGain.SetValue(device.gain)
 
-        grid.Add(self.controlGain, pos=(1, 7), flag=wx.ALIGN_CENTER)
-        grid.Layout()
+            grid.Add(self.controlGain, pos=(1, 7), flag=wx.ALIGN_CENTER)
+            grid.Layout()
 
     def get_controls(self):
         self.settings.start = self.spinCtrlStart.GetValue()
@@ -779,14 +782,15 @@ class FrameMain(wx.Frame):
         self.settings.nfft = NFFT[self.choiceNfft.GetSelection()]
         self.settings.display = DISPLAY[1::2][self.choiceDisplay.GetSelection()]
 
-        device = self.devices[self.settings.index]
-        try:
-            if device.isDevice:
-                device.gain = float(self.controlGain.GetStringSelection())
-            else:
-                device.gain = self.controlGain.GetValue()
-        except ValueError:
-            device.gain = 0
+        if len(self.devices) > 0:
+            device = self.devices[self.settings.index]
+            try:
+                if device.isDevice:
+                    device.gain = float(self.controlGain.GetStringSelection())
+                else:
+                    device.gain = self.controlGain.GetValue()
+            except ValueError:
+                device.gain = 0
 
     def save_warn(self, warnType):
         if self.settings.saveWarn and not self.isSaved:

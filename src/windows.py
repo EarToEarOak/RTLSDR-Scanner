@@ -1163,10 +1163,11 @@ class DialogPrefs(wx.Dialog):
             i += 1
 
     def button_state(self):
-        if self.devices[self.index].isDevice:
-            self.buttonDel.Disable()
-        else:
-            self.buttonDel.Enable()
+        if len(self.devices) > 0:
+            if self.devices[self.index].isDevice:
+                self.buttonDel.Disable()
+            else:
+                self.buttonDel.Enable()
 
     def warn_duplicates(self):
         servers = []

@@ -57,7 +57,7 @@ class Device():
         return gainsStr
 
 
-def get_devices(currentDevices=[], statusBar = None):
+def get_devices(currentDevices=[], statusBar=None):
     if statusBar is not None:
         statusBar.set_general("Refreshing device list...")
 
