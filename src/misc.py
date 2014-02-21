@@ -51,6 +51,7 @@ class ScanInfo():
     timeLast = None
     lat = None
     lon = None
+    desc = ''
 
     def setFromSettings(self, settings):
         self.start = settings.start
@@ -128,6 +129,7 @@ def open_plot(dirname, filename):
     time = None
     lat = None
     lon = None
+    desc = ''
 
     path = os.path.join(dirname, filename)
     if not os.path.exists(path):
@@ -180,6 +182,8 @@ def open_plot(dirname, filename):
                     spectrum[float(t)] = {}
                     for f, p in s.iteritems():
                         spectrum[float(t)][float(f)] = p
+            if version > 7:
+                desc = data[1]['Description']
 
         except ValueError:
             error = True
@@ -206,6 +210,7 @@ def open_plot(dirname, filename):
     scanInfo.time = time
     scanInfo.lat = lat
     scanInfo.lon = lon
+    scanInfo.desc = desc
 
     return scanInfo, spectrum
 
@@ -224,6 +229,7 @@ def save_plot(dirname, filename, scanInfo, spectrum):
                           'Time':scanInfo.time,
                           'Latitude':scanInfo.lat,
                           'Longitude':scanInfo.lon,
+                          'Description':scanInfo.desc,
                           'Spectrum': spectrum}]
 
     handle = open(os.path.join(dirname, filename), 'wb')
