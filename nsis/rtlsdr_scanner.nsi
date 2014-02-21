@@ -31,7 +31,7 @@
 !include "include\EnvVarUpdate.nsh"
 !include "include\fileassoc.nsh"
 
-!define INSTALLER_VERSION "4"
+!define INSTALLER_VERSION "5"
 
 !define PRODUCT_NAME "RTLSDR Scanner"
 !define PRODUCT_VERSION ""
@@ -159,6 +159,7 @@ Section -AdditionalIcons
     CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\Website.lnk" "$INSTDIR\${PRODUCT_NAME}.url"
     CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\Uninstall.lnk" "$INSTDIR\uninst.exe"
     CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\Manual.lnk" "$INSTDIR\doc\Manual.pdf"
+    CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\Example.lnk" "$INSTDIR\doc\BBCR2.rfs"
 SectionEnd
 
 
@@ -205,6 +206,7 @@ Section Uninstall
     Delete "$INSTDIR\res\auto_refresh.png"
     Delete "$INSTDIR\res\auto_range.png"
     Delete "$INSTDIR\doc\Manual.pdf"
+    Delete "$INSTDIR\doc\BBCR2.rfs"
     Delete "$INSTDIR\*.pyc"
     Delete "$INSTDIR\libusb-1.0.dll"
     Delete "$INSTDIR\pthreadVC2-w32.dll"
@@ -344,6 +346,7 @@ Function get_rtlsdr_scanner
     CopyFiles "$TEMP\RTLSDR-Scanner-master\res\*.png" "$INSTDIR\res"
     CreateDirectory "$INSTDIR\doc"
     CopyFiles "$TEMP\RTLSDR-Scanner-master\doc\*.pdf" "$INSTDIR\doc"
+    CopyFiles "$TEMP\RTLSDR-Scanner-master\doc\*.rfs" "$INSTDIR\doc"
     CopyFiles "$TEMP\RTLSDR-Scanner-master\*.ico" "$INSTDIR"
     ;Delete "$TEMP\master.zip"
     RmDir /r "$TEMP\RTLSDR-Scanner-master"
