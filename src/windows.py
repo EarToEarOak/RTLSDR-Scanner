@@ -875,7 +875,7 @@ class DialogProperties(wx.Dialog):
         textCtrlName = wx.TextCtrl(self, value="Unknown", style=wx.TE_READONLY)
         if scanInfo.name is not None:
             textCtrlName.SetValue(scanInfo.name)
-        gridDevice.Add(textCtrlName, (0, 1), (1, 1), wx.ALL, 5)
+        gridDevice.Add(textCtrlName, (0, 1), (1, 2), wx.ALL | wx.EXPAND, 5)
 
         textTuner = wx.StaticText(self, label="Tuner")
         gridDevice.Add(textTuner, (1, 0), (1, 1), wx.ALL, 5)
@@ -883,7 +883,7 @@ class DialogProperties(wx.Dialog):
                                     style=wx.TE_READONLY)
         if scanInfo.tuner != -1:
             textCtrlTuner.SetValue(TUNER[scanInfo.tuner])
-        gridDevice.Add(textCtrlTuner, (1, 1), (1, 1), wx.ALL, 5)
+        gridDevice.Add(textCtrlTuner, (1, 1), (1, 2), wx.ALL | wx.EXPAND, 5)
 
         testGain = wx.StaticText(self, label="Gain")
         gridDevice.Add(testGain, (2, 0), (1, 1), wx.ALL, 5)
