@@ -7,7 +7,9 @@ al [at] eartoearoak.com
 
 A cross platform Python frequency scanning GUI for the OsmoSDR rtl-sdr [library](http://sdr.osmocom.org/trac/wiki/rtl-sdr).
 
-Full details can be found [here](http://eartoearoak.com/software/rtlsdr-scanner)
+More details can be found [here](http://eartoearoak.com/software/rtlsdr-scanner).
+
+A basic [user manual](https://github.com/EarToEarOak/RTLSDR-Scanner/blob/master/doc/Manual.pdf?raw=true) is also available.
 
 Tested on:
 
@@ -20,7 +22,7 @@ Tested on:
 - OS X Mountain Lion
 
 ## Installer ##
-A Windows installer can be found on [SourceForge](http://sourceforge.net/projects/rtlsdrscanner/files/)
+A Windows installer can be found on [SourceForge](http://sourceforge.net/projects/rtlsdrscanner)
 
 ## Requirements ##
 
@@ -58,14 +60,14 @@ Windows 64 bit modules can be found [here](http://www.lfd.uci.edu/~gohlke/python
 - **Export...** - Export a scan to a CSV file
 - **Properties..** - Scan information
 
+**Edit Menu**
+
+- **Preferences** - Set dongle gain, calibration, Local Oscillator and the sample bands to use
+
 **Scan Menu**
 
 - **Start** - Start a scan
 - **Stop** - Stop a scan
-
-**View Menu**
-
-- **Preferences** - Set dongle gain, calibration, Local Oscillator and the sample bands to use
 
 **Tools Menu**
 
