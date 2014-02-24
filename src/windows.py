@@ -621,42 +621,49 @@ class DialogAutoCal(wx.Dialog):
         return self.textFreq.GetValue()
 
 
-class DialogOffset(wx.Dialog):
-    def __init__(self, parent, device, offset, winFunc):
+class DialogAdvanced(wx.Dialog):
+    def __init__(self, parent, device, winFunc):
         self.device = device
-        self.offset = offset
         self.winFunc = winFunc
         self.band1 = None
         self.band2 = None
+        self.rate = device.rate
+        self.bandwidth = device.bandwidth
+        self.offset = device.offset
 
-        wx.Dialog.__init__(self, parent=parent, title="Scan Offset")
+        wx.Dialog.__init__(self, parent=parent, title="Advanced Device Settings")
 
-        figure = matplotlib.figure.Figure(facecolor='white')
-        self.axes = figure.add_subplot(111)
-        self.canvas = FigureCanvas(self, -1, figure)
+        textRate = wx.StaticText(self, label='Sample rate')
+        self.choiceRate = wx.Choice(self, choices=RATE[::2])
+        self.choiceRate.SetSelection(RATE[1::2].index(device.rate))
+        self.Bind(wx.EVT_CHOICE, self.on_choice, self.choiceRate)
 
         textHelp = wx.StaticText(self,
             label="Remove the aerial and press refresh, "
             "adjust the offset so the shaded areas overlay the flattest parts "
             "of the plot.")
 
-        textFreq = wx.StaticText(self, label="Test frequency (MHz)")
-        self.spinFreq = wx.SpinCtrl(self)
-        self.spinFreq.SetRange(F_MIN, F_MAX)
-        self.spinFreq.SetValue(200)
+        figure = matplotlib.figure.Figure(facecolor='white', figsize=(6, 4))
+        self.axes = figure.add_subplot(111)
+        self.canvas = FigureCanvas(self, -1, figure)
 
         textGain = wx.StaticText(self, label="Test gain (dB)")
         self.spinGain = wx.SpinCtrl(self)
         self.spinGain.SetRange(-100, 200)
         self.spinGain.SetValue(200)
 
+        textFreq = wx.StaticText(self, label="Test frequency (MHz)")
+        self.spinFreq = wx.SpinCtrl(self)
+        self.spinFreq.SetRange(F_MIN, F_MAX)
+        self.spinFreq.SetValue(200)
+
         refresh = wx.Button(self, wx.ID_ANY, 'Refresh')
         self.Bind(wx.EVT_BUTTON, self.on_refresh, refresh)
 
         textOffset = wx.StaticText(self, label="Offset (kHz)")
         self.spinOffset = wx.SpinCtrl(self)
-        self.spinOffset.SetRange(0, ((SAMPLE_RATE / 2) - BANDWIDTH) / 1e3)
-        self.spinOffset.SetValue(offset)
+        self.spinOffset.SetRange(0, ((self.rate / 2) - self.bandwidth) / 1e3)
+        self.spinOffset.SetValue(self.offset / 1e3)
         self.Bind(wx.EVT_SPINCTRL, self.on_spin, self.spinOffset)
 
         sizerButtons = wx.StdDialogButtonSizer()
@@ -667,59 +674,78 @@ class DialogOffset(wx.Dialog):
         sizerButtons.Realize()
         self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
 
-        boxSizer1 = wx.BoxSizer(wx.HORIZONTAL)
-        boxSizer1.Add(textFreq, border=5)
-        boxSizer1.Add(self.spinFreq, border=5)
-        boxSizer1.Add(textGain, border=5)
-        boxSizer1.Add(self.spinGain, border=5)
+        boxGeneral = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY,
+                                                 "General"),
+                                       wx.HORIZONTAL)
+        boxGeneral.Add(textRate, border=5, flag=wx.ALL)
+        boxGeneral.Add(self.choiceRate, border=5, flag=wx.ALL)
 
-        boxSizer2 = wx.BoxSizer(wx.HORIZONTAL)
-        boxSizer2.Add(textOffset, border=5)
-        boxSizer2.Add(self.spinOffset, border=5)
+        sizerOffset = wx.GridBagSizer(5, 5)
 
-        gridSizer = wx.GridBagSizer(5, 5)
-        gridSizer.Add(self.canvas, pos=(0, 0), span=(1, 2),
-                  flag=wx.ALIGN_CENTER | wx.ALL, border=5)
-        gridSizer.Add(textHelp, pos=(1, 0), span=(1, 2),
-                  flag=wx.ALIGN_CENTER | wx.ALL, border=5)
-        gridSizer.Add(boxSizer1, pos=(2, 0), span=(1, 2),
-                  flag=wx.ALIGN_CENTER | wx.ALL, border=5)
-        gridSizer.Add(refresh, pos=(3, 0), span=(1, 2),
-                  flag=wx.ALIGN_CENTER | wx.ALL, border=5)
-        gridSizer.Add(boxSizer2, pos=(4, 0), span=(1, 2),
-                  flag=wx.ALIGN_CENTER | wx.ALL, border=5)
-        gridSizer.Add(sizerButtons, pos=(5, 1), span=(1, 1),
-                  flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
+        sizerOffset.Add(textHelp, pos=(0, 0), span=(1, 2),
+                        flag=wx.ALIGN_CENTER | wx.ALL, border=5)
+        sizerOffset.Add(self.canvas, pos=(1, 0), span=(1, 2),
+                        flag=wx.ALIGN_CENTER | wx.ALL, border=5)
+        sizerOffset.Add(textGain, pos=(2, 0), span=(1, 1),
+                        flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
+        sizerOffset.Add(self.spinGain, pos=(2, 1), span=(1, 1),
+                        flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+        sizerOffset.Add(textFreq, pos=(3, 0), span=(1, 1),
+                        flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
+        sizerOffset.Add(self.spinFreq, pos=(3, 1), span=(1, 1),
+                        flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+        sizerOffset.Add(refresh, pos=(4, 0), span=(1, 2),
+                        flag=wx.ALIGN_CENTER | wx.ALL | wx.EXPAND, border=5)
+        sizerOffset.Add(textOffset, pos=(5, 0), span=(1, 1),
+                        flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
+        sizerOffset.Add(self.spinOffset, pos=(5, 1), span=(1, 1),
+                        flag=wx.ALIGN_LEFT | wx.ALL, border=5)
 
-        self.SetSizerAndFit(gridSizer)
+        boxOffset = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Offset"),
+                                      wx.VERTICAL)
+        boxOffset.Add(sizerOffset, border=5)
+
+        boxSizer = wx.BoxSizer(wx.VERTICAL)
+        boxSizer.Add(boxGeneral, border=5, flag=wx.ALL)
+        boxSizer.Add(boxOffset, border=5, flag=wx.ALL)
+        boxSizer.Add(sizerButtons, flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
+
+        self.SetSizerAndFit(boxSizer)
         self.draw_limits()
 
-    def plot(self, capture):
-        pos = WINFUNC[::2].index(self.winFunc)
-        function = WINFUNC[1::2][pos]
-        powers, freqs = matplotlib.mlab.psd(capture,
-                         NFFT=1024,
-                         Fs=SAMPLE_RATE / 1e6,
-                         window=function(1024))
+        self.setup_plot()
 
-        plot = []
-        for x, y in itertools.izip(freqs, powers):
-            x = x * SAMPLE_RATE / 2e6
-            plot.append((x, y))
-        plot.sort()
-        x, y = numpy.transpose(plot)
-
+    def setup_plot(self):
         self.axes.clear()
         self.band1 = None
         self.band2 = None
         self.axes.set_xlabel("Frequency (MHz)")
         self.axes.set_ylabel('Level (dB)')
         self.axes.set_yscale('log')
-        self.axes.plot(x, y, linewidth=0.4)
         self.axes.grid(True)
         self.draw_limits()
 
+    def plot(self, capture):
+        self.setup_plot()
+        pos = WINFUNC[::2].index(self.winFunc)
+        function = WINFUNC[1::2][pos]
+        powers, freqs = matplotlib.mlab.psd(capture,
+                         NFFT=1024,
+                         Fs=self.rate / 1e6,
+                         window=function(1024))
+
+        plot = []
+        for x, y in itertools.izip(freqs, powers):
+            plot.append((x, y))
+        plot.sort()
+        x, y = numpy.transpose(plot)
+        self.axes.plot(x, y, linewidth=0.4)
+        self.canvas.draw()
+
     def on_ok(self, _event):
+        self.device.rate = self.rate
+        self.device.bandwidth = self.bandwidth
+        self.device.offset = self.offset
         self.EndModal(wx.ID_OK)
 
     def on_refresh(self, _event):
@@ -731,7 +757,7 @@ class DialogOffset(wx.Dialog):
                 sdr = rtlsdr.RtlSdr(self.device.index)
             else:
                 sdr = RtlTcp(self.device.server, self.device.port)
-            sdr.set_sample_rate(SAMPLE_RATE)
+            sdr.set_sample_rate(self.rate)
             sdr.set_center_freq(self.spinFreq.GetValue() * 1e6)
             sdr.set_gain(self.spinGain.GetValue())
             capture = sdr.read_samples(2 ** 21)
@@ -754,13 +780,28 @@ class DialogOffset(wx.Dialog):
 
         dlg.Destroy()
 
+    def on_choice(self, _event):
+        rate = float(RATE[1::2][self.choiceRate.GetSelection()])
+        scale = rate / self.rate
+        self.rate = rate
+        self.bandwidth *= scale
+        self.offset *= scale
+        width = self.bandwidth + self.offset
+        if width > self.rate / 2:
+            self.offset = self.rate / 2 - self.bandwidth
+        self.spinOffset.SetValue(self.offset / 1e3)
+
+        self.on_refresh(None)
+
     def on_spin(self, _event):
-        self.offset = self.spinOffset.GetValue()
+        self.offset = self.spinOffset.GetValue() * 1e3
         self.draw_limits()
 
     def draw_limits(self):
-        limit1 = self.offset / 1e3
-        limit2 = limit1 + BANDWIDTH / 1e6
+        limit1 = self.offset
+        limit2 = (limit1 + self.bandwidth / 2)
+        limit1 /= 1e6
+        limit2 /= 1e6
         if(self.band1 is not None):
             self.band1.remove()
         if(self.band2 is not None):
@@ -768,9 +809,6 @@ class DialogOffset(wx.Dialog):
         self.band1 = self.axes.axvspan(limit1, limit2, color='g', alpha=0.25)
         self.band2 = self.axes.axvspan(-limit1, -limit2, color='g', alpha=0.25)
         self.canvas.draw()
-
-    def get_offset(self):
-        return self.offset
 
 
 class DialogProperties(wx.Dialog):
@@ -949,7 +987,7 @@ class DialogProperties(wx.Dialog):
 
 class DialogPrefs(wx.Dialog):
     COL_SEL, COL_DEV, COL_TUN, COL_SER, COL_IND, \
-    COL_GAIN, COL_CAL, COL_LO, COL_OFF = range(9)
+    COL_GAIN, COL_CAL, COL_LO, COL_ADV = range(9)
 
     def __init__(self, parent, devices, settings):
         self.settings = settings
@@ -1015,11 +1053,11 @@ class DialogPrefs(wx.Dialog):
         self.gridDev.SetColLabelValue(self.COL_GAIN, "Gain\n(dB)")
         self.gridDev.SetColLabelValue(self.COL_CAL, "Calibration\n(ppm)")
         self.gridDev.SetColLabelValue(self.COL_LO, "LO\n(MHz)")
-        self.gridDev.SetColLabelValue(self.COL_OFF, "Band Offset\n(kHz)")
+        self.gridDev.SetColLabelValue(self.COL_ADV, "Advanced")
         self.gridDev.SetColFormatFloat(self.COL_GAIN, -1, 1)
         self.gridDev.SetColFormatFloat(self.COL_CAL, -1, 3)
         self.gridDev.SetColFormatFloat(self.COL_LO, -1, 3)
-        self.gridDev.SetColFormatFloat(self.COL_OFF, -1, 0)
+        self.gridDev.SetColFormatFloat(self.COL_ADV, -1, 0)
 
         self.set_dev_grid()
 
@@ -1130,7 +1168,7 @@ class DialogPrefs(wx.Dialog):
             self.gridDev.SetCellValue(i, self.COL_TUN, TUNER[device.tuner])
             self.gridDev.SetCellValue(i, self.COL_CAL, str(device.calibration))
             self.gridDev.SetCellValue(i, self.COL_LO, str(device.lo))
-            self.gridDev.SetCellValue(i, self.COL_OFF, str(device.offset / 1e3))
+            self.gridDev.SetCellValue(i, self.COL_ADV, "...")
             i += 1
 
         if self.settings.index >= len(self.devices):
@@ -1158,7 +1196,6 @@ class DialogPrefs(wx.Dialog):
             device.gain = float(self.gridDev.GetCellValue(i, self.COL_GAIN))
             device.calibration = float(self.gridDev.GetCellValue(i, self.COL_CAL))
             device.lo = float(self.gridDev.GetCellValue(i, self.COL_LO))
-            device.offset = float(self.gridDev.GetCellValue(i, self.COL_OFF)) * 1e3
             i += 1
 
     def button_state(self):
@@ -1204,15 +1241,10 @@ class DialogPrefs(wx.Dialog):
         if col == self.COL_SEL:
             self.index = event.GetRow()
             self.select_row(index)
-        elif col == self.COL_OFF:
+        elif col == self.COL_ADV:
             device = self.devices[index]
-            dlg = DialogOffset(self, device,
-                               float(self.gridDev.GetCellValue(index,
-                                                               self.COL_OFF)),
-                               self.settings.winFunc)
-            if dlg.ShowModal() == wx.ID_OK:
-                self.gridDev.SetCellValue(index, self.COL_OFF,
-                                          str(dlg.get_offset()))
+            dlg = DialogAdvanced(self, device, self.settings.winFunc)
+            dlg.ShowModal()
             dlg.Destroy()
         else:
             self.gridDev.ForceRefresh()

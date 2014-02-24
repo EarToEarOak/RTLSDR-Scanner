@@ -39,6 +39,8 @@ class Device():
         self.gain = 0
         self.calibration = 0
         self.lo = 0
+        self.rate = 2e6
+        self.bandwidth = 500e3
         self.offset = 250e3
         self.tuner = 0
 
@@ -46,6 +48,8 @@ class Device():
         self.gain = device.gain
         self.calibration = device.calibration
         self.lo = device.lo
+        self.rate = device.rate
+        self.bandwidth = device.bandwidth
         self.offset = device.offset
         self.tuner = device.tuner
 

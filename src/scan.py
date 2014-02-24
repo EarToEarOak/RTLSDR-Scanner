@@ -31,7 +31,7 @@ import time
 import matplotlib
 import rtlsdr
 
-from constants import SAMPLE_RATE, BANDWIDTH, WINFUNC
+from constants import WINFUNC
 from events import EventThreadStatus, Event, post_event
 import rtltcp
 
@@ -52,22 +52,24 @@ class ThreadScan(threading.Thread):
         self.port = settings.devices[device].port
         self.gain = settings.devices[device].gain
         self.lo = settings.devices[device].lo * 1e6
+        self.rate = settings.devices[device].rate
+        self.bandwidth = settings.devices[device].bandwidth
         self.offset = settings.devices[device].offset
         self.cancel = False
 
         post_event(self.notify, EventThreadStatus(Event.STARTING))
-        steps = int((self.f_stop() - self.f_start()) / self.f_step()) + 1
+        steps = int((self.f_stop() - self.f_start()) / self.f_step())
         post_event(self.notify, EventThreadStatus(Event.STEPS, steps))
         self.start()
 
     def f_start(self):
-        return self.fstart - self.offset - BANDWIDTH
+        return self.fstart - self.offset - self.bandwidth
 
     def f_stop(self):
-        return self.fstop + self.offset + BANDWIDTH
+        return self.fstop + self.offset + self.bandwidth
 
     def f_step(self):
-        return int(BANDWIDTH / 2)
+        return int(self.bandwidth / 2)
 
     def run(self):
         tuner = self.rtl_setup()
@@ -122,7 +124,7 @@ class ThreadScan(threading.Thread):
         if self.isDevice:
             try:
                 self.sdr = rtlsdr.RtlSdr(self.index)
-                self.sdr.set_sample_rate(SAMPLE_RATE)
+                self.sdr.set_sample_rate(self.rate)
                 self.sdr.set_manual_gain_enabled(1)
                 self.sdr.set_gain(self.gain)
                 tuner = self.sdr.get_tuner_type()
@@ -132,7 +134,7 @@ class ThreadScan(threading.Thread):
         else:
             try:
                 self.sdr = rtltcp.RtlTcp(self.server, self.port)
-                self.sdr.set_sample_rate(SAMPLE_RATE)
+                self.sdr.set_sample_rate(self.rate)
                 self.sdr.set_manual_gain_enabled(1)
                 self.sdr.set_gain(self.gain)
                 tuner = self.sdr.get_tuner_type()
@@ -155,7 +157,7 @@ class ThreadScan(threading.Thread):
         return self.sdr
 
 
-def anaylse_data(freq, data, cal, nfft, winFunc):
+def anaylse_data(freq, data, cal, nfft, rate, winFunc):
     spectrum = {}
     timeStamp = data[0]
     samples = data[1]
@@ -163,7 +165,7 @@ def anaylse_data(freq, data, cal, nfft, winFunc):
     function = WINFUNC[1::2][pos]
     powers, freqs = matplotlib.mlab.psd(samples,
                      NFFT=nfft,
-                     Fs=SAMPLE_RATE / 1e6,
+                     Fs=rate / 1e6,
                      window=function(nfft))
     for freqPsd, pwr in itertools.izip(freqs, powers):
         xr = freqPsd + (freq / 1e6)
@@ -173,8 +175,8 @@ def anaylse_data(freq, data, cal, nfft, winFunc):
     return (timeStamp, freq, spectrum)
 
 
-def update_spectrum(notify, lock, start, stop, freqCentre, data, offset,
-                    spectrum, average, alertLevel=None):
+def update_spectrum(notify, lock, start, stop, freqCentre, data, bandwidth,
+                    offset, spectrum, average, alertLevel=None):
     with lock:
         updated = False
         if average:
@@ -184,8 +186,8 @@ def update_spectrum(notify, lock, start, stop, freqCentre, data, offset,
         scan = data[1]
 
         upperStart = freqCentre + offset
-        upperEnd = freqCentre + offset + BANDWIDTH / 2
-        lowerStart = freqCentre - offset - BANDWIDTH / 2
+        upperEnd = freqCentre + offset + bandwidth / 2
+        lowerStart = freqCentre - offset - bandwidth / 2
         lowerEnd = freqCentre - offset
 
         if not timeStamp in spectrum:

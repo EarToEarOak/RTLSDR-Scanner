@@ -29,9 +29,6 @@ from threading import Thread
 import threading
 from urlparse import urlparse
 
-import numpy
-
-from constants import SAMPLE_RATE
 from devices import Device, get_devices
 from events import *
 from misc import ScanInfo, save_plot, export_plot, nearest, calc_real_dwell, \
@@ -134,7 +131,8 @@ class Cli():
         print "Done"
 
     def scan(self, settings, index, pool):
-        samples = settings.dwell * SAMPLE_RATE
+        rate = settings.devices[settings.index].rate
+        samples = settings.dwell * rate
         samples = next_2_to_pow(int(samples))
         threadScan = ThreadScan(self.queue, None, settings, index, samples,
                                 False)

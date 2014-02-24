@@ -504,22 +504,24 @@ class FrameMain(wx.Frame):
         if status == Event.STARTING:
             self.status.set_general("Starting")
         elif status == Event.STEPS:
-            self.stepsTotal = (freq * 2) - 1
+            self.stepsTotal = freq
             self.steps = self.stepsTotal
             self.status.set_progress(0)
             self.status.show_progress()
         elif status == Event.CAL:
             self.auto_cal(Cal.DONE)
         elif status == Event.INFO:
-            self.sdr = self.threadScan.get_sdr()
-            if data is not None:
-                self.devices[self.settings.index].tuner = data
-                self.scanInfo.tuner = data
+            if self.threadScan is not None:
+                self.sdr = self.threadScan.get_sdr()
+                if data is not None:
+                    self.devices[self.settings.index].tuner = data
+                    self.scanInfo.tuner = data
         elif status == Event.DATA:
             self.saved(False)
             cal = self.devices[self.settings.index].calibration
             self.pool.apply_async(anaylse_data,
                                   (freq, data, cal, self.settings.nfft,
+                                   self.devices[self.settings.index].rate,
                                    self.settings.winFunc),
                                   callback=self.on_process_done)
             self.progress()
@@ -535,7 +537,8 @@ class FrameMain(wx.Frame):
                 self.dlgCal.Destroy()
                 self.dlgCal = None
         elif status == Event.PROCESSED:
-            offset = self.settings.devices[self.settings.index].offset
+            bandwidth = self.devices[self.settings.index].bandwidth
+            offset = self.devices[self.settings.index].offset
             if self.settings.alert:
                 alert = self.settings.alertLevel
             else:
@@ -543,7 +546,7 @@ class FrameMain(wx.Frame):
             Thread(target=update_spectrum, name='Update',
                    args=(self, self.lock, self.settings.start,
                          self.settings.stop, freq,
-                         data, offset, self.spectrum,
+                         data, bandwidth, offset, self.spectrum,
                          not self.settings.retainScans,
                          alert)).start()
         elif status == Event.LEVEL:
@@ -634,7 +637,8 @@ class FrameMain(wx.Frame):
 
         if not self.threadScan:
             self.set_control_state(False)
-            samples = calc_samples(self.settings.dwell)
+            samples = calc_samples(self.settings.dwell,
+                                   self.devices[self.settings.index].rate)
             self.status.set_info('')
             self.scanInfo.setFromSettings(self.settings)
             time = datetime.datetime.utcnow().replace(microsecond=0)
@@ -747,7 +751,8 @@ class FrameMain(wx.Frame):
         self.spinCtrlStart.SetValue(self.settings.start)
         self.spinCtrlStop.SetValue(self.settings.stop)
         self.choiceMode.SetSelection(MODE[1::2].index(self.settings.mode))
-        dwell = calc_real_dwell(self.settings.dwell)
+        dwell = calc_real_dwell(self.settings.dwell,
+                                self.devices[self.settings.index].rate)
         self.choiceDwell.SetSelection(DWELL[1::2].index(dwell))
         self.choiceNfft.SetSelection(NFFT.index(self.settings.nfft))
         self.choiceDisplay.SetSelection(DISPLAY[1::2].index(self.settings.display))

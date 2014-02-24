@@ -27,9 +27,6 @@ import numpy
 
 F_MIN = 0
 F_MAX = 9999
-GAIN = 0
-SAMPLE_RATE = 2e6
-BANDWIDTH = 500e3
 
 MODE = ["Single", 0,
         "Continuous", 1]
@@ -55,6 +52,17 @@ DWELL = ["16 ms", 0.016,
          "1 s", 1.048,
          "2 s", 2.097,
          "8 s", 8.388]
+
+RATE = ['1024 kS/s', 1024000,
+        '1.2 MS/s', 1200000,
+        '1.4 MS/s', 1400000,
+        '1.6 MS/s', 1600000,
+        '1.8 MS/s', 1800000,
+        '2.0 MS/s', 2000000,
+        '2.2 MS/s', 2200000,
+        '2.4 MS/s', 2400000,
+        '2.6 MS/s', 2600000,
+        '2.8 MS/s', 2800000]
 
 DISPLAY = ["Plot", 0,
            "Spectrogram", 1,

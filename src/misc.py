@@ -33,7 +33,7 @@ from matplotlib import cm
 from matplotlib.dates import date2num, num2epoch
 import wx
 
-from constants import SAMPLE_RATE, File
+from constants import File, DWELL
 
 
 class ScanInfo():
@@ -264,16 +264,16 @@ def next_2_to_pow(val):
     return val + 1
 
 
-def calc_samples(dwell):
-    samples = dwell * SAMPLE_RATE
+def calc_samples(dwell, rate):
+    samples = dwell * rate
     samples = next_2_to_pow(int(samples))
     return samples
 
 
-def calc_real_dwell(dwell):
-    samples = calc_samples(dwell)
-    dwellReal = samples / SAMPLE_RATE
-    return (int)(dwellReal * 1000.0) / 1000.0
+def calc_real_dwell(dwell, rate):
+    samples = calc_samples(dwell, rate)
+    dwellReal = samples / rate
+    return nearest(dwellReal, DWELL[1::2])
 
 
 def nearest(value, values):

@@ -53,6 +53,7 @@ class Settings():
         self.dwell = 0.1
         self.nfft = 1024
         self.winFunc = "Hamming"
+
         self.liveUpdate = False
         self.calFreq = 1575.42
         self.autoScale = True
@@ -118,6 +119,8 @@ class Settings():
             device.gain = self.cfg.ReadFloat('gain', 0)
             device.calibration = self.cfg.ReadFloat('calibration', 0)
             device.lo = self.cfg.ReadFloat('lo', 0)
+            device.rate = self.cfg.ReadFloat('rate', 2e6)
+            device.bandwidth = self.cfg.ReadFloat('bandwidth', 250e3)
             device.offset = self.cfg.ReadFloat('offset', 250e3)
             device.tuner = self.cfg.ReadInt('tuner', 0)
             self.devices.append(device)
@@ -165,6 +168,8 @@ class Settings():
                 self.cfg.WriteFloat('gain', device.gain)
                 self.cfg.WriteFloat('lo', device.lo)
                 self.cfg.WriteFloat('calibration', device.calibration)
+                self.cfg.WriteFloat('rate', device.rate)
+                self.cfg.WriteFloat('bandwidth', device.bandwidth)
                 self.cfg.WriteFloat('offset', device.offset)
                 self.cfg.WriteInt('tuner', device.tuner)
 
