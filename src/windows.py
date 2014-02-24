@@ -791,7 +791,7 @@ class DialogAdvanced(wx.Dialog):
             self.offset = self.rate / 2 - self.bandwidth
         self.spinOffset.SetValue(self.offset / 1e3)
 
-        self.on_refresh(None)
+        self.setup_plot()
 
     def on_spin(self, _event):
         self.offset = self.spinOffset.GetValue() * 1e3
