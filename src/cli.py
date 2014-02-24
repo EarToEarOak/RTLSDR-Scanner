@@ -31,8 +31,7 @@ from urlparse import urlparse
 
 from devices import Device, get_devices
 from events import *
-from misc import ScanInfo, save_plot, export_plot, nearest, calc_real_dwell, \
-    next_2_to_pow
+from misc import ScanInfo, save_plot, export_plot, nearest
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
 
@@ -104,7 +103,7 @@ class Cli():
 
         self.settings.start = start
         self.settings.stop = end
-        self.settings.dwell = calc_real_dwell(dwell)
+        self.settings.dwell = dwell
         self.settings.nfft = nfft
         self.settings.devices[index].gain = gain
         self.settings.devices[index].lo = lo
@@ -133,7 +132,6 @@ class Cli():
     def scan(self, settings, index, pool):
         rate = settings.devices[settings.index].rate
         samples = settings.dwell * rate
-        samples = next_2_to_pow(int(samples))
         threadScan = ThreadScan(self.queue, None, settings, index, samples,
                                 False)
         while threadScan.isAlive() or self.steps > 0:
@@ -150,7 +148,7 @@ class Cli():
         if status == Event.STARTING:
             print "Starting"
         elif status == Event.STEPS:
-            self.stepsTotal = (freq * 2) - 1
+            self.stepsTotal = freq
             self.steps = self.stepsTotal
         elif status == Event.INFO:
             if data != -1:
