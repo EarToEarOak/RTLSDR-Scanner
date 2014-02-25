@@ -44,7 +44,7 @@ class ThreadScan(threading.Thread):
         self.sdr = sdr
         self.fstart = settings.start * 1e6
         self.fstop = settings.stop * 1e6
-        self.samples = samples
+        self.samples = int(samples)
         self.isCal = isCal
         self.index = settings.index
         self.isDevice = settings.devices[device].isDevice
