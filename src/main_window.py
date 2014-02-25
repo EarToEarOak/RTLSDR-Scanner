@@ -662,7 +662,7 @@ class FrameMain(wx.Frame):
 
     def progress(self):
         self.steps -= 1
-        if self.steps > -1 and not self.stopScan:
+        if self.steps > 0 and not self.stopScan:
             self.status.set_progress((self.stepsTotal - self.steps) * 100
                     / self.stepsTotal)
             self.status.show_progress()
