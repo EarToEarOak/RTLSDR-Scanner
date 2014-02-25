@@ -157,6 +157,7 @@ class Cli():
             cal = self.settings.devices[self.settings.index].calibration
             pool.apply_async(anaylse_data, (freq, data, cal,
                                             self.settings.nfft,
+                                            self.settings.devices[self.settings.index].rate,
                                             "Hamming"),
                              callback=self.on_process_done)
             self.progress()
@@ -164,11 +165,12 @@ class Cli():
             print "Error: {0}".format(data)
             exit(1)
         elif status == Event.PROCESSED:
+            bandwidth = self.settings.devices[self.settings.index].bandwidth
             offset = self.settings.devices[self.settings.index].offset
             Thread(target=update_spectrum, name='Update',
                    args=(queue, self.lock, self.settings.start,
                          self.settings.stop, freq,
-                         data, offset, self.spectrum, False,)).start()
+                         data, bandwidth, offset, self.spectrum, False,)).start()
         elif status == Event.UPDATED:
             self.progress()
 
