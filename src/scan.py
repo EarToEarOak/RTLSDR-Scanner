@@ -66,10 +66,10 @@ class ThreadScan(threading.Thread):
         return self.fstart - self.offset - self.bandwidth
 
     def f_stop(self):
-        return self.fstop + self.offset + self.bandwidth
+        return self.fstop + self.offset + self.bandwidth * 2
 
     def f_step(self):
-        return int(self.bandwidth / 2)
+        return self.bandwidth / 2
 
     def run(self):
         tuner = self.rtl_setup()

@@ -799,7 +799,7 @@ class DialogAdvanced(wx.Dialog):
 
     def draw_limits(self):
         limit1 = self.offset
-        limit2 = (limit1 + self.bandwidth / 2)
+        limit2 = limit1 + self.bandwidth / 2
         limit1 /= 1e6
         limit2 /= 1e6
         if(self.band1 is not None):

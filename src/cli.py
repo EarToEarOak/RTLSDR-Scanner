@@ -148,7 +148,7 @@ class Cli():
         if status == Event.STARTING:
             print "Starting"
         elif status == Event.STEPS:
-            self.stepsTotal = freq
+            self.stepsTotal = (freq+1) * 2
             self.steps = self.stepsTotal
         elif status == Event.INFO:
             if data != -1:

@@ -502,7 +502,7 @@ class FrameMain(wx.Frame):
         if status == Event.STARTING:
             self.status.set_general("Starting")
         elif status == Event.STEPS:
-            self.stepsTotal = freq
+            self.stepsTotal = (freq + 1) * 2
             self.steps = self.stepsTotal
             self.status.set_progress(0)
             self.status.show_progress()
