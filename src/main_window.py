@@ -642,6 +642,7 @@ class FrameMain(wx.Frame):
             self.scanInfo.time = time.isoformat() + "Z"
             self.scanInfo.lat = None
             self.scanInfo.lon = None
+            self.scanInfo.desc = ''
             self.stopAtEnd = False
             self.stopScan = False
             self.threadScan = ThreadScan(self, self.sdr, self.settings,
