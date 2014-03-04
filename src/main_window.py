@@ -37,7 +37,8 @@ from wx.lib.masked import NumCtrl
 from constants import *
 from devices import get_devices
 from events import EVT_THREAD_STATUS, Event, EventThreadStatus, post_event
-from misc import ScanInfo, open_plot, save_plot, export_plot
+from misc import ScanInfo, calc_samples, calc_real_dwell, open_plot, save_plot, \
+    export_plot
 from plot import Plotter
 from plot3d import Plotter3d
 from scan import ThreadScan, anaylse_data, update_spectrum
@@ -106,7 +107,7 @@ class FrameMain(wx.Frame):
         self.buttonStop = None
         self.choiceGain = None
         self.choiceMode = None
-        self.spinCtrlDwell = None
+        self.choiceDwell = None
         self.choiceNfft = None
         self.spinCtrlStart = None
         self.spinCtrlStop = None
@@ -182,10 +183,9 @@ class FrameMain(wx.Frame):
         self.choiceMode = wx.Choice(self.panel, choices=MODE[::2])
         self.choiceMode.SetToolTip(wx.ToolTip('Scanning mode'))
 
-        textDwell = wx.StaticText(self.panel, label="Dwell (ms)")
-        self.spinCtrlDwell = wx.SpinCtrl(self.panel)
-        self.spinCtrlDwell.SetToolTip(wx.ToolTip('Scan time per step'))
-        self.spinCtrlDwell.SetRange(10, 100000)
+        textDwell = wx.StaticText(self.panel, label="Dwell")
+        self.choiceDwell = wx.Choice(self.panel, choices=DWELL[::2])
+        self.choiceDwell.SetToolTip(wx.ToolTip('Scan time per step'))
 
         textNfft = wx.StaticText(self.panel, label="FFT size")
         self.choiceNfft = wx.Choice(self.panel, choices=map(str, NFFT))
@@ -222,7 +222,7 @@ class FrameMain(wx.Frame):
         grid.Add(self.choiceMode, pos=(1, 9), flag=wx.ALIGN_CENTER)
 
         grid.Add(textDwell, pos=(0, 10), flag=wx.ALIGN_CENTER)
-        grid.Add(self.spinCtrlDwell, pos=(1, 10), flag=wx.ALIGN_CENTER)
+        grid.Add(self.choiceDwell, pos=(1, 10), flag=wx.ALIGN_CENTER)
 
         grid.Add(textNfft, pos=(0, 11), flag=wx.ALIGN_CENTER)
         grid.Add(self.choiceNfft, pos=(1, 11), flag=wx.ALIGN_CENTER)
@@ -415,6 +415,8 @@ class FrameMain(wx.Frame):
         self.wait_background()
         self.get_controls()
         self.graph.close()
+        self.settings.dwell = DWELL[1::2][self.choiceDwell.GetSelection()]
+        self.settings.nfft = NFFT[self.choiceNfft.GetSelection()]
         self.settings.devices = self.devices
         self.settings.save()
         self.Close(True)
@@ -519,7 +521,6 @@ class FrameMain(wx.Frame):
             cal = self.devices[self.settings.index].calibration
             self.pool.apply_async(anaylse_data,
                                   (freq, data, cal, self.settings.nfft,
-                                   self.devices[self.settings.index].rate,
                                    self.settings.winFunc),
                                   callback=self.on_process_done)
             self.progress()
@@ -535,8 +536,7 @@ class FrameMain(wx.Frame):
                 self.dlgCal.Destroy()
                 self.dlgCal = None
         elif status == Event.PROCESSED:
-            bandwidth = self.devices[self.settings.index].bandwidth
-            offset = self.devices[self.settings.index].offset
+            offset = self.settings.devices[self.settings.index].offset
             if self.settings.alert:
                 alert = self.settings.alertLevel
             else:
@@ -544,7 +544,7 @@ class FrameMain(wx.Frame):
             Thread(target=update_spectrum, name='Update',
                    args=(self, self.lock, self.settings.start,
                          self.settings.stop, freq,
-                         data, bandwidth, offset, self.spectrum,
+                         data, offset, self.spectrum,
                          not self.settings.retainScans,
                          alert)).start()
         elif status == Event.LEVEL:
@@ -635,7 +635,7 @@ class FrameMain(wx.Frame):
 
         if not self.threadScan:
             self.set_control_state(False)
-            samples = self.settings.dwell * self.devices[self.settings.index].rate
+            samples = calc_samples(self.settings.dwell)
             self.status.set_info('')
             self.scanInfo.setFromSettings(self.settings)
             time = datetime.datetime.utcnow().replace(microsecond=0)
@@ -725,7 +725,7 @@ class FrameMain(wx.Frame):
         self.spinCtrlStop.Enable(state)
         self.controlGain.Enable(state)
         self.choiceMode.Enable(state)
-        self.spinCtrlDwell.Enable(state)
+        self.choiceDwell.Enable(state)
         self.choiceNfft.Enable(state)
         self.buttonStart.Enable(state and hasDevices)
         self.buttonStop.Enable(not state and hasDevices)
@@ -749,7 +749,8 @@ class FrameMain(wx.Frame):
         self.spinCtrlStart.SetValue(self.settings.start)
         self.spinCtrlStop.SetValue(self.settings.stop)
         self.choiceMode.SetSelection(MODE[1::2].index(self.settings.mode))
-        self.spinCtrlDwell.SetValue(self.settings.dwell * 1000.0)
+        dwell = calc_real_dwell(self.settings.dwell)
+        self.choiceDwell.SetSelection(DWELL[1::2].index(dwell))
         self.choiceNfft.SetSelection(NFFT.index(self.settings.nfft))
         self.choiceDisplay.SetSelection(DISPLAY[1::2].index(self.settings.display))
 
@@ -780,7 +781,7 @@ class FrameMain(wx.Frame):
         self.settings.start = self.spinCtrlStart.GetValue()
         self.settings.stop = self.spinCtrlStop.GetValue()
         self.settings.mode = MODE[1::2][self.choiceMode.GetSelection()]
-        self.settings.dwell = self.spinCtrlDwell.GetValue() / 1000.0
+        self.settings.dwell = DWELL[1::2][self.choiceDwell.GetSelection()]
         self.settings.nfft = NFFT[self.choiceNfft.GetSelection()]
         self.settings.display = DISPLAY[1::2][self.choiceDisplay.GetSelection()]
 

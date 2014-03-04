@@ -33,7 +33,7 @@ from matplotlib import cm
 from matplotlib.dates import date2num, num2epoch
 import wx
 
-from constants import File
+from constants import SAMPLE_RATE, File
 
 
 class ScanInfo():
@@ -252,6 +252,28 @@ def split_spectrum(spectrum):
     powers = map(spectrum.get, freqs)
 
     return freqs, powers
+
+
+def next_2_to_pow(val):
+    val -= 1
+    val |= val >> 1
+    val |= val >> 2
+    val |= val >> 4
+    val |= val >> 8
+    val |= val >> 16
+    return val + 1
+
+
+def calc_samples(dwell):
+    samples = dwell * SAMPLE_RATE
+    samples = next_2_to_pow(int(samples))
+    return samples
+
+
+def calc_real_dwell(dwell):
+    samples = calc_samples(dwell)
+    dwellReal = samples / SAMPLE_RATE
+    return (int)(dwellReal * 1000.0) / 1000.0
 
 
 def nearest(value, values):

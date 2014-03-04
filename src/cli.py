@@ -29,9 +29,11 @@ from threading import Thread
 import threading
 from urlparse import urlparse
 
+from constants import SAMPLE_RATE
 from devices import Device, get_devices
 from events import *
-from misc import ScanInfo, save_plot, export_plot, nearest
+from misc import ScanInfo, save_plot, export_plot, nearest, calc_real_dwell, \
+    next_2_to_pow
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
 
@@ -103,7 +105,7 @@ class Cli():
 
         self.settings.start = start
         self.settings.stop = end
-        self.settings.dwell = dwell
+        self.settings.dwell = calc_real_dwell(dwell)
         self.settings.nfft = nfft
         self.settings.devices[index].gain = gain
         self.settings.devices[index].lo = lo
@@ -130,8 +132,8 @@ class Cli():
         print "Done"
 
     def scan(self, settings, index, pool):
-        rate = settings.devices[settings.index].rate
-        samples = settings.dwell * rate
+        samples = settings.dwell * SAMPLE_RATE
+        samples = next_2_to_pow(int(samples))
         threadScan = ThreadScan(self.queue, None, settings, index, samples,
                                 False)
         while threadScan.isAlive() or self.steps > 0:
@@ -157,7 +159,6 @@ class Cli():
             cal = self.settings.devices[self.settings.index].calibration
             pool.apply_async(anaylse_data, (freq, data, cal,
                                             self.settings.nfft,
-                                            self.settings.devices[self.settings.index].rate,
                                             "Hamming"),
                              callback=self.on_process_done)
             self.progress()
@@ -165,12 +166,11 @@ class Cli():
             print "Error: {0}".format(data)
             exit(1)
         elif status == Event.PROCESSED:
-            bandwidth = self.settings.devices[self.settings.index].bandwidth
             offset = self.settings.devices[self.settings.index].offset
             Thread(target=update_spectrum, name='Update',
                    args=(queue, self.lock, self.settings.start,
                          self.settings.stop, freq,
-                         data, bandwidth, offset, self.spectrum, False,)).start()
+                         data, offset, self.spectrum, False,)).start()
         elif status == Event.UPDATED:
             self.progress()
 
