@@ -703,6 +703,8 @@ class DialogOffset(wx.Dialog):
         self.axes.set_xlabel("Frequency (MHz)")
         self.axes.set_ylabel('Level (dB)')
         self.axes.set_yscale('log')
+        self.axes.set_xlim(-1, 1)
+        self.axes.set_ylim(auto=True)
         self.axes.grid(True)
         self.draw_limits()
 
