@@ -38,7 +38,7 @@ from constants import *
 from devices import get_devices
 from events import EVT_THREAD_STATUS, Event, EventThreadStatus, post_event
 from misc import ScanInfo, calc_samples, calc_real_dwell, open_plot, save_plot, \
-    export_plot
+    export_plot, get_version_timestamp, get_version_timestamp_repo
 from plot import Plotter
 from plot3d import Plotter3d
 from scan import ThreadScan, anaylse_data, update_spectrum
@@ -76,6 +76,7 @@ class FrameMain(wx.Frame):
 
         self.sdr = None
         self.threadScan = None
+        self.threadUpdate = None
 
         self.plot = None
 
@@ -281,9 +282,11 @@ class FrameMain(wx.Frame):
 
         menuHelp = wx.Menu()
         menuHelpLink = menuHelp.Append(wx.ID_HELP, "&Help...",
-                                            "Link to help")
+                                       "Link to help")
+        menuUpdate = menuHelp.Append(wx.ID_ANY, "&Check for updates...",
+                                     "Check for updates to the program")
         menuAbout = menuHelp.Append(wx.ID_ABOUT, "&About...",
-                                            "Information about this program")
+                                    "Information about this program")
 
         menuBar = wx.MenuBar()
         menuBar.Append(menuFile, "&File")
@@ -309,6 +312,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_cal, self.menuCal)
         self.Bind(wx.EVT_MENU, self.on_about, menuAbout)
         self.Bind(wx.EVT_MENU, self.on_help, menuHelpLink)
+        self.Bind(wx.EVT_MENU, self.on_update, menuUpdate)
 
         idF1 = wx.wx.NewId()
         self.Bind(wx.EVT_MENU, self.on_help, id=idF1)
@@ -456,6 +460,12 @@ class FrameMain(wx.Frame):
     def on_help(self, _event):
         webbrowser.open("http://eartoearoak.com/software/rtlsdr-scanner")
 
+    def on_update(self, _event):
+        if self.threadUpdate is None:
+            self.status.set_general("Checking for updates")
+            self.threadUpdate = Thread(target=self.update_check)
+            self.threadUpdate.start()
+
     def on_spin(self, event):
         control = event.GetEventObject()
         if control == self.spinCtrlStart:
@@ -554,6 +564,12 @@ class FrameMain(wx.Frame):
             self.progress()
         elif status == Event.DRAW:
             self.graph.get_canvas().draw()
+        elif status == Event.VER_UPD:
+            self.update_checked(True, freq, data)
+        elif status == Event.VER_NOUPD:
+            self.update_checked(False)
+        elif status == Event.VER_UPDFAIL:
+            self.update_checked(failed=True)
 
         wx.YieldIfNeeded()
 
@@ -807,6 +823,42 @@ class FrameMain(wx.Frame):
                 return True
 
         return False
+
+    def update_check(self):
+        local = get_version_timestamp(True)
+        try:
+            remote = get_version_timestamp_repo()
+        except IOError:
+            post_event(self, EventThreadStatus(Event.VER_UPDFAIL))
+            return
+
+        if remote > local:
+            post_event(self, EventThreadStatus(Event.VER_UPD, local, remote))
+        else:
+            post_event(self, EventThreadStatus(Event.VER_NOUPD))
+
+    def update_checked(self, updateFound=False, local=None, remote=None,
+                       failed=False):
+        self.threadUpdate = None
+        self.status.set_general("")
+        if failed:
+            icon = wx.ICON_ERROR
+            message = "Update check failed"
+        else:
+            icon = wx.ICON_INFORMATION
+            if updateFound:
+                message = "Update found\n\n"
+                message += "Local: " + time.strftime('%c',
+                                                     time.localtime(local))
+                message += "\nRemote: " + time.strftime('%c',
+                                                        time.localtime(remote))
+            else:
+                message = "No updates found"
+
+        dlg = wx.MessageDialog(self, message, "Update",
+                               wx.OK | icon)
+        dlg.ShowModal()
+        dlg.Destroy()
 
     def refresh_devices(self):
         self.settings.devices = get_devices(self.devices, self.status)

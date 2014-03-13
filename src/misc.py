@@ -28,9 +28,10 @@ import json
 import os
 import sys
 import time
+import urllib
 
 from matplotlib import cm
-from matplotlib.dates import date2num, num2epoch
+from matplotlib.dates import date2num
 import wx
 
 from constants import SAMPLE_RATE, File, TIMESTAMP_FILE
@@ -327,12 +328,22 @@ def set_version_timestamp():
     f.close()
 
 
-def get_version_timestamp():
+def get_version_timestamp(asSeconds=False):
     scriptDir = os.path.dirname(os.path.realpath(sys.argv[0]))
     f = open(scriptDir + '/' + TIMESTAMP_FILE, 'r')
     timeStamp = int(f.readline())
     f.close()
-    return format_time(timeStamp, True)
+    if asSeconds:
+        return timeStamp
+    else:
+        return format_time(timeStamp, True)
+
+
+def get_version_timestamp_repo():
+    f = urllib.urlopen('https://raw.github.com/EarToEarOak/RTLSDR-Scanner/master/src/version-timestamp')
+    timeStamp = int(f.readline())
+    f.close()
+    return timeStamp
 
 
 if __name__ == '__main__':
