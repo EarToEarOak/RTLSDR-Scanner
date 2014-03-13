@@ -31,7 +31,7 @@
 !include "include\EnvVarUpdate.nsh"
 !include "include\fileassoc.nsh"
 
-!define INSTALLER_VERSION "5"
+!define INSTALLER_VERSION "6"
 
 !define PRODUCT_NAME "RTLSDR Scanner"
 !define PRODUCT_VERSION ""
@@ -197,6 +197,7 @@ Section Uninstall
     Delete "$INSTDIR\devices.py"
     Delete "$INSTDIR\constants.py"
     Delete "$INSTDIR\cli.py"
+    Delete "$INSTDIR\version-timestamp"
     Delete "$INSTDIR\res\wireframe.png"
     Delete "$INSTDIR\res\range.png"
     Delete "$INSTDIR\res\peak.png"
@@ -342,6 +343,7 @@ Function get_rtlsdr_scanner
     exists:
     ZipDLL::extractall "$TEMP\rtlsdr_scanner.zip" "$TEMP"
     CopyFiles "$TEMP\RTLSDR-Scanner-master\src\*.py" "$INSTDIR"
+    CopyFiles "$TEMP\RTLSDR-Scanner-master\src\version-timestamp" "$INSTDIR"
     CreateDirectory "$INSTDIR\res"
     CopyFiles "$TEMP\RTLSDR-Scanner-master\res\*.png" "$INSTDIR\res"
     CreateDirectory "$INSTDIR\doc"
