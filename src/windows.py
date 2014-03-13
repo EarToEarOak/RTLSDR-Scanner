@@ -42,7 +42,7 @@ from constants import *
 from devices import Device
 from events import EventThreadStatus, Event, post_event
 from misc import split_spectrum, nearest, open_plot, load_bitmap, get_colours, \
-    format_time, ValidatorCoord
+    format_time, ValidatorCoord, get_version_timestamp
 from rtltcp import RtlTcp
 import wx.grid as grid
 import wx.lib.masked as masked
@@ -1465,6 +1465,37 @@ class DialogRefresh(wx.Dialog):
         box.Add(text, flag=wx.ALIGN_CENTER | wx.ALL, border=10)
 
         self.SetSizerAndFit(box)
+        self.Centre()
+
+
+class DialogAbout(wx.Dialog):
+    def __init__(self, parent):
+        wx.Dialog.__init__(self, parent=parent, title="About")
+
+        bitmapIcon = wx.StaticBitmap(self, bitmap=load_bitmap('icon'))
+        textAbout = wx.StaticText(self, label="A simple spectrum analyser for "
+                                  "scanning\n with a RTL-SDR compatible USB "
+                                  "device", style=wx.ALIGN_CENTRE)
+        textLink = wx.HyperlinkCtrl(self, wx.ID_ANY,
+                                    label="http://eartoearoak.com/software/rtlsdr-scanner",
+                                    url="http://eartoearoak.com/software/rtlsdr-scanner")
+        textTimestamp = wx.StaticText(self,
+                                      label="Updated: " + get_version_timestamp())
+        buttonOk = wx.Button(self, wx.ID_OK)
+
+        grid = wx.GridBagSizer(10, 10)
+        grid.Add(bitmapIcon, pos=(0, 0), span=(3, 1),
+                 flag=wx.ALIGN_LEFT | wx.ALL, border=10)
+        grid.Add(textAbout, pos=(0, 1), span=(1, 2),
+                 flag=wx.ALIGN_CENTER | wx.ALL, border=10)
+        grid.Add(textLink, pos=(1, 1), span=(1, 2),
+                 flag=wx.ALIGN_CENTER | wx.ALL, border=10)
+        grid.Add(textTimestamp, pos=(2, 1), span=(1, 2),
+                 flag=wx.ALIGN_CENTER | wx.ALL, border=10)
+        grid.Add(buttonOk, pos=(3, 2), span=(1, 1),
+                 flag=wx.ALIGN_RIGHT | wx.ALL, border=10)
+
+        self.SetSizerAndFit(grid)
         self.Centre()
 
 

@@ -45,7 +45,7 @@ from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
 from spectrogram import Spectrogram
 from windows import PanelGraph, DialogPrefs, DialogCompare, DialogAutoCal, \
-    DialogSaveWarn, Statusbar, DialogProperties, DialogWinFunc
+    DialogSaveWarn, Statusbar, DialogProperties, DialogWinFunc, DialogAbout
 
 
 class DropTarget(wx.FileDropTarget):
@@ -449,11 +449,7 @@ class FrameMain(wx.Frame):
         self.dlgCal.ShowModal()
 
     def on_about(self, _event):
-        dlg = wx.MessageDialog(self,
-            "A tool for scanning frequency ranges "
-            "with an RTL-SDR compatible USB dongle",
-            "RTLSDR Scanner",
-            wx.OK)
+        dlg = DialogAbout(self)
         dlg.ShowModal()
         dlg.Destroy()
 

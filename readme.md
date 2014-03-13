@@ -74,6 +74,10 @@ Windows 64 bit modules can be found [here](http://www.lfd.uci.edu/~gohlke/python
 - **Compare** - Compare two previously saved scans
 - **Auto Calibration** - Perform a crude calibration of the dongle to a known signal (this should be a continuous, steady signal)
 
+## Development ##
+
+Add the environment variable 'rtlsdr\_update\_timestamp' to update the version time stamp.
+
 ## License ##
 
 This program is free software: you can redistribute it and/or modify

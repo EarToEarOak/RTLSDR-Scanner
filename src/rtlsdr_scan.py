@@ -24,7 +24,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-
 try:
     input = raw_input
 except:
@@ -47,6 +46,7 @@ import os.path
 
 from cli import Cli
 from main_window import FrameMain, RtlSdrScanner
+from misc import set_version_timestamp
 
 
 def arguments():
@@ -99,6 +99,8 @@ if __name__ == '__main__':
     multiprocessing.freeze_support()
     pool = multiprocessing.Pool()
     print "RTLSDR Scanner\n"
+    if 'rtlsdr_update_timestamp'in os.environ:
+        set_version_timestamp()
     isGui, args = arguments()
     if isGui:
         app = RtlSdrScanner(pool)

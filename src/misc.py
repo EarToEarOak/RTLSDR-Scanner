@@ -33,7 +33,7 @@ from matplotlib import cm
 from matplotlib.dates import date2num, num2epoch
 import wx
 
-from constants import SAMPLE_RATE, File
+from constants import SAMPLE_RATE, File, TIMESTAMP_FILE
 
 
 class ScanInfo():
@@ -317,6 +317,22 @@ def get_colours():
     colours.sort()
 
     return colours
+
+
+def set_version_timestamp():
+    scriptDir = os.path.dirname(os.path.realpath(sys.argv[0]))
+    timeStamp = str(int(time.time()))
+    f = open(scriptDir + '/' + TIMESTAMP_FILE, 'w')
+    f.write(timeStamp)
+    f.close()
+
+
+def get_version_timestamp():
+    scriptDir = os.path.dirname(os.path.realpath(sys.argv[0]))
+    f = open(scriptDir + '/' + TIMESTAMP_FILE, 'r')
+    timeStamp = int(f.readline())
+    f.close()
+    return format_time(timeStamp, True)
 
 
 if __name__ == '__main__':

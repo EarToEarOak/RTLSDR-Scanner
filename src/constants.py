@@ -30,6 +30,7 @@ F_MAX = 9999
 GAIN = 0
 SAMPLE_RATE = 2e6
 BANDWIDTH = 500e3
+TIMESTAMP_FILE = 'version-timestamp'
 
 MODE = ["Single", 0,
         "Continuous", 1]
