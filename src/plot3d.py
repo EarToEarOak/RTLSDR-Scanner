@@ -88,21 +88,17 @@ class Plotter3d():
     def scale_plot(self, force=False):
         if self.extent is not None:
             with self.lock:
-                if self.settings.autoScale or force:
+                if self.settings.autoF or force:
                     self.axes.set_xlim(self.extent.get_x())
-                    self.axes.set_ylim(self.extent.get_y())
-                    self.axes.set_zlim(self.extent.get_z())
+                if self.settings.autoL or force:
                     self.plot.set_clim(self.extent.get_z())
-                    self.settings.yMin, self.settings.yMax = self.extent.get_z()
-                else:
-                    self.axes.set_zlim(self.settings.yMin, self.settings.yMax)
-
-                vmin, vmax = self.axes.get_zlim()
-                self.barBase.set_clim(vmin, vmax)
-                try:
-                    self.barBase.draw_all()
-                except:
-                    pass
+                    self.barBase.set_clim(self.extent.get_z())
+                    try:
+                        self.barBase.draw_all()
+                    except:
+                        pass
+                if self.settings.autoT or force:
+                    self.axes.set_ylim(self.extent.get_y())
 
     def redraw_plot(self):
         if self.figure is not None:
@@ -122,9 +118,8 @@ class Plotter3d():
         self.threadPlot = ThreadPlot(self, self.lock, self.axes,
                                      data, self.settings.retainMax,
                                      self.settings.colourMap,
-                                     self.settings.autoScale,
-                                     self.settings.yMin,
-                                     self.settings.yMax,
+                                     self.settings.autoF,
+                                     self.barBase,
                                      annotate).start()
 
     def clear_plots(self):
@@ -163,7 +158,7 @@ class Plotter3d():
 
 class ThreadPlot(threading.Thread):
     def __init__(self, parent, lock, axes, data, retainMax, colourMap,
-                 autoScale, minZ, maxZ, annotate):
+                 autoL, barBase, annotate):
         threading.Thread.__init__(self)
         self.name = "Plot"
         self.parent = parent
@@ -172,9 +167,8 @@ class ThreadPlot(threading.Thread):
         self.data = data
         self.retainMax = retainMax
         self.colourMap = colourMap
-        self.autoScale = autoScale
-        self.min = minZ
-        self.max = maxZ
+        self.autoL = autoL
+        self.barBase = barBase
         self.annotate = annotate
         self.abort = False
 
@@ -221,9 +215,8 @@ class ThreadPlot(threading.Thread):
                 peakX = x[:, 1][pos]
                 peakZ = z[:, 1][pos]
 
-                if self.autoScale:
-                    vmin = self.min
-                    vmax = self.max
+                if self.autoL:
+                    vmin, vmax = self.barBase.get_clim()
                 else:
                     zExtent = extent.get_z()
                     vmin = zExtent[0]

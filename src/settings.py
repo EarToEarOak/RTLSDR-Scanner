@@ -56,9 +56,9 @@ class Settings():
 
         self.liveUpdate = False
         self.calFreq = 1575.42
-        self.autoScale = True
-        self.yMax = 20
-        self.yMin = -60
+        self.autoF = True
+        self.autoL = True
+        self.autoT = True
 
         self.alert = False
         self.alertLevel = -20
@@ -100,9 +100,9 @@ class Settings():
         self.winFunc = self.cfg.Read('winFunc', self.winFunc)
         self.liveUpdate = self.cfg.ReadBool('liveUpdate', self.liveUpdate)
         self.calFreq = self.cfg.ReadFloat('calFreq', self.calFreq)
-        self.autoScale = self.cfg.ReadBool('autoScale', self.autoScale)
-        self.yMax = self.cfg.ReadInt('yMax', self.yMax)
-        self.yMin = self.cfg.ReadInt('yMin', self.yMin)
+        self.autoF = self.cfg.ReadBool('autoF', self.autoF)
+        self.autoL = self.cfg.ReadBool('autoL', self.autoL)
+        self.autoT = self.cfg.ReadBool('autoT', self.autoT)
         self.alert = self.cfg.ReadBool('alert', self.alert)
         self.alertLevel = self.cfg.ReadFloat('alertLevel', self.alertLevel)
         self.index = self.cfg.ReadInt('index', self.index)
@@ -145,9 +145,9 @@ class Settings():
         self.cfg.Write("winFunc", self.winFunc)
         self.cfg.WriteBool('liveUpdate', self.liveUpdate)
         self.cfg.WriteFloat('calFreq', self.calFreq)
-        self.cfg.WriteBool('autoScale', self.autoScale)
-        self.cfg.WriteInt('yMax', self.yMax)
-        self.cfg.WriteInt('yMin', self.yMin)
+        self.cfg.WriteBool('autoF', self.autoF)
+        self.cfg.WriteBool('autoL', self.autoL)
+        self.cfg.WriteBool('autoT', self.autoT)
         self.cfg.WriteBool('alert', self.alert)
         self.cfg.WriteFloat('alertLevel', self.alertLevel)
         self.cfg.WriteInt('index', self.index)
@@ -168,6 +168,10 @@ class Settings():
                 self.cfg.WriteFloat('calibration', device.calibration)
                 self.cfg.WriteFloat('offset', device.offset)
                 self.cfg.WriteInt('tuner', device.tuner)
+
+        self.cfg.DeleteEntry('autoScale')
+        self.cfg.DeleteEntry('yMax')
+        self.cfg.DeleteEntry('yMin')
 
 
 if __name__ == '__main__':

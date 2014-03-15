@@ -66,16 +66,9 @@ class Plotter():
     def scale_plot(self, force=False):
         if self.figure is not None:
             with self.lock:
-                if self.settings.autoScale or force:
-                    self.axes.set_ylim(auto=True)
-                    self.axes.set_xlim(auto=True)
-                    self.axes.relim()
-                    self.axes.autoscale_view()
-                    self.settings.yMin, self.settings.yMax = self.axes.get_ylim()
-                else:
-                    self.axes.set_ylim(auto=False)
-                    self.axes.set_xlim(auto=False)
-                    self.axes.set_ylim(self.settings.yMin, self.settings.yMax)
+                self.axes.set_xlim(auto=self.settings.autoF or force)
+                self.axes.set_ylim(auto=self.settings.autoL or force)
+                self.axes.relim()
 
     def redraw_plot(self):
         if self.figure is not None:

@@ -82,21 +82,20 @@ class Spectrogram:
     def scale_plot(self, force=False):
         if self.figure is not None and self.plot is not None:
             with self.lock:
-                if self.settings.autoScale or force:
-                    extent = self.plot.get_extent()
+                extent = self.plot.get_extent()
+                if self.settings.autoF or force:
+                    if extent[0] == extent[1]:
+                        extent[1] += 1
                     self.axes.set_xlim(extent[0], extent[1])
+                if self.settings.autoL or force:
+                    vmin, vmax = self.plot.get_clim()
+                    self.barBase.set_clim(vmin, vmax)
+                    try:
+                        self.barBase.draw_all()
+                    except:
+                        pass
+                if self.settings.autoT or force:
                     self.axes.set_ylim(extent[2], extent[3])
-                    self.settings.yMin, self.settings.yMax = self.plot.get_clim()
-                else:
-                    self.plot.norm.vmin = self.settings.yMin
-                    self.plot.norm.vmax = self.settings.yMax
-
-                vmin, vmax = self.plot.get_clim()
-                self.barBase.set_clim(vmin, vmax)
-                try:
-                    self.barBase.draw_all()
-                except:
-                    pass
 
     def redraw_plot(self):
         if self.figure is not None:
@@ -116,9 +115,8 @@ class Spectrogram:
         self.threadPlot = ThreadPlot(self, self.lock, self.axes,
                                      data, self.settings.retainMax,
                                      self.settings.colourMap,
-                                     self.settings.autoScale,
-                                     self.settings.yMin,
-                                     self.settings.yMax,
+                                     self.settings.autoL,
+                                     self.barBase,
                                      annotate).start()
 
     def clear_plots(self):
@@ -160,7 +158,7 @@ class Spectrogram:
 
 class ThreadPlot(threading.Thread):
     def __init__(self, parent, lock, axes, data, retainMax, colourMap,
-                 autoScale, minZ, maxZ, annotate):
+                 autoL, barBase, annotate):
         threading.Thread.__init__(self)
         self.name = "Plot"
         self.parent = parent
@@ -169,9 +167,8 @@ class ThreadPlot(threading.Thread):
         self.data = data
         self.retainMax = retainMax
         self.colourMap = colourMap
-        self.autoScale = autoScale
-        self.min = minZ
-        self.max = maxZ
+        self.autoL = autoL
+        self.barBase = barBase
         self.annotate = annotate
         self.abort = False
 
@@ -206,8 +203,9 @@ class ThreadPlot(threading.Thread):
                         c[j, i] = zs[i]
 
                 norm = None
-                if not self.autoScale:
-                    norm = Normalize(vmin=self.min, vmax=self.max)
+                if not self.autoL:
+                    minY, maxY = self.barBase.get_clim()
+                    norm = Normalize(vmin=minY, vmax=maxY)
 
                 self.parent.plot = self.axes.imshow(c, aspect='auto',
                                                     extent=extent,

@@ -34,7 +34,6 @@ from matplotlib.colorbar import ColorbarBase
 from matplotlib.colors import Normalize
 from matplotlib.dates import num2epoch
 from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
-import numpy
 import rtlsdr
 import wx
 
@@ -102,18 +101,6 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         NavigationToolbar2WxAgg.__init__(self, canvas)
         self.AddSeparator()
 
-        navId = wx.NewId()
-        self.AddSimpleTool(navId, load_bitmap('range'), 'Range')
-        wx.EVT_TOOL(self, navId, self.on_range)
-
-        self.AddSeparator()
-
-        self.autoId = wx.NewId()
-        self.AddCheckTool(self.autoId, load_bitmap('auto_range'),
-                          shortHelp='Auto range')
-        self.ToggleTool(self.autoId, self.main.settings.autoScale)
-        wx.EVT_TOOL(self, self.autoId, self.on_check_auto)
-
         liveId = wx.NewId()
         self.AddCheckTool(liveId, load_bitmap('auto_refresh'),
                           shortHelp='Live update')
@@ -132,16 +119,30 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.ToggleTool(peakId, self.main.settings.annotate)
         wx.EVT_TOOL(self, peakId, self.on_check_peak)
 
-    def on_range(self, _event):
-        dlg = DialogRange(self, self.main)
-        if dlg.ShowModal() == wx.ID_OK:
-            self.main.plot.scale_plot()
-            self.ToggleTool(self.autoId, self.main.settings.autoScale)
-            self.main.plot.redraw_plot()
-        dlg.Destroy()
+        self.AddSeparator()
 
-    def on_check_auto(self, event):
-        self.main.settings.autoScale = event.Checked()
+        self.autoFId = wx.NewId()
+        self.AddCheckTool(self.autoFId, load_bitmap('auto_f'),
+                          shortHelp='Auto range frequency')
+        self.ToggleTool(self.autoFId, self.main.settings.autoF)
+        wx.EVT_TOOL(self, self.autoFId, self.on_check_auto_f)
+
+        self.autoLId = wx.NewId()
+        self.AddCheckTool(self.autoLId, load_bitmap('auto_l'),
+                          shortHelp='Auto range level')
+        self.ToggleTool(self.autoLId, self.main.settings.autoL)
+        wx.EVT_TOOL(self, self.autoLId, self.on_check_auto_l)
+
+    def on_check_auto_f(self, event):
+        self.main.settings.autoF = event.Checked()
+        self.main.plot.redraw_plot()
+
+    def on_check_auto_l(self, event):
+        self.main.settings.autoL = event.Checked()
+        self.main.plot.redraw_plot()
+
+    def on_check_auto_t(self, event):
+        self.main.settings.autoT = event.Checked()
         self.main.plot.redraw_plot()
 
     def on_check_update(self, event):
@@ -181,6 +182,17 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         for toolId in self.extraTools:
             self.DeleteTool(toolId)
         self.extraTools = []
+
+        if not display == Display.PLOT:
+            autoTId = wx.NewId()
+            self.AddCheckTool(autoTId, load_bitmap('auto_t'),
+                              shortHelp='Auto range time')
+            self.ToggleTool(autoTId, self.main.settings.autoT)
+            wx.EVT_TOOL(self, autoTId, self.on_check_auto_t)
+            self.extraTools.append(autoTId)
+
+        separator = self.AddSeparator()
+        self.extraTools.append(separator.GetId())
 
         if display == Display.PLOT:
             fadeId = wx.NewId()
