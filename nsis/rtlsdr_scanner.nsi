@@ -205,7 +205,9 @@ Section Uninstall
     Delete "$INSTDIR\res\fade.png"
     Delete "$INSTDIR\res\average.png"
     Delete "$INSTDIR\res\auto_refresh.png"
-    Delete "$INSTDIR\res\auto_range.png"
+    Delete "$INSTDIR\res\auto_f.png"
+    Delete "$INSTDIR\res\auto_l.png"
+    Delete "$INSTDIR\res\auto_t.png"
     Delete "$INSTDIR\res\icon.png"
     Delete "$INSTDIR\doc\Manual.pdf"
     Delete "$INSTDIR\doc\BBCR2.rfs"
@@ -216,6 +218,7 @@ Section Uninstall
 
     ; Obsolete
     Delete "$INSTDIR\threads.py"
+    Delete "$INSTDIR\res\auto_range.png"
 
     DeleteRegKey HKCU "${SETTINGS_KEY}/${SETTINGS_INSTDIR}"
 
