@@ -28,8 +28,8 @@ from urlparse import urlparse
 
 from matplotlib import cm
 import matplotlib
-from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas, \
-    NavigationToolbar2WxAgg
+from matplotlib.backends.backend_wxagg import \
+    FigureCanvasWxAgg as FigureCanvas, NavigationToolbar2WxAgg
 from matplotlib.colorbar import ColorbarBase
 from matplotlib.colors import Normalize
 from matplotlib.dates import num2epoch
@@ -99,7 +99,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.extraTools = []
 
         NavigationToolbar2WxAgg.__init__(self, canvas)
-        self.AddSeparator()
+        self.add_spacer()
 
         liveId = wx.NewId()
         self.AddCheckTool(liveId, load_bitmap('auto_refresh'),
@@ -119,7 +119,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.ToggleTool(peakId, self.main.settings.annotate)
         wx.EVT_TOOL(self, peakId, self.on_check_peak)
 
-        self.AddSeparator()
+        self.add_spacer()
 
         self.autoFId = wx.NewId()
         self.AddCheckTool(self.autoFId, load_bitmap('auto_f'),
@@ -178,6 +178,12 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.main.plot.set_colourmap(colourMap)
         self.main.plot.redraw_plot()
 
+    def add_spacer(self):
+        sepId = wx.NewId()
+        self.AddCheckTool(sepId, load_bitmap('spacer'))
+        self.EnableTool(sepId, False)
+        return sepId
+
     def set_type(self, display):
         for toolId in self.extraTools:
             self.DeleteTool(toolId)
@@ -191,31 +197,23 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
             wx.EVT_TOOL(self, autoTId, self.on_check_auto_t)
             self.extraTools.append(autoTId)
 
-        separator = self.AddSeparator()
-        self.extraTools.append(separator.GetId())
+        self.extraTools.append(self.add_spacer())
 
         if display == Display.PLOT:
             fadeId = wx.NewId()
             self.AddCheckTool(fadeId, load_bitmap('fade'),
-                              shortHelp='Fade plots',
-                              longHelp='Fade plots')
+                              shortHelp='Fade plots')
             wx.EVT_TOOL(self, fadeId, self.on_check_fade)
             self.ToggleTool(fadeId, self.main.settings.fadeScans)
             self.extraTools.append(fadeId)
 
             avgId = wx.NewId()
             self.AddCheckTool(avgId, load_bitmap('average'),
-                              shortHelp='Average plots',
-                              longHelp='Average plots')
+                              shortHelp='Average plots')
             wx.EVT_TOOL(self, avgId, self.on_check_avg)
             self.ToggleTool(avgId, self.main.settings.average)
             self.extraTools.append(avgId)
         else:
-            separator = self.AddSeparator()
-            separatorId = separator.GetId()
-            self.extraTools.append(separatorId)
-            self.extraTools.append(separatorId)
-
             colours = get_colours()
             colourId = wx.NewId()
             control = wx.Choice(self, id=colourId, choices=colours)
@@ -225,13 +223,11 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
             self.extraTools.append(colourId)
 
         if display == Display.SURFACE:
-            separator = self.AddSeparator()
-            self.extraTools.append(separator.GetId())
+            self.extraTools.append(self.add_spacer())
 
             wireId = wx.NewId()
             self.AddCheckTool(wireId, load_bitmap('wireframe'),
-                              shortHelp='Wireframe',
-                              longHelp='Wireframe')
+                              shortHelp='Wireframe')
             wx.EVT_TOOL(self, wireId, self.on_check_wire)
             self.ToggleTool(wireId, self.main.settings.wireframe)
             self.extraTools.append(wireId)
@@ -248,8 +244,7 @@ class NavigationToolbarCompare(NavigationToolbar2WxAgg):
 
         gridId = wx.NewId()
         self.AddCheckTool(gridId, load_bitmap('grid'),
-                          shortHelp='Grid',
-                          longHelp='Toggle grid')
+                          shortHelp='Toggle grid')
         self.ToggleTool(gridId, True)
         wx.EVT_TOOL(self, gridId, self.on_check_grid)
 
