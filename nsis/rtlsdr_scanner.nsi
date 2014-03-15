@@ -206,6 +206,7 @@ Section Uninstall
     Delete "$INSTDIR\res\average.png"
     Delete "$INSTDIR\res\auto_refresh.png"
     Delete "$INSTDIR\res\auto_range.png"
+    Delete "$INSTDIR\res\icon.png"
     Delete "$INSTDIR\doc\Manual.pdf"
     Delete "$INSTDIR\doc\BBCR2.rfs"
     Delete "$INSTDIR\*.pyc"
