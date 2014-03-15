@@ -1405,63 +1405,6 @@ class DialogSaveWarn(wx.Dialog):
         return self.code
 
 
-class DialogRange(wx.Dialog):
-    def __init__(self, parent, main):
-        self.main = main
-
-        wx.Dialog.__init__(self, parent=parent, title="Plot Range")
-
-        self.checkAuto = wx.CheckBox(self, wx.ID_ANY, "Auto range")
-        self.checkAuto.SetValue(self.main.settings.autoScale)
-        self.Bind(wx.EVT_CHECKBOX, self.on_auto, self.checkAuto)
-
-        textMax = wx.StaticText(self, label="Maximum (dB)")
-        self.yMax = masked.NumCtrl(self, value=int(self.main.settings.yMax),
-                                    fractionWidth=0, min=-100, max=20)
-        textMin = wx.StaticText(self, label="Minimum (dB)")
-        self.yMin = masked.NumCtrl(self, value=int(self.main.settings.yMin),
-                                    fractionWidth=0, min=-100, max=20)
-        self.set_enabled(not self.main.settings.autoScale)
-
-        sizerButtons = wx.StdDialogButtonSizer()
-        buttonOk = wx.Button(self, wx.ID_OK)
-        buttonCancel = wx.Button(self, wx.ID_CANCEL)
-        sizerButtons.AddButton(buttonOk)
-        sizerButtons.AddButton(buttonCancel)
-        sizerButtons.Realize()
-        self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
-
-        sizer = wx.GridBagSizer(10, 10)
-        sizer.Add(self.checkAuto, pos=(0, 0), span=(1, 1),
-                  flag=wx.ALIGN_CENTER | wx.ALL, border=10)
-        sizer.Add(textMax, pos=(1, 0), span=(1, 1),
-                  flag=wx.ALIGN_CENTER | wx.ALL, border=10)
-        sizer.Add(self.yMax, pos=(1, 1), span=(1, 1),
-                  flag=wx.ALIGN_CENTER | wx.ALL, border=10)
-        sizer.Add(textMin, pos=(2, 0), span=(1, 1),
-                  flag=wx.ALIGN_CENTER | wx.ALL, border=10)
-        sizer.Add(self.yMin, pos=(2, 1), span=(1, 1),
-                  flag=wx.ALIGN_CENTER | wx.ALL, border=10)
-        sizer.Add(sizerButtons, pos=(3, 0), span=(1, 2),
-                  flag=wx.ALIGN_CENTER | wx.ALL, border=10)
-
-        self.SetSizerAndFit(sizer)
-
-    def on_auto(self, _event):
-        state = self.checkAuto.GetValue()
-        self.set_enabled(not state)
-
-    def on_ok(self, _event):
-        self.main.settings.autoScale = self.checkAuto.GetValue()
-        self.main.settings.yMin = self.yMin.GetValue()
-        self.main.settings.yMax = self.yMax.GetValue()
-        self.EndModal(wx.ID_OK)
-
-    def set_enabled(self, isEnabled):
-        self.yMax.Enable(isEnabled)
-        self.yMin.Enable(isEnabled)
-
-
 class DialogRefresh(wx.Dialog):
     def __init__(self, parent):
 
