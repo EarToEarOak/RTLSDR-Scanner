@@ -37,7 +37,7 @@ import numpy
 
 from events import post_event, EventThreadStatus, Event
 from misc import epoch_to_mpl, split_spectrum, format_time
-from mpl_toolkits.mplot3d import Axes3D # @UnresolvedImport @UnusedImport
+from mpl_toolkits.mplot3d import Axes3D  # @UnresolvedImport @UnusedImport
 
 
 MPL_SECOND = seconds(1)

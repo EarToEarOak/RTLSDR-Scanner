@@ -79,7 +79,8 @@ class Cli():
                 if index > count - 1:
                     error = "Device not found ({0} devices in total):\n".format(count)
                     for device in self.settings.devices:
-                        error += "\t{0}: {1}\n".format(device.index, device.name)
+                        error += "\t{0}: {1}\n".format(device.index,
+                                                       device.name)
             else:
                 device.isDevice = False
                 url = urlparse('//' + remote)
@@ -150,7 +151,7 @@ class Cli():
         if status == Event.STARTING:
             print "Starting"
         elif status == Event.STEPS:
-            self.stepsTotal = (freq+1) * 2
+            self.stepsTotal = (freq + 1) * 2
             self.steps = self.stepsTotal
         elif status == Event.INFO:
             if data != -1:

@@ -40,8 +40,8 @@ import wx
 from constants import *
 from devices import Device
 from events import EventThreadStatus, Event, post_event
-from misc import split_spectrum, nearest, open_plot, load_bitmap, get_colours, \
-    format_time, ValidatorCoord, get_version_timestamp
+from misc import split_spectrum, nearest, open_plot, load_bitmap, \
+    get_colours, format_time, ValidatorCoord, get_version_timestamp
 from rtltcp import RtlTcp
 import wx.grid as grid
 import wx.lib.masked as masked
@@ -291,7 +291,8 @@ class PanelGraph(wx.Panel):
             if timeStamp in self.main.spectrum:
                 spectrum = self.main.spectrum[timeStamp]
             else:
-                nearest = min(self.main.spectrum.keys(), key=lambda k: abs(k - timeStamp))
+                nearest = min(self.main.spectrum.keys(),
+                              key=lambda k: abs(k - timeStamp))
                 spectrum = self.main.spectrum[nearest]
         else:
             spectrum = None
@@ -993,7 +994,8 @@ class DialogPrefs(wx.Dialog):
                                        style=wx.RB_GROUP)
         self.radioAvg.SetToolTip(wx.ToolTip('Average level with each scan'))
         self.Bind(wx.EVT_RADIOBUTTON, self.on_radio, self.radioAvg)
-        self.radioRetain = wx.RadioButton(self, wx.ID_ANY, 'Retain previous scans')
+        self.radioRetain = wx.RadioButton(self, wx.ID_ANY,
+                                          'Retain previous scans')
         self.radioRetain.SetToolTip(wx.ToolTip('Can be slow'))
         self.Bind(wx.EVT_RADIOBUTTON, self.on_radio, self.radioRetain)
         self.radioRetain.SetValue(self.settings.retainScans)
@@ -1131,7 +1133,8 @@ class DialogPrefs(wx.Dialog):
                 self.gridDev.SetCellBackgroundColour(i, self.COL_DEV,
                                                      colourBackground)
                 self.gridDev.SetCellValue(i, self.COL_GAIN,
-                                          str(nearest(device.gain, device.gains)))
+                                          str(nearest(device.gain,
+                                                      device.gains)))
             else:
                 self.gridDev.SetCellValue(i, self.COL_DEV,
                                           '{0}:{1}'.format(device.server,
@@ -1361,7 +1364,8 @@ class DialogSaveWarn(wx.Dialog):
         wx.Dialog.__init__(self, parent=parent, title="Warning")
 
         prompt = ["scanning again", "opening a file", "exiting"][warnType]
-        text = wx.StaticText(self, label="Save plot before {0}?".format(prompt))
+        text = wx.StaticText(self,
+                             label="Save plot before {0}?".format(prompt))
         icon = wx.StaticBitmap(self, wx.ID_ANY,
                                wx.ArtProvider.GetBitmap(wx.ART_INFORMATION,
                                                         wx.ART_MESSAGE_BOX))
