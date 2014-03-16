@@ -526,7 +526,9 @@ class FrameMain(wx.Frame):
             self.saved(False)
             cal = self.devices[self.settings.index].calibration
             self.pool.apply_async(anaylse_data,
-                                  (freq, data, cal, self.settings.nfft,
+                                  (freq, data, cal,
+                                   self.settings.nfft,
+                                   self.settings.overlap,
                                    self.settings.winFunc),
                                   callback=self.on_process_done)
             self.progress()

@@ -990,6 +990,14 @@ class DialogPrefs(wx.Dialog):
         self.spinLevel.Enable(self.settings.alert)
         self.spinLevel.SetToolTip(wx.ToolTip('Alert threshold'))
 
+        textOverlap = wx.StaticText(self, label='PSD Overlap (%)')
+        self.slideOverlap = wx.Slider(self, wx.ID_ANY,
+                                      self.settings.overlap * 100,
+                                      0, 75,
+                                      style=wx.SL_AUTOTICKS | wx.SL_LABELS)
+        self.slideOverlap.SetToolTip(wx.ToolTip('Power spectral density'
+                                                    ' overlap'))
+
         self.radioAvg = wx.RadioButton(self, wx.ID_ANY, 'Average Scans',
                                        style=wx.RB_GROUP)
         self.radioAvg.SetToolTip(wx.ToolTip('Average level with each scan'))
@@ -1050,11 +1058,16 @@ class DialogPrefs(wx.Dialog):
         sizerButtons.Realize()
         self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
 
-        genbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "General"),
-                                     wx.HORIZONTAL)
-        genbox.Add(self.checkSaved, 0, wx.ALL | wx.EXPAND, 10)
-        genbox.Add(self.checkAlert, 0, wx.ALL | wx.EXPAND, 10)
-        genbox.Add(self.spinLevel, 0, wx.ALL | wx.EXPAND, 10)
+        gengrid = wx.GridBagSizer(10, 10)
+        gengrid.Add(self.checkSaved, pos=(0, 0), flag=wx.ALL)
+        gengrid.Add(self.checkAlert, pos=(1, 0), flag=wx.ALL | wx.ALIGN_CENTER)
+        gengrid.Add(self.spinLevel, pos=(1, 1), flag=wx.ALL | wx.ALIGN_CENTER)
+        genbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "General"))
+        genbox.Add(gengrid, 0, wx.ALL | wx.EXPAND, 10)
+
+        advbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Advanced"))
+        advbox.Add(textOverlap, 0, wx.ALL | wx.CENTRE, 10)
+        advbox.Add(self.slideOverlap, 1, wx.ALL | wx.EXPAND, 10)
 
         congrid = wx.GridBagSizer(10, 10)
         congrid.Add(self.radioAvg, pos=(0, 0), flag=wx.ALL)
@@ -1092,13 +1105,18 @@ class DialogPrefs(wx.Dialog):
         devbox.Add(self.gridDev, 0, wx.ALL | wx.EXPAND, 10)
         devbox.Add(serverSizer, 0, wx.ALL | wx.EXPAND, 10)
 
-        self.vbox = wx.BoxSizer(wx.VERTICAL)
-        self.vbox.Add(genbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
-        self.vbox.Add(conbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
-        self.vbox.Add(plotbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
-        self.vbox.Add(specbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
-        self.vbox.Add(devbox, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
-        self.vbox.Add(sizerButtons, 0, wx.ALL | wx.EXPAND, 10)
+        self.vbox = wx.GridBagSizer(10, 10)
+        self.vbox.Add(genbox, pos=(0, 0), flag=wx.LEFT | wx.RIGHT | wx.EXPAND)
+        self.vbox.Add(advbox, pos=(0, 1), flag=wx.LEFT | wx.RIGHT | wx.EXPAND)
+        self.vbox.Add(conbox, pos=(1, 0), span=(1, 2),
+                      flag=wx.LEFT | wx.RIGHT | wx.EXPAND)
+        self.vbox.Add(plotbox, pos=(2, 0), span=(1, 2),
+                      flag=wx.LEFT | wx.RIGHT | wx.EXPAND)
+        self.vbox.Add(specbox, pos=(3, 0), span=(1, 2),
+                      flag=wx.LEFT | wx.RIGHT | wx.EXPAND)
+        self.vbox.Add(devbox, pos=(4, 0), span=(2, 2),
+                      flag=wx.LEFT | wx.RIGHT | wx.EXPAND)
+        self.vbox.Add(sizerButtons, pos=(6, 1), flag=wx.ALL | wx.EXPAND)
 
         self.SetSizerAndFit(self.vbox)
 
@@ -1259,6 +1277,7 @@ class DialogPrefs(wx.Dialog):
         self.settings.saveWarn = self.checkSaved.GetValue()
         self.settings.alert = self.checkAlert.GetValue()
         self.settings.alertLevel = self.spinLevel.GetValue()
+        self.settings.overlap = self.slideOverlap.GetValue() / 100.0
         self.settings.retainScans = self.radioRetain.GetValue()
         self.settings.fadeScans = self.checkFade.GetValue()
         self.settings.retainMax = self.spinCtrlMaxScans.GetValue()

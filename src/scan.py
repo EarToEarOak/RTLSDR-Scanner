@@ -155,16 +155,17 @@ class ThreadScan(threading.Thread):
         return self.sdr
 
 
-def anaylse_data(freq, data, cal, nfft, winFunc):
+def anaylse_data(freq, data, cal, nfft, overlap, winFunc):
     spectrum = {}
     timeStamp = data[0]
     samples = data[1]
     pos = WINFUNC[::2].index(winFunc)
     function = WINFUNC[1::2][pos]
     powers, freqs = matplotlib.mlab.psd(samples,
-                     NFFT=nfft,
-                     Fs=SAMPLE_RATE / 1e6,
-                     window=function(nfft))
+                                        NFFT=nfft,
+                                        noverlap=int((nfft) * overlap),
+                                        Fs=SAMPLE_RATE / 1e6,
+                                        window=function(nfft))
     for freqPsd, pwr in itertools.izip(freqs, powers):
         xr = freqPsd + (freq / 1e6)
         xr = xr + (xr * cal / 1e6)

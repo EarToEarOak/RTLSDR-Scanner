@@ -52,6 +52,7 @@ class Settings():
         self.mode = Mode.SINGLE
         self.dwell = 0.1
         self.nfft = 1024
+        self.overlap = 0.0
         self.winFunc = "Hamming"
 
         self.liveUpdate = False
@@ -97,6 +98,7 @@ class Settings():
         self.mode = self.cfg.ReadInt('mode', self.mode)
         self.dwell = self.cfg.ReadFloat('dwell', self.dwell)
         self.nfft = self.cfg.ReadInt('nfft', self.nfft)
+        self.overlap = self.cfg.ReadFloat('overlap', self.overlap)
         self.winFunc = self.cfg.Read('winFunc', self.winFunc)
         self.liveUpdate = self.cfg.ReadBool('liveUpdate', self.liveUpdate)
         self.calFreq = self.cfg.ReadFloat('calFreq', self.calFreq)
@@ -142,6 +144,7 @@ class Settings():
         self.cfg.WriteInt('mode', self.mode)
         self.cfg.WriteFloat('dwell', self.dwell)
         self.cfg.WriteInt('nfft', self.nfft)
+        self.cfg.WriteFloat('overlap', self.overlap)
         self.cfg.Write("winFunc", self.winFunc)
         self.cfg.WriteBool('liveUpdate', self.liveUpdate)
         self.cfg.WriteFloat('calFreq', self.calFreq)

@@ -160,6 +160,7 @@ class Cli():
             cal = self.settings.devices[self.settings.index].calibration
             pool.apply_async(anaylse_data, (freq, data, cal,
                                             self.settings.nfft,
+                                            self.settings.overlap,
                                             "Hamming"),
                              callback=self.on_process_done)
             self.progress()
