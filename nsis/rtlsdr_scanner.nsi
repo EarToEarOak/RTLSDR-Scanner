@@ -23,6 +23,7 @@
 ; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;
 
+!include "FileFunc.nsh"
 !include "LogicLib.nsh"
 !include "Sections.nsh"
 !include "MUI.nsh"
@@ -34,7 +35,6 @@
 !define INSTALLER_VERSION "6"
 
 !define PRODUCT_NAME "RTLSDR Scanner"
-!define PRODUCT_VERSION ""
 !define PRODUCT_PUBLISHER "Ear to Ear Oak"
 !define PRODUCT_WEB_SITE "http://eartoearoak.com/software/rtlsdr-scanner"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
@@ -45,7 +45,7 @@
 
 !define MUI_ABORTWARNING
 !define MUI_ICON "rtlsdr_scan.ico"
-!define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
+!define MUI_UNICON "rtlsdr_scan.ico"
 !define MUI_FINISHPAGE_NOAUTOCLOSE
 !insertmacro MUI_PAGE_WELCOME
 Page custom page_update
@@ -79,7 +79,7 @@ the rtlsdr driver and pyrtlsdr by running this installer again $\r$\n"'
 !define FILE_DESC "RTLSDR Scan"
 
 
-Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
+Name "${PRODUCT_NAME}"
 OutFile "rtlsdr_scanner-setup-win32.exe"
 RequestExecutionLevel admin
 InstallDir "$PROGRAMFILES\RTLSDR Scanner"
@@ -94,6 +94,7 @@ Var Radio1
 Var Radio2
 Var UpdateText
 Var UpdateNext
+Var InstSize
 
 Section "RTLSDR Scanner (Required)" SEC_SCAN
     SetOutPath "$INSTDIR"
@@ -105,6 +106,9 @@ Section "RTLSDR Scanner (Required)" SEC_SCAN
     CreateDirectory "$SMPROGRAMS\RTLSDR Scanner"
     CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\RTLSDR Scanner.lnk" "python" '"$INSTDIR\rtlsdr_scan.py"' "$INSTDIR\rtlsdr_scan.ico" 0
     CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\Setup.lnk" "$INSTDIR\$EXEFILE"
+
+    ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
+ 	IntFmt $InstSize "0x%08X" $0
 SectionEnd
 
 
@@ -168,9 +172,10 @@ Section -Post
     WriteUninstaller "$INSTDIR\uninst.exe"
     WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayName" "$(^Name)"
     WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString" "$INSTDIR\uninst.exe"
-    WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayVersion" "${PRODUCT_VERSION}"
     WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "URLInfoAbout" "${PRODUCT_WEB_SITE}"
     WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+    WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayIcon" "$INSTDIR\rtlsdr_scan.ico"
+    WriteRegDWORD ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "EstimatedSize" "$InstSize"
 SectionEnd
 
 
@@ -199,7 +204,7 @@ Section Uninstall
     Delete "$INSTDIR\cli.py"
     Delete "$INSTDIR\version-timestamp"
     Delete "$INSTDIR\res\wireframe.png"
-    Delete "$INSTDIR\res\range.png"
+    Delete "$INSTDIR\res\spacer.png"
     Delete "$INSTDIR\res\peak.png"
     Delete "$INSTDIR\res\grid.png"
     Delete "$INSTDIR\res\fade.png"
@@ -219,6 +224,7 @@ Section Uninstall
     ; Obsolete
     Delete "$INSTDIR\threads.py"
     Delete "$INSTDIR\res\auto_range.png"
+    Delete "$INSTDIR\res\range.png"
 
     DeleteRegKey HKCU "${SETTINGS_KEY}/${SETTINGS_INSTDIR}"
 
