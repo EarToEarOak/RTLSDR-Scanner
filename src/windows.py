@@ -375,10 +375,10 @@ class PanelGraphCompare(wx.Panel):
         self.textIntersect = wx.StaticText(self, label="Intersections: ")
 
         grid = wx.GridBagSizer(5, 5)
-        grid.Add(self.check1, pos=(0, 0), flag=wx.ALIGN_CENTER)
-        grid.Add(self.check2, pos=(0, 1), flag=wx.ALIGN_CENTER)
+        grid.Add(self.check1, pos=(0, 0), flag=wx.ALIGN_CENTRE)
+        grid.Add(self.check2, pos=(0, 1), flag=wx.ALIGN_CENTRE)
         grid.Add((20, 1), pos=(0, 2))
-        grid.Add(self.checkDiff, pos=(0, 3), flag=wx.ALIGN_CENTER)
+        grid.Add(self.checkDiff, pos=(0, 3), flag=wx.ALIGN_CENTRE)
         grid.Add((20, 1), pos=(0, 4))
         grid.Add((20, 1), pos=(0, 5))
         grid.Add(self.textIntersect, pos=(0, 6), span=(1, 1))
@@ -509,9 +509,9 @@ class DialogCompare(wx.Dialog):
 
         grid = wx.GridBagSizer(5, 5)
         grid.AddGrowableCol(2, 0)
-        grid.Add(self.buttonPlot1, pos=(0, 0), flag=wx.ALIGN_CENTER)
+        grid.Add(self.buttonPlot1, pos=(0, 0), flag=wx.ALIGN_CENTRE)
         grid.Add(self.textPlot1, pos=(0, 1), span=(1, 2))
-        grid.Add(self.buttonPlot2, pos=(1, 0), flag=wx.ALIGN_CENTER)
+        grid.Add(self.buttonPlot2, pos=(1, 0), flag=wx.ALIGN_CENTRE)
         grid.Add(self.textPlot2, pos=(1, 1), span=(1, 2))
         grid.Add(buttonClose, pos=(2, 3), flag=wx.ALIGN_RIGHT)
 
@@ -581,12 +581,12 @@ class DialogAutoCal(wx.Dialog):
 
         sizer = wx.GridBagSizer(10, 10)
         sizer.Add(title, pos=(0, 0), span=(1, 2),
-                  flag=wx.ALIGN_CENTER | wx.ALL, border=10)
+                  flag=wx.ALIGN_CENTRE | wx.ALL, border=10)
         sizer.Add(text, pos=(1, 0), flag=wx.ALL | wx.EXPAND, border=10)
         sizer.Add(self.textFreq, pos=(1, 1), flag=wx.ALL | wx.EXPAND,
                   border=5)
         sizer.Add(self.buttonCal, pos=(2, 0), span=(1, 2),
-                  flag=wx.ALIGN_CENTER | wx.ALL | wx.EXPAND, border=10)
+                  flag=wx.ALIGN_CENTRE | wx.ALL | wx.EXPAND, border=10)
         sizer.Add(self.textResult, pos=(3, 0), span=(1, 2),
                   flag=wx.ALL | wx.EXPAND, border=10)
         sizer.Add(buttons, pos=(4, 0), span=(1, 2),
@@ -687,15 +687,15 @@ class DialogOffset(wx.Dialog):
 
         gridSizer = wx.GridBagSizer(5, 5)
         gridSizer.Add(self.canvas, pos=(0, 0), span=(1, 2),
-                  flag=wx.ALIGN_CENTER | wx.ALL, border=5)
+                  flag=wx.ALIGN_CENTRE | wx.ALL, border=5)
         gridSizer.Add(textHelp, pos=(1, 0), span=(1, 2),
-                  flag=wx.ALIGN_CENTER | wx.ALL, border=5)
+                  flag=wx.ALIGN_CENTRE | wx.ALL, border=5)
         gridSizer.Add(boxSizer1, pos=(2, 0), span=(1, 2),
-                  flag=wx.ALIGN_CENTER | wx.ALL, border=5)
+                  flag=wx.ALIGN_CENTRE | wx.ALL, border=5)
         gridSizer.Add(refresh, pos=(3, 0), span=(1, 2),
-                  flag=wx.ALIGN_CENTER | wx.ALL, border=5)
+                  flag=wx.ALIGN_CENTRE | wx.ALL, border=5)
         gridSizer.Add(boxSizer2, pos=(4, 0), span=(1, 2),
-                  flag=wx.ALIGN_CENTER | wx.ALL, border=5)
+                  flag=wx.ALIGN_CENTRE | wx.ALL, border=5)
         gridSizer.Add(sizerButtons, pos=(5, 1), span=(1, 1),
                   flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
 
@@ -974,6 +974,7 @@ class DialogPrefs(wx.Dialog):
         wx.Dialog.__init__(self, parent=parent, title="Preferences")
 
         self.colours = get_colours()
+        self.winFunc = self.settings.winFunc
 
         self.checkSaved = wx.CheckBox(self, wx.ID_ANY,
                                       "Save warning")
@@ -994,9 +995,12 @@ class DialogPrefs(wx.Dialog):
         self.slideOverlap = wx.Slider(self, wx.ID_ANY,
                                       self.settings.overlap * 100,
                                       0, 75,
-                                      style=wx.SL_AUTOTICKS | wx.SL_LABELS)
+                                      style=wx.SL_LABELS)
         self.slideOverlap.SetToolTip(wx.ToolTip('Power spectral density'
                                                     ' overlap'))
+        textWindow = wx.StaticText(self, label='Window')
+        self.buttonWindow = wx.Button(self, wx.ID_ANY, self.winFunc)
+        self.Bind(wx.EVT_BUTTON, self.on_window, self.buttonWindow)
 
         self.radioAvg = wx.RadioButton(self, wx.ID_ANY, 'Average Scans',
                                        style=wx.RB_GROUP)
@@ -1060,19 +1064,27 @@ class DialogPrefs(wx.Dialog):
 
         gengrid = wx.GridBagSizer(10, 10)
         gengrid.Add(self.checkSaved, pos=(0, 0), flag=wx.ALL)
-        gengrid.Add(self.checkAlert, pos=(1, 0), flag=wx.ALL | wx.ALIGN_CENTER)
-        gengrid.Add(self.spinLevel, pos=(1, 1), flag=wx.ALL | wx.ALIGN_CENTER)
+        gengrid.Add(self.checkAlert, pos=(1, 0), flag=wx.ALL | wx.ALIGN_CENTRE)
+        gengrid.Add(self.spinLevel, pos=(1, 1), flag=wx.ALL | wx.ALIGN_CENTRE)
         genbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "General"))
-        genbox.Add(gengrid, 0, wx.ALL | wx.EXPAND, 10)
+        genbox.Add(gengrid, 0, wx.ALL | wx.ALIGN_CENTRE_VERTICAL, 10)
 
+        advgrid = wx.GridBagSizer(10, 10)
+        advgrid.Add(textOverlap, pos=(0, 0),
+                    flag=wx.ALL | wx.ALIGN_CENTRE)
+        advgrid.Add(self.slideOverlap, pos=(1, 0), flag=wx.ALL)
+        advgrid.Add(textWindow, pos=(0, 1),
+                    flag=wx.ALL | wx.ALIGN_CENTRE)
+        advgrid.Add(self.buttonWindow, pos=(1, 1),
+                    flag=wx.ALL | wx.ALIGN_CENTRE)
         advbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Advanced"))
-        advbox.Add(textOverlap, 0, wx.ALL | wx.CENTRE, 10)
-        advbox.Add(self.slideOverlap, 1, wx.ALL | wx.EXPAND, 10)
+        advbox.Add(advgrid, 0, wx.ALL | wx.EXPAND, 10)
 
         congrid = wx.GridBagSizer(10, 10)
         congrid.Add(self.radioAvg, pos=(0, 0), flag=wx.ALL)
         congrid.Add(self.radioRetain, pos=(1, 0), flag=wx.ALL)
-        congrid.Add(textMaxScans, pos=(2, 0), flag=wx.ALL)
+        congrid.Add(textMaxScans, pos=(2, 0),
+                    flag=wx.ALL | wx.ALIGN_CENTRE_VERTICAL)
         congrid.Add(self.spinCtrlMaxScans, pos=(2, 1), flag=wx.ALL)
         conbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY,
                                                 "Continuous Scans"),
@@ -1086,7 +1098,7 @@ class DialogPrefs(wx.Dialog):
         specbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY,
                                                  "Spectrogram View"),
                                     wx.HORIZONTAL)
-        specbox.Add(textColour, 0, wx.ALL | wx.EXPAND, 10)
+        specbox.Add(textColour, 0, wx.ALL | wx.ALIGN_CENTRE_VERTICAL, 10)
         specbox.Add(self.choiceColour, 0, wx.ALL | wx.EXPAND, 10)
         specbox.Add(self.colourBar, 0, wx.ALL | wx.EXPAND, 10)
 
@@ -1105,20 +1117,22 @@ class DialogPrefs(wx.Dialog):
         devbox.Add(self.gridDev, 0, wx.ALL | wx.EXPAND, 10)
         devbox.Add(serverSizer, 0, wx.ALL | wx.EXPAND, 10)
 
-        self.vbox = wx.GridBagSizer(10, 10)
-        self.vbox.Add(genbox, pos=(0, 0), flag=wx.LEFT | wx.RIGHT | wx.EXPAND)
-        self.vbox.Add(advbox, pos=(0, 1), flag=wx.LEFT | wx.RIGHT | wx.EXPAND)
-        self.vbox.Add(conbox, pos=(1, 0), span=(1, 2),
-                      flag=wx.LEFT | wx.RIGHT | wx.EXPAND)
-        self.vbox.Add(plotbox, pos=(2, 0), span=(1, 2),
-                      flag=wx.LEFT | wx.RIGHT | wx.EXPAND)
-        self.vbox.Add(specbox, pos=(3, 0), span=(1, 2),
-                      flag=wx.LEFT | wx.RIGHT | wx.EXPAND)
-        self.vbox.Add(devbox, pos=(4, 0), span=(2, 2),
-                      flag=wx.LEFT | wx.RIGHT | wx.EXPAND)
-        self.vbox.Add(sizerButtons, pos=(6, 1), flag=wx.ALL | wx.EXPAND)
+        self.vgrid = wx.GridBagSizer(10, 10)
+        self.vgrid.AddGrowableCol(0, 1)
+        self.vgrid.AddGrowableCol(1, 0)
+        self.vgrid.Add(genbox, pos=(0, 0), flag=wx.ALL | wx.EXPAND)
+        self.vgrid.Add(advbox, pos=(0, 1))
+        self.vgrid.Add(conbox, pos=(1, 0), span=(1, 2),
+                       flag=wx.ALL | wx.EXPAND)
+        self.vgrid.Add(plotbox, pos=(2, 0), span=(1, 2),
+                       flag=wx.ALL | wx.EXPAND)
+        self.vgrid.Add(specbox, pos=(3, 0), span=(1, 2),
+                       flag=wx.ALL | wx.EXPAND)
+        self.vgrid.Add(devbox, pos=(4, 0), span=(2, 2),
+                       flag=wx.ALL | wx.EXPAND)
+        self.vgrid.Add(sizerButtons, pos=(6, 1), flag=wx.ALL | wx.EXPAND)
 
-        self.SetSizerAndFit(self.vbox)
+        self.SetSizerAndFit(self.vgrid)
 
     def set_dev_grid(self):
         colourBackground = self.gridDev.GetLabelBackgroundColour()
@@ -1225,6 +1239,13 @@ class DialogPrefs(wx.Dialog):
         enabled = self.checkAlert.GetValue()
         self.spinLevel.Enable(enabled)
 
+    def on_window(self, _event):
+        dlg = DialogWinFunc(self, self.winFunc)
+        if dlg.ShowModal() == wx.ID_OK:
+            self.winFunc = dlg.get_win_func()
+            self.buttonWindow.SetLabel(self.winFunc)
+        dlg.Destroy()
+
     def on_radio(self, _event):
         enabled = self.radioRetain.GetValue()
         self.checkFade.Enable(enabled)
@@ -1282,6 +1303,7 @@ class DialogPrefs(wx.Dialog):
         self.settings.fadeScans = self.checkFade.GetValue()
         self.settings.retainMax = self.spinCtrlMaxScans.GetValue()
         self.settings.colourMap = self.choiceColour.GetStringSelection()
+        self.settings.winFunc = self.winFunc
 
         self.EndModal(wx.ID_OK)
 
@@ -1335,7 +1357,7 @@ class DialogWinFunc(wx.Dialog):
         sizerGrid = wx.GridBagSizer(5, 5)
         sizerGrid.Add(self.canvas, pos=(0, 0), span=(1, 2), border=5)
         sizerGrid.Add(sizerFunction, pos=(1, 0), span=(1, 2),
-                      flag=wx.ALIGN_CENTER | wx.ALL, border=5)
+                      flag=wx.ALIGN_CENTRE | wx.ALL, border=5)
         sizerGrid.Add(sizerButtons, pos=(2, 1),
                   flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
 
@@ -1434,8 +1456,8 @@ class DialogRefresh(wx.Dialog):
                                                         wx.ART_MESSAGE_BOX))
 
         box = wx.BoxSizer(wx.HORIZONTAL)
-        box.Add(icon, flag=wx.ALIGN_CENTER | wx.ALL, border=10)
-        box.Add(text, flag=wx.ALIGN_CENTER | wx.ALL, border=10)
+        box.Add(icon, flag=wx.ALIGN_CENTRE | wx.ALL, border=10)
+        box.Add(text, flag=wx.ALIGN_CENTRE | wx.ALL, border=10)
 
         self.SetSizerAndFit(box)
         self.Centre()
@@ -1460,11 +1482,11 @@ class DialogAbout(wx.Dialog):
         grid.Add(bitmapIcon, pos=(0, 0), span=(3, 1),
                  flag=wx.ALIGN_LEFT | wx.ALL, border=10)
         grid.Add(textAbout, pos=(0, 1), span=(1, 2),
-                 flag=wx.ALIGN_CENTER | wx.ALL, border=10)
+                 flag=wx.ALIGN_CENTRE | wx.ALL, border=10)
         grid.Add(textLink, pos=(1, 1), span=(1, 2),
-                 flag=wx.ALIGN_CENTER | wx.ALL, border=10)
+                 flag=wx.ALIGN_CENTRE | wx.ALL, border=10)
         grid.Add(textTimestamp, pos=(2, 1), span=(1, 2),
-                 flag=wx.ALIGN_CENTER | wx.ALL, border=10)
+                 flag=wx.ALIGN_CENTRE | wx.ALL, border=10)
         grid.Add(buttonOk, pos=(3, 2), span=(1, 1),
                  flag=wx.ALIGN_RIGHT | wx.ALL, border=10)
 

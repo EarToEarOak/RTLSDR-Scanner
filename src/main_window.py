@@ -263,8 +263,6 @@ class FrameMain(wx.Frame):
         menuEdit = wx.Menu()
         self.menuPref = menuEdit.Append(wx.ID_ANY, "&Preferences...",
                                    "Preferences")
-        self.menuWinFunc = menuEdit.Append(wx.ID_ANY, "&Window function...",
-                                           "Window function")
 
         menuScan = wx.Menu()
         self.menuStart = menuScan.Append(wx.ID_ANY, "&Start", "Start scan")
@@ -304,7 +302,6 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_properties, self.menuProperties)
         self.Bind(wx.EVT_MENU, self.on_exit, menuExit)
         self.Bind(wx.EVT_MENU, self.on_pref, self.menuPref)
-        self.Bind(wx.EVT_MENU, self.on_winFunc, self.menuWinFunc)
         self.Bind(wx.EVT_MENU, self.on_start, self.menuStart)
         self.Bind(wx.EVT_MENU, self.on_stop, self.menuStop)
         self.Bind(wx.EVT_MENU, self.on_stop_end, self.menuStopEnd)
@@ -435,12 +432,6 @@ class FrameMain(wx.Frame):
             self.create_plot()
             self.set_control_state(True)
             self.set_controls()
-        dlg.Destroy()
-
-    def on_winFunc(self, _event):
-        dlg = DialogWinFunc(self, self.settings.winFunc)
-        if dlg.ShowModal() == wx.ID_OK:
-            self.settings.winFunc = dlg.get_win_func()
         dlg.Destroy()
 
     def on_compare(self, _event):
