@@ -1330,12 +1330,12 @@ class DialogWinFunc(wx.Dialog):
 
         wx.Dialog.__init__(self, parent=parent, title="Window Function")
 
-        figure = matplotlib.figure.Figure(facecolor='white',
-                                          figsize=(5, 4), tight_layout=True)
-        figure.suptitle('Window Function')
-        self.canvas = FigureCanvas(self, -1, figure)
-        self.axesWin = figure.add_subplot(211)
-        self.axesFft = figure.add_subplot(212)
+        self.figure = matplotlib.figure.Figure(facecolor='white',
+                                               figsize=(5, 4))
+        self.figure.suptitle('Window Function')
+        self.canvas = FigureCanvas(self, -1, self.figure)
+        self.axesWin = self.figure.add_subplot(211)
+        self.axesFft = self.figure.add_subplot(212)
 
         text = wx.StaticText(self, label='Function')
 
@@ -1384,6 +1384,7 @@ class DialogWinFunc(wx.Dialog):
         self.axesFft.set_ylabel('dB')
         self.axesFft.set_xlim(-256, 256)
         self.axesFft.set_xticklabels([])
+        self.figure.tight_layout()
 
         self.canvas.draw()
 
