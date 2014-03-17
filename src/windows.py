@@ -1072,7 +1072,7 @@ class DialogPrefs(wx.Dialog):
         advgrid = wx.GridBagSizer(10, 10)
         advgrid.Add(textOverlap, pos=(0, 0),
                     flag=wx.ALL | wx.ALIGN_CENTRE)
-        advgrid.Add(self.slideOverlap, pos=(1, 0), flag=wx.ALL)
+        advgrid.Add(self.slideOverlap, pos=(1, 0), flag=wx.ALL | wx.EXPAND)
         advgrid.Add(textWindow, pos=(0, 1),
                     flag=wx.ALL | wx.ALIGN_CENTRE)
         advgrid.Add(self.buttonWindow, pos=(1, 1),
