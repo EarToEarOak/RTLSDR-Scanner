@@ -116,6 +116,47 @@ class ValidatorCoord(wx.PyValidator):
         return ValidatorCoord(self.isLat)
 
 
+class Extent():
+    def __init__(self):
+        self.clear()
+
+    def clear(self):
+        self.xMin = float('inf')
+        self.xMax = float('-inf')
+        self.yMin = float('inf')
+        self.yMax = float('-inf')
+        self.zMin = float('inf')
+        self.zMax = float('-inf')
+
+    def update_from_2d(self, xy):
+        x, y = split_spectrum(xy)
+        self.update_from_3d(x, None, y)
+
+    def update_from_3d(self, x, y, z):
+        if len(x) > 0:
+            self.xMin = min(self.xMin, min(x))
+            self.xMax = max(self.xMax, max(x))
+        if y is not None:
+            self.yMin = min(self.yMin, y)
+            self.yMax = max(self.yMax, y)
+        if len(z) > 0:
+            self.zMin = min(self.zMin, min(z))
+            self.zMax = max(self.zMax, max(z))
+
+    def get_x(self):
+        if self.xMin == self.xMax:
+            return self.xMin, self.xMax - 0.001
+        return self.xMin, self.xMax
+
+    def get_y(self):
+        return epoch_to_mpl(self.yMax), epoch_to_mpl(self.yMin - 1)
+
+    def get_z(self):
+        if self.zMin == self.zMax:
+            return self.zMin, self.zMax - 0.001
+        return self.zMin, self.zMax
+
+
 def open_plot(dirname, filename):
     pickle = True
     error = False

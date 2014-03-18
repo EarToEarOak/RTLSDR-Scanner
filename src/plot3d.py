@@ -36,7 +36,7 @@ from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 import numpy
 
 from events import post_event, EventThreadStatus, Event
-from misc import epoch_to_mpl, split_spectrum, format_time
+from misc import epoch_to_mpl, split_spectrum, format_time, Extent
 from mpl_toolkits.mplot3d import Axes3D  # @UnresolvedImport @UnusedImport
 
 
@@ -198,7 +198,7 @@ class ThreadPlot(threading.Thread):
                 for ys in sorted(self.data):
                     mplTime = epoch_to_mpl(ys)
                     xs, zs = split_spectrum(self.data[ys])
-                    extent.update(xs, ys, zs)
+                    extent.update_from_3d(xs, ys, zs)
                     for i in range(len(xs)):
                         if self.abort:
                             return
@@ -279,42 +279,6 @@ class ThreadPlot(threading.Thread):
 
     def cancel(self):
         self.abort = True
-
-
-class Extent():
-    def __init__(self):
-        self.clear()
-
-    def clear(self):
-        self.xMin = float('inf')
-        self.xMax = float('-inf')
-        self.yMin = float('inf')
-        self.yMax = float('-inf')
-        self.zMin = float('inf')
-        self.zMax = float('-inf')
-
-    def update(self, x, y, z):
-        if len(x) > 0:
-            self.xMin = min(self.xMin, min(x))
-            self.xMax = max(self.xMax, max(x))
-        self.yMin = min(self.yMin, y)
-        self.yMax = max(self.yMax, y)
-        if len(z) > 0:
-            self.zMin = min(self.zMin, min(z))
-            self.zMax = max(self.zMax, max(z))
-
-    def get_x(self):
-        if self.xMin == self.xMax:
-            return self.xMin, self.xMax - 0.001
-        return self.xMin, self.xMax
-
-    def get_y(self):
-        return epoch_to_mpl(self.yMax), epoch_to_mpl(self.yMin - 1)
-
-    def get_z(self):
-        if self.yMin == self.yMax:
-            return self.zMin, self.zMax - 0.001
-        return self.zMin, self.zMax
 
 
 if __name__ == '__main__':

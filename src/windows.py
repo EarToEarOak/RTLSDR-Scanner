@@ -213,14 +213,15 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
             wx.EVT_TOOL(self, avgId, self.on_check_avg)
             self.ToggleTool(avgId, self.main.settings.average)
             self.extraTools.append(avgId)
-        else:
-            colours = get_colours()
-            colourId = wx.NewId()
-            control = wx.Choice(self, id=colourId, choices=colours)
-            control.SetSelection(colours.index(self.main.settings.colourMap))
-            self.AddControl(control)
-            self.Bind(wx.EVT_CHOICE, self.on_colour, control)
-            self.extraTools.append(colourId)
+            self.extraTools.append(self.add_spacer())
+
+        colours = get_colours()
+        colourId = wx.NewId()
+        control = wx.Choice(self, id=colourId, choices=colours)
+        control.SetSelection(colours.index(self.main.settings.colourMap))
+        self.AddControl(control)
+        self.Bind(wx.EVT_CHOICE, self.on_colour, control)
+        self.extraTools.append(colourId)
 
         if display == Display.SURFACE:
             self.extraTools.append(self.add_spacer())

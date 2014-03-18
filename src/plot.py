@@ -23,18 +23,20 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import itertools
 import os
 import threading
 
-from matplotlib import patheffects
+from matplotlib import patheffects, cm
 import matplotlib
 from matplotlib.collections import LineCollection
+from matplotlib.colorbar import ColorbarBase
+from matplotlib.colors import Normalize
+from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 import numpy
 
 from events import EventThreadStatus, Event, post_event
-from misc import split_spectrum
+from misc import Extent
 
 
 class Plotter():
@@ -46,15 +48,19 @@ class Plotter():
         self.lock = lock
         self.figure = self.graph.get_figure()
         self.axes = None
+        self.lc = None
+        self.bar = None
         self.threadPlot = None
+        self.extent = None
         self.setup_plot()
         self.set_grid(grid)
 
     def setup_plot(self):
-        self.axes = self.figure.add_subplot(111)
-
         formatter = ScalarFormatter(useOffset=False)
 
+        gs = GridSpec(1, 2, width_ratios=[9.5, 0.5])
+
+        self.axes = self.figure.add_subplot(gs[0])
         self.axes.set_xlabel("Frequency (MHz)")
         self.axes.set_ylabel('Level (dB)')
         self.axes.xaxis.set_major_formatter(formatter)
@@ -64,12 +70,24 @@ class Plotter():
         self.axes.set_xlim(self.settings.start, self.settings.stop)
         self.axes.set_ylim(-50, 0)
 
+        self.bar = self.figure.add_subplot(gs[1])
+        norm = Normalize(vmin=-50, vmax=0)
+        self.barBase = ColorbarBase(self.bar, norm=norm,
+                                    cmap=cm.get_cmap(self.settings.colourMap))
+        self.barBase.set_label('Level (dB)')
+
     def scale_plot(self, force=False):
-        if self.figure is not None:
+        if self.extent is not None:
             with self.lock:
-                self.axes.set_xlim(auto=self.settings.autoF or force)
-                self.axes.set_ylim(auto=self.settings.autoL or force)
-                self.axes.relim()
+                if self.settings.autoF or force:
+                    self.axes.set_xlim(self.extent.get_x())
+                if self.settings.autoL or force:
+                    self.axes.set_ylim(self.extent.get_z())
+                    self.barBase.set_clim(self.extent.get_z())
+                    try:
+                        self.barBase.draw_all()
+                    except:
+                        pass
 
     def redraw_plot(self):
         if self.figure is not None:
@@ -86,8 +104,11 @@ class Plotter():
             self.threadPlot.cancel()
             self.threadPlot.join()
 
-        self.threadPlot = ThreadPlot(self, self.lock, self.axes,
-                                     data, self.settings.fadeScans,
+        self.threadPlot = ThreadPlot(self, self.lock, self.axes, data,
+                                     self.settings.colourMap,
+                                     self.settings.autoL,
+                                     self.barBase,
+                                     self.settings.fadeScans,
                                      annotate, self.settings.average).start()
 
     def clear_plots(self):
@@ -100,6 +121,15 @@ class Plotter():
     def set_grid(self, on):
         self.axes.grid(on)
         self.redraw_plot()
+
+    def set_colourmap(self, colourMap):
+        if self.lc is not None:
+            self.lc.set_cmap(colourMap)
+        self.barBase.set_cmap(colourMap)
+        try:
+            self.barBase.draw_all()
+        except:
+            pass
 
     def close(self):
         self.figure.clear()
@@ -116,13 +146,17 @@ class Plotter():
 
 
 class ThreadPlot(threading.Thread):
-    def __init__(self, parent, lock, axes, data, fade, annotate, average):
+    def __init__(self, parent, lock, axes, data, colourMap, autoL, barBase,
+                 fade, annotate, average):
         threading.Thread.__init__(self)
         self.name = "Plot"
         self.parent = parent
         self.lock = lock
         self.axes = axes
         self.data = data
+        self.colourMap = colourMap
+        self.autoL = autoL
+        self.barBase = barBase
         self.annotate = annotate
         self.fade = fade
         self.average = average
@@ -135,31 +169,45 @@ class ThreadPlot(threading.Thread):
             total = len(self.data)
             if total > 0:
                 self.parent.clear_plots()
+                extent = Extent()
+                lc = None
                 if self.average:
                     avg = {}
                     count = len(self.data)
-                    length = len(self.data[(sorted(self.data))[0]])
+
                     for timeStamp in sorted(self.data):
                         if self.abort:
                             return
-                        xs, ys = split_spectrum(self.data[timeStamp])
-                        if len(xs) < length or len(xs) % 2 != 0:
-                            continue
-                        for x, y in itertools.izip_longest(xs, ys):
-                            if x in avg:
-                                avg[x] = avg[x] + y / count
-                            else:
-                                avg[x] = y / count
 
-                    lc = LineCollection([sorted(self.data[timeStamp].items())])
+                        if len(self.data[timeStamp]) < 2:
+                            return
+
+                        for x, y in self.data[timeStamp].items():
+                            if x in avg:
+                                avg[x] = (avg[x] + y) / 2
+                            else:
+                                avg[x] = y
+
+                    extent.update_from_2d(avg)
+                    self.parent.extent = extent
+
+                    data = sorted(avg.items())
+                    segments = self.create_segments(data)
+                    lc = LineCollection(segments)
+                    lc.set_array(numpy.array([x[1] for x in data]))
+                    lc.set_norm(self.get_norm(self.autoL, extent))
+                    lc.set_cmap(self.colourMap)
                     lc.set_linewidth(0.4)
                     lc.set_gid('plot')
-                    lc.set_color('b')
                     self.axes.add_collection(lc)
+                    self.parent.lc = lc
                 else:
                     count = 1.0
                     for timeStamp in sorted(self.data):
                         if self.abort:
+                            return
+
+                        if len(self.data[timeStamp]) < 2:
                             return
 
                         if self.fade:
@@ -167,12 +215,20 @@ class ThreadPlot(threading.Thread):
                         else:
                             alpha = 1
 
-                        lc = LineCollection([sorted(self.data[timeStamp].items())])
+                        extent.update_from_2d(self.data[timeStamp])
+                        self.parent.extent = extent
+
+                        data = sorted(self.data[timeStamp].items())
+                        segments = self.create_segments(data)
+                        lc = LineCollection(segments)
+                        lc.set_array(numpy.array([x[1] for x in data]))
+                        lc.set_norm(self.get_norm(self.autoL, extent))
+                        lc.set_cmap(self.colourMap)
                         lc.set_linewidth(0.4)
                         lc.set_gid('plot')
-                        lc.set_color('b')
                         lc.set_alpha(alpha)
                         self.axes.add_collection(lc)
+                        self.parent.lc = lc
                         count += 1
 
                 if self.annotate:
@@ -181,6 +237,27 @@ class ThreadPlot(threading.Thread):
         if total > 0:
             self.parent.scale_plot()
             self.parent.redraw_plot()
+
+    def create_segments(self, points):
+        segments = []
+
+        prev = points[0]
+        for point in points:
+            segment = [prev, point]
+            segments.append(segment)
+            prev = point
+
+        return segments
+
+    def get_norm(self, autoL, extent):
+        if autoL:
+            vmin, vmax = self.barBase.get_clim()
+        else:
+            zExtent = extent.get_z()
+            vmin = zExtent[0]
+            vmax = zExtent[1]
+
+        return Normalize(vmin=vmin, vmax=vmax)
 
     def annotate_plot(self):
         self.clear_markers()
