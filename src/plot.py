@@ -163,6 +163,9 @@ class ThreadPlot(threading.Thread):
         self.abort = False
 
     def run(self):
+        peakX = None
+        peakY = None
+
         with self.lock:
             if self.abort:
                 return
@@ -192,6 +195,8 @@ class ThreadPlot(threading.Thread):
                     self.parent.extent = extent
 
                     data = sorted(avg.items())
+                    peakX, peakY = max(data, key=lambda item: item[1])
+
                     segments = self.create_segments(data)
                     lc = LineCollection(segments)
                     lc.set_array(numpy.array([x[1] for x in data]))
@@ -219,6 +224,8 @@ class ThreadPlot(threading.Thread):
                         self.parent.extent = extent
 
                         data = sorted(self.data[timeStamp].items())
+                        peakX, peakY = max(data, key=lambda item: item[1])
+
                         segments = self.create_segments(data)
                         lc = LineCollection(segments)
                         lc.set_array(numpy.array([x[1] for x in data]))
@@ -232,7 +239,7 @@ class ThreadPlot(threading.Thread):
                         count += 1
 
                 if self.annotate:
-                    self.annotate_plot()
+                    self.annotate_plot(peakX, peakY)
 
         if total > 0:
             self.parent.scale_plot()
@@ -259,20 +266,8 @@ class ThreadPlot(threading.Thread):
 
         return Normalize(vmin=vmin, vmax=vmax)
 
-    def annotate_plot(self):
+    def annotate_plot(self, x, y):
         self.clear_markers()
-
-        plots = self.get_plots()
-        if len(plots) == 1:
-            plot = plots[0]
-        else:
-            plot = plots[len(plots) - 2]
-        xData, yData = plot.get_data()
-        if len(yData) == 0:
-            return
-        pos = numpy.argmax(yData)
-        x = xData[pos]
-        y = yData[pos]
 
         start, stop = self.axes.get_xlim()
         textX = ((stop - start) / 50.0) + x
