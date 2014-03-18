@@ -43,6 +43,7 @@ class Settings():
         self.retainScans = True
         self.retainMax = 20
         self.fadeScans = True
+        self.lineWidth = 0.4
         self.colourMap = 'jet'
         self.wireframe = False
         self.average = False
@@ -89,6 +90,7 @@ class Settings():
         self.annotate = self.cfg.ReadBool('annotate', self.annotate)
         self.retainScans = self.cfg.ReadBool('retainScans', self.retainScans)
         self.fadeScans = self.cfg.ReadBool('fadeScans', self.fadeScans)
+        self.lineWidth = self.cfg.ReadFloat('lineWidth', self.lineWidth)
         self.retainMax = self.cfg.ReadInt('retainMax', self.retainMax)
         self.colourMap = self.cfg.Read('colourMap', self.colourMap)
         self.wireframe = self.cfg.ReadBool('wireframe', self.wireframe)
@@ -135,6 +137,7 @@ class Settings():
         self.cfg.WriteBool('annotate', self.annotate)
         self.cfg.WriteBool('retainScans', self.retainScans)
         self.cfg.WriteBool('fadeScans', self.fadeScans)
+        self.cfg.WriteFloat('lineWidth', self.lineWidth)
         self.cfg.WriteInt('retainMax', self.retainMax)
         self.cfg.Write('colourMap', self.colourMap)
         self.cfg.WriteBool('wireframe', self.wireframe)

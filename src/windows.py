@@ -36,6 +36,7 @@ from matplotlib.dates import num2epoch
 from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
 import rtlsdr
 import wx
+from wx.lib.masked.numctrl import NumCtrl
 
 from constants import *
 from devices import Device
@@ -1023,6 +1024,9 @@ class DialogPrefs(wx.Dialog):
         self.checkFade = wx.CheckBox(self, wx.ID_ANY,
                                       "Fade previous scans")
         self.checkFade.SetValue(self.settings.fadeScans)
+        textWidth = wx.StaticText(self, label="Line width")
+        self.ctrlWidth = NumCtrl(self, integerWidth=2, fractionWidth=1)
+        self.ctrlWidth.SetValue(self.settings.lineWidth)
 
         textColour = wx.StaticText(self, label="Colour map")
         self.choiceColour = wx.Choice(self, choices=self.colours)
@@ -1092,9 +1096,13 @@ class DialogPrefs(wx.Dialog):
                                    wx.VERTICAL)
         conbox.Add(congrid, 0, wx.ALL | wx.EXPAND, 10)
 
+        plotgrid = wx.GridBagSizer(10, 10)
+        plotgrid.Add(self.checkFade, pos=(0, 0), flag=wx.ALL)
+        plotgrid.Add(textWidth, pos=(1, 0), flag=wx.ALL)
+        plotgrid.Add(self.ctrlWidth, pos=(1, 1), flag=wx.ALL)
         plotbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Plot View"),
                                      wx.HORIZONTAL)
-        plotbox.Add(self.checkFade, 0, wx.ALL | wx.EXPAND, 10)
+        plotbox.Add(plotgrid, 0, wx.ALL | wx.EXPAND, 10)
 
         specbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY,
                                                  "Spectrogram View"),
@@ -1302,6 +1310,7 @@ class DialogPrefs(wx.Dialog):
         self.settings.overlap = self.slideOverlap.GetValue() / 100.0
         self.settings.retainScans = self.radioRetain.GetValue()
         self.settings.fadeScans = self.checkFade.GetValue()
+        self.settings.lineWidth = self.ctrlWidth.GetValue()
         self.settings.retainMax = self.spinCtrlMaxScans.GetValue()
         self.settings.colourMap = self.choiceColour.GetStringSelection()
         self.settings.winFunc = self.winFunc

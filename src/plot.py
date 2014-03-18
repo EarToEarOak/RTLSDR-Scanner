@@ -107,6 +107,7 @@ class Plotter():
         self.threadPlot = ThreadPlot(self, self.lock, self.axes, data,
                                      self.settings.colourMap,
                                      self.settings.autoL,
+                                     self.settings.lineWidth,
                                      self.barBase,
                                      self.settings.fadeScans,
                                      annotate, self.settings.average).start()
@@ -146,8 +147,8 @@ class Plotter():
 
 
 class ThreadPlot(threading.Thread):
-    def __init__(self, parent, lock, axes, data, colourMap, autoL, barBase,
-                 fade, annotate, average):
+    def __init__(self, parent, lock, axes, data, colourMap, autoL, lineWidth,
+                 barBase, fade, annotate, average):
         threading.Thread.__init__(self)
         self.name = "Plot"
         self.parent = parent
@@ -156,6 +157,7 @@ class ThreadPlot(threading.Thread):
         self.data = data
         self.colourMap = colourMap
         self.autoL = autoL
+        self.lineWidth = lineWidth
         self.barBase = barBase
         self.annotate = annotate
         self.fade = fade
@@ -202,7 +204,7 @@ class ThreadPlot(threading.Thread):
                     lc.set_array(numpy.array([x[1] for x in data]))
                     lc.set_norm(self.get_norm(self.autoL, extent))
                     lc.set_cmap(self.colourMap)
-                    lc.set_linewidth(0.4)
+                    lc.set_linewidth(self.lineWidth)
                     lc.set_gid('plot')
                     self.axes.add_collection(lc)
                     self.parent.lc = lc
@@ -231,7 +233,7 @@ class ThreadPlot(threading.Thread):
                         lc.set_array(numpy.array([x[1] for x in data]))
                         lc.set_norm(self.get_norm(self.autoL, extent))
                         lc.set_cmap(self.colourMap)
-                        lc.set_linewidth(0.4)
+                        lc.set_linewidth(self.lineWidth)
                         lc.set_gid('plot')
                         lc.set_alpha(alpha)
                         self.axes.add_collection(lc)
