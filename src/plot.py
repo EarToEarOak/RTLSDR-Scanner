@@ -48,7 +48,6 @@ class Plotter():
         self.lock = lock
         self.figure = self.graph.get_figure()
         self.axes = None
-        self.lc = None
         self.bar = None
         self.threadPlot = None
         self.extent = None
@@ -85,6 +84,10 @@ class Plotter():
                 if self.settings.autoL or force:
                     self.axes.set_ylim(self.extent.get_z())
                     self.barBase.set_clim(self.extent.get_z())
+                    norm = Normalize(vmin=self.extent.get_z()[0],
+                                     vmax=self.extent.get_z()[1])
+                    for collection in self.axes.collections:
+                        collection.set_norm(norm)
                     try:
                         self.barBase.draw_all()
                     except:
@@ -125,8 +128,8 @@ class Plotter():
         self.redraw_plot()
 
     def set_colourmap(self, colourMap):
-        if self.lc is not None:
-            self.lc.set_cmap(colourMap)
+        for collection in self.axes.collections:
+            collection.set_cmap(colourMap)
         self.barBase.set_cmap(colourMap)
         try:
             self.barBase.draw_all()
@@ -238,7 +241,6 @@ class ThreadPlot(threading.Thread):
                         lc.set_gid('plot')
                         lc.set_alpha(alpha)
                         self.axes.add_collection(lc)
-                        self.parent.lc = lc
                         count += 1
 
                 if self.annotate:
