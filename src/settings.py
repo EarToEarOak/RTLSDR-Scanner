@@ -45,6 +45,7 @@ class Settings():
         self.fadeScans = True
         self.lineWidth = 0.4
         self.colourMap = 'jet'
+        self.background = '#f0f0f0'
         self.wireframe = False
         self.average = False
 
@@ -93,6 +94,7 @@ class Settings():
         self.lineWidth = self.cfg.ReadFloat('lineWidth', self.lineWidth)
         self.retainMax = self.cfg.ReadInt('retainMax', self.retainMax)
         self.colourMap = self.cfg.Read('colourMap', self.colourMap)
+        self.background = self.cfg.Read('background', self.background)
         self.wireframe = self.cfg.ReadBool('wireframe', self.wireframe)
         self.average = self.cfg.ReadBool('average', self.average)
         self.start = self.cfg.ReadInt('start', self.start)
@@ -140,6 +142,7 @@ class Settings():
         self.cfg.WriteFloat('lineWidth', self.lineWidth)
         self.cfg.WriteInt('retainMax', self.retainMax)
         self.cfg.Write('colourMap', self.colourMap)
+        self.cfg.Write('background', self.background)
         self.cfg.WriteBool('wireframe', self.wireframe)
         self.cfg.WriteBool('average', self.average)
         self.cfg.WriteInt('start', self.start)

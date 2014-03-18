@@ -29,7 +29,7 @@ import time
 from matplotlib import cm, patheffects
 import matplotlib
 from matplotlib.colorbar import ColorbarBase
-from matplotlib.colors import Normalize
+from matplotlib.colors import Normalize, hex2color
 from matplotlib.dates import DateFormatter, seconds
 from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
@@ -68,6 +68,9 @@ class Plotter3d():
         self.axes.set_xlabel("Frequency (MHz)")
         self.axes.set_ylabel('Time')
         self.axes.set_zlabel('Level (dB)')
+        self.axes.w_xaxis.set_pane_color(hex2color(self.settings.background))
+        self.axes.w_yaxis.set_pane_color(hex2color(self.settings.background))
+        self.axes.w_zaxis.set_pane_color(hex2color(self.settings.background))
         self.axes.xaxis.set_major_formatter(numformatter)
         self.axes.yaxis.set_major_formatter(timeFormatter)
         self.axes.zaxis.set_major_formatter(numformatter)

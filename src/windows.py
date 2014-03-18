@@ -46,6 +46,7 @@ from misc import split_spectrum, nearest, open_plot, load_bitmap, \
 from rtltcp import RtlTcp
 import wx.grid as grid
 import wx.lib.masked as masked
+from wx.lib.agw.cubecolourdialog import CubeColourDialog
 
 
 class CellRenderer(grid.PyGridCellRenderer):
@@ -977,12 +978,12 @@ class DialogPrefs(wx.Dialog):
 
         self.colours = get_colours()
         self.winFunc = self.settings.winFunc
+        self.background = self.settings.background
 
         self.checkSaved = wx.CheckBox(self, wx.ID_ANY,
                                       "Save warning")
         self.checkSaved.SetValue(self.settings.saveWarn)
         self.checkSaved.SetToolTip(wx.ToolTip('Prompt to save scan on exit'))
-
         self.checkAlert = wx.CheckBox(self, wx.ID_ANY,
                                       "Level alert (dB)")
         self.checkAlert.SetValue(self.settings.alert)
@@ -992,6 +993,10 @@ class DialogPrefs(wx.Dialog):
         self.spinLevel.SetValue(settings.alertLevel)
         self.spinLevel.Enable(self.settings.alert)
         self.spinLevel.SetToolTip(wx.ToolTip('Alert threshold'))
+        textBackground = wx.StaticText(self, label='Background colour')
+        self.buttonBackground = wx.Button(self, wx.ID_ANY)
+        self.buttonBackground.SetBackgroundColour(self.background)
+        self.Bind(wx.EVT_BUTTON, self.on_background, self.buttonBackground)
 
         textOverlap = wx.StaticText(self, label='PSD Overlap (%)')
         self.slideOverlap = wx.Slider(self, wx.ID_ANY,
@@ -1070,7 +1075,9 @@ class DialogPrefs(wx.Dialog):
         gengrid = wx.GridBagSizer(10, 10)
         gengrid.Add(self.checkSaved, pos=(0, 0), flag=wx.ALL)
         gengrid.Add(self.checkAlert, pos=(1, 0), flag=wx.ALL | wx.ALIGN_CENTRE)
-        gengrid.Add(self.spinLevel, pos=(1, 1), flag=wx.ALL | wx.ALIGN_CENTRE)
+        gengrid.Add(self.spinLevel, pos=(1, 1), flag=wx.ALL)
+        gengrid.Add(textBackground, pos=(2, 0), flag=wx.ALL | wx.ALIGN_CENTRE)
+        gengrid.Add(self.buttonBackground, pos=(2, 1), flag=wx.ALL)
         genbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "General"))
         genbox.Add(gengrid, 0, wx.ALL | wx.ALIGN_CENTRE_VERTICAL, 10)
 
@@ -1248,6 +1255,17 @@ class DialogPrefs(wx.Dialog):
         enabled = self.checkAlert.GetValue()
         self.spinLevel.Enable(enabled)
 
+    def on_background(self, _event):
+        colour = wx.ColourData()
+        colour.SetColour(self.background)
+
+        dlg = CubeColourDialog(self, colour, 0)
+        if dlg.ShowModal() == wx.ID_OK:
+            newColour = dlg.GetColourData().GetColour()
+            self.background = newColour.GetAsString(wx.C2S_HTML_SYNTAX)
+            self.buttonBackground.SetBackgroundColour(self.background)
+        dlg.Destroy()
+
     def on_window(self, _event):
         dlg = DialogWinFunc(self, self.winFunc)
         if dlg.ShowModal() == wx.ID_OK:
@@ -1314,6 +1332,7 @@ class DialogPrefs(wx.Dialog):
         self.settings.retainMax = self.spinCtrlMaxScans.GetValue()
         self.settings.colourMap = self.choiceColour.GetStringSelection()
         self.settings.winFunc = self.winFunc
+        self.settings.background = self.background
 
         self.EndModal(wx.ID_OK)
 

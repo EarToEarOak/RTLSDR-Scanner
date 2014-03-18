@@ -57,8 +57,8 @@ class Spectrogram:
 
     def setup_plot(self):
         gs = GridSpec(1, 2, width_ratios=[9.5, 0.5])
-        self.axes = self.figure.add_subplot(gs[0])
-        self.axes.set_axis_bgcolor('Gainsboro')
+        self.axes = self.figure.add_subplot(gs[0],
+                                            axisbg=self.settings.background)
 
         self.axes.set_xlabel("Frequency (MHz)")
         self.axes.set_ylabel('Time')
