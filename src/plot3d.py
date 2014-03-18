@@ -94,6 +94,7 @@ class Plotter3d():
                 if self.settings.autoF or force:
                     self.axes.set_xlim(self.extent.get_x())
                 if self.settings.autoL or force:
+                    self.axes.set_zlim(self.extent.get_z())
                     self.plot.set_clim(self.extent.get_z())
                     self.barBase.set_clim(self.extent.get_z())
                     try:
