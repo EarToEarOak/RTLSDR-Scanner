@@ -29,6 +29,7 @@ import threading
 
 from matplotlib import patheffects
 import matplotlib
+from matplotlib.collections import LineCollection
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 import numpy
 
@@ -142,7 +143,7 @@ class ThreadPlot(threading.Thread):
                         if self.abort:
                             return
                         xs, ys = split_spectrum(self.data[timeStamp])
-                        if len(xs) < length:
+                        if len(xs) < length or len(xs) % 2 != 0:
                             continue
                         for x, y in itertools.izip_longest(xs, ys):
                             if x in avg:
@@ -157,13 +158,18 @@ class ThreadPlot(threading.Thread):
                     for timeStamp in sorted(self.data):
                         if self.abort:
                             return
-                        xs, ys = split_spectrum(self.data[timeStamp])
+
                         if self.fade:
                             alpha = count / total
                         else:
                             alpha = 1
-                        self.axes.plot(xs, ys, linewidth=0.4, gid="plot",
-                                       color='b', alpha=alpha)
+
+                        lc = LineCollection([sorted(self.data[timeStamp].items())])
+                        lc.set_linewidth(0.4)
+                        lc.set_gid('plot')
+                        lc.set_color('b')
+                        lc.set_alpha(alpha)
+                        self.axes.add_collection(lc)
                         count += 1
 
                 if self.annotate:
