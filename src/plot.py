@@ -150,9 +150,12 @@ class ThreadPlot(threading.Thread):
                                 avg[x] = avg[x] + y / count
                             else:
                                 avg[x] = y / count
-                    xs, ys = split_spectrum(avg)
-                    self.axes.plot(xs, ys, linewidth=0.4, gid="plot",
-                                   color='b')
+
+                    lc = LineCollection([sorted(self.data[timeStamp].items())])
+                    lc.set_linewidth(0.4)
+                    lc.set_gid('plot')
+                    lc.set_color('b')
+                    self.axes.add_collection(lc)
                 else:
                     count = 1.0
                     for timeStamp in sorted(self.data):
