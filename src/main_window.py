@@ -38,7 +38,7 @@ from constants import *
 from devices import get_devices
 from events import EVT_THREAD_STATUS, Event, EventThreadStatus, post_event
 from misc import ScanInfo, calc_samples, calc_real_dwell, open_plot, save_plot, \
-    export_plot, get_version_timestamp, get_version_timestamp_repo
+    export_plot, get_version_timestamp, get_version_timestamp_repo, add_colours
 from plot import Plotter
 from plot3d import Plotter3d
 from scan import ThreadScan, anaylse_data, update_spectrum
@@ -133,6 +133,7 @@ class FrameMain(wx.Frame):
         self.status = Statusbar(self)
         self.SetStatusBar(self.status)
 
+        add_colours()
         self.create_widgets()
         self.create_menu()
         self.create_popup_menu()

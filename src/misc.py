@@ -35,6 +35,7 @@ from matplotlib.dates import date2num
 import wx
 
 from constants import SAMPLE_RATE, File, TIMESTAMP_FILE
+from matplotlib.colors import LinearSegmentedColormap
 
 
 class ScanInfo():
@@ -354,8 +355,39 @@ def load_bitmap(name):
     return wx.Bitmap(resDir + '/' + name + '.png', wx.BITMAP_TYPE_PNG)
 
 
+def add_colours():
+    r = {'red':     ((0.0, 1.0, 1.0),
+                     (1.0, 1.0, 1.0)),
+         'green':   ((0.0, 0.0, 0.0),
+                     (1.0, 0.0, 0.0)),
+         'blue':   ((0.0, 0.0, 0.0),
+                         (1.0, 0.0, 0.0))
+        }
+    g = {'red':     ((0.0, 0.0, 0.0),
+                     (1.0, 0.0, 0.0)),
+         'green':   ((0.0, 1.0, 1.0),
+                     (1.0, 1.0, 1.0)),
+         'blue':    ((0.0, 0.0, 0.0),
+                     (1.0, 0.0, 0.0))
+        }
+    b = {'red':     ((0.0, 0.0, 0.0),
+                     (1.0, 0.0, 0.0)),
+         'green':   ((0.0, 0.0, 0.0),
+                     (1.0, 0.0, 0.0)),
+         'blue':    ((0.0, 1.0, 1.0),
+                     (1.0, 1.0, 1.0))
+        }
+
+    rMap = LinearSegmentedColormap('red_map', r)
+    gMap = LinearSegmentedColormap('red_map', g)
+    bMap = LinearSegmentedColormap('red_map', b)
+    cm.register_cmap(name=' Pure Red', cmap=rMap)
+    cm.register_cmap(name=' Pure Green', cmap=gMap)
+    cm.register_cmap(name=' Pure Blue', cmap=bMap)
+
+
 def get_colours():
-    colours = [colour for colour in cm.datad]
+    colours = [colour for colour in cm.cmap_d]
     colours.sort()
 
     return colours
