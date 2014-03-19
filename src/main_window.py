@@ -593,6 +593,7 @@ class FrameMain(wx.Frame):
         if not os.path.exists(os.path.join(dirname, filename)):
                 wx.MessageBox('File not found',
                               'Error', wx.OK | wx.ICON_ERROR)
+                return
 
         self.filename = os.path.splitext(filename)[0]
         self.dirname = dirname
