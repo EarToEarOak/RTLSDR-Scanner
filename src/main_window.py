@@ -336,7 +336,8 @@ class FrameMain(wx.Frame):
             self.plot = Plotter3d(self, self.graph, self.settings, self.grid,
                                   self.lock)
 
-        self.mouseZoom = MouseZoom(self.plot, self.settings.display)
+        self.mouseZoom = MouseZoom(self.plot, self.settings.display,
+                                   self.graph.get_toolbar())
         self.set_plot_title()
         self.plot.set_plot(self.spectrum, self.settings.annotate)
         self.graph.set_type(self.settings.display)

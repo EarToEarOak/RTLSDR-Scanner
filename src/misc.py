@@ -161,10 +161,11 @@ class Extent():
 class MouseZoom():
     SCALE_STEP = 2.0
 
-    def __init__(self, plot, display):
+    def __init__(self, plot, display, toolbar):
         if display == Display.SURFACE:
             return
         self.axes = plot.get_axes()
+        self.toolbar = toolbar
         figure = self.axes.get_figure()
         figure.canvas.mpl_connect('scroll_event', self.zoom)
 
@@ -175,6 +176,9 @@ class MouseZoom():
             scale = self.SCALE_STEP
         else:
             return
+
+        if self.toolbar._views.empty():
+            self.toolbar.push_current()
 
         xLim = self.axes.get_xlim()
         yLim = self.axes.get_ylim()
@@ -192,6 +196,7 @@ class MouseZoom():
 
         self.axes.set_xlim([xStart, xStop])
         self.axes.set_ylim([yStart, yStop])
+        self.toolbar.push_current()
 
         self.axes.figure.canvas.draw()
 
