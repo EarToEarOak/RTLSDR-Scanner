@@ -997,6 +997,11 @@ class DialogPrefs(wx.Dialog):
         self.buttonBackground = wx.Button(self, wx.ID_ANY)
         self.buttonBackground.SetBackgroundColour(self.background)
         self.Bind(wx.EVT_BUTTON, self.on_background, self.buttonBackground)
+        textColour = wx.StaticText(self, label="Colour map")
+        self.choiceColour = wx.Choice(self, choices=self.colours)
+        self.choiceColour.SetSelection(self.colours.index(self.settings.colourMap))
+        self.Bind(wx.EVT_CHOICE, self.on_choice, self.choiceColour)
+        self.colourBar = PanelColourBar(self, self.settings.colourMap)
 
         textOverlap = wx.StaticText(self, label='PSD Overlap (%)')
         self.slideOverlap = wx.Slider(self, wx.ID_ANY,
@@ -1032,12 +1037,6 @@ class DialogPrefs(wx.Dialog):
         textWidth = wx.StaticText(self, label="Line width")
         self.ctrlWidth = NumCtrl(self, integerWidth=2, fractionWidth=1)
         self.ctrlWidth.SetValue(self.settings.lineWidth)
-
-        textColour = wx.StaticText(self, label="Colour map")
-        self.choiceColour = wx.Choice(self, choices=self.colours)
-        self.choiceColour.SetSelection(self.colours.index(self.settings.colourMap))
-        self.Bind(wx.EVT_CHOICE, self.on_choice, self.choiceColour)
-        self.colourBar = PanelColourBar(self, self.settings.colourMap)
 
         self.on_radio(None)
 
@@ -1078,6 +1077,9 @@ class DialogPrefs(wx.Dialog):
         gengrid.Add(self.spinLevel, pos=(1, 1), flag=wx.ALL)
         gengrid.Add(textBackground, pos=(2, 0), flag=wx.ALL | wx.ALIGN_CENTRE)
         gengrid.Add(self.buttonBackground, pos=(2, 1), flag=wx.ALL)
+        gengrid.Add(textColour, pos=(3, 0), flag=wx.ALL)
+        gengrid.Add(self.choiceColour, pos=(3, 1), flag=wx.ALL)
+        gengrid.Add(self.colourBar, pos=(3, 2), flag=wx.ALL)
         genbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "General"))
         genbox.Add(gengrid, 0, wx.ALL | wx.ALIGN_CENTRE_VERTICAL, 10)
 
@@ -1111,13 +1113,6 @@ class DialogPrefs(wx.Dialog):
                                      wx.HORIZONTAL)
         plotbox.Add(plotgrid, 0, wx.ALL | wx.EXPAND, 10)
 
-        specbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY,
-                                                 "Spectrogram View"),
-                                    wx.HORIZONTAL)
-        specbox.Add(textColour, 0, wx.ALL | wx.ALIGN_CENTRE_VERTICAL, 10)
-        specbox.Add(self.choiceColour, 0, wx.ALL | wx.EXPAND, 10)
-        specbox.Add(self.colourBar, 0, wx.ALL | wx.EXPAND, 10)
-
         devbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Devices"),
                                      wx.VERTICAL)
 
@@ -1137,16 +1132,14 @@ class DialogPrefs(wx.Dialog):
         self.vgrid.AddGrowableCol(0, 1)
         self.vgrid.AddGrowableCol(1, 0)
         self.vgrid.Add(genbox, pos=(0, 0), flag=wx.ALL | wx.EXPAND)
-        self.vgrid.Add(advbox, pos=(0, 1))
+        self.vgrid.Add(advbox, pos=(0, 1), flag=wx.ALL | wx.EXPAND)
         self.vgrid.Add(conbox, pos=(1, 0), span=(1, 2),
                        flag=wx.ALL | wx.EXPAND)
         self.vgrid.Add(plotbox, pos=(2, 0), span=(1, 2),
                        flag=wx.ALL | wx.EXPAND)
-        self.vgrid.Add(specbox, pos=(3, 0), span=(1, 2),
+        self.vgrid.Add(devbox, pos=(3, 0), span=(2, 2),
                        flag=wx.ALL | wx.EXPAND)
-        self.vgrid.Add(devbox, pos=(4, 0), span=(2, 2),
-                       flag=wx.ALL | wx.EXPAND)
-        self.vgrid.Add(sizerButtons, pos=(6, 1), flag=wx.ALL | wx.EXPAND)
+        self.vgrid.Add(sizerButtons, pos=(5, 1), flag=wx.ALL | wx.EXPAND)
 
         self.SetSizerAndFit(self.vgrid)
 
