@@ -159,7 +159,7 @@ class Extent():
 
 
 class MouseZoom():
-    SCALE_STEP = 2.0
+    SCALE_STEP = 1.3
 
     def __init__(self, plot, display, toolbar):
         if display == Display.SURFACE:
