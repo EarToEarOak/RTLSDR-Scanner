@@ -25,6 +25,7 @@
 
 
 import datetime
+import math
 import os.path
 from threading import Thread
 import threading
@@ -100,6 +101,7 @@ class FrameMain(wx.Frame):
         self.popupMenuStart = None
         self.popupMenuStop = None
         self.popupMenuStopEnd = None
+        self.popupMenuRangeLim = None
 
         self.panel = None
         self.graph = None
@@ -345,10 +347,15 @@ class FrameMain(wx.Frame):
         self.popupMenuStopEnd = self.popupMenu.Append(wx.ID_ANY, "Stop at &end",
                                                       "Complete current sweep "
                                                       "before stopping")
+        self.popupMenuRangeLim = self.popupMenu.Append(wx.ID_ANY,
+                                                       "Set range to current zoom",
+                                                      "Set scanning range to the current "
+                                                      "zoom")
 
         self.Bind(wx.EVT_MENU, self.on_start, self.popupMenuStart)
         self.Bind(wx.EVT_MENU, self.on_stop, self.popupMenuStop)
         self.Bind(wx.EVT_MENU, self.on_stop_end, self.popupMenuStopEnd)
+        self.Bind(wx.EVT_MENU, self.on_range_lim, self.popupMenuRangeLim)
 
         self.Bind(wx.EVT_CONTEXT_MENU, self.on_popup_menu)
 
@@ -494,6 +501,16 @@ class FrameMain(wx.Frame):
 
     def on_stop_end(self, _event):
         self.stopAtEnd = True
+
+    def on_range_lim(self, _event):
+        xmin, xmax = self.plot.axes.get_xlim()
+        xmin = int(xmin)
+        xmax = math.ceil(xmax)
+        if xmax < xmin + 1:
+            xmax = xmin + 1
+        self.settings.start = xmin
+        self.settings.stop = xmax
+        self.set_controls()
 
     def on_event(self, event):
         status = event.data.get_status()
@@ -750,6 +767,7 @@ class FrameMain(wx.Frame):
         else:
             self.menuStopEnd.Enable(False)
             self.popupMenuStopEnd.Enable(False)
+        self.popupMenuRangeLim.Enable(state)
 
     def set_controls(self):
         self.spinCtrlStart.SetValue(self.settings.start)
