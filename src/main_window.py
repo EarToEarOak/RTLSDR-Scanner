@@ -39,7 +39,8 @@ from constants import *
 from devices import get_devices
 from events import EVT_THREAD_STATUS, Event, EventThreadStatus, post_event
 from misc import ScanInfo, calc_samples, calc_real_dwell, open_plot, save_plot, \
-    export_plot, get_version_timestamp, get_version_timestamp_repo, add_colours
+    export_plot, get_version_timestamp, get_version_timestamp_repo, add_colours, \
+    MouseZoom
 from plot import Plotter
 from plot3d import Plotter3d
 from scan import ThreadScan, anaylse_data, update_spectrum
@@ -106,6 +107,8 @@ class FrameMain(wx.Frame):
         self.panel = None
         self.graph = None
         self.canvas = None
+        self.mouseZoom = None
+
         self.buttonStart = None
         self.buttonStop = None
         self.choiceGain = None
@@ -333,6 +336,7 @@ class FrameMain(wx.Frame):
             self.plot = Plotter3d(self, self.graph, self.settings, self.grid,
                                   self.lock)
 
+        self.mouseZoom = MouseZoom(self.plot, self.settings.display)
         self.set_plot_title()
         self.plot.set_plot(self.spectrum, self.settings.annotate)
         self.graph.set_type(self.settings.display)

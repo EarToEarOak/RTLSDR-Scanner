@@ -36,17 +36,17 @@ from matplotlib.dates import num2epoch
 from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
 import rtlsdr
 import wx
+from wx.lib.agw.cubecolourdialog import CubeColourDialog
 from wx.lib.masked.numctrl import NumCtrl
 
 from constants import *
 from devices import Device
 from events import EventThreadStatus, Event, post_event
 from misc import split_spectrum, nearest, open_plot, load_bitmap, \
-    get_colours, format_time, ValidatorCoord, get_version_timestamp
+    get_colours, format_time, ValidatorCoord, get_version_timestamp, MouseZoom
 from rtltcp import RtlTcp
 import wx.grid as grid
 import wx.lib.masked as masked
-from wx.lib.agw.cubecolourdialog import CubeColourDialog
 
 
 class CellRenderer(grid.PyGridCellRenderer):

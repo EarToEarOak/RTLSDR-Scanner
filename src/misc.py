@@ -31,11 +31,11 @@ import time
 import urllib
 
 from matplotlib import cm
+from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.dates import date2num
 import wx
 
-from constants import SAMPLE_RATE, File, TIMESTAMP_FILE
-from matplotlib.colors import LinearSegmentedColormap
+from constants import SAMPLE_RATE, File, TIMESTAMP_FILE, Display
 
 
 class ScanInfo():
@@ -156,6 +156,44 @@ class Extent():
         if self.zMin == self.zMax:
             return self.zMin, self.zMax - 0.001
         return self.zMin, self.zMax
+
+
+class MouseZoom():
+    SCALE_STEP = 2.0
+
+    def __init__(self, plot, display):
+        if display == Display.SURFACE:
+            return
+        self.axes = plot.get_axes()
+        figure = self.axes.get_figure()
+        figure.canvas.mpl_connect('scroll_event', self.zoom)
+
+    def zoom(self, event):
+        if event.button == 'up':
+            scale = 1 / self.SCALE_STEP
+        elif event.button == 'down':
+            scale = self.SCALE_STEP
+        else:
+            return
+
+        xLim = self.axes.get_xlim()
+        yLim = self.axes.get_ylim()
+        xPos = event.xdata
+        yPos = event.ydata
+        xPosRel = (xLim[1] - xPos) / (xLim[1] - xLim[0])
+        yPosRel = (yLim[1] - yPos) / (yLim[1] - yLim[0])
+
+        newXLim = (xLim[1] - xLim[0]) * scale
+        newYLim = (yLim[1] - yLim[0]) * scale
+        xStart = xPos - newXLim * (1 - xPosRel)
+        xStop = xPos + newXLim * xPosRel
+        yStart = yPos - newYLim * (1 - yPosRel)
+        yStop = yPos + newYLim * yPosRel
+
+        self.axes.set_xlim([xStart, xStop])
+        self.axes.set_ylim([yStart, yStop])
+
+        self.axes.figure.canvas.draw()
 
 
 def open_plot(dirname, filename):

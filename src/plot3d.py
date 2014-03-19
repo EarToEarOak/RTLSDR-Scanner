@@ -111,6 +111,9 @@ class Plotter3d():
             else:
                 post_event(self.notify, EventThreadStatus(Event.DRAW))
 
+    def get_axes(self):
+        return self.axes
+
     def set_title(self, title):
         self.axes.set_title(title)
 
