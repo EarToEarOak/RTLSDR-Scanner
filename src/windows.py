@@ -43,7 +43,7 @@ from constants import *
 from devices import Device
 from events import EventThreadStatus, Event, post_event
 from misc import split_spectrum, nearest, open_plot, load_bitmap, \
-    get_colours, format_time, ValidatorCoord, get_version_timestamp, MouseZoom
+    get_colours, format_time, ValidatorCoord, get_version_timestamp
 from rtltcp import RtlTcp
 import wx.grid as grid
 import wx.lib.masked as masked
