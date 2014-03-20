@@ -977,21 +977,21 @@ class DialogPrefs(wx.Dialog):
         wx.Dialog.__init__(self, parent=parent, title="Preferences")
 
         self.colours = get_colours()
-        self.winFunc = self.settings.winFunc
-        self.background = self.settings.background
+        self.winFunc = settings.winFunc
+        self.background = settings.background
 
         self.checkSaved = wx.CheckBox(self, wx.ID_ANY,
                                       "Save warning")
-        self.checkSaved.SetValue(self.settings.saveWarn)
+        self.checkSaved.SetValue(settings.saveWarn)
         self.checkSaved.SetToolTip(wx.ToolTip('Prompt to save scan on exit'))
         self.checkAlert = wx.CheckBox(self, wx.ID_ANY,
                                       "Level alert (dB)")
-        self.checkAlert.SetValue(self.settings.alert)
+        self.checkAlert.SetValue(settings.alert)
         self.checkAlert.SetToolTip(wx.ToolTip('Play alert when level exceeded'))
         self.Bind(wx.EVT_CHECKBOX, self.on_alert, self.checkAlert)
         self.spinLevel = wx.SpinCtrl(self, wx.ID_ANY, min=-100, max=20)
         self.spinLevel.SetValue(settings.alertLevel)
-        self.spinLevel.Enable(self.settings.alert)
+        self.spinLevel.Enable(settings.alert)
         self.spinLevel.SetToolTip(wx.ToolTip('Alert threshold'))
         textBackground = wx.StaticText(self, label='Background colour')
         self.buttonBackground = wx.Button(self, wx.ID_ANY)
@@ -999,13 +999,22 @@ class DialogPrefs(wx.Dialog):
         self.Bind(wx.EVT_BUTTON, self.on_background, self.buttonBackground)
         textColour = wx.StaticText(self, label="Colour map")
         self.choiceColour = wx.Choice(self, choices=self.colours)
-        self.choiceColour.SetSelection(self.colours.index(self.settings.colourMap))
+        self.choiceColour.SetSelection(self.colours.index(settings.colourMap))
         self.Bind(wx.EVT_CHOICE, self.on_choice, self.choiceColour)
-        self.colourBar = PanelColourBar(self, self.settings.colourMap)
+        self.colourBar = PanelColourBar(self, settings.colourMap)
+        self.checkPoints = wx.CheckBox(self, wx.ID_ANY,
+                                      "Limit points")
+        self.checkPoints.SetValue(settings.pointsLimit)
+        self.checkPoints.SetToolTip(wx.ToolTip('Limit the resolution of plots'))
+        self.Bind(wx.EVT_CHECKBOX, self.on_points, self.checkPoints)
+        self.spinPoints = wx.SpinCtrl(self, wx.ID_ANY, min=1000, max=100000)
+        self.spinPoints.Enable(settings.pointsLimit)
+        self.spinPoints.SetValue(settings.pointsMax)
+        self.spinPoints.SetToolTip(wx.ToolTip('Maximum number of points to plot'))
 
         textOverlap = wx.StaticText(self, label='PSD Overlap (%)')
         self.slideOverlap = wx.Slider(self, wx.ID_ANY,
-                                      self.settings.overlap * 100,
+                                      settings.overlap * 100,
                                       0, 75,
                                       style=wx.SL_LABELS)
         self.slideOverlap.SetToolTip(wx.ToolTip('Power spectral density'
@@ -1022,21 +1031,21 @@ class DialogPrefs(wx.Dialog):
                                           'Retain previous scans')
         self.radioRetain.SetToolTip(wx.ToolTip('Can be slow'))
         self.Bind(wx.EVT_RADIOBUTTON, self.on_radio, self.radioRetain)
-        self.radioRetain.SetValue(self.settings.retainScans)
+        self.radioRetain.SetValue(settings.retainScans)
 
         textMaxScans = wx.StaticText(self, label="Max scans")
         self.spinCtrlMaxScans = wx.SpinCtrl(self)
         self.spinCtrlMaxScans.SetRange(1, 500)
-        self.spinCtrlMaxScans.SetValue(self.settings.retainMax)
+        self.spinCtrlMaxScans.SetValue(settings.retainMax)
         self.spinCtrlMaxScans.SetToolTip(wx.ToolTip('Maximum previous scans'
                                                     ' to display'))
 
         self.checkFade = wx.CheckBox(self, wx.ID_ANY,
                                       "Fade previous scans")
-        self.checkFade.SetValue(self.settings.fadeScans)
+        self.checkFade.SetValue(settings.fadeScans)
         textWidth = wx.StaticText(self, label="Line width")
         self.ctrlWidth = NumCtrl(self, integerWidth=2, fractionWidth=1)
-        self.ctrlWidth.SetValue(self.settings.lineWidth)
+        self.ctrlWidth.SetValue(settings.lineWidth)
 
         self.on_radio(None)
 
@@ -1080,6 +1089,8 @@ class DialogPrefs(wx.Dialog):
         gengrid.Add(textColour, pos=(3, 0), flag=wx.ALL)
         gengrid.Add(self.choiceColour, pos=(3, 1), flag=wx.ALL)
         gengrid.Add(self.colourBar, pos=(3, 2), flag=wx.ALL)
+        gengrid.Add(self.checkPoints, pos=(4, 0), flag=wx.ALL)
+        gengrid.Add(self.spinPoints, pos=(4, 1), flag=wx.ALL)
         genbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "General"))
         genbox.Add(gengrid, 0, wx.ALL | wx.ALIGN_CENTRE_VERTICAL, 10)
 
@@ -1248,6 +1259,10 @@ class DialogPrefs(wx.Dialog):
         enabled = self.checkAlert.GetValue()
         self.spinLevel.Enable(enabled)
 
+    def on_points(self, _event):
+        enabled = self.checkPoints.GetValue()
+        self.spinPoints.Enable(enabled)
+
     def on_background(self, _event):
         colour = wx.ColourData()
         colour.SetColour(self.background)
@@ -1318,6 +1333,8 @@ class DialogPrefs(wx.Dialog):
         self.settings.saveWarn = self.checkSaved.GetValue()
         self.settings.alert = self.checkAlert.GetValue()
         self.settings.alertLevel = self.spinLevel.GetValue()
+        self.settings.pointsLimit = self.checkPoints.GetValue()
+        self.settings.pointsMax = self.spinPoints.GetValue()
         self.settings.overlap = self.slideOverlap.GetValue() / 100.0
         self.settings.retainScans = self.radioRetain.GetValue()
         self.settings.fadeScans = self.checkFade.GetValue()

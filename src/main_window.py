@@ -40,7 +40,7 @@ from devices import get_devices
 from events import EVT_THREAD_STATUS, Event, EventThreadStatus, post_event
 from misc import ScanInfo, calc_samples, calc_real_dwell, open_plot, save_plot, \
     export_plot, get_version_timestamp, get_version_timestamp_repo, add_colours, \
-    MouseZoom
+    MouseZoom, count_points, reduce_points
 from plot import Plotter
 from plot3d import Plotter3d
 from scan import ThreadScan, anaylse_data, update_spectrum
@@ -339,7 +339,7 @@ class FrameMain(wx.Frame):
         self.mouseZoom = MouseZoom(self.plot, self.settings.display,
                                    self.graph.get_toolbar())
         self.set_plot_title()
-        self.plot.set_plot(self.spectrum, self.settings.annotate)
+        self.set_plot(self.spectrum, self.settings.annotate)
         self.graph.set_type(self.settings.display)
         self.plot.scale_plot(True)
 
@@ -480,7 +480,7 @@ class FrameMain(wx.Frame):
         self.get_controls()
         self.create_plot()
 
-        self.plot.set_plot(self.spectrum, self.settings.annotate)
+        self.set_plot(self.spectrum, self.settings.annotate)
 
     def on_start(self, _event):
         if self.settings.start >= self.settings.stop:
@@ -573,10 +573,10 @@ class FrameMain(wx.Frame):
             wx.Bell()
         elif status == Event.UPDATED:
             if data and self.settings.liveUpdate:
-                self.plot.set_plot(self.spectrum,
-                                   self.settings.annotate and \
-                                   self.settings.retainScans and \
-                                   self.settings.mode == Mode.CONTIN)
+                self.set_plot(self.spectrum,
+                              self.settings.annotate and \
+                              self.settings.retainScans and \
+                              self.settings.mode == Mode.CONTIN)
             self.progress()
         elif status == Event.DRAW:
             self.graph.get_canvas().draw()
@@ -613,7 +613,7 @@ class FrameMain(wx.Frame):
             self.saved(True)
             self.set_controls()
             self.set_control_state(True)
-            self.plot.set_plot(spectrum, self.settings.annotate)
+            self.set_plot(spectrum, self.settings.annotate)
             self.plot.scale_plot(True)
             self.status.set_general("Finished")
             self.settings.fileHistory.AddFileToHistory(os.path.join(dirname,
@@ -699,7 +699,7 @@ class FrameMain(wx.Frame):
             self.status.set_general("Scanning")
         else:
             self.status.hide_progress()
-            self.plot.set_plot(self.spectrum, self.settings.annotate)
+            self.set_plot(self.spectrum, self.settings.annotate)
             if self.stopScan:
                 self.status.set_general("Stopped")
                 self.cleanup()
@@ -747,6 +747,15 @@ class FrameMain(wx.Frame):
         self.plot.set_title("Frequency Spectrogram\n{0} - {1} MHz,"
                             " gain = {2}dB".format(self.settings.start,
                                                    self.settings.stop, gain))
+
+    def set_plot(self, spectrum, annotate):
+        if len(spectrum) > 0:
+            total = count_points(spectrum)
+            if total > 0:
+                if self.settings.pointsLimit:
+                    spectrum = reduce_points(spectrum, self.settings.pointsMax,
+                                             total)
+                self.plot.set_plot(spectrum, annotate)
 
     def set_control_state(self, state):
         hasDevices = len(self.devices) > 0

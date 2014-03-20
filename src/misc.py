@@ -325,11 +325,36 @@ def save_plot(dirname, filename, scanInfo, spectrum):
 
 def export_plot(dirname, filename, spectrum):
     handle = open(os.path.join(dirname, filename), 'wb')
-    handle.write("Time (UTC), Frequency (MHz),Level (dB)\n")
+    handle.write("Time (UTC), Frequency (MHz),Level (dB/Hz)\n")
     for plot in spectrum.iteritems():
         for freq, pwr in plot[1].iteritems():
             handle.write("{0}, {1}, {2}\n".format(plot[0], freq, pwr))
     handle.close()
+
+
+def count_points(spectrum):
+    points = 0
+    for timeStamp in spectrum:
+            points += len(spectrum[timeStamp])
+
+    return points
+
+
+def reduce_points(spectrum, limit, total):
+    if total < limit:
+        return spectrum
+
+    newSpectrum = {}
+    ratio = float(total) / limit
+    for timeStamp in spectrum:
+        points = sorted(spectrum[timeStamp].items())
+        reduced = {}
+        for i in xrange(int(len(points) / ratio)):
+            point = points[int(i * ratio):int((i + 1) * ratio)][0]
+            reduced[point[0]] = point[1]
+        newSpectrum[timeStamp] = reduced
+
+    return newSpectrum
 
 
 def split_spectrum(spectrum):
