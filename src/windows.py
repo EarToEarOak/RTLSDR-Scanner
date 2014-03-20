@@ -23,6 +23,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import copy
 import itertools
 from urlparse import urlparse
 
@@ -47,6 +48,8 @@ from misc import split_spectrum, nearest, open_plot, load_bitmap, \
 from rtltcp import RtlTcp
 import wx.grid as grid
 import wx.lib.masked as masked
+
+
 
 
 class CellRenderer(grid.PyGridCellRenderer):
@@ -967,10 +970,8 @@ class DialogProperties(wx.Dialog):
 
 
 class DialogPrefs(wx.Dialog):
-    COL_SEL, COL_DEV, COL_TUN, COL_SER, COL_IND, \
-    COL_GAIN, COL_CAL, COL_LO, COL_OFF = range(9)
 
-    def __init__(self, parent, devices, settings):
+    def __init__(self, parent, settings):
         self.settings = settings
         self.index = 0
 
@@ -1012,17 +1013,6 @@ class DialogPrefs(wx.Dialog):
         self.spinPoints.SetValue(settings.pointsMax)
         self.spinPoints.SetToolTip(wx.ToolTip('Maximum number of points to plot'))
 
-        textOverlap = wx.StaticText(self, label='PSD Overlap (%)')
-        self.slideOverlap = wx.Slider(self, wx.ID_ANY,
-                                      settings.overlap * 100,
-                                      0, 75,
-                                      style=wx.SL_LABELS)
-        self.slideOverlap.SetToolTip(wx.ToolTip('Power spectral density'
-                                                    ' overlap'))
-        textWindow = wx.StaticText(self, label='Window')
-        self.buttonWindow = wx.Button(self, wx.ID_ANY, self.winFunc)
-        self.Bind(wx.EVT_BUTTON, self.on_window, self.buttonWindow)
-
         self.radioAvg = wx.RadioButton(self, wx.ID_ANY, 'Average Scans',
                                        style=wx.RB_GROUP)
         self.radioAvg.SetToolTip(wx.ToolTip('Average level with each scan'))
@@ -1049,29 +1039,6 @@ class DialogPrefs(wx.Dialog):
 
         self.on_radio(None)
 
-        self.devices = devices
-
-        self.gridDev = grid.Grid(self)
-        self.gridDev.CreateGrid(len(self.devices), 9)
-        self.gridDev.SetRowLabelSize(0)
-        self.gridDev.SetColLabelValue(self.COL_SEL, "Select")
-        self.gridDev.SetColLabelValue(self.COL_DEV, "Device")
-        self.gridDev.SetColLabelValue(self.COL_TUN, "Tuner")
-        self.gridDev.SetColLabelValue(self.COL_SER, "Serial Number")
-        self.gridDev.SetColLabelValue(self.COL_IND, "Index")
-        self.gridDev.SetColLabelValue(self.COL_GAIN, "Gain\n(dB)")
-        self.gridDev.SetColLabelValue(self.COL_CAL, "Calibration\n(ppm)")
-        self.gridDev.SetColLabelValue(self.COL_LO, "LO\n(MHz)")
-        self.gridDev.SetColLabelValue(self.COL_OFF, "Band Offset\n(kHz)")
-        self.gridDev.SetColFormatFloat(self.COL_GAIN, -1, 1)
-        self.gridDev.SetColFormatFloat(self.COL_CAL, -1, 3)
-        self.gridDev.SetColFormatFloat(self.COL_LO, -1, 3)
-        self.gridDev.SetColFormatFloat(self.COL_OFF, -1, 0)
-
-        self.set_dev_grid()
-
-        self.Bind(grid.EVT_GRID_CELL_LEFT_CLICK, self.on_click)
-
         sizerButtons = wx.StdDialogButtonSizer()
         buttonOk = wx.Button(self, wx.ID_OK)
         buttonCancel = wx.Button(self, wx.ID_CANCEL)
@@ -1094,17 +1061,6 @@ class DialogPrefs(wx.Dialog):
         genbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "General"))
         genbox.Add(gengrid, 0, wx.ALL | wx.ALIGN_CENTRE_VERTICAL, 10)
 
-        advgrid = wx.GridBagSizer(10, 10)
-        advgrid.Add(textOverlap, pos=(0, 0),
-                    flag=wx.ALL | wx.ALIGN_CENTRE)
-        advgrid.Add(self.slideOverlap, pos=(1, 0), flag=wx.ALL | wx.EXPAND)
-        advgrid.Add(textWindow, pos=(0, 1),
-                    flag=wx.ALL | wx.ALIGN_CENTRE)
-        advgrid.Add(self.buttonWindow, pos=(1, 1),
-                    flag=wx.ALL | wx.ALIGN_CENTRE)
-        advbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Advanced"))
-        advbox.Add(advgrid, 0, wx.ALL | wx.EXPAND, 10)
-
         congrid = wx.GridBagSizer(10, 10)
         congrid.Add(self.radioAvg, pos=(0, 0), flag=wx.ALL)
         congrid.Add(self.radioRetain, pos=(1, 0), flag=wx.ALL)
@@ -1124,8 +1080,146 @@ class DialogPrefs(wx.Dialog):
                                      wx.HORIZONTAL)
         plotbox.Add(plotgrid, 0, wx.ALL | wx.EXPAND, 10)
 
-        devbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Devices"),
-                                     wx.VERTICAL)
+        grid = wx.GridBagSizer(10, 10)
+        grid.AddGrowableCol(0, 1)
+        grid.AddGrowableCol(1, 0)
+        grid.Add(genbox, pos=(0, 0), span=(1, 2), flag=wx.ALL | wx.EXPAND)
+        grid.Add(conbox, pos=(1, 0), span=(1, 2), flag=wx.ALL | wx.EXPAND)
+        grid.Add(plotbox, pos=(2, 0), span=(1, 2), flag=wx.ALL | wx.EXPAND)
+        grid.Add(sizerButtons, pos=(3, 1), flag=wx.ALL | wx.EXPAND)
+
+        box = wx.BoxSizer()
+        box.Add(grid, flag=wx.ALL | wx.ALIGN_CENTRE, border=10)
+
+        self.SetSizerAndFit(box)
+
+    def on_alert(self, _event):
+        enabled = self.checkAlert.GetValue()
+        self.spinLevel.Enable(enabled)
+
+    def on_points(self, _event):
+        enabled = self.checkPoints.GetValue()
+        self.spinPoints.Enable(enabled)
+
+    def on_background(self, _event):
+        colour = wx.ColourData()
+        colour.SetColour(self.background)
+
+        dlg = CubeColourDialog(self, colour, 0)
+        if dlg.ShowModal() == wx.ID_OK:
+            newColour = dlg.GetColourData().GetColour()
+            self.background = newColour.GetAsString(wx.C2S_HTML_SYNTAX)
+            self.buttonBackground.SetBackgroundColour(self.background)
+        dlg.Destroy()
+
+    def on_radio(self, _event):
+        enabled = self.radioRetain.GetValue()
+        self.checkFade.Enable(enabled)
+        self.spinCtrlMaxScans.Enable(enabled)
+
+    def on_choice(self, _event):
+        self.colourBar.set_map(self.choiceColour.GetStringSelection())
+        self.choiceColour.SetFocus()
+
+    def on_ok(self, _event):
+        self.settings.saveWarn = self.checkSaved.GetValue()
+        self.settings.alert = self.checkAlert.GetValue()
+        self.settings.alertLevel = self.spinLevel.GetValue()
+        self.settings.pointsLimit = self.checkPoints.GetValue()
+        self.settings.pointsMax = self.spinPoints.GetValue()
+        self.settings.retainScans = self.radioRetain.GetValue()
+        self.settings.fadeScans = self.checkFade.GetValue()
+        self.settings.lineWidth = self.ctrlWidth.GetValue()
+        self.settings.retainMax = self.spinCtrlMaxScans.GetValue()
+        self.settings.colourMap = self.choiceColour.GetStringSelection()
+        self.settings.background = self.background
+
+        self.EndModal(wx.ID_OK)
+
+
+class DialogAdvPrefs(wx.Dialog):
+    def __init__(self, parent, settings):
+        self.settings = settings
+
+        wx.Dialog.__init__(self, parent=parent, title="Advanced Preferences")
+
+        self.winFunc = settings.winFunc
+
+        textOverlap = wx.StaticText(self, label='PSD Overlap (%)')
+        self.slideOverlap = wx.Slider(self, wx.ID_ANY,
+                                      settings.overlap * 100,
+                                      0, 75,
+                                      style=wx.SL_LABELS)
+        self.slideOverlap.SetToolTip(wx.ToolTip('Power spectral density'
+                                                    ' overlap'))
+        textWindow = wx.StaticText(self, label='Window')
+        self.buttonWindow = wx.Button(self, wx.ID_ANY, self.winFunc)
+        self.Bind(wx.EVT_BUTTON, self.on_window, self.buttonWindow)
+
+        buttonOk = wx.Button(self, wx.ID_OK)
+        buttonCancel = wx.Button(self, wx.ID_CANCEL)
+        sizerButtons = wx.StdDialogButtonSizer()
+        sizerButtons.AddButton(buttonOk)
+        sizerButtons.AddButton(buttonCancel)
+        sizerButtons.Realize()
+        self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
+
+        advgrid = wx.GridBagSizer(10, 10)
+        advgrid.Add(textOverlap, pos=(0, 0),
+                    flag=wx.ALL | wx.ALIGN_CENTRE)
+        advgrid.Add(self.slideOverlap, pos=(0, 1), flag=wx.ALL | wx.EXPAND)
+        advgrid.Add(textWindow, pos=(1, 0), flag=wx.ALL | wx.EXPAND)
+        advgrid.Add(self.buttonWindow, pos=(1, 1), flag=wx.ALL)
+        advgrid.Add(sizerButtons, pos=(2, 1), flag=wx.ALL | wx.EXPAND)
+
+        advBox = wx.BoxSizer()
+        advBox.Add(advgrid, flag=wx.ALL | wx.ALIGN_CENTRE, border=10)
+
+        self.SetSizerAndFit(advBox)
+
+    def on_window(self, _event):
+        dlg = DialogWinFunc(self, self.winFunc)
+        if dlg.ShowModal() == wx.ID_OK:
+            self.winFunc = dlg.get_win_func()
+            self.buttonWindow.SetLabel(self.winFunc)
+        dlg.Destroy()
+
+    def on_ok(self, _event):
+        self.settings.overlap = self.slideOverlap.GetValue() / 100.0
+        self.settings.winFunc = self.winFunc
+
+        self.EndModal(wx.ID_OK)
+
+
+class DialogDevices(wx.Dialog):
+    COL_SEL, COL_DEV, COL_TUN, COL_SER, COL_IND, \
+    COL_GAIN, COL_CAL, COL_LO, COL_OFF = range(9)
+
+    def __init__(self, parent, devices, settings):
+        self.devices = copy.copy(devices)
+        self.settings = settings
+
+        wx.Dialog.__init__(self, parent=parent, title="Devices")
+
+        self.gridDev = grid.Grid(self)
+        self.gridDev.CreateGrid(len(self.devices), 9)
+        self.gridDev.SetRowLabelSize(0)
+        self.gridDev.SetColLabelValue(self.COL_SEL, "Select")
+        self.gridDev.SetColLabelValue(self.COL_DEV, "Device")
+        self.gridDev.SetColLabelValue(self.COL_TUN, "Tuner")
+        self.gridDev.SetColLabelValue(self.COL_SER, "Serial Number")
+        self.gridDev.SetColLabelValue(self.COL_IND, "Index")
+        self.gridDev.SetColLabelValue(self.COL_GAIN, "Gain\n(dB)")
+        self.gridDev.SetColLabelValue(self.COL_CAL, "Calibration\n(ppm)")
+        self.gridDev.SetColLabelValue(self.COL_LO, "LO\n(MHz)")
+        self.gridDev.SetColLabelValue(self.COL_OFF, "Band Offset\n(kHz)")
+        self.gridDev.SetColFormatFloat(self.COL_GAIN, -1, 1)
+        self.gridDev.SetColFormatFloat(self.COL_CAL, -1, 3)
+        self.gridDev.SetColFormatFloat(self.COL_LO, -1, 3)
+        self.gridDev.SetColFormatFloat(self.COL_OFF, -1, 0)
+
+        self.set_dev_grid()
+        self.Bind(grid.EVT_GRID_CELL_LEFT_CLICK, self.on_click)
 
         serverSizer = wx.BoxSizer(wx.HORIZONTAL)
         buttonAdd = wx.Button(self, wx.ID_ADD)
@@ -1136,23 +1230,20 @@ class DialogPrefs(wx.Dialog):
         serverSizer.Add(self.buttonDel, 0, wx.ALL)
         self.button_state()
 
-        devbox.Add(self.gridDev, 0, wx.ALL | wx.EXPAND, 10)
-        devbox.Add(serverSizer, 0, wx.ALL | wx.EXPAND, 10)
+        buttonOk = wx.Button(self, wx.ID_OK)
+        buttonCancel = wx.Button(self, wx.ID_CANCEL)
+        sizerButtons = wx.StdDialogButtonSizer()
+        sizerButtons.AddButton(buttonOk)
+        sizerButtons.AddButton(buttonCancel)
+        sizerButtons.Realize()
+        self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
 
-        self.vgrid = wx.GridBagSizer(10, 10)
-        self.vgrid.AddGrowableCol(0, 1)
-        self.vgrid.AddGrowableCol(1, 0)
-        self.vgrid.Add(genbox, pos=(0, 0), flag=wx.ALL | wx.EXPAND)
-        self.vgrid.Add(advbox, pos=(0, 1), flag=wx.ALL | wx.EXPAND)
-        self.vgrid.Add(conbox, pos=(1, 0), span=(1, 2),
-                       flag=wx.ALL | wx.EXPAND)
-        self.vgrid.Add(plotbox, pos=(2, 0), span=(1, 2),
-                       flag=wx.ALL | wx.EXPAND)
-        self.vgrid.Add(devbox, pos=(3, 0), span=(2, 2),
-                       flag=wx.ALL | wx.EXPAND)
-        self.vgrid.Add(sizerButtons, pos=(5, 1), flag=wx.ALL | wx.EXPAND)
+        self.devbox = wx.BoxSizer(wx.VERTICAL)
+        self.devbox.Add(self.gridDev, 1, wx.ALL | wx.EXPAND, 10)
+        self.devbox.Add(serverSizer, 0, wx.ALL | wx.EXPAND, 10)
+        self.devbox.Add(sizerButtons, 0, wx.ALL | wx.EXPAND, 10)
 
-        self.SetSizerAndFit(self.vgrid)
+        self.SetSizerAndFit(self.devbox)
 
     def set_dev_grid(self):
         colourBackground = self.gridDev.GetLabelBackgroundColour()
@@ -1171,9 +1262,9 @@ class DialogPrefs(wx.Dialog):
             self.gridDev.SetReadOnly(i, self.COL_IND, True)
             self.gridDev.SetCellRenderer(i, self.COL_SEL, CellRenderer())
             if device.isDevice:
-                self.gridDev.SetCellEditor(i, self.COL_GAIN,
-                                           grid.GridCellChoiceEditor(map(str, device.gains),
-                                                                     allowOthers=False))
+                cell = grid.GridCellChoiceEditor(map(str, device.gains),
+                                                 allowOthers=False)
+                self.gridDev.SetCellEditor(i, self.COL_GAIN, cell)
             self.gridDev.SetCellEditor(i, self.COL_CAL,
                                        grid.GridCellFloatEditor(-1, 3))
             self.gridDev.SetCellEditor(i, self.COL_LO,
@@ -1255,41 +1346,6 @@ class DialogPrefs(wx.Dialog):
 
         return False
 
-    def on_alert(self, _event):
-        enabled = self.checkAlert.GetValue()
-        self.spinLevel.Enable(enabled)
-
-    def on_points(self, _event):
-        enabled = self.checkPoints.GetValue()
-        self.spinPoints.Enable(enabled)
-
-    def on_background(self, _event):
-        colour = wx.ColourData()
-        colour.SetColour(self.background)
-
-        dlg = CubeColourDialog(self, colour, 0)
-        if dlg.ShowModal() == wx.ID_OK:
-            newColour = dlg.GetColourData().GetColour()
-            self.background = newColour.GetAsString(wx.C2S_HTML_SYNTAX)
-            self.buttonBackground.SetBackgroundColour(self.background)
-        dlg.Destroy()
-
-    def on_window(self, _event):
-        dlg = DialogWinFunc(self, self.winFunc)
-        if dlg.ShowModal() == wx.ID_OK:
-            self.winFunc = dlg.get_win_func()
-            self.buttonWindow.SetLabel(self.winFunc)
-        dlg.Destroy()
-
-    def on_radio(self, _event):
-        enabled = self.radioRetain.GetValue()
-        self.checkFade.Enable(enabled)
-        self.spinCtrlMaxScans.Enable(enabled)
-
-    def on_choice(self, _event):
-        self.colourBar.set_map(self.choiceColour.GetStringSelection())
-        self.choiceColour.SetFocus()
-
     def on_click(self, event):
         col = event.GetCol()
         index = event.GetRow()
@@ -1312,39 +1368,27 @@ class DialogPrefs(wx.Dialog):
 
         self.button_state()
 
+    def on_ok(self, _event):
+        self.get_dev_grid()
+        if self.warn_duplicates():
+            return
+
+        self.EndModal(wx.ID_OK)
+
     def on_add(self, _event):
         device = Device()
         device.isDevice = False
         self.devices.append(device)
         self.gridDev.AppendRows(1)
         self.set_dev_grid()
-        self.SetSizerAndFit(self.vbox)
+        self.SetSizerAndFit(self.devbox)
 
     def on_del(self, _event):
         del self.devices[self.index]
         self.gridDev.DeleteRows(self.index)
         self.set_dev_grid()
+        self.SetSizerAndFit(self.devbox)
         self.button_state()
-
-    def on_ok(self, _event):
-        self.get_dev_grid()
-        if self.warn_duplicates():
-            return
-        self.settings.saveWarn = self.checkSaved.GetValue()
-        self.settings.alert = self.checkAlert.GetValue()
-        self.settings.alertLevel = self.spinLevel.GetValue()
-        self.settings.pointsLimit = self.checkPoints.GetValue()
-        self.settings.pointsMax = self.spinPoints.GetValue()
-        self.settings.overlap = self.slideOverlap.GetValue() / 100.0
-        self.settings.retainScans = self.radioRetain.GetValue()
-        self.settings.fadeScans = self.checkFade.GetValue()
-        self.settings.lineWidth = self.ctrlWidth.GetValue()
-        self.settings.retainMax = self.spinCtrlMaxScans.GetValue()
-        self.settings.colourMap = self.choiceColour.GetStringSelection()
-        self.settings.winFunc = self.winFunc
-        self.settings.background = self.background
-
-        self.EndModal(wx.ID_OK)
 
     def select_row(self, index):
         self.gridDev.ClearSelection()

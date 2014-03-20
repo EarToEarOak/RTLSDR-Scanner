@@ -47,7 +47,8 @@ from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
 from spectrogram import Spectrogram
 from windows import PanelGraph, DialogPrefs, DialogCompare, DialogAutoCal, \
-    DialogSaveWarn, Statusbar, DialogProperties, DialogWinFunc, DialogAbout
+    DialogSaveWarn, Statusbar, DialogProperties, DialogWinFunc, DialogAbout, \
+    DialogAdvPrefs, DialogDevices
 
 
 class DropTarget(wx.FileDropTarget):
@@ -92,6 +93,8 @@ class FrameMain(wx.Frame):
         self.menuExport = None
         self.menuProperties = None
         self.menuPref = None
+        self.menuAdvPref = None
+        self.menuDevices = None
         self.menuStart = None
         self.menuStop = None
         self.menuStopEnd = None
@@ -269,6 +272,10 @@ class FrameMain(wx.Frame):
         menuEdit = wx.Menu()
         self.menuPref = menuEdit.Append(wx.ID_ANY, "&Preferences...",
                                    "Preferences")
+        self.menuAdvPref = menuEdit.Append(wx.ID_ANY, "&Advanced preferences...",
+                                   "Advanced preferences")
+        self.menuDevices = menuEdit.Append(wx.ID_ANY, "&Devices...",
+                                   "Device selection and configuration")
 
         menuScan = wx.Menu()
         self.menuStart = menuScan.Append(wx.ID_ANY, "&Start", "Start scan")
@@ -308,6 +315,8 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_properties, self.menuProperties)
         self.Bind(wx.EVT_MENU, self.on_exit, menuExit)
         self.Bind(wx.EVT_MENU, self.on_pref, self.menuPref)
+        self.Bind(wx.EVT_MENU, self.on_adv_pref, self.menuAdvPref)
+        self.Bind(wx.EVT_MENU, self.on_devices, self.menuDevices)
         self.Bind(wx.EVT_MENU, self.on_start, self.menuStart)
         self.Bind(wx.EVT_MENU, self.on_stop, self.menuStop)
         self.Bind(wx.EVT_MENU, self.on_stop_end, self.menuStopEnd)
@@ -437,12 +446,26 @@ class FrameMain(wx.Frame):
 
     def on_pref(self, _event):
         self.get_controls()
+        dlg = DialogPrefs(self, self.settings)
+        if dlg.ShowModal() == wx.ID_OK:
+            self.create_plot()
+            self.set_control_state(True)
+            self.set_controls()
+        dlg.Destroy()
+
+    def on_adv_pref(self, _event):
+        dlg = DialogAdvPrefs(self, self.settings)
+        if dlg.ShowModal() == wx.ID_OK:
+            self.set_control_state(True)
+        dlg.Destroy()
+
+    def on_devices(self, _event):
+        self.get_controls()
         self.devices = self.refresh_devices()
-        dlg = DialogPrefs(self, self.devices, self.settings)
+        dlg = DialogDevices(self, self.devices, self.settings)
         if dlg.ShowModal() == wx.ID_OK:
             self.devices = dlg.get_devices()
             self.settings.index = dlg.get_index()
-            self.create_plot()
             self.set_control_state(True)
             self.set_controls()
         dlg.Destroy()
@@ -773,6 +796,8 @@ class FrameMain(wx.Frame):
         self.menuStart.Enable(state)
         self.menuStop.Enable(not state)
         self.menuPref.Enable(state)
+        self.menuAdvPref.Enable(state)
+        self.menuDevices.Enable(state)
         self.menuCal.Enable(state)
         self.popupMenuStop.Enable(not state)
         self.popupMenuStart.Enable(state)
