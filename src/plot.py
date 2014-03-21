@@ -206,9 +206,9 @@ class ThreadPlot(threading.Thread):
                     data = avg.items()
                     peakF, peakL = max(data, key=lambda item: item[1])
 
-                    segments = self.create_segments(data)
+                    segments, levels = self.create_segments(data)
                     lc = LineCollection(segments)
-                    lc.set_array(numpy.array([x[1] for x in data]))
+                    lc.set_array(numpy.array(levels))
                     lc.set_norm(self.get_norm(self.autoL, self.extent))
                     lc.set_cmap(self.colourMap)
                     lc.set_linewidth(self.lineWidth)
@@ -232,9 +232,9 @@ class ThreadPlot(threading.Thread):
                         data = self.data[timeStamp].items()
                         peakF, peakL = self.extent.get_peak_fl()
 
-                        segments = self.create_segments(data)
+                        segments, levels = self.create_segments(data)
                         lc = LineCollection(segments)
-                        lc.set_array(numpy.array([x[1] for x in data]))
+                        lc.set_array(numpy.array(levels))
                         lc.set_norm(self.get_norm(self.autoL, self.extent))
                         lc.set_cmap(self.colourMap)
                         lc.set_linewidth(self.lineWidth)
@@ -252,14 +252,16 @@ class ThreadPlot(threading.Thread):
 
     def create_segments(self, points):
         segments = []
+        levels = []
 
         prev = points[0]
         for point in points:
             segment = [prev, point]
             segments.append(segment)
+            levels.append((point[1] + prev[1]) / 2.0)
             prev = point
 
-        return segments
+        return segments, levels
 
     def get_norm(self, autoL, extent):
         if autoL:
