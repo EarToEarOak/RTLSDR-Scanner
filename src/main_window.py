@@ -106,6 +106,7 @@ class FrameMain(wx.Frame):
         self.popupMenuStop = None
         self.popupMenuStopEnd = None
         self.popupMenuRangeLim = None
+        self.popupMenuPointsLim = None
 
         self.panel = None
         self.graph = None
@@ -361,15 +362,24 @@ class FrameMain(wx.Frame):
         self.popupMenuStopEnd = self.popupMenu.Append(wx.ID_ANY, "Stop at &end",
                                                       "Complete current sweep "
                                                       "before stopping")
+        self.popupMenu.AppendSeparator()
         self.popupMenuRangeLim = self.popupMenu.Append(wx.ID_ANY,
                                                        "Set range to current zoom",
                                                       "Set scanning range to the current "
                                                       "zoom")
+        self.popupMenu.AppendSeparator()
+        self.popupMenuPointsLim = self.popupMenu.Append(wx.ID_ANY,
+                                                       "Limit points",
+                                                       "Limit points to "
+                                                       "increase plot speed",
+                                                       kind=wx.ITEM_CHECK)
+        self.popupMenuPointsLim.Check(self.settings.pointsLimit)
 
         self.Bind(wx.EVT_MENU, self.on_start, self.popupMenuStart)
         self.Bind(wx.EVT_MENU, self.on_stop, self.popupMenuStop)
         self.Bind(wx.EVT_MENU, self.on_stop_end, self.popupMenuStopEnd)
         self.Bind(wx.EVT_MENU, self.on_range_lim, self.popupMenuRangeLim)
+        self.Bind(wx.EVT_MENU, self.on_points_lim, self.popupMenuPointsLim)
 
         self.Bind(wx.EVT_CONTEXT_MENU, self.on_popup_menu)
 
@@ -539,6 +549,10 @@ class FrameMain(wx.Frame):
         self.settings.start = xmin
         self.settings.stop = xmax
         self.set_controls()
+
+    def on_points_lim(self, _event):
+        self.settings.pointsLimit = self.popupMenuPointsLim.IsChecked()
+        self.set_plot(self.spectrum, self.settings.annotate)
 
     def on_event(self, event):
         status = event.data.get_status()
