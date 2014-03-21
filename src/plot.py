@@ -216,7 +216,7 @@ class ThreadPlot(threading.Thread):
                     self.axes.add_collection(lc)
                     self.parent.lc = lc
                 else:
-                    count = 1.0
+                    count = 0.0
                     for timeStamp in self.data:
                         if self.abort:
                             return
@@ -225,7 +225,7 @@ class ThreadPlot(threading.Thread):
                             return
 
                         if self.fade:
-                            alpha = count / total
+                            alpha = (total - count) / total
                         else:
                             alpha = 1
 
