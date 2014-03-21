@@ -23,6 +23,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from collections import OrderedDict
 import os
 import threading
 
@@ -36,7 +37,6 @@ from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 import numpy
 
 from events import EventThreadStatus, Event, post_event
-from misc import Extent
 
 
 class Plotter():
@@ -80,12 +80,12 @@ class Plotter():
         if self.extent is not None:
             with self.lock:
                 if self.settings.autoF or force:
-                    self.axes.set_xlim(self.extent.get_x())
+                    self.axes.set_xlim(self.extent.get_f())
                 if self.settings.autoL or force:
-                    self.axes.set_ylim(self.extent.get_z())
-                    self.barBase.set_clim(self.extent.get_z())
-                    norm = Normalize(vmin=self.extent.get_z()[0],
-                                     vmax=self.extent.get_z()[1])
+                    self.axes.set_ylim(self.extent.get_l())
+                    self.barBase.set_clim(self.extent.get_l())
+                    norm = Normalize(vmin=self.extent.get_l()[0],
+                                     vmax=self.extent.get_l()[1])
                     for collection in self.axes.collections:
                         collection.set_norm(norm)
                     try:
@@ -106,12 +106,14 @@ class Plotter():
     def set_title(self, title):
         self.axes.set_title(title)
 
-    def set_plot(self, data, annotate=False):
+    def set_plot(self, data, extent, annotate=False):
         if self.threadPlot is not None and self.threadPlot.isAlive():
             self.threadPlot.cancel()
             self.threadPlot.join()
 
+        self.extent = extent
         self.threadPlot = ThreadPlot(self, self.lock, self.axes, data,
+                                     self.extent,
                                      self.settings.colourMap,
                                      self.settings.autoL,
                                      self.settings.lineWidth,
@@ -154,7 +156,8 @@ class Plotter():
 
 
 class ThreadPlot(threading.Thread):
-    def __init__(self, parent, lock, axes, data, colourMap, autoL, lineWidth,
+    def __init__(self, parent, lock, axes, data, extent,
+                 colourMap, autoL, lineWidth,
                  barBase, fade, annotate, average):
         threading.Thread.__init__(self)
         self.name = "Plot"
@@ -162,6 +165,7 @@ class ThreadPlot(threading.Thread):
         self.lock = lock
         self.axes = axes
         self.data = data
+        self.extent = extent
         self.colourMap = colourMap
         self.autoL = autoL
         self.lineWidth = lineWidth
@@ -172,8 +176,8 @@ class ThreadPlot(threading.Thread):
         self.abort = False
 
     def run(self):
-        peakX = None
-        peakY = None
+        peakF = None
+        peakL = None
 
         with self.lock:
             if self.abort:
@@ -181,13 +185,12 @@ class ThreadPlot(threading.Thread):
             total = len(self.data)
             if total > 0:
                 self.parent.clear_plots()
-                extent = Extent()
                 lc = None
                 if self.average:
-                    avg = {}
+                    avg = OrderedDict()
                     count = len(self.data)
 
-                    for timeStamp in sorted(self.data):
+                    for timeStamp in self.data:
                         if self.abort:
                             return
 
@@ -200,16 +203,13 @@ class ThreadPlot(threading.Thread):
                             else:
                                 avg[x] = y
 
-                    extent.update_from_2d(avg)
-                    self.parent.extent = extent
-
-                    data = sorted(avg.items())
-                    peakX, peakY = max(data, key=lambda item: item[1])
+                    data = avg.items()
+                    peakF, peakL = max(data, key=lambda item: item[1])
 
                     segments = self.create_segments(data)
                     lc = LineCollection(segments)
                     lc.set_array(numpy.array([x[1] for x in data]))
-                    lc.set_norm(self.get_norm(self.autoL, extent))
+                    lc.set_norm(self.get_norm(self.autoL, self.extent))
                     lc.set_cmap(self.colourMap)
                     lc.set_linewidth(self.lineWidth)
                     lc.set_gid('plot')
@@ -217,7 +217,7 @@ class ThreadPlot(threading.Thread):
                     self.parent.lc = lc
                 else:
                     count = 1.0
-                    for timeStamp in sorted(self.data):
+                    for timeStamp in self.data:
                         if self.abort:
                             return
 
@@ -229,16 +229,13 @@ class ThreadPlot(threading.Thread):
                         else:
                             alpha = 1
 
-                        extent.update_from_2d(self.data[timeStamp])
-                        self.parent.extent = extent
-
-                        data = sorted(self.data[timeStamp].items())
-                        peakX, peakY = max(data, key=lambda item: item[1])
+                        data = self.data[timeStamp].items()
+                        peakF, peakL = self.extent.get_peak_fl()
 
                         segments = self.create_segments(data)
                         lc = LineCollection(segments)
                         lc.set_array(numpy.array([x[1] for x in data]))
-                        lc.set_norm(self.get_norm(self.autoL, extent))
+                        lc.set_norm(self.get_norm(self.autoL, self.extent))
                         lc.set_cmap(self.colourMap)
                         lc.set_linewidth(self.lineWidth)
                         lc.set_gid('plot')
@@ -247,7 +244,7 @@ class ThreadPlot(threading.Thread):
                         count += 1
 
                 if self.annotate:
-                    self.annotate_plot(peakX, peakY)
+                    self.annotate_plot(peakF, peakL)
 
         if total > 0:
             self.parent.scale_plot()
@@ -268,9 +265,9 @@ class ThreadPlot(threading.Thread):
         if autoL:
             vmin, vmax = self.barBase.get_clim()
         else:
-            zExtent = extent.get_z()
-            vmin = zExtent[0]
-            vmax = zExtent[1]
+            yExtent = extent.get_l()
+            vmin = yExtent[0]
+            vmax = yExtent[1]
 
         return Normalize(vmin=vmin, vmax=vmax)
 

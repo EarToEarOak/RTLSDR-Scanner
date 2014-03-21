@@ -23,8 +23,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import cPickle
+from collections import OrderedDict
 import datetime
 import json
+from operator import itemgetter
 import os
 import sys
 import time
@@ -118,44 +120,61 @@ class ValidatorCoord(wx.PyValidator):
 
 
 class Extent():
-    def __init__(self):
+    def __init__(self, spectrum):
         self.clear()
+        self.calc_extent(spectrum)
 
     def clear(self):
-        self.xMin = float('inf')
-        self.xMax = float('-inf')
-        self.yMin = float('inf')
-        self.yMax = float('-inf')
-        self.zMin = float('inf')
-        self.zMax = float('-inf')
+        self.fMin = float('inf')
+        self.fMax = float('-inf')
+        self.lMin = float('inf')
+        self.lMax = float('-inf')
+        self.tMin = float('inf')
+        self.tMax = float('-inf')
+        self.fpeak = None
+        self.lpeak = None
+        self.tpeak = None
 
-    def update_from_2d(self, xy):
-        x, y = split_spectrum(xy)
-        self.update_from_3d(x, None, y)
+    def calc_extent(self, spectrum):
+        for timeStamp in spectrum:
+            points = spectrum[timeStamp].items()
+            if len(points) > 0:
+                fMin = min(points, key=itemgetter(0))[0]
+                fMax = max(points, key=itemgetter(0))[0]
+                lMin = min(points, key=itemgetter(1))[1]
+                lMax = max(points, key=itemgetter(1))[1]
+                self.fMin = min(self.fMin, fMin)
+                self.fMax = max(self.fMax, fMax)
+                self.lMin = min(self.lMin, lMin)
+                self.lMax = max(self.lMax, lMax)
+        self.tMin = min(spectrum)
+        self.tMax = max(spectrum)
+        self.tPeak = self.tMax
+        self.fpeak, self.lpeak = max(spectrum[self.tMin].items(),
+                                     key=lambda(_f, l): l)
 
-    def update_from_3d(self, x, y, z):
-        if len(x) > 0:
-            self.xMin = min(self.xMin, min(x))
-            self.xMax = max(self.xMax, max(x))
-        if y is not None:
-            self.yMin = min(self.yMin, y)
-            self.yMax = max(self.yMax, y)
-        if len(z) > 0:
-            self.zMin = min(self.zMin, min(z))
-            self.zMax = max(self.zMax, max(z))
+    def get_f(self):
+        if self.fMin == self.fMax:
+            return self.fMin, self.fMax - 0.001
+        return self.fMin, self.fMax
 
-    def get_x(self):
-        if self.xMin == self.xMax:
-            return self.xMin, self.xMax - 0.001
-        return self.xMin, self.xMax
+    def get_l(self):
+        if self.lMin == self.lMax:
+            return self.lMin, self.lMax - 0.001
+        return self.lMin, self.lMax
 
-    def get_y(self):
-        return epoch_to_mpl(self.yMax), epoch_to_mpl(self.yMin - 1)
+    def get_t(self):
+        return epoch_to_mpl(self.tMax), epoch_to_mpl(self.tMin - 1)
 
-    def get_z(self):
-        if self.zMin == self.zMax:
-            return self.zMin, self.zMax - 0.001
-        return self.zMin, self.zMax
+    def get_ft(self):
+        tExtent = self.get_t()
+        return [self.fMin, self.fMax, tExtent[0], tExtent[1]]
+
+    def get_peak_fl(self):
+        return self.fpeak, self.lpeak
+
+    def get_peak_flt(self):
+        return self.fpeak, self.lpeak, self.tPeak
 
 
 class MouseZoom():
@@ -344,11 +363,11 @@ def reduce_points(spectrum, limit, total):
     if total < limit:
         return spectrum
 
-    newSpectrum = {}
+    newSpectrum = OrderedDict()
     ratio = float(total) / limit
     for timeStamp in spectrum:
-        points = sorted(spectrum[timeStamp].items())
-        reduced = {}
+        points = spectrum[timeStamp].items()
+        reduced = OrderedDict()
         for i in xrange(int(len(points) / ratio)):
             point = points[int(i * ratio):int((i + 1) * ratio)][0]
             reduced[point[0]] = point[1]
@@ -359,10 +378,21 @@ def reduce_points(spectrum, limit, total):
 
 def split_spectrum(spectrum):
     freqs = spectrum.keys()
-    freqs.sort()
     powers = map(spectrum.get, freqs)
 
     return freqs, powers
+
+
+def sort_spectrum(spectrum):
+    newSpectrum = OrderedDict()
+    for timeStamp in reversed(sorted(spectrum)):
+        newPoints = OrderedDict()
+        points = sorted(spectrum[timeStamp].items())
+        for point in points:
+            newPoints[point[0]] = point[1]
+        newSpectrum[timeStamp] = newPoints
+
+    return newSpectrum
 
 
 def next_2_to_pow(val):

@@ -26,7 +26,7 @@ A Windows installer can be found on [SourceForge](http://sourceforge.net/project
 
 ## Requirements ##
 
-- [Python 2.6](http://www.python.org) or greater
+- [Python 2.7](http://www.python.org) or greater
 - [wxPython](http://www.wxpython.org/)
 - [matplotlib](http://matplotlib.org/)
 - [numpy](http://www.numpy.org/)

@@ -36,7 +36,7 @@ from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 import numpy
 
 from events import post_event, EventThreadStatus, Event
-from misc import epoch_to_mpl, split_spectrum, format_time, Extent
+from misc import epoch_to_mpl, split_spectrum, format_time
 from mpl_toolkits.mplot3d import Axes3D  # @UnresolvedImport @UnusedImport
 
 
@@ -52,8 +52,8 @@ class Plotter3d():
         self.figure = self.graph.get_figure()
         self.axes = None
         self.plot = None
-        self.threadPlot = None
         self.extent = None
+        self.threadPlot = None
         self.wireframe = settings.wireframe
         self.setup_plot()
         self.set_grid(grid)
@@ -89,20 +89,20 @@ class Plotter3d():
         self.barBase.set_label('Level (dB)')
 
     def scale_plot(self, force=False):
-        if self.extent is not None:
+        if self.extent is not None and self.plot is not None:
             with self.lock:
                 if self.settings.autoF or force:
-                    self.axes.set_xlim(self.extent.get_x())
+                    self.axes.set_xlim(self.extent.get_f())
                 if self.settings.autoL or force:
-                    self.axes.set_zlim(self.extent.get_z())
-                    self.plot.set_clim(self.extent.get_z())
-                    self.barBase.set_clim(self.extent.get_z())
+                    self.axes.set_zlim(self.extent.get_l())
+                    self.plot.set_clim(self.extent.get_l())
+                    self.barBase.set_clim(self.extent.get_l())
                     try:
                         self.barBase.draw_all()
                     except:
                         pass
                 if self.settings.autoT or force:
-                    self.axes.set_ylim(self.extent.get_y())
+                    self.axes.set_ylim(self.extent.get_t())
 
     def redraw_plot(self):
         if self.figure is not None:
@@ -117,13 +117,15 @@ class Plotter3d():
     def set_title(self, title):
         self.axes.set_title(title)
 
-    def set_plot(self, data, annotate=False):
+    def set_plot(self, data, extent, annotate=False):
         if self.threadPlot is not None and self.threadPlot.isAlive():
             self.threadPlot.cancel()
             self.threadPlot.join()
 
+        self.extent = extent
         self.threadPlot = ThreadPlot(self, self.lock, self.axes,
-                                     data, self.settings.retainMax,
+                                     data, self.extent,
+                                     self.settings.retainMax,
                                      self.settings.colourMap,
                                      self.settings.autoF,
                                      self.barBase,
@@ -164,7 +166,7 @@ class Plotter3d():
 
 
 class ThreadPlot(threading.Thread):
-    def __init__(self, parent, lock, axes, data, retainMax, colourMap,
+    def __init__(self, parent, lock, axes, data, extent, retainMax, colourMap,
                  autoL, barBase, annotate):
         threading.Thread.__init__(self)
         self.name = "Plot"
@@ -172,6 +174,7 @@ class ThreadPlot(threading.Thread):
         self.lock = lock
         self.axes = axes
         self.data = data
+        self.extent = extent
         self.retainMax = retainMax
         self.colourMap = colourMap
         self.autoL = autoL
@@ -180,32 +183,21 @@ class ThreadPlot(threading.Thread):
         self.abort = False
 
     def run(self):
-        peakX = None
-        peakY = None
-        peakZ = None
 
         with self.lock:
             if self.abort:
                 return
             total = len(self.data)
             if total > 0:
-                timeMin = min(self.data)
-                plotFirst = self.data[timeMin]
-                if len(plotFirst) == 0:
-                    return
-                width = len(plotFirst)
-
+                width = len(self.data[min(self.data)])
                 x = numpy.empty((width, total + 1)) * numpy.nan
                 y = numpy.empty((width, total + 1)) * numpy.nan
                 z = numpy.empty((width, total + 1)) * numpy.nan
                 self.parent.clear_plots()
                 j = 1
-                extent = Extent()
-                peakY = max(self.data)
-                for ys in sorted(self.data):
+                for ys in self.data:
                     mplTime = epoch_to_mpl(ys)
                     xs, zs = split_spectrum(self.data[ys])
-                    extent.update_from_3d(xs, ys, zs)
                     for i in range(len(xs)):
                         if self.abort:
                             return
@@ -218,14 +210,10 @@ class ThreadPlot(threading.Thread):
                 y[:, 0] = y[:, 1] - MPL_SECOND
                 z[:, 0] = z[:, 1]
 
-                pos = numpy.argmax(z[:, 1])
-                peakX = x[:, 1][pos]
-                peakZ = z[:, 1][pos]
-
                 if self.autoL:
                     vmin, vmax = self.barBase.get_clim()
                 else:
-                    zExtent = extent.get_z()
+                    zExtent = self.extent.get_l()
                     vmin = zExtent[0]
                     vmax = zExtent[1]
                 if self.parent.wireframe:
@@ -247,34 +235,34 @@ class ThreadPlot(threading.Thread):
                                            gid='plot',
                                            antialiased=True,
                                            alpha=1)
-                self.parent.extent = extent
 
                 if self.annotate:
-                    self.annotate_plot(peakX, peakY, peakZ)
+                    self.annotate_plot()
 
         if total > 0:
             self.parent.scale_plot()
             self.parent.redraw_plot()
 
-    def annotate_plot(self, x, y, z):
-        when = format_time(y)
-        yPos = epoch_to_mpl(y)
+    def annotate_plot(self):
+        f, l, t = self.extent.get_peak_flt()
+        when = format_time(t)
+        tPos = epoch_to_mpl(t)
         if(matplotlib.__version__ < '1.3'):
-            self.axes.text(x, yPos, z,
-                           '{0:.6f}MHz\n{1:.2f}dB\n{2}'.format(x, z, when),
+            self.axes.text(f, tPos, l,
+                           '{0:.6f}MHz\n{1:.2f}dB\n{2}'.format(f, l, when),
                            ha='left', va='bottom', size='small', gid='peak')
-            self.axes.plot([x], [yPos], [z], marker='x', markersize=10,
+            self.axes.plot([f], [tPos], [l], marker='x', markersize=10,
                            mew=3, color='w', gid='peak')
-            self.axes.plot([x], [yPos], [z], marker='x', markersize=10,
+            self.axes.plot([f], [tPos], [l], marker='x', markersize=10,
                            color='r', gid='peak')
         else:
             effect = patheffects.withStroke(linewidth=3, foreground="w",
                                             alpha=0.75)
-            self.axes.text(x, epoch_to_mpl(y), z,
-                           '{0:.6f}MHz\n{1:.2f}dB\n{2}'.format(x, z, when),
+            self.axes.text(f, tPos, l,
+                           '{0:.6f}MHz\n{1:.2f}dB\n{2}'.format(f, l, when),
                            ha='left', va='bottom', size='small', gid='peak',
                            path_effects=[effect])
-            self.axes.plot([x], [yPos], [z], marker='x', markersize=10,
+            self.axes.plot([f], [tPos], [l], marker='x', markersize=10,
                            color='r', gid='peak', path_effects=[effect])
 
     def clear_markers(self):

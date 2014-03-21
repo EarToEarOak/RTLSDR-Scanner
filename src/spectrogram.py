@@ -51,6 +51,7 @@ class Spectrogram:
         self.lock = lock
         self.axes = None
         self.plot = None
+        self.extent = None
         self.threadPlot = None
         self.setup_plot()
         self.set_grid(grid)
@@ -110,13 +111,15 @@ class Spectrogram:
     def set_title(self, title):
         self.axes.set_title(title)
 
-    def set_plot(self, data, annotate=False):
+    def set_plot(self, data, extent, annotate=False):
         if self.threadPlot is not None and self.threadPlot.isAlive():
             self.threadPlot.cancel()
             self.threadPlot.join()
 
+        self.extent = extent
         self.threadPlot = ThreadPlot(self, self.lock, self.axes,
-                                     data, self.settings.retainMax,
+                                     data, self.extent,
+                                     self.settings.retainMax,
                                      self.settings.colourMap,
                                      self.settings.autoL,
                                      self.barBase,
@@ -160,7 +163,7 @@ class Spectrogram:
 
 
 class ThreadPlot(threading.Thread):
-    def __init__(self, parent, lock, axes, data, retainMax, colourMap,
+    def __init__(self, parent, lock, axes, data, extent, retainMax, colourMap,
                  autoL, barBase, annotate):
         threading.Thread.__init__(self)
         self.name = "Plot"
@@ -168,6 +171,7 @@ class ThreadPlot(threading.Thread):
         self.lock = lock
         self.axes = axes
         self.data = data
+        self.extent = extent
         self.retainMax = retainMax
         self.colourMap = colourMap
         self.autoL = autoL
@@ -181,23 +185,11 @@ class ThreadPlot(threading.Thread):
                 return
             total = len(self.data)
             if total > 0:
-                timeMin = min(self.data)
-                timeMax = max(self.data)
-                plotFirst = self.data[timeMin]
-                if len(plotFirst) == 0:
-                    return
-                xMin = min(plotFirst)
-                xMax = max(plotFirst)
-                width = len(plotFirst)
-                if total == 1:
-                    timeMax += 1
-                extent = [xMin, xMax,
-                          epoch_to_mpl(timeMax), epoch_to_mpl(timeMin)]
-
+                width = len(self.data[min(self.data)])
                 c = np.ma.masked_all((self.retainMax, width))
                 self.parent.clear_plots()
                 j = self.retainMax
-                for ys in reversed(sorted(self.data)):
+                for ys in self.data:
                     j -= 1
                     _xs, zs = split_spectrum(self.data[ys])
                     for i in range(len(zs)):
@@ -210,6 +202,7 @@ class ThreadPlot(threading.Thread):
                     minY, maxY = self.barBase.get_clim()
                     norm = Normalize(vmin=minY, vmax=maxY)
 
+                extent = self.extent.get_ft()
                 self.parent.plot = self.axes.imshow(c, aspect='auto',
                                                     extent=extent,
                                                     norm=norm,
@@ -225,45 +218,36 @@ class ThreadPlot(threading.Thread):
             self.parent.redraw_plot()
 
     def annotate_plot(self):
-        times = self.data.keys()
-        if len(times) > 1:
-            times.sort()
-            timeStamp = times[-2]
-            plot = self.data[timeStamp]
-        else:
-            timeStamp = times[0]
-            plot = self.data[timeStamp]
 
         self.clear_markers()
-        xMax = max(plot, key=plot.get)
-        yMax = plot[xMax]
+        fMax, lMax, tMax = self.extent.get_peak_flt()
+        y = epoch_to_mpl(tMax)
 
         start, stop = self.axes.get_xlim()
-        y = epoch_to_mpl(timeStamp)
-        textX = ((stop - start) / 50.0) + xMax
-        when = format_time(timeStamp)
+        textX = ((stop - start) / 50.0) + fMax
+        when = format_time(fMax)
 
         if(matplotlib.__version__ < '1.3'):
-            self.axes.annotate('{0:.6f}MHz\n{1:.2f}dB\n{2}'.format(xMax,
-                                                                   yMax,
+            self.axes.annotate('{0:.6f}MHz\n{1:.2f}dB\n{2}'.format(fMax,
+                                                                   lMax,
                                                                    when),
-                               xy=(xMax, y), xytext=(textX, y),
+                               xy=(fMax, y), xytext=(textX, y),
                                ha='left', va='bottom', size='small',
                                color='w', gid='peak')
-            self.axes.plot(xMax, y, marker='x', markersize=10, color='w',
+            self.axes.plot(fMax, y, marker='x', markersize=10, color='w',
                            mew=3, gid='peak')
-            self.axes.plot(xMax, y, marker='x', markersize=10, color='r',
+            self.axes.plot(fMax, y, marker='x', markersize=10, color='r',
                            gid='peak')
         else:
             effect = patheffects.withStroke(linewidth=3, foreground="w",
                                             alpha=0.75)
-            self.axes.annotate('{0:.6f}MHz\n{1:.2f}dB\n{2}'.format(xMax,
-                                                                   yMax,
+            self.axes.annotate('{0:.6f}MHz\n{1:.2f}dB\n{2}'.format(fMax,
+                                                                   lMax,
                                                                    when),
-                               xy=(xMax, y), xytext=(textX, y),
+                               xy=(fMax, y), xytext=(textX, y),
                                ha='left', va='bottom', size='small',
                                path_effects=[effect], gid='peak')
-            self.axes.plot(xMax, y, marker='x', markersize=10, color='r',
+            self.axes.plot(fMax, y, marker='x', markersize=10, color='r',
                            path_effects=[effect], gid='peak')
 
     def clear_markers(self):

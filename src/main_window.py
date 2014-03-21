@@ -40,15 +40,15 @@ from devices import get_devices
 from events import EVT_THREAD_STATUS, Event, EventThreadStatus, post_event
 from misc import ScanInfo, calc_samples, calc_real_dwell, open_plot, save_plot, \
     export_plot, get_version_timestamp, get_version_timestamp_repo, add_colours, \
-    MouseZoom, count_points, reduce_points
+    MouseZoom, count_points, reduce_points, Extent, sort_spectrum
 from plot import Plotter
 from plot3d import Plotter3d
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
 from spectrogram import Spectrogram
 from windows import PanelGraph, DialogPrefs, DialogCompare, DialogAutoCal, \
-    DialogSaveWarn, Statusbar, DialogProperties, DialogWinFunc, DialogAbout, \
-    DialogAdvPrefs, DialogDevices
+    DialogSaveWarn, Statusbar, DialogProperties, DialogAbout, DialogAdvPrefs,\
+    DialogDevices
 
 
 class DropTarget(wx.FileDropTarget):
@@ -789,10 +789,12 @@ class FrameMain(wx.Frame):
         if len(spectrum) > 0:
             total = count_points(spectrum)
             if total > 0:
+                spectrum = sort_spectrum(spectrum)
+                extent = Extent(spectrum)
                 if self.settings.pointsLimit:
                     spectrum = reduce_points(spectrum, self.settings.pointsMax,
                                              total)
-                self.plot.set_plot(spectrum, annotate)
+                self.plot.set_plot(spectrum, extent, annotate)
 
     def set_control_state(self, state):
         hasDevices = len(self.devices) > 0
