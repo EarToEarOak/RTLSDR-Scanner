@@ -36,6 +36,9 @@ class Settings():
         self.saveWarn = True
         self.fileHistory = wx.FileHistory(5)
 
+        self.dirScans = "."
+        self.dirExport = "."
+
         self.display = Display.PLOT
 
         self.annotate = True
@@ -90,6 +93,8 @@ class Settings():
         self.display = self.cfg.ReadInt('display', self.display)
         self.saveWarn = self.cfg.ReadBool('saveWarn', self.saveWarn)
         self.fileHistory.Load(self.cfg)
+        self.dirScans = self.cfg.Read('dirScans', self.dirScans)
+        self.dirExport = self.cfg.Read('dirExport', self.dirExport)
         self.annotate = self.cfg.ReadBool('annotate', self.annotate)
         self.retainScans = self.cfg.ReadBool('retainScans', self.retainScans)
         self.fadeScans = self.cfg.ReadBool('fadeScans', self.fadeScans)
@@ -140,6 +145,8 @@ class Settings():
         self.cfg.WriteInt('display', self.display)
         self.cfg.WriteBool('saveWarn', self.saveWarn)
         self.fileHistory.Save(self.cfg)
+        self.cfg.Write('dirScans', self.dirScans)
+        self.cfg.Write('dirExport', self.dirExport)
         self.cfg.WriteBool('annotate', self.annotate)
         self.cfg.WriteBool('retainScans', self.retainScans)
         self.cfg.WriteBool('fadeScans', self.fadeScans)

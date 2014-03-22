@@ -124,15 +124,13 @@ class FrameMain(wx.Frame):
         self.checkUpdate = None
         self.checkGrid = None
 
-        self.filename = ""
-        self.dirname = "."
-
         self.spectrum = {}
         self.scanInfo = ScanInfo()
         self.isSaved = True
 
         self.settings = Settings()
         self.devices = get_devices(self.settings.devices)
+        self.filename = ""
         self.oldCal = 0
 
         wx.Frame.__init__(self, None, title=title)
@@ -391,8 +389,8 @@ class FrameMain(wx.Frame):
     def on_open(self, _event):
         if self.save_warn(Warn.OPEN):
             return
-        dlg = wx.FileDialog(self, "Open a scan", self.dirname, self.filename,
-                            File.RFS, wx.OPEN)
+        dlg = wx.FileDialog(self, "Open a scan", self.settings.dirScans,
+                            self.filename, File.RFS, wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             self.open(dlg.GetDirectory(), dlg.GetFilename())
         dlg.Destroy()
@@ -405,28 +403,31 @@ class FrameMain(wx.Frame):
         self.open(dirname, filename)
 
     def on_save(self, _event):
-        dlg = wx.FileDialog(self, "Save a scan", self.dirname,
+        dlg = wx.FileDialog(self, "Save a scan", self.settings.dirScans,
                             self.filename, File.RFS,
                             wx.SAVE | wx.OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
             self.status.set_general("Saving")
             self.filename = os.path.splitext(dlg.GetFilename())[0]
-            self.dirname = dlg.GetDirectory()
-            save_plot(self.dirname, dlg.GetFilename(), self.scanInfo,
+            dirname = dlg.GetDirectory()
+            self.settings.dirScans = dirname
+            save_plot(dirname, dlg.GetFilename(), self.scanInfo,
                       self.spectrum)
             self.saved(True)
             self.status.set_general("Finished")
-            self.settings.fileHistory.AddFileToHistory(os.path.join(self.dirname,
+            self.settings.fileHistory.AddFileToHistory(os.path.join(dirname,
                                                                     dlg.GetFilename()))
         dlg.Destroy()
 
     def on_export(self, _event):
-        dlg = wx.FileDialog(self, "Export a scan", self.dirname,
+        dlg = wx.FileDialog(self, "Export a scan", self.settings.dirExport,
                             self.filename, File.get_export_filters(),
                             wx.SAVE | wx.OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
             self.status.set_general("Exporting")
-            export_plot(dlg.GetDirectory(), dlg.GetFilename(),
+            dirname = dlg.GetDirectory()
+            self.settings.dirExport = dirname
+            export_plot(dirname, dlg.GetFilename(),
                         dlg.GetFilterIndex(), self.spectrum)
             self.status.set_general("Finished")
         dlg.Destroy()
@@ -482,7 +483,7 @@ class FrameMain(wx.Frame):
         dlg.Destroy()
 
     def on_compare(self, _event):
-        dlg = DialogCompare(self, self.dirname, self.filename)
+        dlg = DialogCompare(self, self.settings.dirScans, self.filename)
         dlg.ShowModal()
         dlg.Destroy()
 
@@ -639,7 +640,7 @@ class FrameMain(wx.Frame):
                 return
 
         self.filename = os.path.splitext(filename)[0]
-        self.dirname = dirname
+        self.settings.dirScans = dirname
         self.status.set_general("Opening: {0}".format(filename))
 
         self.scanInfo, spectrum = open_plot(dirname, filename)
