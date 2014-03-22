@@ -150,8 +150,9 @@ class Extent():
         self.tMin = min(spectrum)
         self.tMax = max(spectrum)
         self.tPeak = self.tMax
-        self.fPeak, self.lPeak = max(spectrum[self.tMax].items(),
-                                     key=lambda(_f, l): l)
+        if len(spectrum[self.tMax]) > 0:
+            self.fPeak, self.lPeak = max(spectrum[self.tMax].items(),
+                                         key=lambda(_f, l): l)
         print self.tMax
 
     def get_f(self):
