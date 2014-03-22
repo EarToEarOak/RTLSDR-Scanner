@@ -29,7 +29,7 @@ from threading import Thread
 import threading
 from urlparse import urlparse
 
-from constants import SAMPLE_RATE
+from constants import SAMPLE_RATE, File
 from devices import Device, get_devices
 from events import *
 from misc import ScanInfo, save_plot, export_plot, nearest, calc_real_dwell, \
@@ -69,8 +69,8 @@ class Cli():
             error = "Dwell should be positive"
         elif nfft <= 0:
             error = "FFT bins should be positive"
-        elif ext != ".rfs" and ext != ".csv":
-            error = "File extension should be .rfs or .csv"
+        elif ext != ".rfs" and ext != ".csv" and ext != ".plt":
+            error = "File extension should be .rfs, .csv or .plt"
         else:
             device = Device()
             if remote is None:
@@ -128,7 +128,8 @@ class Cli():
             scanInfo.setFromSettings(self.settings)
             save_plot(directory, filename, scanInfo, self.spectrum)
         else:
-            export_plot(directory, filename, self.spectrum)
+            exportType = File.get_export_type(ext)
+            export_plot(directory, filename, exportType, self.spectrum)
 
         print "Done"
 

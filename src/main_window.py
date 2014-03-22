@@ -47,7 +47,7 @@ from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
 from spectrogram import Spectrogram
 from windows import PanelGraph, DialogPrefs, DialogCompare, DialogAutoCal, \
-    DialogSaveWarn, Statusbar, DialogProperties, DialogAbout, DialogAdvPrefs,\
+    DialogSaveWarn, Statusbar, DialogProperties, DialogAbout, DialogAdvPrefs, \
     DialogDevices
 
 
@@ -263,7 +263,7 @@ class FrameMain(wx.Frame):
         self.menuSave = menuFile.Append(wx.ID_SAVE, "&Save As...",
                                           "Save polot")
         self.menuExport = menuFile.Append(wx.ID_ANY, "&Export...",
-                                            "Export polot")
+                                            "Export plot")
         menuFile.AppendSeparator()
         self.menuProperties = menuFile.Append(wx.ID_ANY, "&Properties...",
                                             "Show properties")
@@ -422,11 +422,12 @@ class FrameMain(wx.Frame):
 
     def on_export(self, _event):
         dlg = wx.FileDialog(self, "Export a scan", self.dirname,
-                            self.filename, File.CSV,
+                            self.filename, File.get_export_filters(),
                             wx.SAVE | wx.OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
             self.status.set_general("Exporting")
-            export_plot(dlg.GetDirectory(), dlg.GetFilename(), self.spectrum)
+            export_plot(dlg.GetDirectory(), dlg.GetFilename(),
+                        dlg.GetFilterIndex(), self.spectrum)
             self.status.set_general("Finished")
         dlg.Destroy()
 

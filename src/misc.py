@@ -153,7 +153,6 @@ class Extent():
         if len(spectrum[self.tMax]) > 0:
             self.fPeak, self.lPeak = max(spectrum[self.tMax].items(),
                                          key=lambda(_f, l): l)
-        print self.tMax
 
     def get_f(self):
         if self.fMin == self.fMax:
@@ -344,13 +343,39 @@ def save_plot(dirname, filename, scanInfo, spectrum):
     handle.close()
 
 
-def export_plot(dirname, filename, spectrum):
+def export_plot(dirname, filename, exportType, spectrum):
+    spectrum = sort_spectrum(spectrum)
     handle = open(os.path.join(dirname, filename), 'wb')
+    if exportType == File.ExportType.CSV:
+        export_csv(handle, spectrum)
+    elif exportType == File.ExportType.PLT:
+        export_plt(handle, spectrum)
+    handle.close()
+
+
+def export_csv(handle, spectrum):
     handle.write("Time (UTC), Frequency (MHz),Level (dB/Hz)\n")
     for plot in spectrum.iteritems():
         for freq, pwr in plot[1].iteritems():
             handle.write("{0}, {1}, {2}\n".format(plot[0], freq, pwr))
-    handle.close()
+
+
+def export_plt(handle, spectrum):
+    handle.write('set title "RTLSDR Scan"\n')
+    handle.write('set xlabel "Frequency (MHz)"\n')
+    handle.write('set ylabel "Time"\n')
+    handle.write('set zlabel "Level (dB)"\n')
+    handle.write('set ydata time\n')
+    handle.write('set timefmt "%s"\n')
+    handle.write('set format y "%H:%M:%S"\n')
+    handle.write('set pm3d\n')
+    handle.write('set hidden3d\n')
+    handle.write('set palette rgb 33,13,10\n')
+    handle.write('splot "-" using 1:2:3 notitle with lines \n')
+    for plot in spectrum.iteritems():
+        handle.write('\n')
+        for freq, pwr in plot[1].iteritems():
+            handle.write("{0} {1} {2}\n".format(freq, plot[0], pwr))
 
 
 def count_points(spectrum):

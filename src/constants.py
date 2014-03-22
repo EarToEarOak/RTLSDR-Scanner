@@ -97,10 +97,34 @@ class Plot:
 
 
 class File:
-    RFS = "RTLSDR frequency scan (*.rfs)|*.rfs"
-    CSV = "CSV table (*.csv)|*.csv"
+    class ExportType:
+        CSV, PLT = range(2)
+
+    FILTERS = [""] * 2
+    FILTERS[ExportType.CSV] = "CSV table (*.csv)|*.csv"
+    FILTERS[ExportType.PLT] = "gnuplot script (*.plt)|*.plt"
+
     HEADER = "RTLSDR Scanner"
     VERSION = 8
+    RFS = "RTLSDR frequency scan (*.rfs)|*.rfs"
+
+    @staticmethod
+    def get_export_filters():
+        filters = ""
+        length = len(File.FILTERS)
+        for i in xrange(length):
+            filters += File.FILTERS[i]
+            if i < length - 1:
+                filters += '|'
+
+        return filters
+
+    @staticmethod
+    def get_export_type(ext):
+        try:
+            return next(x for x, i in enumerate(File.FILTERS) if i[-4:] == ext)
+        except StopIteration:
+            return -1
 
 
 if __name__ == '__main__':
