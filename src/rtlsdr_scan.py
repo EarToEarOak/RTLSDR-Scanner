@@ -106,7 +106,7 @@ if __name__ == '__main__':
         app = RtlSdrScanner(pool)
         frame = FrameMain("RTLSDR Scanner", pool)
         if args.file is not None:
-            frame.open(args.dirname, args.filename)
+            frame.open(os.path.abspath(args.dirname), args.filename)
         app.MainLoop()
     else:
         Cli(pool, args)
