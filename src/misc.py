@@ -131,9 +131,9 @@ class Extent():
         self.lMax = float('-inf')
         self.tMin = float('inf')
         self.tMax = float('-inf')
-        self.fpeak = None
-        self.lpeak = None
-        self.tpeak = None
+        self.fPeak = None
+        self.lPeak = None
+        self.tPeak = None
 
     def calc_extent(self, spectrum):
         for timeStamp in spectrum:
@@ -150,7 +150,7 @@ class Extent():
         self.tMin = min(spectrum)
         self.tMax = max(spectrum)
         self.tPeak = self.tMax
-        self.fpeak, self.lpeak = max(spectrum[self.tMin].items(),
+        self.fPeak, self.lPeak = max(spectrum[self.tMin].items(),
                                      key=lambda(_f, l): l)
 
     def get_f(self):
@@ -171,10 +171,10 @@ class Extent():
         return [self.fMin, self.fMax, tExtent[0], tExtent[1]]
 
     def get_peak_fl(self):
-        return self.fpeak, self.lpeak
+        return self.fPeak, self.lPeak
 
     def get_peak_flt(self):
-        return self.fpeak, self.lpeak, self.tPeak
+        return self.fPeak, self.lPeak, self.tPeak
 
 
 class MouseZoom():
