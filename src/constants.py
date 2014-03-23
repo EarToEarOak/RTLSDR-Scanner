@@ -98,11 +98,12 @@ class Plot:
 
 class File:
     class ExportType:
-        CSV, PLT = range(2)
+        CSV, GNUPLOT, FREEMAT = range(3)
 
-    FILTERS = [""] * 2
+    FILTERS = [""] * 3
     FILTERS[ExportType.CSV] = "CSV table (*.csv)|*.csv"
-    FILTERS[ExportType.PLT] = "gnuplot script (*.plt)|*.plt"
+    FILTERS[ExportType.GNUPLOT] = "gnuplot script (*.plt)|*.plt"
+    FILTERS[ExportType.FREEMAT] = "FreeMat script (*.m)|*.m"
 
     HEADER = "RTLSDR Scanner"
     VERSION = 8

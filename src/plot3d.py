@@ -30,17 +30,13 @@ from matplotlib import cm, patheffects
 import matplotlib
 from matplotlib.colorbar import ColorbarBase
 from matplotlib.colors import Normalize, hex2color
-from matplotlib.dates import DateFormatter, seconds
+from matplotlib.dates import DateFormatter
 from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
-import numpy
 
 from events import post_event, EventThreadStatus, Event
-from misc import epoch_to_mpl, split_spectrum, format_time
+from misc import epoch_to_mpl, format_time, create_mesh
 from mpl_toolkits.mplot3d import Axes3D  # @UnresolvedImport @UnusedImport
-
-
-MPL_SECOND = seconds(1)
 
 
 class Plotter3d():
@@ -189,26 +185,8 @@ class ThreadPlot(threading.Thread):
                 return
             total = len(self.data)
             if total > 0:
-                width = len(self.data[min(self.data)])
-                x = numpy.empty((width, total + 1)) * numpy.nan
-                y = numpy.empty((width, total + 1)) * numpy.nan
-                z = numpy.empty((width, total + 1)) * numpy.nan
+                x, y, z = create_mesh(self.data, True)
                 self.parent.clear_plots()
-                j = 1
-                for ys in self.data:
-                    mplTime = epoch_to_mpl(ys)
-                    xs, zs = split_spectrum(self.data[ys])
-                    for i in range(len(xs)):
-                        if self.abort:
-                            return
-                        x[i, j] = xs[i]
-                        y[i, j] = mplTime
-                        z[i, j] = zs[i]
-                    j += 1
-
-                x[:, 0] = x[:, 1]
-                y[:, 0] = y[:, 1] - MPL_SECOND
-                z[:, 0] = z[:, 1]
 
                 if self.autoL:
                     vmin, vmax = self.barBase.get_clim()

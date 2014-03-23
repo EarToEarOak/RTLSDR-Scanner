@@ -34,7 +34,8 @@ import urllib
 
 from matplotlib import cm
 from matplotlib.colors import LinearSegmentedColormap
-from matplotlib.dates import date2num
+from matplotlib.dates import date2num, seconds
+import numpy
 import wx
 
 from constants import SAMPLE_RATE, File, TIMESTAMP_FILE, Display
@@ -348,8 +349,10 @@ def export_plot(dirname, filename, exportType, spectrum):
     handle = open(os.path.join(dirname, filename), 'wb')
     if exportType == File.ExportType.CSV:
         export_csv(handle, spectrum)
-    elif exportType == File.ExportType.PLT:
+    elif exportType == File.ExportType.GNUPLOT:
         export_plt(handle, spectrum)
+    elif exportType == File.ExportType.FREEMAT:
+        export_freemat(handle, spectrum)
     handle.close()
 
 
@@ -376,6 +379,31 @@ def export_plt(handle, spectrum):
         handle.write('\n')
         for freq, pwr in plot[1].iteritems():
             handle.write("{0} {1} {2}\n".format(freq, plot[0], pwr))
+
+
+def export_freemat(handle, spectrum):
+    x, y, z = create_mesh(spectrum, False)
+    write_numpy(handle, x, 'x')
+    write_numpy(handle, y, 'y')
+    write_numpy(handle, z, 'z')
+    handle.write('\n')
+    handle.write('surf(x,y,z)\n')
+    handle.write('view(3)\n')
+    handle.write("set(gca, 'plotboxaspectratio', [3, 2, 1])\n")
+    handle.write("title('RTLSDR Scan')\n")
+    handle.write("xlabel('Frequency (MHz)')\n")
+    handle.write("ylabel('Time')\n")
+    handle.write("zlabel('Level (dB)')\n")
+    handle.write("grid('on')\n")
+
+
+def write_numpy(handle, array, name):
+    handle.write('{0}=[\n'.format(name))
+    for i in array:
+        for j in i:
+            handle.write('{0} '.format(j))
+        handle.write(';\n')
+    handle.write(']\n')
 
 
 def count_points(spectrum):
@@ -408,6 +436,33 @@ def split_spectrum(spectrum):
     powers = map(spectrum.get, freqs)
 
     return freqs, powers
+
+
+def create_mesh(spectrum, mplTime):
+    total = len(spectrum)
+    width = len(spectrum[min(spectrum)])
+    x = numpy.empty((width, total + 1)) * numpy.nan
+    y = numpy.empty((width, total + 1)) * numpy.nan
+    z = numpy.empty((width, total + 1)) * numpy.nan
+
+    j = 1
+    for ys in spectrum:
+        time = epoch_to_mpl(ys) if mplTime else ys
+        xs, zs = split_spectrum(spectrum[ys])
+        for i in range(len(xs)):
+            x[i, j] = xs[i]
+            y[i, j] = time
+            z[i, j] = zs[i]
+        j += 1
+
+    x[:, 0] = x[:, 1]
+    if mplTime:
+        y[:, 0] = y[:, 1] - seconds(1)
+    else:
+        y[:, 0] = y[:, 1] - 1
+    z[:, 0] = z[:, 1]
+
+    return x, y, z
 
 
 def sort_spectrum(spectrum):
