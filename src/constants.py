@@ -110,8 +110,14 @@ class File:
     RFS = "RTLSDR frequency scan (*.rfs)|*.rfs"
 
     @staticmethod
+    def get_export_ext(index):
+        filt = File.FILTERS[index]
+        delim = filt.index('|*')
+        return filt[delim + 2:]
+
+    @staticmethod
     def get_export_filters():
-        filters = ""
+        filters = ''
         length = len(File.FILTERS)
         for i in xrange(length):
             filters += File.FILTERS[i]
@@ -121,11 +127,25 @@ class File:
         return filters
 
     @staticmethod
-    def get_export_type(ext):
-        try:
-            return next(x for x, i in enumerate(File.FILTERS) if i[-4:] == ext)
-        except StopIteration:
-            return -1
+    def get_export_pretty():
+        pretty = ''
+        length = len(File.FILTERS)
+        for i in xrange(length):
+            pretty += File.get_export_ext(i)
+            if i < length - 2:
+                pretty += ', '
+            elif i < length - 1:
+                pretty += ' or '
+
+        return pretty
+
+    @staticmethod
+    def get_export_type(extension):
+        for i in xrange(len(File.FILTERS)):
+            if extension == File.get_export_ext(i):
+                return i
+
+        return -1
 
 
 if __name__ == '__main__':

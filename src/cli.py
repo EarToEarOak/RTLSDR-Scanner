@@ -69,8 +69,9 @@ class Cli():
             error = "Dwell should be positive"
         elif nfft <= 0:
             error = "FFT bins should be positive"
-        elif ext != ".rfs" and ext != ".csv" and ext != ".plt":
-            error = "File extension should be .rfs, .csv or .plt"
+        elif ext != ".rfs" and File.get_export_type(ext) == -1:
+            error = "File extension should be .rfs, "
+            error += File.get_export_pretty()
         else:
             device = Device()
             if remote is None:
