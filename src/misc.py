@@ -186,6 +186,12 @@ def get_version_timestamp_repo():
     return timeStamp
 
 
+def close_modeless():
+    for child in wx.GetTopLevelWindows():
+        if child.Title == 'Configure subplots':
+            child.Close()
+
+
 if __name__ == '__main__':
     print 'Please run rtlsdr_scan.py'
     exit(1)

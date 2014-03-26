@@ -22,6 +22,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+
 import cPickle
 import json
 import os
@@ -253,3 +254,8 @@ def write_numpy(handle, array, name):
             handle.write('{0} '.format(j))
         handle.write(';\n')
     handle.write(']\n')
+
+
+if __name__ == '__main__':
+    print 'Please run rtlsdr_scan.py'
+    exit(1)
