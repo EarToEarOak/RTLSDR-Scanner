@@ -40,7 +40,7 @@ from devices import get_devices
 from events import EVT_THREAD_STATUS, Event, EventThreadStatus, post_event
 from misc import ScanInfo, calc_samples, calc_real_dwell, open_plot, save_plot, \
     export_plot, get_version_timestamp, get_version_timestamp_repo, add_colours, \
-    MouseZoom, count_points, reduce_points, Extent, sort_spectrum
+    MouseZoom, count_points, reduce_points, Extent, sort_spectrum, MouseSelect
 from plot import Plotter
 from plot3d import Plotter3d
 from scan import ThreadScan, anaylse_data, update_spectrum
@@ -112,6 +112,7 @@ class FrameMain(wx.Frame):
         self.graph = None
         self.canvas = None
         self.mouseZoom = None
+        self.mouseSelect = None
 
         self.buttonStart = None
         self.buttonStop = None
@@ -132,6 +133,9 @@ class FrameMain(wx.Frame):
         self.devices = get_devices(self.settings.devices)
         self.filename = ""
         self.oldCal = 0
+
+        self.selectStart = None
+        self.selectEnd = None
 
         wx.Frame.__init__(self, None, title=title)
 
@@ -344,12 +348,16 @@ class FrameMain(wx.Frame):
             self.plot = Plotter3d(self, self.graph, self.settings, self.grid,
                                   self.lock)
 
-        self.mouseZoom = MouseZoom(self.plot, self.settings.display,
-                                   self.graph.get_toolbar())
         self.set_plot_title()
         self.set_plot(self.spectrum, self.settings.annotate)
         self.graph.set_type(self.settings.display)
         self.plot.scale_plot(True)
+        self.mouseZoom = MouseZoom(self.plot, self.settings.display,
+                                   self.graph.get_toolbar())
+        self.mouseSelect = MouseSelect(self.plot, self.settings.display,
+                                       self.selectStart, self.selectEnd,
+                                       self.on_selected)
+        self.graph.SetFocus()
 
     def create_popup_menu(self):
         self.popupMenu = wx.Menu()
@@ -632,6 +640,10 @@ class FrameMain(wx.Frame):
         timeStamp, freq, scan = data
         post_event(self, EventThreadStatus(Event.PROCESSED, freq,
                                              (timeStamp, scan)))
+
+    def on_selected(self, start, end):
+        self.selectStart = start
+        self.selectEnd = end
 
     def open(self, dirname, filename):
         if not os.path.exists(os.path.join(dirname, filename)):

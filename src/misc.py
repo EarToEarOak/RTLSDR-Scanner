@@ -22,6 +22,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+
 import cPickle
 from collections import OrderedDict
 import datetime
@@ -39,6 +40,7 @@ import numpy
 import wx
 
 from constants import SAMPLE_RATE, File, TIMESTAMP_FILE, Display
+from controls import RangeSelector
 
 
 class ScanInfo():
@@ -220,6 +222,17 @@ class MouseZoom():
         self.toolbar.push_current()
 
         self.axes.figure.canvas.draw()
+
+        return
+
+
+class MouseSelect():
+    def __init__(self, plot, display, start, end, callback):
+        if display == Display.SURFACE:
+            return
+
+        self.axes = plot.get_axes()
+        self.selector = RangeSelector(self.axes, start, end, callback)
 
 
 def open_plot(dirname, filename):
