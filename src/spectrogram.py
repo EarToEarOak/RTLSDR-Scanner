@@ -34,10 +34,11 @@ from matplotlib.colors import Normalize
 from matplotlib.dates import DateFormatter
 from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
+import numpy
 
 from events import EventThreadStatus, Event, post_event
-from misc import split_spectrum, epoch_to_mpl, format_time
-import numpy as np
+from misc import format_time
+from spectrum import epoch_to_mpl, split_spectrum
 
 
 class Spectrogram:
@@ -186,7 +187,7 @@ class ThreadPlot(threading.Thread):
             total = len(self.data)
             if total > 0:
                 width = len(self.data[min(self.data)])
-                c = np.ma.masked_all((self.retainMax, width))
+                c = numpy.ma.masked_all((self.retainMax, width))
                 self.parent.clear_plots()
                 j = self.retainMax
                 for ys in self.data:

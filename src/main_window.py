@@ -38,14 +38,16 @@ from wx.lib.masked import NumCtrl
 from constants import *
 from devices import get_devices
 from events import EVT_THREAD_STATUS, Event, EventThreadStatus, post_event
-from misc import ScanInfo, calc_samples, calc_real_dwell, open_plot, save_plot, \
-    export_plot, get_version_timestamp, get_version_timestamp_repo, add_colours, \
-    MouseZoom, count_points, reduce_points, Extent, sort_spectrum, MouseSelect
+from file import save_plot, export_plot, open_plot, ScanInfo
+from misc import calc_samples, calc_real_dwell, \
+    get_version_timestamp, get_version_timestamp_repo, add_colours
 from plot import Plotter
 from plot3d import Plotter3d
+from plot_controls import MouseZoom, MouseSelect
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
 from spectrogram import Spectrogram
+from spectrum import count_points, sort_spectrum, Extent, reduce_points
 from windows import PanelGraph, DialogPrefs, DialogCompare, DialogAutoCal, \
     DialogSaveWarn, Statusbar, DialogProperties, DialogAbout, DialogAdvPrefs, \
     DialogDevices

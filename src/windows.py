@@ -43,13 +43,13 @@ from wx.lib.masked.numctrl import NumCtrl
 from constants import *
 from devices import Device
 from events import EventThreadStatus, Event, post_event
-from misc import split_spectrum, nearest, open_plot, load_bitmap, \
+from file import open_plot
+from misc import nearest, load_bitmap, \
     get_colours, format_time, ValidatorCoord, get_version_timestamp
 from rtltcp import RtlTcp
+from spectrum import split_spectrum
 import wx.grid as grid
 import wx.lib.masked as masked
-
-
 
 
 class CellRenderer(grid.PyGridCellRenderer):

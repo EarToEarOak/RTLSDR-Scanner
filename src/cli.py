@@ -32,8 +32,8 @@ from urlparse import urlparse
 from constants import SAMPLE_RATE, File
 from devices import Device, get_devices
 from events import *
-from misc import ScanInfo, save_plot, export_plot, nearest, calc_real_dwell, \
-    next_2_to_pow
+from file import save_plot, export_plot, ScanInfo
+from misc import nearest, calc_real_dwell, next_2_to_pow
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
 

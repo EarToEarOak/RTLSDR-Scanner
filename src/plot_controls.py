@@ -23,11 +23,66 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# Based on http://matplotlib.org/1.3.1/users/event_handling.html
-
 from matplotlib.patches import Rectangle
 
+from constants import Display
 
+
+class MouseZoom():
+    SCALE_STEP = 1.3
+
+    def __init__(self, plot, display, toolbar):
+        if display == Display.SURFACE:
+            return
+        self.axes = plot.get_axes()
+        self.toolbar = toolbar
+        figure = self.axes.get_figure()
+        figure.canvas.mpl_connect('scroll_event', self.zoom)
+
+    def zoom(self, event):
+        if event.button == 'up':
+            scale = 1 / self.SCALE_STEP
+        elif event.button == 'down':
+            scale = self.SCALE_STEP
+        else:
+            return
+
+        if self.toolbar._views.empty():
+            self.toolbar.push_current()
+
+        xLim = self.axes.get_xlim()
+        yLim = self.axes.get_ylim()
+        xPos = event.xdata
+        yPos = event.ydata
+        xPosRel = (xLim[1] - xPos) / (xLim[1] - xLim[0])
+        yPosRel = (yLim[1] - yPos) / (yLim[1] - yLim[0])
+
+        newXLim = (xLim[1] - xLim[0]) * scale
+        newYLim = (yLim[1] - yLim[0]) * scale
+        xStart = xPos - newXLim * (1 - xPosRel)
+        xStop = xPos + newXLim * xPosRel
+        yStart = yPos - newYLim * (1 - yPosRel)
+        yStop = yPos + newYLim * yPosRel
+
+        self.axes.set_xlim([xStart, xStop])
+        self.axes.set_ylim([yStart, yStop])
+        self.toolbar.push_current()
+
+        self.axes.figure.canvas.draw()
+
+        return
+
+
+class MouseSelect():
+    def __init__(self, plot, display, start, end, callback):
+        if display == Display.SURFACE:
+            return
+
+        self.axes = plot.get_axes()
+        self.selector = RangeSelector(self.axes, start, end, callback)
+
+
+# Based on http://matplotlib.org/1.3.1/users/event_handling.html
 class RangeSelector():
     def __init__(self, axes, start, end, callback):
         self.axes = axes
@@ -119,5 +174,4 @@ class RangeSelector():
         self.eventPressed = None
         self.eventReleased = None
         return
-
 

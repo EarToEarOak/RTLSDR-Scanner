@@ -35,8 +35,9 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 
 from events import post_event, EventThreadStatus, Event
-from misc import epoch_to_mpl, format_time, create_mesh
+from misc import format_time
 from mpl_toolkits.mplot3d import Axes3D  # @UnresolvedImport @UnusedImport
+from spectrum import epoch_to_mpl, create_mesh
 
 
 class Plotter3d():
