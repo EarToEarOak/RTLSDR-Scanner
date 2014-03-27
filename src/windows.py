@@ -340,7 +340,15 @@ class PanelMeasure(wx.Panel):
     def set_selected(self, spectrum, start, end):
         sweep = slice_spectrum(spectrum, start, end)
         if sweep is None:
-#             TODO: blank cells
+            self.grid.SetCellValue(0, 1, "")
+            self.grid.SetCellValue(1, 1, "")
+            self.grid.SetCellValue(2, 1, "")
+            self.grid.SetCellValue(0, 3, "")
+            self.grid.SetCellValue(1, 3, "")
+            self.grid.SetCellValue(0, 4, "")
+            self.grid.SetCellValue(1, 4, "")
+            self.grid.SetCellValue(2, 3, "")
+            self.grid.SetCellValue(2, 4, "")
             return
 
         minF = min(sweep)[0]
