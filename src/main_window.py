@@ -552,8 +552,6 @@ class FrameMain(wx.Frame):
         self.get_controls()
         self.create_plot()
 
-        self.set_plot(self.spectrum, self.settings.annotate)
-
     def on_start(self, _event):
         if self.settings.start >= self.settings.stop:
             wx.MessageBox('Stop frequency must be greater that start',
