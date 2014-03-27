@@ -325,8 +325,8 @@ class PanelMeasure(wx.Panel):
             for y in xrange(self.grid.GetNumberRows()):
                 self.grid.SetCellFont(y, x, font)
 
-        box = wx.BoxSizer(wx.HORIZONTAL)
-        box.Add(self.grid)
+        box = wx.BoxSizer(wx.VERTICAL)
+        box.Add(self.grid, 0, wx.ALIGN_CENTER)
 
         self.SetSizerAndFit(box)
 
