@@ -95,10 +95,7 @@ class Plotter():
 
     def redraw_plot(self):
         if self.figure is not None:
-            if os.name == "nt":
-                threading.Thread(target=self.thread_draw, name='Draw').start()
-            else:
-                post_event(self.notify, EventThreadStatus(Event.DRAW))
+            post_event(self.notify, EventThreadStatus(Event.DRAW))
 
     def get_axes(self):
         return self.axes
@@ -144,15 +141,6 @@ class Plotter():
     def close(self):
         self.figure.clear()
         self.figure = None
-
-    def thread_draw(self):
-        with self.lock:
-            if self.figure is not None:
-                try:
-                    self.graph.get_figure().tight_layout()
-                    self.graph.get_canvas().draw()
-                except:
-                    pass
 
 
 class ThreadPlot(threading.Thread):
