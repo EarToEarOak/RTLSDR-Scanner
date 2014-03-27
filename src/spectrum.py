@@ -122,6 +122,17 @@ def split_spectrum(spectrum):
     return freqs, powers
 
 
+def slice_spectrum(spectrum, start, end):
+    sweepTemp = {}
+    if len(spectrum) < 1:
+        return None
+
+    for f, p in spectrum[max(spectrum)].iteritems():
+        if start <= f <= end:
+            sweepTemp[f] = p
+    return sorted(sweepTemp.items(), key=lambda t: t[0])
+
+
 def create_mesh(spectrum, mplTime):
     total = len(spectrum)
     width = len(spectrum[min(spectrum)])

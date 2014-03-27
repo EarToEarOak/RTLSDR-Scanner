@@ -36,7 +36,7 @@ import wx
 from constants import Display
 from events import EventThreadStatus, Event, post_event
 from misc import nearest, close_modeless
-from spectrum import split_spectrum
+from spectrum import split_spectrum, slice_spectrum
 from toolbars import NavigationToolbar, NavigationToolbarCompare
 import wx.grid as grid
 
@@ -66,17 +66,21 @@ class PanelGraph(wx.Panel):
 
         self.figure = matplotlib.figure.Figure(facecolor='white')
         self.canvas = FigureCanvas(self, -1, self.figure)
-        self.canvas.mpl_connect('motion_notify_event', self.on_motion)
-        self.canvas.mpl_connect('draw_event', self.on_draw)
+        self.measure = PanelMeasure(self)
+
         self.toolbar = NavigationToolbar(self.canvas, self.main)
         self.toolbar.Realize()
 
         vbox = wx.BoxSizer(wx.VERTICAL)
         vbox.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
+        vbox.Add(self.measure, 0, wx.EXPAND)
         vbox.Add(self.toolbar, 0, wx.EXPAND)
 
         self.SetSizer(vbox)
         vbox.Fit(self)
+
+        self.canvas.mpl_connect('motion_notify_event', self.on_motion)
+        self.canvas.mpl_connect('draw_event', self.on_draw)
 
     def on_motion(self, event):
         xpos = event.xdata
@@ -115,6 +119,9 @@ class PanelGraph(wx.Panel):
     def set_type(self, display):
         self.display = display
         self.toolbar.set_type(display)
+
+    def set_selected(self, spectrum, start, end):
+        self.measure.set_selected(spectrum, start, end)
 
     def get_figure(self):
         return self.figure
@@ -286,6 +293,62 @@ class PanelColourBar(wx.Panel):
         self.bar.changed()
         self.bar.draw_all()
         self.canvas.draw()
+
+
+class PanelMeasure(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent)
+        self.SetBackgroundColour('white')
+
+        self.grid = grid.Grid(self)
+        self.grid.CreateGrid(3, 7)
+        self.grid. EnableEditing(False)
+        self.grid.EnableDragGridSize(False)
+        self.grid.SetColLabelSize(0)
+        self.grid.SetRowLabelSize(0)
+
+        self.grid.SetCellValue(0, 0, 'Start')
+        self.grid.SetCellValue(1, 0, 'End')
+        self.grid.SetCellValue(2, 0, u'\u0394')
+        self.grid.SetCellValue(0, 2, 'Min')
+        self.grid.SetCellValue(1, 2, 'Max')
+        self.grid.SetCellValue(2, 2, u'\u0394')
+        self.grid.SetCellValue(0, 5, 'Avg')
+
+        font = self.grid.GetCellFont(0, 0)
+        font.SetWeight(wx.BOLD)
+        for x in [0, 2, 5]:
+            for y in xrange(self.grid.GetNumberRows()):
+                self.grid.SetCellFont(y, x, font)
+
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        box.Add(self.grid)
+
+        self.SetSizerAndFit(box)
+
+    def set_selected(self, spectrum, start, end):
+        sweep = slice_spectrum(spectrum, start, end)
+        if sweep is None:
+#             TODO: blank cells
+            return
+
+        minF = min(sweep)[0]
+        maxF = max(sweep)[0]
+        self.grid.SetCellValue(0, 1, "{0:.6f}MHz".format(minF))
+        self.grid.SetCellValue(1, 1, "{0:.6f}MHz".format(maxF))
+        self.grid.SetCellValue(2, 1, "{0:.6f}MHz".format(maxF - minF))
+
+        minLoc = min(sweep, key=lambda v: v[1])
+        maxLoc = max(sweep, key=lambda v: v[1])
+        self.grid.SetCellValue(0, 3, "{0:.6f}MHz".format(minLoc[0]))
+        self.grid.SetCellValue(1, 3, "{0:.6f}MHz".format(maxLoc[0]))
+        self.grid.SetCellValue(0, 4, "{0:.2f}dB".format(minLoc[1]))
+        self.grid.SetCellValue(1, 4, "{0:.2f}dB".format(maxLoc[1]))
+        self.grid.SetCellValue(2, 3, "{0:.6f}MHz".format(maxLoc[0] - minLoc[0]))
+        self.grid.SetCellValue(2, 4, "{0:.2f}dB".format(maxLoc[1] - minLoc[1]))
+
+        avg = sum((v[1] for v in sweep), 0.0) / len(sweep)
+        self.grid.SetCellValue(0, 6, "{0:.2f}dB".format(avg))
 
 
 if __name__ == '__main__':

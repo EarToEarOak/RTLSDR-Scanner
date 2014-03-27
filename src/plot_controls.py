@@ -108,8 +108,9 @@ class RangeSelector():
 
     def draw(self, xMin, xMax):
         yMin, yMax = self.axes.get_ylim()
-        yMin /= 100
-        yMax *= 100
+        height = yMax - yMin
+        yMin -= height * 100.0
+        yMax += height * 100.0
         self.rect.set_x(xMin)
         self.rect.set_y(yMin)
         self.rect.set_width(xMax - xMin)
@@ -170,7 +171,10 @@ class RangeSelector():
         if self.eventPressed is None or self.skip_event(event):
             return
         self.eventReleased = event
-        self.onselect(self.eventPressed.xdata, self.eventReleased.xdata)
+        xMin, xMax = self.eventPressed.xdata, self.eventReleased.xdata
+        if xMin > xMax:
+            xMin, xMax = xMax, xMin
+        self.onselect(xMin, xMax)
         self.eventPressed = None
         self.eventReleased = None
         return

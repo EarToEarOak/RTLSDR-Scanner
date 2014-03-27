@@ -252,14 +252,14 @@ class FrameMain(wx.Frame):
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.graph, 1, wx.EXPAND)
-        sizer.Add(self.panel, 0, wx.ALIGN_CENTER)
+        sizer.Add(self.panel, 0, wx.EXPAND)
         self.set_controls()
         panel.SetSizer(sizer)
 
     def create_menu(self):
         menuFile = wx.Menu()
         self.menuOpen = menuFile.Append(wx.ID_OPEN, "&Open...",
-                                        "Open polot")
+                                        "Open plot")
         recent = wx.Menu()
         self.settings.fileHistory.UseMenu(recent)
         self.settings.fileHistory.AddFilesToMenu()
@@ -359,7 +359,7 @@ class FrameMain(wx.Frame):
                                    self.graph.get_toolbar())
         self.mouseSelect = MouseSelect(self.plot, self.settings.display,
                                        self.selectStart, self.selectEnd,
-                                       self.on_selected)
+                                       self.on_select)
         self.graph.SetFocus()
 
     def create_popup_menu(self):
@@ -567,6 +567,11 @@ class FrameMain(wx.Frame):
         self.settings.pointsLimit = self.popupMenuPointsLim.IsChecked()
         self.set_plot(self.spectrum, self.settings.annotate)
 
+    def on_select(self, start, end):
+        self.selectStart = start
+        self.selectEnd = end
+        self.graph.set_selected(self.spectrum, start, end)
+
     def on_event(self, event):
         status = event.data.get_status()
         freq = event.data.get_freq()
@@ -643,10 +648,6 @@ class FrameMain(wx.Frame):
         timeStamp, freq, scan = data
         post_event(self, EventThreadStatus(Event.PROCESSED, freq,
                                              (timeStamp, scan)))
-
-    def on_selected(self, start, end):
-        self.selectStart = start
-        self.selectEnd = end
 
     def open(self, dirname, filename):
         if not os.path.exists(os.path.join(dirname, filename)):
