@@ -92,7 +92,7 @@ class RangeSelector():
         self.eventPressed = None
         self.eventReleased = None
 
-        props = dict(facecolor='red', edgecolor='white', alpha=0.5, fill=True,
+        props = dict(facecolor='red', edgecolor='white', alpha=0.25, fill=True,
                      zorder=100, gid='range')
         self.rect = Rectangle((0, 0), 0, 0, **props)
         self.axes.add_patch(self.rect)
