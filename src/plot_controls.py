@@ -130,7 +130,7 @@ class RangeSelector():
         if self.eventPressed is None:
             return event.inaxes != self.axes
 
-        if event.button != 1:
+        if event.button != 2:
             return True
 
         if event.button == self.eventPressed.button and event.inaxes != self.axes:
