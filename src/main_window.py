@@ -110,6 +110,7 @@ class FrameMain(wx.Frame):
         self.popupMenuStopEnd = None
         self.popupMenuRangeLim = None
         self.popupMenuPointsLim = None
+        self.popupMenuShowMeasure = None
 
         self.panel = None
         self.graph = None
@@ -283,6 +284,12 @@ class FrameMain(wx.Frame):
         self.menuDevices = menuEdit.Append(wx.ID_ANY, "&Devices...",
                                    "Device selection and configuration")
 
+        menuView = wx.Menu()
+        self.menuShowMeasure = menuView.Append(wx.ID_ANY, "Show &measurements",
+                                               "Show measurements window",
+                                               kind=wx.ITEM_CHECK)
+        self.menuShowMeasure.Check(self.settings.showMeasure)
+
         menuScan = wx.Menu()
         self.menuStart = menuScan.Append(wx.ID_ANY, "&Start", "Start scan")
         self.menuStop = menuScan.Append(wx.ID_ANY, "S&top",
@@ -308,6 +315,7 @@ class FrameMain(wx.Frame):
         menuBar = wx.MenuBar()
         menuBar.Append(menuFile, "&File")
         menuBar.Append(menuEdit, "&Edit")
+        menuBar.Append(menuView, "&View")
         menuBar.Append(menuScan, "&Scan")
         menuBar.Append(menuTools, "&Tools")
         menuBar.Append(menuHelp, "&Help")
@@ -323,6 +331,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_pref, self.menuPref)
         self.Bind(wx.EVT_MENU, self.on_adv_pref, self.menuAdvPref)
         self.Bind(wx.EVT_MENU, self.on_devices, self.menuDevices)
+        self.Bind(wx.EVT_MENU, self.on_show_measure, self.menuShowMeasure)
         self.Bind(wx.EVT_MENU, self.on_start, self.menuStart)
         self.Bind(wx.EVT_MENU, self.on_stop, self.menuStop)
         self.Bind(wx.EVT_MENU, self.on_stop_end, self.menuStopEnd)
@@ -360,6 +369,7 @@ class FrameMain(wx.Frame):
         self.mouseSelect = MouseSelect(self.plot, self.settings.display,
                                        self.selectStart, self.selectEnd,
                                        self.on_select)
+        self.graph.show_measure(self.settings.showMeasure)
         self.graph.SetFocus()
 
     def create_popup_menu(self):
@@ -374,8 +384,8 @@ class FrameMain(wx.Frame):
         self.popupMenu.AppendSeparator()
         self.popupMenuRangeLim = self.popupMenu.Append(wx.ID_ANY,
                                                        "Set range to current zoom",
-                                                      "Set scanning range to the current "
-                                                      "zoom")
+                                                      "Set scanning range to the "
+                                                      "current zoom")
         self.popupMenu.AppendSeparator()
         self.popupMenuPointsLim = self.popupMenu.Append(wx.ID_ANY,
                                                        "Limit points",
@@ -384,11 +394,19 @@ class FrameMain(wx.Frame):
                                                        kind=wx.ITEM_CHECK)
         self.popupMenuPointsLim.Check(self.settings.pointsLimit)
 
+        self.popupMenu.AppendSeparator()
+        self.popupMenuShowMeasure = self.popupMenu.Append(wx.ID_ANY,
+                                                          "Show &measurements",
+                                                          "Show measurements window",
+                                                          kind=wx.ITEM_CHECK)
+        self.popupMenuShowMeasure.Check(self.settings.showMeasure)
+
         self.Bind(wx.EVT_MENU, self.on_start, self.popupMenuStart)
         self.Bind(wx.EVT_MENU, self.on_stop, self.popupMenuStop)
         self.Bind(wx.EVT_MENU, self.on_stop_end, self.popupMenuStopEnd)
         self.Bind(wx.EVT_MENU, self.on_range_lim, self.popupMenuRangeLim)
         self.Bind(wx.EVT_MENU, self.on_points_lim, self.popupMenuPointsLim)
+        self.Bind(wx.EVT_MENU, self.on_show_measure, self.popupMenuShowMeasure)
 
         self.Bind(wx.EVT_CONTEXT_MENU, self.on_popup_menu)
 
@@ -497,6 +515,14 @@ class FrameMain(wx.Frame):
         dlg = DialogCompare(self, self.settings.dirScans, self.filename)
         dlg.ShowModal()
         dlg.Destroy()
+
+    def on_show_measure(self, event):
+        show = event.Checked()
+        self.menuShowMeasure.Check(show)
+        self.popupMenuShowMeasure.Check(show)
+        self.settings.showMeasure = show
+        self.graph.show_measure(show)
+        self.Layout()
 
     def on_cal(self, _event):
         self.dlgCal = DialogAutoCal(self, self.settings.calFreq, self.auto_cal)

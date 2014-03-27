@@ -123,6 +123,10 @@ class PanelGraph(wx.Panel):
     def set_selected(self, spectrum, start, end):
         self.measure.set_selected(spectrum, start, end)
 
+    def show_measure(self, show):
+        self.measure.show(show)
+        self.Layout()
+
     def get_figure(self):
         return self.figure
 
@@ -325,6 +329,13 @@ class PanelMeasure(wx.Panel):
         box.Add(self.grid)
 
         self.SetSizerAndFit(box)
+
+    def show(self, show):
+        if show:
+            self.Show()
+        else:
+            self.Hide()
+        self.Layout()
 
     def set_selected(self, spectrum, start, end):
         sweep = slice_spectrum(spectrum, start, end)

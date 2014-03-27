@@ -68,6 +68,8 @@ class Settings():
         self.autoL = True
         self.autoT = True
 
+        self.showMeasure = True
+
         self.alert = False
         self.alertLevel = -20
 
@@ -118,6 +120,7 @@ class Settings():
         self.autoF = self.cfg.ReadBool('autoF', self.autoF)
         self.autoL = self.cfg.ReadBool('autoL', self.autoL)
         self.autoT = self.cfg.ReadBool('autoT', self.autoT)
+        self.showMeasure = self.cfg.ReadBool('showMeasure', self.showMeasure)
         self.alert = self.cfg.ReadBool('alert', self.alert)
         self.alertLevel = self.cfg.ReadFloat('alertLevel', self.alertLevel)
         self.index = self.cfg.ReadInt('index', self.index)
@@ -170,6 +173,7 @@ class Settings():
         self.cfg.WriteBool('autoF', self.autoF)
         self.cfg.WriteBool('autoL', self.autoL)
         self.cfg.WriteBool('autoT', self.autoT)
+        self.cfg.WriteBool('showMeasure', self.showMeasure)
         self.cfg.WriteBool('alert', self.alert)
         self.cfg.WriteFloat('alertLevel', self.alertLevel)
         self.cfg.WriteInt('index', self.index)
