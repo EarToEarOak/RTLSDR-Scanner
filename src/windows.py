@@ -306,7 +306,7 @@ class PanelMeasure(wx.Panel):
 
         self.grid = grid.Grid(self)
         self.grid.CreateGrid(3, 7)
-        self.grid. EnableEditing(False)
+        self.grid.EnableEditing(False)
         self.grid.EnableDragGridSize(False)
         self.grid.SetColLabelSize(0)
         self.grid.SetRowLabelSize(0)
