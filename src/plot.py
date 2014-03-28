@@ -24,7 +24,6 @@
 #
 
 from collections import OrderedDict
-import os
 import threading
 
 from matplotlib import patheffects, cm
