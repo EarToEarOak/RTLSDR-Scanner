@@ -302,11 +302,14 @@ class PanelColourBar(wx.Panel):
 class PanelMeasure(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
+
+        self.selected = None
+
         self.SetBackgroundColour('white')
 
         self.grid = grid.Grid(self)
         self.grid.CreateGrid(3, 7)
-        self.grid.EnableEditing(False)
+        self.grid. EnableEditing(False)
         self.grid.EnableDragGridSize(False)
         self.grid.SetColLabelSize(0)
         self.grid.SetRowLabelSize(0)
@@ -319,6 +322,18 @@ class PanelMeasure(wx.Panel):
         self.grid.SetCellValue(2, 2, u'\u0394')
         self.grid.SetCellValue(0, 5, 'Avg')
 
+        self.popupMenu = wx.Menu()
+        self.popupMenuCopy = self.popupMenu.Append(wx.ID_ANY, "&Copy",
+                                                   "Copy entry")
+        self.Bind(wx.EVT_MENU, self.on_copy, self.popupMenuCopy)
+
+        self.Bind(grid.EVT_GRID_CELL_RIGHT_CLICK, self.on_popup_menu,
+                  self.grid)
+        self.Bind(grid.EVT_GRID_SELECT_CELL, self.on_select_single,
+                  self.grid)
+        self.Bind(grid.EVT_GRID_RANGE_SELECT, self.on_select_range,
+                  self.grid)
+
         font = self.grid.GetCellFont(0, 0)
         font.SetWeight(wx.BOLD)
         for x in [0, 2, 5]:
@@ -330,12 +345,27 @@ class PanelMeasure(wx.Panel):
 
         self.SetSizerAndFit(box)
 
-    def show(self, show):
-        if show:
-            self.Show()
+    def on_select_single(self, event):
+        self.selected = (event.GetRow(),
+                                      event.GetCol())
+        event.Skip()
+
+    def on_select_range(self, _event):
+        self.selected = None
+
+    def on_popup_menu(self, _event):
+        if self.selected:
+            self.popupMenuCopy.Enable(True)
         else:
-            self.Hide()
-        self.Layout()
+            self.popupMenuCopy.Enable(False)
+        self.PopupMenu(self.popupMenu)
+
+    def on_copy(self, _event):
+        value = self.grid.GetCellValue(self.selected[0], self.selected[1])
+        clip = wx.TextDataObject(value)
+        wx.TheClipboard.Open()
+        wx.TheClipboard.SetData(clip)
+        wx.TheClipboard.Close()
 
     def set_selected(self, spectrum, start, end):
         sweep = slice_spectrum(spectrum, start, end)
