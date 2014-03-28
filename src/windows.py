@@ -116,6 +116,9 @@ class PanelGraph(wx.Panel):
     def on_draw(self, _event):
         post_event(self.main, EventThreadStatus(Event.PLOTTED))
 
+    def set_plot(self, plot):
+        self.measure.set_plot(plot)
+
     def set_type(self, display):
         self.display = display
         self.toolbar.set_type(display)
@@ -303,24 +306,46 @@ class PanelMeasure(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
 
+        self.plot = None
+
+        self.checkStart = '0'
+        self.checkEnd = '0'
+        self.checkAvg = '0'
+
         self.selected = None
 
         self.SetBackgroundColour('white')
 
         self.grid = grid.Grid(self)
-        self.grid.CreateGrid(3, 7)
-        self.grid. EnableEditing(False)
+        self.grid.CreateGrid(3, 9)
+        self.grid.EnableEditing(False)
         self.grid.EnableDragGridSize(False)
         self.grid.SetColLabelSize(0)
         self.grid.SetRowLabelSize(0)
 
+        checkEditor = grid.GridCellBoolEditor()
+        self.grid.SetCellEditor(0, 2, checkEditor)
+        self.grid.SetCellEditor(1, 2, checkEditor)
+        self.grid.SetCellTextColour(2, 2, 'white')
+        self.grid.SetCellEditor(0, 5, checkEditor)
+        self.grid.SetCellTextColour(1, 5, 'white')
+        self.grid.SetCellTextColour(2, 5, 'white')
+        self.grid.SetCellValue(0, 2, self.checkStart)
+        self.grid.SetCellValue(1, 2, self.checkEnd)
+        self.grid.SetCellValue(0, 5, self.checkAvg)
+        self.grid.SetColFormatBool(2)
+        self.grid.SetColFormatBool(5)
+        self.grid.AutoSizeColumn(2)
+        self.grid.AutoSizeColumn(5)
+        self.checkLocs = {(0, 2): 'start', (1, 2): 'end', (0, 5): 'avg'}
+
         self.grid.SetCellValue(0, 0, 'Start')
         self.grid.SetCellValue(1, 0, 'End')
         self.grid.SetCellValue(2, 0, u'\u0394')
-        self.grid.SetCellValue(0, 2, 'Min')
-        self.grid.SetCellValue(1, 2, 'Max')
-        self.grid.SetCellValue(2, 2, u'\u0394')
-        self.grid.SetCellValue(0, 5, 'Avg')
+        self.grid.SetCellValue(0, 3, 'Min')
+        self.grid.SetCellValue(1, 3, 'Max')
+        self.grid.SetCellValue(2, 3, u'\u0394')
+        self.grid.SetCellValue(0, 6, 'Avg')
 
         self.popupMenu = wx.Menu()
         self.popupMenuCopy = self.popupMenu.Append(wx.ID_ANY, "&Copy",
@@ -329,14 +354,13 @@ class PanelMeasure(wx.Panel):
 
         self.Bind(grid.EVT_GRID_CELL_RIGHT_CLICK, self.on_popup_menu,
                   self.grid)
-        self.Bind(grid.EVT_GRID_SELECT_CELL, self.on_select_single,
-                  self.grid)
         self.Bind(grid.EVT_GRID_RANGE_SELECT, self.on_select_range,
                   self.grid)
+        self.Bind(grid.EVT_GRID_CELL_LEFT_CLICK, self.on_cell_click)
 
         font = self.grid.GetCellFont(0, 0)
         font.SetWeight(wx.BOLD)
-        for x in [0, 2, 5]:
+        for x in [0, 3, 6]:
             for y in xrange(self.grid.GetNumberRows()):
                 self.grid.SetCellFont(y, x, font)
 
@@ -345,10 +369,45 @@ class PanelMeasure(wx.Panel):
 
         self.SetSizerAndFit(box)
 
-    def on_select_single(self, event):
-        self.selected = (event.GetRow(),
-                                      event.GetCol())
-        event.Skip()
+    def set_plot(self, plot):
+        self.plot = plot
+
+    def str_to_bool(self, string):
+        if string == '1':
+            return True
+        return False
+
+    def update_plot(self):
+        start = self.str_to_bool(self.checkStart)
+        end = self.str_to_bool(self.checkEnd)
+        avg = self.str_to_bool(self.checkAvg)
+
+    def on_cell_click(self, event):
+        row = event.GetRow()
+        col = event.GetCol()
+        self.selected = (row, col)
+        self.grid.SetGridCursor(row, col)
+        if (row, col) in self.checkLocs.keys():
+            check = self.grid.GetCellValue(row, col)
+            if check == '1':
+                check = '0'
+            else:
+                check = '1'
+            self.grid.SetCellValue(row, col, check)
+
+        for (r, c), control in self.checkLocs.iteritems():
+            if (r, c) == (row, col):
+                if control == 'start':
+                    self.checkStart = check
+                    break
+                elif control == 'end':
+                    self.checkEnd = check
+                    break
+                elif control == 'avg':
+                    self.checkAvg = check
+                    break
+
+        self.update_plot()
 
     def on_select_range(self, _event):
         self.selected = None
@@ -366,6 +425,13 @@ class PanelMeasure(wx.Panel):
         wx.TheClipboard.Open()
         wx.TheClipboard.SetData(clip)
         wx.TheClipboard.Close()
+
+    def show(self, show):
+        if show:
+            self.Show()
+        else:
+            self.Hide()
+        self.Layout()
 
     def set_selected(self, spectrum, start, end):
         sweep = slice_spectrum(spectrum, start, end)

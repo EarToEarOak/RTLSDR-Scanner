@@ -362,13 +362,12 @@ class FrameMain(wx.Frame):
 
         self.set_plot_title()
         self.set_plot(self.spectrum, self.settings.annotate)
+        self.graph.set_plot(self.plot)
         self.graph.set_type(self.settings.display)
         self.plot.scale_plot(True)
-        self.mouseZoom = MouseZoom(self.plot, self.settings.display,
-                                   self.graph.get_toolbar())
-        self.mouseSelect = MouseSelect(self.plot, self.settings.display,
-                                       self.selectStart, self.selectEnd,
-                                       self.on_select)
+        self.mouseZoom = MouseZoom(self.plot, self.graph.get_toolbar())
+        self.mouseSelect = MouseSelect(self.plot, self.selectStart,
+                                       self.selectEnd, self.on_select)
         self.graph.show_measure(self.settings.showMeasure)
         self.graph.SetFocus()
 

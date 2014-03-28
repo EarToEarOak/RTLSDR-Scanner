@@ -26,13 +26,14 @@
 from matplotlib.patches import Rectangle
 
 from constants import Display
+from plot3d import Plotter3d
 
 
 class MouseZoom():
     SCALE_STEP = 1.3
 
-    def __init__(self, plot, display, toolbar):
-        if display == Display.SURFACE:
+    def __init__(self, plot, toolbar):
+        if isinstance(plot, Plotter3d):
             return
         self.axes = plot.get_axes()
         self.toolbar = toolbar
@@ -74,8 +75,8 @@ class MouseZoom():
 
 
 class MouseSelect():
-    def __init__(self, plot, display, start, end, callback):
-        if display == Display.SURFACE:
+    def __init__(self, plot, start, end, callback):
+        if isinstance(plot, Plotter3d):
             return
 
         self.axes = plot.get_axes()
