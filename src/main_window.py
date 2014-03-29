@@ -641,6 +641,7 @@ class FrameMain(wx.Frame):
             self.progress()
         elif status == Event.DRAW:
             self.graph.get_canvas().draw()
+            self.graph.draw_select()
         elif status == Event.VER_UPD:
             self.update_checked(True, freq, data)
         elif status == Event.VER_NOUPD:

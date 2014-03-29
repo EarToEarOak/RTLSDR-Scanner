@@ -113,8 +113,7 @@ class PanelGraph(wx.Panel):
         self.redraw_plot()
         self.plot.scale_plot(True)
         self.mouseZoom = MouseZoom(self.plot, self.toolbar)
-        self.mouseSelect = MouseSelect(self.plot, self.selectStart,
-                                       self.selectEnd, self.on_select)
+        self.mouseSelect = MouseSelect(self.plot, self.on_select)
         self.measure.show(self.settings.showMeasure)
         self.panel.SetFocus()
 
@@ -148,6 +147,10 @@ class PanelGraph(wx.Panel):
     def redraw_plot(self):
         if self.spectrum is not None:
             self.set_plot(self.spectrum, self.extent, self.settings.annotate)
+
+    def draw_select(self):
+        if self.selectStart is not None and self.selectEnd is not None:
+            self.mouseSelect.draw(self.selectStart, self.selectEnd)
 
     def get_figure(self):
         return self.figure

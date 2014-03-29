@@ -75,17 +75,20 @@ class MouseZoom():
 
 
 class MouseSelect():
-    def __init__(self, plot, start, end, callback):
-        if isinstance(plot, Plotter3d):
-            return
+    def __init__(self, plot, callback):
+        self.selector = None
+        if not isinstance(plot, Plotter3d):
+            axes = plot.get_axes()
+            self.selector = RangeSelector(axes, callback)
 
-        self.axes = plot.get_axes()
-        self.selector = RangeSelector(self.axes, start, end, callback)
+    def draw(self, xMin, xMax):
+        if self.selector is not None:
+            self.selector.draw(xMin, xMax)
 
 
 # Based on http://matplotlib.org/1.3.1/users/event_handling.html
 class RangeSelector():
-    def __init__(self, axes, start, end, callback):
+    def __init__(self, axes, callback):
         self.axes = axes
         self.onselect = callback
 
@@ -103,9 +106,6 @@ class RangeSelector():
         figure.canvas.mpl_connect('button_press_event', self.on_press)
         figure.canvas.mpl_connect('button_release_event', self.on_release)
         figure.canvas.mpl_connect('draw_event', self.get_background)
-
-        if start is not None and end is not None:
-            self.draw(start, end)
 
     def draw(self, xMin, xMax):
         yMin, yMax = self.axes.get_ylim()
