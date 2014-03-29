@@ -361,17 +361,17 @@ class PanelMeasure(wx.Panel):
         self.grid.SetCellEditor(0, 2, checkEditor)
         self.grid.SetCellEditor(1, 2, checkEditor)
         self.grid.SetCellTextColour(2, 2, 'white')
-        self.grid.SetCellEditor(0, 5, checkEditor)
-        self.grid.SetCellTextColour(1, 5, 'white')
-        self.grid.SetCellTextColour(2, 5, 'white')
+        self.grid.SetCellEditor(0, 6, checkEditor)
+        self.grid.SetCellTextColour(1, 6, 'white')
+        self.grid.SetCellTextColour(2, 6, 'white')
         self.grid.SetCellValue(0, 2, self.checkStart)
         self.grid.SetCellValue(1, 2, self.checkEnd)
-        self.grid.SetCellValue(0, 5, self.checkAvg)
+        self.grid.SetCellValue(0, 6, self.checkAvg)
         self.grid.SetColFormatBool(2)
-        self.grid.SetColFormatBool(5)
+        self.grid.SetColFormatBool(6)
         self.grid.AutoSizeColumn(2)
-        self.grid.AutoSizeColumn(5)
-        self.checkLocs = {(0, 2): 'start', (1, 2): 'end', (0, 5): 'avg'}
+        self.grid.AutoSizeColumn(6)
+        self.checkLocs = {(0, 2): 'start', (1, 2): 'end', (0, 6): 'avg'}
 
         self.grid.SetCellValue(0, 0, 'Start')
         self.grid.SetCellValue(1, 0, 'End')
@@ -379,7 +379,7 @@ class PanelMeasure(wx.Panel):
         self.grid.SetCellValue(0, 3, 'Min')
         self.grid.SetCellValue(1, 3, 'Max')
         self.grid.SetCellValue(2, 3, u'\u0394')
-        self.grid.SetCellValue(0, 6, 'Avg')
+        self.grid.SetCellValue(0, 7, 'Avg')
 
         self.popupMenu = wx.Menu()
         self.popupMenuCopy = self.popupMenu.Append(wx.ID_ANY, "&Copy",
@@ -394,7 +394,7 @@ class PanelMeasure(wx.Panel):
 
         font = self.grid.GetCellFont(0, 0)
         font.SetWeight(wx.BOLD)
-        for x in [0, 3, 6]:
+        for x in [0, 3, 7]:
             for y in xrange(self.grid.GetNumberRows()):
                 self.grid.SetCellFont(y, x, font)
 
@@ -489,15 +489,15 @@ class PanelMeasure(wx.Panel):
 
         minLoc = min(sweep, key=lambda v: v[1])
         maxLoc = max(sweep, key=lambda v: v[1])
-        self.grid.SetCellValue(0, 3, "{0:.6f} MHz".format(minLoc[0]))
-        self.grid.SetCellValue(1, 3, "{0:.6f} MHz".format(maxLoc[0]))
-        self.grid.SetCellValue(0, 4, "{0:.2f} dB".format(minLoc[1]))
-        self.grid.SetCellValue(1, 4, "{0:.2f} dB".format(maxLoc[1]))
-        self.grid.SetCellValue(2, 3, "{0:.6f} MHz".format(maxLoc[0] - minLoc[0]))
-        self.grid.SetCellValue(2, 4, "{0:.2f} dB".format(maxLoc[1] - minLoc[1]))
+        self.grid.SetCellValue(0, 4, "{0:.6f} MHz".format(minLoc[0]))
+        self.grid.SetCellValue(1, 4, "{0:.6f} MHz".format(maxLoc[0]))
+        self.grid.SetCellValue(2, 4, "{0:.6f} MHz".format(maxLoc[0] - minLoc[0]))
+        self.grid.SetCellValue(0, 5, "{0:.2f} dB".format(minLoc[1]))
+        self.grid.SetCellValue(1, 5, "{0:.2f} dB".format(maxLoc[1]))
+        self.grid.SetCellValue(2, 5, "{0:.2f} dB".format(maxLoc[1] - minLoc[1]))
 
         avg = sum((v[1] for v in sweep), 0.0) / len(sweep)
-        self.grid.SetCellValue(0, 7, "{0:.2f} dB".format(avg))
+        self.grid.SetCellValue(0, 8, "{0:.2f} dB".format(avg))
 
 
 if __name__ == '__main__':
