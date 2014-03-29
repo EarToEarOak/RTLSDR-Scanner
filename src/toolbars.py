@@ -106,32 +106,32 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
 
     def on_check_auto_f(self, event):
         self.settings.autoF = event.Checked()
-        self.plot.redraw_plot()
+        self.panel.redraw_plot()
 
     def on_check_auto_l(self, event):
         self.settings.autoL = event.Checked()
-        self.plot.redraw_plot()
+        self.panel.redraw_plot()
 
     def on_check_auto_t(self, event):
         self.settings.autoT = event.Checked()
-        self.plot.redraw_plot()
+        self.panel.redraw_plot()
 
     def on_check_update(self, event):
         self.settings.liveUpdate = event.Checked()
 
     def on_check_grid(self, event):
         grid = event.Checked()
-        self.plot.set_grid(grid)
+        self.panel.set_grid(grid)
 
     def on_check_peak(self, event):
         peak = event.Checked()
         self.settings.annotate = peak
-        self.plot.redraw_plot()
+        self.panel.redraw_plot()
 
     def on_check_fade(self, event):
         fade = event.Checked()
         self.settings.fadeScans = fade
-        self.plot.redraw_plot()
+        self.panel.redraw_plot()
 
     def on_check_wire(self, event):
         wire = event.Checked()
@@ -141,13 +141,13 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
     def on_check_avg(self, event):
         avg = event.Checked()
         self.settings.average = avg
-        self.create_plot()
+        self.panel.redraw_plot()
 
     def on_colour(self, event):
         colourMap = event.GetString()
         self.settings.colourMap = colourMap
         self.plot.set_colourmap(colourMap)
-        self.plot.redraw_plot()
+        self.panel.redraw_plot()
 
     def add_spacer(self):
         sepId = wx.NewId()

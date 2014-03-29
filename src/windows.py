@@ -110,8 +110,7 @@ class PanelGraph(wx.Panel):
         self.toolbar.set_type(self.settings.display)
 
         self.set_plot_title()
-        if self.spectrum is not None:
-            self.set_plot(self.spectrum, self.extent, self.settings.annotate)
+        self.redraw_plot()
         self.plot.scale_plot(True)
         self.mouseZoom = MouseZoom(self.plot, self.toolbar)
         self.mouseSelect = MouseSelect(self.plot, self.selectStart,
@@ -126,6 +125,10 @@ class PanelGraph(wx.Panel):
         self.selectStart = start
         self.selectEnd = end
         self.measure.set_selected(self.spectrum, start, end)
+
+    def show_measure(self, show):
+        self.measure.show(show)
+        self.Layout()
 
     def set_plot(self, spectrum, extent, annotate=False):
         self.spectrum = spectrum
@@ -142,9 +145,9 @@ class PanelGraph(wx.Panel):
                             " gain = {2}dB".format(self.settings.start,
                                                    self.settings.stop, gain))
 
-    def show_measure(self, show):
-        self.measure.show(show)
-        self.Layout()
+    def redraw_plot(self):
+        if self.spectrum is not None:
+            self.set_plot(self.spectrum, self.extent, self.settings.annotate)
 
     def get_figure(self):
         return self.figure
