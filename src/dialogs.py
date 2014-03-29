@@ -25,7 +25,7 @@
 
 import copy
 import itertools
-import urlparse
+from urlparse import urlparse
 
 import matplotlib
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
@@ -104,8 +104,8 @@ class DialogCompare(wx.Dialog):
 
 
 class DialogAutoCal(wx.Dialog):
-    def __init__(self, parent, freq, callback):
-        self.callback = callback
+    def __init__(self, parent, freq, callbackCal):
+        self.callback = callbackCal
         self.cal = 0
 
         wx.Dialog.__init__(self, parent=parent, title="Auto Calibration",

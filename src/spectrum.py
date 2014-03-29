@@ -122,6 +122,14 @@ def split_spectrum(spectrum):
     return freqs, powers
 
 
+def split_spectrum_sort(spectrum):
+    freqs = spectrum.keys()
+    freqs.sort()
+    powers = map(spectrum.get, freqs)
+
+    return freqs, powers
+
+
 def slice_spectrum(spectrum, start, end):
     sweepTemp = {}
     if len(spectrum) < 1:

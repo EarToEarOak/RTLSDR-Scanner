@@ -63,8 +63,10 @@ class Statusbar(wx.StatusBar):
 
 
 class NavigationToolbar(NavigationToolbar2WxAgg):
-    def __init__(self, canvas, main):
-        self.main = main
+    def __init__(self, canvas, panel, settings):
+        self.panel = panel
+        self.settings = settings
+        self.plot = None
         self.extraTools = []
 
         NavigationToolbar2WxAgg.__init__(self, canvas)
@@ -73,19 +75,19 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         liveId = wx.NewId()
         self.AddCheckTool(liveId, load_bitmap('auto_refresh'),
                           shortHelp='Live update')
-        self.ToggleTool(liveId, self.main.settings.liveUpdate)
+        self.ToggleTool(liveId, settings.liveUpdate)
         wx.EVT_TOOL(self, liveId, self.on_check_update)
 
         gridId = wx.NewId()
         self.AddCheckTool(gridId, load_bitmap('grid'),
                           shortHelp='Grid')
-        self.ToggleTool(gridId, self.main.grid)
+        self.ToggleTool(gridId, settings.grid)
         wx.EVT_TOOL(self, gridId, self.on_check_grid)
 
         peakId = wx.NewId()
         self.AddCheckTool(peakId, load_bitmap('peak'),
                           shortHelp='Label peak')
-        self.ToggleTool(peakId, self.main.settings.annotate)
+        self.ToggleTool(peakId, settings.annotate)
         wx.EVT_TOOL(self, peakId, self.on_check_peak)
 
         self.add_spacer()
@@ -93,65 +95,68 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.autoFId = wx.NewId()
         self.AddCheckTool(self.autoFId, load_bitmap('auto_f'),
                           shortHelp='Auto range frequency')
-        self.ToggleTool(self.autoFId, self.main.settings.autoF)
+        self.ToggleTool(self.autoFId, settings.autoF)
         wx.EVT_TOOL(self, self.autoFId, self.on_check_auto_f)
 
         self.autoLId = wx.NewId()
         self.AddCheckTool(self.autoLId, load_bitmap('auto_l'),
                           shortHelp='Auto range level')
-        self.ToggleTool(self.autoLId, self.main.settings.autoL)
+        self.ToggleTool(self.autoLId, settings.autoL)
         wx.EVT_TOOL(self, self.autoLId, self.on_check_auto_l)
 
     def on_check_auto_f(self, event):
-        self.main.settings.autoF = event.Checked()
-        self.main.plot.redraw_plot()
+        self.settings.autoF = event.Checked()
+        self.plot.redraw_plot()
 
     def on_check_auto_l(self, event):
-        self.main.settings.autoL = event.Checked()
-        self.main.plot.redraw_plot()
+        self.settings.autoL = event.Checked()
+        self.plot.redraw_plot()
 
     def on_check_auto_t(self, event):
-        self.main.settings.autoT = event.Checked()
-        self.main.plot.redraw_plot()
+        self.settings.autoT = event.Checked()
+        self.plot.redraw_plot()
 
     def on_check_update(self, event):
-        self.main.settings.liveUpdate = event.Checked()
+        self.settings.liveUpdate = event.Checked()
 
     def on_check_grid(self, event):
         grid = event.Checked()
-        self.main.plot.set_grid(grid)
+        self.plot.set_grid(grid)
 
     def on_check_peak(self, event):
         peak = event.Checked()
-        self.main.settings.annotate = peak
-        self.main.plot.redraw_plot()
+        self.settings.annotate = peak
+        self.plot.redraw_plot()
 
     def on_check_fade(self, event):
         fade = event.Checked()
-        self.main.settings.fadeScans = fade
-        self.main.plot.redraw_plot()
+        self.settings.fadeScans = fade
+        self.plot.redraw_plot()
 
     def on_check_wire(self, event):
         wire = event.Checked()
-        self.main.settings.wireframe = wire
-        self.main.create_plot()
+        self.settings.wireframe = wire
+        self.panel.create_plot()
 
     def on_check_avg(self, event):
         avg = event.Checked()
-        self.main.settings.average = avg
-        self.main.create_plot()
+        self.settings.average = avg
+        self.create_plot()
 
     def on_colour(self, event):
         colourMap = event.GetString()
-        self.main.settings.colourMap = colourMap
-        self.main.plot.set_colourmap(colourMap)
-        self.main.plot.redraw_plot()
+        self.settings.colourMap = colourMap
+        self.plot.set_colourmap(colourMap)
+        self.plot.redraw_plot()
 
     def add_spacer(self):
         sepId = wx.NewId()
         self.AddCheckTool(sepId, load_bitmap('spacer'))
         self.EnableTool(sepId, False)
         return sepId
+
+    def set_plot(self, plot):
+        self.plot = plot
 
     def set_type(self, display):
         for toolId in self.extraTools:
@@ -162,7 +167,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
             autoTId = wx.NewId()
             self.AddCheckTool(autoTId, load_bitmap('auto_t'),
                               shortHelp='Auto range time')
-            self.ToggleTool(autoTId, self.main.settings.autoT)
+            self.ToggleTool(autoTId, self.settings.autoT)
             wx.EVT_TOOL(self, autoTId, self.on_check_auto_t)
             self.extraTools.append(autoTId)
 
@@ -173,21 +178,21 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
             self.AddCheckTool(fadeId, load_bitmap('fade'),
                               shortHelp='Fade plots')
             wx.EVT_TOOL(self, fadeId, self.on_check_fade)
-            self.ToggleTool(fadeId, self.main.settings.fadeScans)
+            self.ToggleTool(fadeId, self.settings.fadeScans)
             self.extraTools.append(fadeId)
 
             avgId = wx.NewId()
             self.AddCheckTool(avgId, load_bitmap('average'),
                               shortHelp='Average plots')
             wx.EVT_TOOL(self, avgId, self.on_check_avg)
-            self.ToggleTool(avgId, self.main.settings.average)
+            self.ToggleTool(avgId, self.settings.average)
             self.extraTools.append(avgId)
             self.extraTools.append(self.add_spacer())
 
         colours = get_colours()
         colourId = wx.NewId()
         control = wx.Choice(self, id=colourId, choices=colours)
-        control.SetSelection(colours.index(self.main.settings.colourMap))
+        control.SetSelection(colours.index(self.settings.colourMap))
         self.AddControl(control)
         self.Bind(wx.EVT_CHOICE, self.on_colour, control)
         self.extraTools.append(colourId)
@@ -199,16 +204,16 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
             self.AddCheckTool(wireId, load_bitmap('wireframe'),
                               shortHelp='Wireframe')
             wx.EVT_TOOL(self, wireId, self.on_check_wire)
-            self.ToggleTool(wireId, self.main.settings.wireframe)
+            self.ToggleTool(wireId, self.settings.wireframe)
             self.extraTools.append(wireId)
 
         self.Realize()
 
 
 class NavigationToolbarCompare(NavigationToolbar2WxAgg):
-    def __init__(self, canvas, main):
-        NavigationToolbar2WxAgg.__init__(self, canvas)
-        self.main = main
+    def __init__(self, panel):
+        NavigationToolbar2WxAgg.__init__(self, panel.get_canvas())
+        self.panel = panel
 
         self.AddSeparator()
 
@@ -219,8 +224,8 @@ class NavigationToolbarCompare(NavigationToolbar2WxAgg):
         wx.EVT_TOOL(self, gridId, self.on_check_grid)
 
     def on_check_grid(self, event):
-        self.grid = event.Checked()
-        self.main.set_grid(self.grid)
+        grid = event.Checked()
+        self.panel.set_grid(grid)
 
 
 if __name__ == '__main__':

@@ -53,6 +53,7 @@ class Settings():
         self.average = False
         self.pointsLimit = False
         self.pointsMax = 5000
+        self.grid = True
 
         self.start = 87
         self.stop = 108
@@ -108,6 +109,7 @@ class Settings():
         self.average = self.cfg.ReadBool('average', self.average)
         self.pointsLimit = self.cfg.ReadBool('pointsLimit', self.pointsLimit)
         self.pointsMax = self.cfg.ReadInt('pointsMax', self.pointsMax)
+        self.grid = self.cfg.ReadBool('grid', self.grid)
         self.start = self.cfg.ReadInt('start', self.start)
         self.stop = self.cfg.ReadInt('stop', self.stop)
         self.mode = self.cfg.ReadInt('mode', self.mode)
@@ -161,6 +163,7 @@ class Settings():
         self.cfg.WriteBool('average', self.average)
         self.cfg.WriteBool('pointsLimit', self.pointsLimit)
         self.cfg.WriteInt('pointsMax', self.pointsMax)
+        self.cfg.WriteBool('grid', self.grid)
         self.cfg.WriteInt('start', self.start)
         self.cfg.WriteInt('stop', self.stop)
         self.cfg.WriteInt('mode', self.mode)

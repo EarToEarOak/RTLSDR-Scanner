@@ -41,19 +41,18 @@ from spectrum import epoch_to_mpl, create_mesh
 
 
 class Plotter3d():
-    def __init__(self, notify, graph, settings, grid, lock):
+    def __init__(self, notify, figure, settings, lock):
         self.notify = notify
+        self.figure = figure
         self.settings = settings
-        self.graph = graph
         self.lock = lock
-        self.figure = self.graph.get_figure()
         self.axes = None
         self.plot = None
         self.extent = None
         self.threadPlot = None
         self.wireframe = settings.wireframe
         self.setup_plot()
-        self.set_grid(grid)
+        self.set_grid(settings.grid)
 
     def setup_plot(self):
         gs = GridSpec(1, 2, width_ratios=[9.5, 0.5])

@@ -32,23 +32,20 @@ import threading
 import time
 import webbrowser
 
+from matplotlib.dates import num2epoch
 import wx
 from wx.lib.masked import NumCtrl
 
 from constants import *
 from devices import get_devices
-from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, DialogDevices, \
-    DialogCompare, DialogAutoCal, DialogAbout, DialogSaveWarn
+from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, \
+    DialogDevices, DialogCompare, DialogAutoCal, DialogAbout, DialogSaveWarn
 from events import EVT_THREAD_STATUS, Event, EventThreadStatus, post_event
 from file import save_plot, export_plot, open_plot, ScanInfo
 from misc import calc_samples, calc_real_dwell, \
     get_version_timestamp, get_version_timestamp_repo, add_colours
-from plot import Plotter
-from plot3d import Plotter3d
-from plot_controls import MouseZoom, MouseSelect
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
-from spectrogram import Spectrogram
 from spectrum import count_points, sort_spectrum, Extent, reduce_points
 from toolbars import Statusbar
 from windows import PanelGraph
@@ -84,8 +81,6 @@ class FrameMain(wx.Frame):
         self.threadScan = None
         self.threadUpdate = None
 
-        self.plot = None
-
         self.stopAtEnd = False
         self.stopScan = False
 
@@ -112,8 +107,8 @@ class FrameMain(wx.Frame):
         self.popupMenuPointsLim = None
         self.popupMenuShowMeasure = None
 
-        self.panel = None
         self.graph = None
+        self.toolbar = None
         self.canvas = None
         self.mouseZoom = None
         self.mouseSelect = None
@@ -138,9 +133,6 @@ class FrameMain(wx.Frame):
         self.filename = ""
         self.oldCal = 0
 
-        self.selectStart = None
-        self.selectEnd = None
-
         wx.Frame.__init__(self, None, title=title)
 
         self.Bind(wx.EVT_CLOSE, self.on_exit)
@@ -156,7 +148,7 @@ class FrameMain(wx.Frame):
         self.Show()
 
         displaySize = wx.DisplaySize()
-        toolbarSize = self.panel.GetBestSize()
+        toolbarSize = self.toolbar.GetBestSize()
         self.SetClientSize((toolbarSize[0] + 10, displaySize[1] / 2))
         self.SetMinSize((displaySize[0] / 4, displaySize[1] / 4))
 
@@ -167,25 +159,24 @@ class FrameMain(wx.Frame):
     def create_widgets(self):
         panel = wx.Panel(self)
 
-        self.panel = wx.Panel(panel)
-        self.graph = PanelGraph(panel, self)
+        self.graph = PanelGraph(panel, self, self.settings, self.lock,
+                                self.on_motion)
+        self.toolbar = wx.Panel(panel)
 
-        self.create_plot()
-
-        self.buttonStart = wx.Button(self.panel, wx.ID_ANY, 'Start')
-        self.buttonStop = wx.Button(self.panel, wx.ID_ANY, 'Stop')
+        self.buttonStart = wx.Button(self.toolbar, wx.ID_ANY, 'Start')
+        self.buttonStop = wx.Button(self.toolbar, wx.ID_ANY, 'Stop')
         self.buttonStart.SetToolTip(wx.ToolTip('Start scan'))
         self.buttonStop.SetToolTip(wx.ToolTip('Stop scan'))
         self.Bind(wx.EVT_BUTTON, self.on_start, self.buttonStart)
         self.Bind(wx.EVT_BUTTON, self.on_stop, self.buttonStop)
 
-        textRange = wx.StaticText(self.panel, label="Range (MHz)",
+        textRange = wx.StaticText(self.toolbar, label="Range (MHz)",
                                   style=wx.ALIGN_CENTER)
-        textStart = wx.StaticText(self.panel, label="Start")
-        textStop = wx.StaticText(self.panel, label="Stop")
+        textStart = wx.StaticText(self.toolbar, label="Start")
+        textStop = wx.StaticText(self.toolbar, label="Stop")
 
-        self.spinCtrlStart = wx.SpinCtrl(self.panel)
-        self.spinCtrlStop = wx.SpinCtrl(self.panel)
+        self.spinCtrlStart = wx.SpinCtrl(self.toolbar)
+        self.spinCtrlStop = wx.SpinCtrl(self.toolbar)
         self.spinCtrlStart.SetToolTip(wx.ToolTip('Start frequency'))
         self.spinCtrlStop.SetToolTip(wx.ToolTip('Stop frequency'))
         self.spinCtrlStart.SetRange(F_MIN, F_MAX - 1)
@@ -193,68 +184,59 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_SPINCTRL, self.on_spin, self.spinCtrlStart)
         self.Bind(wx.EVT_SPINCTRL, self.on_spin, self.spinCtrlStop)
 
-        textGain = wx.StaticText(self.panel, label="Gain (dB)")
-        self.controlGain = wx.Choice(self.panel, choices=[''])
+        textGain = wx.StaticText(self.toolbar, label="Gain (dB)")
+        self.controlGain = wx.Choice(self.toolbar, choices=[''])
 
-        textMode = wx.StaticText(self.panel, label="Mode")
-        self.choiceMode = wx.Choice(self.panel, choices=MODE[::2])
+        textMode = wx.StaticText(self.toolbar, label="Mode")
+        self.choiceMode = wx.Choice(self.toolbar, choices=MODE[::2])
         self.choiceMode.SetToolTip(wx.ToolTip('Scanning mode'))
 
-        textDwell = wx.StaticText(self.panel, label="Dwell")
-        self.choiceDwell = wx.Choice(self.panel, choices=DWELL[::2])
+        textDwell = wx.StaticText(self.toolbar, label="Dwell")
+        self.choiceDwell = wx.Choice(self.toolbar, choices=DWELL[::2])
         self.choiceDwell.SetToolTip(wx.ToolTip('Scan time per step'))
 
-        textNfft = wx.StaticText(self.panel, label="FFT size")
-        self.choiceNfft = wx.Choice(self.panel, choices=map(str, NFFT))
+        textNfft = wx.StaticText(self.toolbar, label="FFT size")
+        self.choiceNfft = wx.Choice(self.toolbar, choices=map(str, NFFT))
         self.choiceNfft.SetToolTip(wx.ToolTip('Higher values for greater'
                                               'precision'))
 
-        textDisplay = wx.StaticText(self.panel, label="Display")
-        self.choiceDisplay = wx.Choice(self.panel, choices=DISPLAY[::2])
+        textDisplay = wx.StaticText(self.toolbar, label="Display")
+        self.choiceDisplay = wx.Choice(self.toolbar, choices=DISPLAY[::2])
         self.Bind(wx.EVT_CHOICE, self.on_choice, self.choiceDisplay)
         self.choiceDisplay.SetToolTip(wx.ToolTip('Spectrogram available in'
                                                  'continuous mode'))
 
         grid = wx.GridBagSizer(5, 5)
-
         grid.Add(self.buttonStart, pos=(0, 0), span=(3, 1),
                  flag=wx.ALIGN_CENTER)
         grid.Add(self.buttonStop, pos=(0, 1), span=(3, 1),
                  flag=wx.ALIGN_CENTER)
-
         grid.Add((20, 1), pos=(0, 2))
-
         grid.Add(textRange, pos=(0, 3), span=(1, 4), flag=wx.ALIGN_CENTER)
         grid.Add(textStart, pos=(1, 3), flag=wx.ALIGN_CENTER)
         grid.Add(self.spinCtrlStart, pos=(1, 4))
         grid.Add(textStop, pos=(1, 5), flag=wx.ALIGN_CENTER)
         grid.Add(self.spinCtrlStop, pos=(1, 6))
-
         grid.Add(textGain, pos=(0, 7), flag=wx.ALIGN_CENTER)
         grid.Add(self.controlGain, pos=(1, 7), flag=wx.ALIGN_CENTER)
-
         grid.Add((20, 1), pos=(0, 8))
-
         grid.Add(textMode, pos=(0, 9), flag=wx.ALIGN_CENTER)
         grid.Add(self.choiceMode, pos=(1, 9), flag=wx.ALIGN_CENTER)
-
         grid.Add(textDwell, pos=(0, 10), flag=wx.ALIGN_CENTER)
         grid.Add(self.choiceDwell, pos=(1, 10), flag=wx.ALIGN_CENTER)
-
         grid.Add(textNfft, pos=(0, 11), flag=wx.ALIGN_CENTER)
         grid.Add(self.choiceNfft, pos=(1, 11), flag=wx.ALIGN_CENTER)
-
         grid.Add((20, 1), pos=(0, 12))
-
         grid.Add(textDisplay, pos=(0, 13), flag=wx.ALIGN_CENTER)
         grid.Add(self.choiceDisplay, pos=(1, 13), flag=wx.ALIGN_CENTER)
 
-        self.panel.SetSizer(grid)
+        self.toolbar.SetSizer(grid)
+
+        self.set_controls()
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.graph, 1, wx.EXPAND)
-        sizer.Add(self.panel, 0, wx.EXPAND)
-        self.set_controls()
+        sizer.Add(self.toolbar, 0, wx.EXPAND)
         panel.SetSizer(sizer)
 
     def create_menu(self):
@@ -345,31 +327,6 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_help, id=idF1)
         accelTable = wx.AcceleratorTable([(wx.ACCEL_NORMAL, wx.WXK_F1, idF1)])
         self.SetAcceleratorTable(accelTable)
-
-    def create_plot(self):
-        if self.plot is not None:
-            self.plot.close()
-
-        if self.settings.display == Display.PLOT:
-            self.plot = Plotter(self, self.graph, self.settings, self.grid,
-                                self.lock)
-        elif self.settings.display == Display.SPECT:
-            self.plot = Spectrogram(self, self.graph, self.settings, self.grid,
-                                    self.lock)
-        else:
-            self.plot = Plotter3d(self, self.graph, self.settings, self.grid,
-                                  self.lock)
-
-        self.set_plot_title()
-        self.set_plot(self.spectrum, self.settings.annotate)
-        self.graph.set_plot(self.plot)
-        self.graph.set_type(self.settings.display)
-        self.plot.scale_plot(True)
-        self.mouseZoom = MouseZoom(self.plot, self.graph.get_toolbar())
-        self.mouseSelect = MouseSelect(self.plot, self.selectStart,
-                                       self.selectEnd, self.on_select)
-        self.graph.show_measure(self.settings.showMeasure)
-        self.graph.SetFocus()
 
     def create_popup_menu(self):
         self.popupMenu = wx.Menu()
@@ -549,7 +506,7 @@ class FrameMain(wx.Frame):
 
     def on_choice(self, _event):
         self.get_controls()
-        self.create_plot()
+        self.graph.create_plot()
 
     def on_start(self, _event):
         if self.settings.start >= self.settings.stop:
@@ -558,7 +515,7 @@ class FrameMain(wx.Frame):
             return
 
         self.get_controls()
-        self.plot.clear_plots()
+        self.graph.clear_plots()
 
         self.devices = self.refresh_devices()
         if(len(self.devices) == 0):
@@ -577,7 +534,7 @@ class FrameMain(wx.Frame):
         self.stopAtEnd = True
 
     def on_range_lim(self, _event):
-        xmin, xmax = self.plot.axes.get_xlim()
+        xmin, xmax = self.graph.get_axes().get_xlim()
         xmin = int(xmin)
         xmax = math.ceil(xmax)
         if xmax < xmin + 1:
@@ -590,10 +547,36 @@ class FrameMain(wx.Frame):
         self.settings.pointsLimit = self.popupMenuPointsLim.IsChecked()
         self.set_plot(self.spectrum, self.settings.annotate)
 
-    def on_select(self, start, end):
-        self.selectStart = start
-        self.selectEnd = end
-        self.graph.set_selected(self.spectrum, start, end)
+    def on_motion(self, event):
+        xpos = event.xdata
+        ypos = event.ydata
+        text = ""
+        if xpos is None or ypos is  None or  len(self.spectrum) == 0:
+            return
+
+        if self.settings.display == Display.PLOT:
+            timeStamp = max(self.spectrum)
+            spectrum = self.spectrum[timeStamp]
+        elif self.settings.display == Display.SPECT:
+            timeStamp = num2epoch(ypos)
+            if timeStamp in self.spectrum:
+                spectrum = self.spectrum[timeStamp]
+            else:
+                nearest = min(self.spectrum.keys(),
+                              key=lambda k: abs(k - timeStamp))
+                spectrum = self.spectrum[nearest]
+        else:
+            spectrum = None
+
+        if spectrum is not None and len(spectrum) > 0:
+            x = min(spectrum.keys(), key=lambda freq: abs(freq - xpos))
+            if(xpos <= max(spectrum.keys(), key=float)):
+                y = spectrum[x]
+                text = "f = {0:.6f}MHz, p = {1:.2f}dB".format(x, y)
+            else:
+                text = "f = {0:.6f}MHz".format(xpos)
+
+        self.status.SetStatusText(text, 1)
 
     def on_event(self, event):
         status = event.data.get_status()
@@ -692,7 +675,7 @@ class FrameMain(wx.Frame):
             self.set_controls()
             self.set_control_state(True)
             self.set_plot(spectrum, self.settings.annotate)
-            self.plot.scale_plot(True)
+            self.graph.scale_plot(True)
             self.status.set_general("Finished")
             self.settings.fileHistory.AddFileToHistory(os.path.join(dirname,
                                                                     filename))
@@ -703,8 +686,8 @@ class FrameMain(wx.Frame):
         freq = self.dlgCal.get_freq()
         if self.dlgCal is not None:
             if status == Cal.START:
-                self.spinCtrlStart.SetValue(freq - 1)
-                self.spinCtrlStop.SetValue(freq + 1)
+                self.spinCtrlStart.SetValue(int(freq))
+                self.spinCtrlStop.SetValue(math.ceil(freq))
                 self.oldCal = self.devices[self.settings.index].calibration
                 self.devices[self.settings.index].calibration = 0
                 self.get_controls()
@@ -756,7 +739,7 @@ class FrameMain(wx.Frame):
                                          self.settings.index, samples, isCal)
             self.filename = "Scan {0:.1f}-{1:.1f}MHz".format(self.settings.start,
                                                             self.settings.stop)
-            self.set_plot_title()
+            self.graph.set_plot_title()
             return True
 
     def stop_scan(self):
@@ -817,15 +800,6 @@ class FrameMain(wx.Frame):
             title += "*"
         self.SetTitle(title)
 
-    def set_plot_title(self):
-        if len(self.settings.devices) > 0:
-            gain = self.settings.devices[self.settings.index].gain
-        else:
-            gain = 0
-        self.plot.set_title("Frequency Spectrogram\n{0} - {1} MHz,"
-                            " gain = {2}dB".format(self.settings.start,
-                                                   self.settings.stop, gain))
-
     def set_plot(self, spectrum, annotate):
         if len(spectrum) > 0:
             total = count_points(spectrum)
@@ -835,7 +809,7 @@ class FrameMain(wx.Frame):
                 if self.settings.pointsLimit:
                     spectrum = reduce_points(spectrum, self.settings.pointsMax,
                                              total)
-                self.plot.set_plot(spectrum, extent, annotate)
+                self.graph.set_plot(spectrum, extent, annotate)
 
     def set_control_state(self, state):
         hasDevices = len(self.devices) > 0
@@ -881,12 +855,12 @@ class FrameMain(wx.Frame):
             device = self.devices[self.settings.index]
             if device.isDevice:
                 gains = device.get_gains_str()
-                self.controlGain = wx.Choice(self.panel,
+                self.controlGain = wx.Choice(self.toolbar,
                                              choices=gains)
                 gain = device.get_closest_gain_str(device.gain)
                 self.controlGain.SetStringSelection(gain)
             else:
-                self.controlGain = NumCtrl(self.panel, integerWidth=3,
+                self.controlGain = NumCtrl(self.toolbar, integerWidth=3,
                                            fractionWidth=1)
                 font = self.controlGain.GetFont()
                 dc = wx.WindowDC(self.controlGain)

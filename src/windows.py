@@ -29,14 +29,17 @@ from matplotlib.backends.backend_wxagg import \
     FigureCanvasWxAgg as FigureCanvas
 from matplotlib.colorbar import ColorbarBase
 from matplotlib.colors import Normalize
-from matplotlib.dates import num2epoch
 from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
 import wx
 
 from constants import Display
 from events import EventThreadStatus, Event, post_event
-from misc import nearest, close_modeless
-from spectrum import split_spectrum, slice_spectrum
+from misc import  close_modeless
+from plot import Plotter
+from plot3d import Plotter3d
+from plot_controls import MouseZoom, MouseSelect
+from spectrogram import Spectrogram
+from spectrum import split_spectrum_sort, slice_spectrum
 from toolbars import NavigationToolbar, NavigationToolbarCompare
 import wx.grid as grid
 
@@ -56,75 +59,88 @@ class CellRenderer(grid.PyGridCellRenderer):
 
 
 class PanelGraph(wx.Panel):
-    def __init__(self, parent, main):
-        self.parent = parent
-        self.main = main
-        self.resize = False
-        self.display = None
+    def __init__(self, panel, notify, settings, lock, callbackMotion):
+        self.panel = panel
+        self.notify = notify
+        self.plot = None
+        self.settings = settings
+        self.lock = lock
+        self.spectrum = None
+        self.extent = None
 
-        wx.Panel.__init__(self, self.parent)
+        self.selectStart = None
+        self.selectEnd = None
+
+        wx.Panel.__init__(self, panel)
 
         self.figure = matplotlib.figure.Figure(facecolor='white')
         self.canvas = FigureCanvas(self, -1, self.figure)
         self.measure = PanelMeasure(self)
 
-        self.toolbar = NavigationToolbar(self.canvas, self.main)
+        self.toolbar = NavigationToolbar(self.canvas, self, settings)
         self.toolbar.Realize()
 
         vbox = wx.BoxSizer(wx.VERTICAL)
         vbox.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
         vbox.Add(self.measure, 0, wx.EXPAND)
         vbox.Add(self.toolbar, 0, wx.EXPAND)
-
         self.SetSizer(vbox)
         vbox.Fit(self)
 
-        self.canvas.mpl_connect('motion_notify_event', self.on_motion)
+        self.canvas.mpl_connect('motion_notify_event', callbackMotion)
         self.canvas.mpl_connect('draw_event', self.on_draw)
 
-    def on_motion(self, event):
-        xpos = event.xdata
-        ypos = event.ydata
-        text = ""
-        if xpos is None or ypos is  None or  len(self.main.spectrum) == 0:
-            return
+        self.create_plot()
 
-        if self.display == Display.PLOT:
-            timeStamp = max(self.main.spectrum)
-            spectrum = self.main.spectrum[timeStamp]
-        elif self.display == Display.SPECT:
-            timeStamp = num2epoch(ypos)
-            if timeStamp in self.main.spectrum:
-                spectrum = self.main.spectrum[timeStamp]
-            else:
-                nearest = min(self.main.spectrum.keys(),
-                              key=lambda k: abs(k - timeStamp))
-                spectrum = self.main.spectrum[nearest]
+    def create_plot(self):
+        if self.plot is not None:
+            self.plot.close()
+
+        if self.settings.display == Display.PLOT:
+            self.plot = Plotter(self.notify, self.figure, self.settings,
+                                self.lock)
+        elif self.settings.display == Display.SPECT:
+            self.plot = Spectrogram(self.notify, self.figure, self.settings,
+                                    self.lock)
         else:
-            spectrum = None
+            self.plot = Plotter3d(self.notify, self.figure, self.settings,
+                                  self.lock)
 
-        if spectrum is not None and len(spectrum) > 0:
-            x = min(spectrum.keys(), key=lambda freq: abs(freq - xpos))
-            if(xpos <= max(spectrum.keys(), key=float)):
-                y = spectrum[x]
-                text = "f = {0:.6f}MHz, p = {1:.2f}dB".format(x, y)
-            else:
-                text = "f = {0:.6f}MHz".format(xpos)
+        self.toolbar.set_plot(self.plot)
+        self.toolbar.set_type(self.settings.display)
 
-        self.main.status.SetStatusText(text, 1)
+        self.set_plot_title()
+        if self.spectrum is not None:
+            self.set_plot(self.spectrum, self.extent, self.settings.annotate)
+        self.plot.scale_plot(True)
+        self.mouseZoom = MouseZoom(self.plot, self.toolbar)
+        self.mouseSelect = MouseSelect(self.plot, self.selectStart,
+                                       self.selectEnd, self.on_select)
+        self.measure.show(self.settings.showMeasure)
+        self.panel.SetFocus()
 
     def on_draw(self, _event):
-        post_event(self.main, EventThreadStatus(Event.PLOTTED))
+        post_event(self.notify, EventThreadStatus(Event.PLOTTED))
 
-    def set_plot(self, plot):
-        self.measure.set_plot(plot)
+    def on_select(self, start, end):
+        self.selectStart = start
+        self.selectEnd = end
+        self.measure.set_selected(self.spectrum, start, end)
 
-    def set_type(self, display):
-        self.display = display
-        self.toolbar.set_type(display)
+    def set_plot(self, spectrum, extent, annotate=False):
+        self.spectrum = spectrum
+        self.extent = extent
+        self.plot.set_plot(spectrum, extent, annotate)
+        self.measure.set_plot(spectrum)
 
-    def set_selected(self, spectrum, start, end):
-        self.measure.set_selected(spectrum, start, end)
+    def set_plot_title(self):
+        if len(self.settings.devices) > 0:
+            gain = self.settings.devices[self.settings.index].gain
+        else:
+            gain = 0
+        self.plot.set_title("Frequency Spectrogram\n{0} - {1} MHz,"
+                            " gain = {2}dB".format(self.settings.start,
+                                                   self.settings.stop, gain))
 
     def show_measure(self, show):
         self.measure.show(show)
@@ -133,11 +149,20 @@ class PanelGraph(wx.Panel):
     def get_figure(self):
         return self.figure
 
+    def get_axes(self):
+        return self.plot.get_axes()
+
     def get_canvas(self):
         return self.canvas
 
     def get_toolbar(self):
         return self.toolbar
+
+    def scale_plot(self, force=False):
+        self.plot.scale_plot(force)
+
+    def clear_plots(self):
+        self.plot.clear_plots()
 
     def close(self):
         close_modeless()
@@ -199,7 +224,7 @@ class PanelGraphCompare(wx.Panel):
         grid.Add((20, 1), pos=(0, 5))
         grid.Add(self.textIntersect, pos=(0, 6), span=(1, 1))
 
-        toolbar = NavigationToolbarCompare(self.canvas, self)
+        toolbar = NavigationToolbarCompare(self)
         toolbar.Realize()
 
         vbox = wx.BoxSizer(wx.VERTICAL)
@@ -226,6 +251,9 @@ class PanelGraphCompare(wx.Panel):
         self.axesDiff.grid(grid)
         self.canvas.draw()
 
+    def get_canvas(self):
+        return self.canvas
+
     def plot_diff(self):
         diff = {}
         intersections = 0
@@ -237,16 +265,16 @@ class PanelGraphCompare(wx.Panel):
             intersections = len(intersect)
             for freq in intersect:
                 diff[freq] = self.spectrum1[freq] - self.spectrum2[freq]
-            freqs, powers = split_spectrum(diff)
+            freqs, powers = split_spectrum_sort(diff)
             self.plotDiff.set_xdata(freqs)
             self.plotDiff.set_ydata(powers)
         elif self.spectrum1 is None:
-            freqs, powers = split_spectrum(self.spectrum2)
+            freqs, powers = split_spectrum_sort(self.spectrum2)
             intersections = len(freqs)
             self.plotDiff.set_xdata(freqs)
             self.plotDiff.set_ydata([0] * intersections)
         else:
-            freqs, powers = split_spectrum(self.spectrum1)
+            freqs, powers = split_spectrum_sort(self.spectrum1)
             intersections = len(freqs)
             self.plotDiff.set_xdata(freqs)
             self.plotDiff.set_ydata([0] * intersections)
@@ -258,7 +286,7 @@ class PanelGraphCompare(wx.Panel):
     def set_spectrum1(self, spectrum):
         timeStamp = max(spectrum)
         self.spectrum1 = spectrum[timeStamp]
-        freqs, powers = split_spectrum(self.spectrum1)
+        freqs, powers = split_spectrum_sort(self.spectrum1)
         self.plotScan1.set_xdata(freqs)
         self.plotScan1.set_ydata(powers)
         self.axesScan.relim()
@@ -268,7 +296,7 @@ class PanelGraphCompare(wx.Panel):
     def set_spectrum2(self, spectrum):
         timeStamp = max(spectrum)
         self.spectrum2 = spectrum[timeStamp]
-        freqs, powers = split_spectrum(self.spectrum2)
+        freqs, powers = split_spectrum_sort(self.spectrum2)
         self.plotScan2.set_xdata(freqs)
         self.plotScan2.set_ydata(powers)
         self.axesScan.relim()
@@ -449,21 +477,21 @@ class PanelMeasure(wx.Panel):
 
         minF = min(sweep)[0]
         maxF = max(sweep)[0]
-        self.grid.SetCellValue(0, 1, "{0:.6f}MHz".format(minF))
-        self.grid.SetCellValue(1, 1, "{0:.6f}MHz".format(maxF))
-        self.grid.SetCellValue(2, 1, "{0:.6f}MHz".format(maxF - minF))
+        self.grid.SetCellValue(0, 1, "{0:.6f} MHz".format(minF))
+        self.grid.SetCellValue(1, 1, "{0:.6f} MHz".format(maxF))
+        self.grid.SetCellValue(2, 1, "{0:.6f} MHz".format(maxF - minF))
 
         minLoc = min(sweep, key=lambda v: v[1])
         maxLoc = max(sweep, key=lambda v: v[1])
-        self.grid.SetCellValue(0, 3, "{0:.6f}MHz".format(minLoc[0]))
-        self.grid.SetCellValue(1, 3, "{0:.6f}MHz".format(maxLoc[0]))
-        self.grid.SetCellValue(0, 4, "{0:.2f}dB".format(minLoc[1]))
-        self.grid.SetCellValue(1, 4, "{0:.2f}dB".format(maxLoc[1]))
-        self.grid.SetCellValue(2, 3, "{0:.6f}MHz".format(maxLoc[0] - minLoc[0]))
-        self.grid.SetCellValue(2, 4, "{0:.2f}dB".format(maxLoc[1] - minLoc[1]))
+        self.grid.SetCellValue(0, 3, "{0:.6f} MHz".format(minLoc[0]))
+        self.grid.SetCellValue(1, 3, "{0:.6f} MHz".format(maxLoc[0]))
+        self.grid.SetCellValue(0, 4, "{0:.2f} dB".format(minLoc[1]))
+        self.grid.SetCellValue(1, 4, "{0:.2f} dB".format(maxLoc[1]))
+        self.grid.SetCellValue(2, 3, "{0:.6f} MHz".format(maxLoc[0] - minLoc[0]))
+        self.grid.SetCellValue(2, 4, "{0:.2f} dB".format(maxLoc[1] - minLoc[1]))
 
         avg = sum((v[1] for v in sweep), 0.0) / len(sweep)
-        self.grid.SetCellValue(0, 6, "{0:.2f}dB".format(avg))
+        self.grid.SetCellValue(0, 7, "{0:.2f} dB".format(avg))
 
 
 if __name__ == '__main__':

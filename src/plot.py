@@ -39,19 +39,18 @@ from events import EventThreadStatus, Event, post_event
 
 
 class Plotter():
-    def __init__(self, notify, graph, settings, grid, lock):
+    def __init__(self, notify, figure, settings, lock):
         self.notify = notify
+        self.figure = figure
         self.settings = settings
-        self.graph = graph
         self.average = settings.average
         self.lock = lock
-        self.figure = self.graph.get_figure()
         self.axes = None
         self.bar = None
         self.threadPlot = None
         self.extent = None
         self.setup_plot()
-        self.set_grid(grid)
+        self.set_grid(self.settings.grid)
 
     def setup_plot(self):
         formatter = ScalarFormatter(useOffset=False)
@@ -102,13 +101,13 @@ class Plotter():
     def set_title(self, title):
         self.axes.set_title(title)
 
-    def set_plot(self, data, extent, annotate=False):
+    def set_plot(self, spectrum, extent, annotate=False):
         if self.threadPlot is not None and self.threadPlot.isAlive():
             self.threadPlot.cancel()
             self.threadPlot.join()
 
         self.extent = extent
-        self.threadPlot = ThreadPlot(self, self.lock, self.axes, data,
+        self.threadPlot = ThreadPlot(self, self.lock, self.axes, spectrum,
                                      self.extent,
                                      self.settings.colourMap,
                                      self.settings.autoL,
@@ -267,7 +266,7 @@ class ThreadPlot(threading.Thread):
         textX = ((stop - start) / 50.0) + x
 
         if(matplotlib.__version__ < '1.3'):
-            self.axes.annotate('{0:.6f}MHz\n{1:.2f}dB'.format(x, y),
+            self.axes.annotate('{0:.6f} MHz\n{1:.2f} dB'.format(x, y),
                                xy=(x, y), xytext=(textX, y),
                                ha='left', va='top', size='small',
                                gid='peak')
@@ -278,7 +277,7 @@ class ThreadPlot(threading.Thread):
         else:
             effect = patheffects.withStroke(linewidth=3, foreground="w",
                                             alpha=0.75)
-            self.axes.annotate('{0:.6f}MHz\n{1:.2f}dB'.format(x, y),
+            self.axes.annotate('{0:.6f} MHz\n{1:.2f} dB'.format(x, y),
                                xy=(x, y), xytext=(textX, y),
                                ha='left', va='top', size='small',
                                path_effects=[effect], gid='peak')

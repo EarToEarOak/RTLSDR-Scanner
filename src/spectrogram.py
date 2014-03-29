@@ -23,7 +23,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
 import threading
 import time
 
@@ -42,20 +41,19 @@ from spectrum import epoch_to_mpl, split_spectrum
 
 
 class Spectrogram:
-    def __init__(self, notify, graph, settings, grid, lock):
+    def __init__(self, notify, figure, settings, lock):
         self.notify = notify
+        self.figure = figure
         self.settings = settings
-        self.graph = graph
         self.data = [[], [], []]
         self.index = 0
-        self.figure = self.graph.get_figure()
         self.lock = lock
         self.axes = None
         self.plot = None
         self.extent = None
         self.threadPlot = None
         self.setup_plot()
-        self.set_grid(grid)
+        self.set_grid(self.settings.grid)
 
     def setup_plot(self):
         gs = GridSpec(1, 2, width_ratios=[9.5, 0.5])
