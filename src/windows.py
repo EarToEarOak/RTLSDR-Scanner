@@ -357,13 +357,15 @@ class PanelMeasure(wx.Panel):
         self.grid.SetColLabelSize(0)
         self.grid.SetRowLabelSize(0)
 
+        colour = self.grid.GetBackgroundColour()
+
         checkEditor = grid.GridCellBoolEditor()
         self.grid.SetCellEditor(0, 2, checkEditor)
         self.grid.SetCellEditor(1, 2, checkEditor)
-        self.grid.SetCellTextColour(2, 2, 'white')
+        self.grid.SetCellTextColour(2, 2, colour)
         self.grid.SetCellEditor(0, 6, checkEditor)
-        self.grid.SetCellTextColour(1, 6, 'white')
-        self.grid.SetCellTextColour(2, 6, 'white')
+        self.grid.SetCellTextColour(1, 6, colour)
+        self.grid.SetCellTextColour(2, 6, colour)
         self.grid.SetCellValue(0, 2, self.checkStart)
         self.grid.SetCellValue(1, 2, self.checkEnd)
         self.grid.SetCellValue(0, 6, self.checkAvg)
@@ -371,7 +373,7 @@ class PanelMeasure(wx.Panel):
         self.grid.SetColFormatBool(6)
         self.grid.AutoSizeColumn(2)
         self.grid.AutoSizeColumn(6)
-        self.checkLocs = {(0, 2): 'start', (1, 2): 'end', (0, 6): 'avg'}
+        self.locsCheck = {(0, 2): 'start', (1, 2): 'end', (0, 6): 'avg'}
 
         self.grid.SetCellValue(0, 0, 'Start')
         self.grid.SetCellValue(1, 0, 'End')
@@ -380,6 +382,10 @@ class PanelMeasure(wx.Panel):
         self.grid.SetCellValue(1, 3, 'Max')
         self.grid.SetCellValue(2, 3, u'\u0394')
         self.grid.SetCellValue(0, 7, 'Avg')
+        self.locsCopy = [(0, 1), (1, 1), (2, 1),
+                         (0, 4), (1, 4), (2, 4),
+                         (0, 5), (1, 5), (2, 5),
+                         (0, 8)]
 
         self.popupMenu = wx.Menu()
         self.popupMenuCopy = self.popupMenu.Append(wx.ID_ANY, "&Copy",
@@ -417,11 +423,11 @@ class PanelMeasure(wx.Panel):
         avg = self.str_to_bool(self.checkAvg)
 
     def on_cell_click(self, event):
+        self.grid.ClearSelection()
         row = event.GetRow()
         col = event.GetCol()
-        self.selected = (row, col)
-        self.grid.SetGridCursor(row, col)
-        if (row, col) in self.checkLocs.keys():
+
+        if (row, col) in self.locsCheck.keys():
             check = self.grid.GetCellValue(row, col)
             if check == '1':
                 check = '0'
@@ -429,19 +435,33 @@ class PanelMeasure(wx.Panel):
                 check = '1'
             self.grid.SetCellValue(row, col, check)
 
-        for (r, c), control in self.checkLocs.iteritems():
-            if (r, c) == (row, col):
-                if control == 'start':
-                    self.checkStart = check
-                    break
-                elif control == 'end':
-                    self.checkEnd = check
-                    break
-                elif control == 'avg':
-                    self.checkAvg = check
-                    break
+            for (r, c), control in self.locsCheck.iteritems():
+                if (r, c) == (row, col):
+                    if control == 'start':
+                        self.checkStart = check
+                        break
+                    elif control == 'end':
+                        self.checkEnd = check
+                        break
+                    elif control == 'avg':
+                        self.checkAvg = check
+                        break
 
-        self.update_plot()
+            if self.selected is None:
+                self.selected = self.locsCopy[0]
+                row = self.selected[0]
+                col = self.selected[1]
+                self.grid.SetGridCursor(row, col)
+            self.update_plot()
+
+        elif (row, col) in self.locsCopy:
+            self.selected = (row, col)
+            self.grid.SetGridCursor(row, col)
+        else:
+            self.selected = self.locsCopy[0]
+            row = self.selected[0]
+            col = self.selected[1]
+            self.grid.SetGridCursor(row, col)
 
     def on_select_range(self, _event):
         self.selected = None
