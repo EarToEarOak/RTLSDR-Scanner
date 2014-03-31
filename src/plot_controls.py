@@ -25,7 +25,6 @@
 
 from matplotlib.patches import Rectangle
 
-from constants import Display
 from plot3d import Plotter3d
 
 
@@ -105,46 +104,11 @@ class RangeSelector():
         figure.canvas.mpl_connect('motion_notify_event', self.on_move)
         figure.canvas.mpl_connect('button_press_event', self.on_press)
         figure.canvas.mpl_connect('button_release_event', self.on_release)
-        figure.canvas.mpl_connect('draw_event', self.get_background)
+        figure.canvas.mpl_connect('draw_event', self.on_draw)
 
-    def draw(self, xMin, xMax):
-        yMin, yMax = self.axes.get_ylim()
-        height = yMax - yMin
-        yMin -= height * 100.0
-        yMax += height * 100.0
-        self.rect.set_x(xMin)
-        self.rect.set_y(yMin)
-        self.rect.set_width(xMax - xMin)
-        self.rect.set_height(yMax - yMin)
-
-        if self.background is not None:
-            canvas = self.axes.get_figure().canvas
-            canvas.restore_region(self.background)
-            self.axes.draw_artist(self.rect)
-            canvas.blit(self.axes.bbox)
-
-    def get_background(self, _event):
+    def on_draw(self, _event):
         canvas = self.axes.get_figure().canvas
         self.background = canvas.copy_from_bbox(self.axes.bbox)
-
-    def skip_event(self, event):
-        if self.eventPressed is None:
-            return event.inaxes != self.axes
-
-        if event.button != 2:
-            return True
-
-        if event.button == self.eventPressed.button and event.inaxes != self.axes:
-            transform = self.axes.transData.inverted()
-            (x, _y) = transform.transform_point((event.x, event.y))
-            x0, x1 = self.axes.get_xbound()
-            x = max(x0, x)
-            x = min(x1, x)
-            event.xdata = x
-            return False
-
-        return (event.inaxes != self.axes or
-                event.button != self.eventPressed.button)
 
     def on_press(self, event):
         if self.skip_event(event):
@@ -179,6 +143,41 @@ class RangeSelector():
         self.eventPressed = None
         self.eventReleased = None
         return
+
+    def skip_event(self, event):
+        if self.eventPressed is None:
+            return event.inaxes != self.axes
+
+        if event.button != 2:
+            return True
+
+        if event.button == self.eventPressed.button and event.inaxes != self.axes:
+            transform = self.axes.transData.inverted()
+            (x, _y) = transform.transform_point((event.x, event.y))
+            x0, x1 = self.axes.get_xbound()
+            x = max(x0, x)
+            x = min(x1, x)
+            event.xdata = x
+            return False
+
+        return (event.inaxes != self.axes or
+                event.button != self.eventPressed.button)
+
+    def draw(self, xMin, xMax):
+        yMin, yMax = self.axes.get_ylim()
+        height = yMax - yMin
+        yMin -= height * 100.0
+        yMax += height * 100.0
+        self.rect.set_x(xMin)
+        self.rect.set_y(yMin)
+        self.rect.set_width(xMax - xMin)
+        self.rect.set_height(yMax - yMin)
+
+        if self.background is not None:
+            canvas = self.axes.get_figure().canvas
+            canvas.restore_region(self.background)
+            self.axes.draw_artist(self.rect)
+            canvas.blit(self.axes.bbox)
 
 
 if __name__ == '__main__':
