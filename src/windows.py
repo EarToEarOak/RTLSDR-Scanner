@@ -75,15 +75,16 @@ class PanelGraph(wx.Panel):
 
         self.figure = matplotlib.figure.Figure(facecolor='white')
         self.canvas = FigureCanvas(self, -1, self.figure)
+
         self.measure = PanelMeasure(self)
 
         self.toolbar = NavigationToolbar(self.canvas, self, settings)
         self.toolbar.Realize()
 
         vbox = wx.BoxSizer(wx.VERTICAL)
-        vbox.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
-        vbox.Add(self.measure, 0, wx.EXPAND)
-        vbox.Add(self.toolbar, 0, wx.EXPAND)
+        vbox.Add(self.canvas, 1, wx.EXPAND | wx.ALL)
+        vbox.Add(self.measure, 0, wx.EXPAND | wx.ALL)
+        vbox.Add(self.toolbar, 0, wx.EXPAND | wx.ALL)
         self.SetSizer(vbox)
         vbox.Fit(self)
 
@@ -108,6 +109,7 @@ class PanelGraph(wx.Panel):
 
         self.toolbar.set_plot(self.plot)
         self.toolbar.set_type(self.settings.display)
+        self.measure.set_type(self.settings.display)
 
         self.set_plot_title()
         self.redraw_plot()
@@ -342,8 +344,8 @@ class PanelMeasure(wx.Panel):
 
         self.plot = None
 
-        self.checkStart = '0'
-        self.checkEnd = '0'
+        self.checkMin = '0'
+        self.checkMax = '0'
         self.checkAvg = '0'
 
         self.selected = None
@@ -357,23 +359,23 @@ class PanelMeasure(wx.Panel):
         self.grid.SetColLabelSize(0)
         self.grid.SetRowLabelSize(0)
 
-        colour = self.grid.GetBackgroundColour()
-
+        self.locsCheck = {'min': (0, 2), 'max': (1, 2), 'avg': (0, 6)}
         checkEditor = grid.GridCellBoolEditor()
-        self.grid.SetCellEditor(0, 2, checkEditor)
-        self.grid.SetCellEditor(1, 2, checkEditor)
+        self.set_check_editor('min', checkEditor)
+        self.set_check_editor('max', checkEditor)
+        self.set_check_editor('avg', checkEditor)
+
+        colour = self.grid.GetBackgroundColour()
         self.grid.SetCellTextColour(2, 2, colour)
-        self.grid.SetCellEditor(0, 6, checkEditor)
         self.grid.SetCellTextColour(1, 6, colour)
         self.grid.SetCellTextColour(2, 6, colour)
-        self.grid.SetCellValue(0, 2, self.checkStart)
-        self.grid.SetCellValue(1, 2, self.checkEnd)
-        self.grid.SetCellValue(0, 6, self.checkAvg)
+
+        self.set_check_value('min', self.checkMin)
+        self.set_check_value('max', self.checkMax)
+        self.set_check_value('avg', self.checkAvg)
+
         self.grid.SetColFormatBool(2)
         self.grid.SetColFormatBool(6)
-        self.grid.AutoSizeColumn(2)
-        self.grid.AutoSizeColumn(6)
-        self.locsCheck = {(0, 2): 'start', (1, 2): 'end', (0, 6): 'avg'}
 
         self.grid.SetCellValue(0, 0, 'Start')
         self.grid.SetCellValue(1, 0, 'End')
@@ -382,10 +384,20 @@ class PanelMeasure(wx.Panel):
         self.grid.SetCellValue(1, 3, 'Max')
         self.grid.SetCellValue(2, 3, u'\u0394')
         self.grid.SetCellValue(0, 7, 'Avg')
-        self.locsCopy = [(0, 1), (1, 1), (2, 1),
-                         (0, 4), (1, 4), (2, 4),
-                         (0, 5), (1, 5), (2, 5),
-                         (0, 8)]
+
+        self.locsMeasure = {'start': (0, 1), 'end': (1, 1), 'deltaF': (2, 1),
+                            'minFP': (0, 4), 'maxFP': (1, 4), 'deltaFP': (2, 4),
+                            'minP': (0, 5), 'maxP': (1, 5), 'deltaP': (2, 5),
+                            'avg': (0, 8)}
+
+        font = self.grid.GetCellFont(0, 0)
+        font.SetWeight(wx.BOLD)
+        for x in [0, 3, 7]:
+            for y in xrange(self.grid.GetNumberRows()):
+                self.grid.SetCellFont(y, x, font)
+
+        for x in [0, 2, 3, 6, 7]:
+            self.grid.AutoSizeColumn(x)
 
         self.popupMenu = wx.Menu()
         self.popupMenuCopy = self.popupMenu.Append(wx.ID_ANY, "&Copy",
@@ -398,67 +410,76 @@ class PanelMeasure(wx.Panel):
                   self.grid)
         self.Bind(grid.EVT_GRID_CELL_LEFT_CLICK, self.on_cell_click)
 
-        font = self.grid.GetCellFont(0, 0)
-        font.SetWeight(wx.BOLD)
-        for x in [0, 3, 7]:
-            for y in xrange(self.grid.GetNumberRows()):
-                self.grid.SetCellFont(y, x, font)
-
         box = wx.BoxSizer(wx.VERTICAL)
-        box.Add(self.grid, 0, wx.ALIGN_CENTER)
+        box.Add(self.grid, 1, wx.ALIGN_CENTER)
+        self.SetSizer(box)
 
-        self.SetSizerAndFit(box)
+    def set_check_editor(self, cell, editor):
+        (row, col) = self.locsCheck[cell]
+        self.grid.SetCellEditor(row, col, editor)
 
-    def set_plot(self, plot):
-        self.plot = plot
+    def set_check_value(self, cell, value):
+        (row, col) = self.locsCheck[cell]
+        self.grid.SetCellValue(row, col, value)
+
+    def set_measure_value(self, cell, value):
+        (row, col) = self.locsMeasure[cell]
+        self.grid.SetCellValue(row, col, value)
+
+    def set_check_read_only(self, cell, readOnly):
+        (row, col) = self.locsCheck[cell]
+        self.grid.SetReadOnly(row, col, readOnly)
+        if readOnly:
+            colour = 'grey'
+        else:
+            colour = self.grid.GetDefaultCellTextColour()
+
+        self.grid.SetCellTextColour(row, col, colour)
+        self.grid.Refresh()
 
     def str_to_bool(self, string):
         if string == '1':
             return True
         return False
 
-    def update_plot(self):
-        start = self.str_to_bool(self.checkStart)
-        end = self.str_to_bool(self.checkEnd)
-        avg = self.str_to_bool(self.checkAvg)
-
     def on_cell_click(self, event):
         self.grid.ClearSelection()
         row = event.GetRow()
         col = event.GetCol()
 
-        if (row, col) in self.locsCheck.keys():
-            check = self.grid.GetCellValue(row, col)
-            if check == '1':
-                check = '0'
-            else:
-                check = '1'
-            self.grid.SetCellValue(row, col, check)
+        if (row, col) in self.locsCheck.values():
+            if not self.grid.IsReadOnly(row, col):
+                check = self.grid.GetCellValue(row, col)
+                if check == '1':
+                    check = '0'
+                else:
+                    check = '1'
+                self.grid.SetCellValue(row, col, check)
 
-            for (r, c), control in self.locsCheck.iteritems():
-                if (r, c) == (row, col):
-                    if control == 'start':
-                        self.checkStart = check
-                        break
-                    elif control == 'end':
-                        self.checkEnd = check
-                        break
-                    elif control == 'avg':
-                        self.checkAvg = check
-                        break
+                for control, (r, c) in self.locsCheck.iteritems():
+                    if (r, c) == (row, col):
+                        if control == 'min':
+                            self.checkMin = check
+                            break
+                        elif control == 'max':
+                            self.checkMax = check
+                            break
+                        elif control == 'avg':
+                            self.checkAvg = check
+                            break
 
-            if self.selected is None:
-                self.selected = self.locsCopy[0]
-                row = self.selected[0]
-                col = self.selected[1]
-                self.grid.SetGridCursor(row, col)
-            self.update_plot()
+                if self.selected is None:
+                    self.selected = self.locsMeasure['start']
+                    row = self.selected[0]
+                    col = self.selected[1]
+                    self.grid.SetGridCursor(row, col)
+                self.update_plot()
 
-        elif (row, col) in self.locsCopy:
+        elif (row, col) in self.locsMeasure.itervalues():
             self.selected = (row, col)
             self.grid.SetGridCursor(row, col)
         else:
-            self.selected = self.locsCopy[0]
+            self.selected = self.locsMeasure['start']
             row = self.selected[0]
             col = self.selected[1]
             self.grid.SetGridCursor(row, col)
@@ -480,6 +501,45 @@ class PanelMeasure(wx.Panel):
         wx.TheClipboard.SetData(clip)
         wx.TheClipboard.Close()
 
+    def update_plot(self):
+        start = self.str_to_bool(self.checkMin)
+        end = self.str_to_bool(self.checkMax)
+        avg = self.str_to_bool(self.checkAvg)
+
+    def set_selected(self, spectrum, start, end):
+        sweep = slice_spectrum(spectrum, start, end)
+        if sweep is None:
+            for control in self.locsMeasure:
+                self.set_measure_value(control, "")
+            return
+
+        minF = min(sweep)[0]
+        maxF = max(sweep)[0]
+        minLoc = min(sweep, key=lambda v: v[1])
+        maxLoc = max(sweep, key=lambda v: v[1])
+        avg = sum((v[1] for v in sweep), 0.0) / len(sweep)
+
+        self.set_measure_value('start',
+                               "{0:.6f} MHz".format(minF))
+        self.set_measure_value('end',
+                               "{0:.6f} MHz".format(maxF))
+        self.set_measure_value('deltaF',
+                               "{0:.6f} MHz".format(maxF - minF))
+        self.set_measure_value('minFP',
+                               "{0:.6f} MHz".format(minLoc[0]))
+        self.set_measure_value('maxFP',
+                               "{0:.6f} MHz".format(maxLoc[0]))
+        self.set_measure_value('deltaFP',
+                               "{0:.6f} MHz".format(maxLoc[0] - minLoc[0]))
+        self.set_measure_value('minP',
+                               "{0:.2f} dB".format(minLoc[1]))
+        self.set_measure_value('maxP',
+                               "{0:.2f} dB".format(maxLoc[1]))
+        self.set_measure_value('deltaP',
+                               "{0:.2f} dB".format(maxLoc[1] - minLoc[1]))
+        self.set_measure_value('avg',
+                               "{0:.2f} dB".format(avg))
+
     def show(self, show):
         if show:
             self.Show()
@@ -487,37 +547,18 @@ class PanelMeasure(wx.Panel):
             self.Hide()
         self.Layout()
 
-    def set_selected(self, spectrum, start, end):
-        sweep = slice_spectrum(spectrum, start, end)
-        if sweep is None:
-            self.grid.SetCellValue(0, 1, "")
-            self.grid.SetCellValue(1, 1, "")
-            self.grid.SetCellValue(2, 1, "")
-            self.grid.SetCellValue(0, 3, "")
-            self.grid.SetCellValue(1, 3, "")
-            self.grid.SetCellValue(0, 4, "")
-            self.grid.SetCellValue(1, 4, "")
-            self.grid.SetCellValue(2, 3, "")
-            self.grid.SetCellValue(2, 4, "")
-            return
+    def set_plot(self, plot):
+        self.plot = plot
 
-        minF = min(sweep)[0]
-        maxF = max(sweep)[0]
-        self.grid.SetCellValue(0, 1, "{0:.6f} MHz".format(minF))
-        self.grid.SetCellValue(1, 1, "{0:.6f} MHz".format(maxF))
-        self.grid.SetCellValue(2, 1, "{0:.6f} MHz".format(maxF - minF))
-
-        minLoc = min(sweep, key=lambda v: v[1])
-        maxLoc = max(sweep, key=lambda v: v[1])
-        self.grid.SetCellValue(0, 4, "{0:.6f} MHz".format(minLoc[0]))
-        self.grid.SetCellValue(1, 4, "{0:.6f} MHz".format(maxLoc[0]))
-        self.grid.SetCellValue(2, 4, "{0:.6f} MHz".format(maxLoc[0] - minLoc[0]))
-        self.grid.SetCellValue(0, 5, "{0:.2f} dB".format(minLoc[1]))
-        self.grid.SetCellValue(1, 5, "{0:.2f} dB".format(maxLoc[1]))
-        self.grid.SetCellValue(2, 5, "{0:.2f} dB".format(maxLoc[1] - minLoc[1]))
-
-        avg = sum((v[1] for v in sweep), 0.0) / len(sweep)
-        self.grid.SetCellValue(0, 8, "{0:.2f} dB".format(avg))
+    def set_type(self, display):
+        if display == Display.PLOT or display == Display.SURFACE:
+            self.set_check_read_only('min', False)
+            self.set_check_read_only('max', False)
+            self.set_check_read_only('avg', False)
+        elif display == Display.SPECT:
+            self.set_check_read_only('min', True)
+            self.set_check_read_only('max', True)
+            self.set_check_read_only('avg', True)
 
 
 if __name__ == '__main__':
