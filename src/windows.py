@@ -369,7 +369,7 @@ class PanelMeasure(wx.Panel):
 
         self.graph = graph
 
-        self.measure = Measure()
+        self.measure = None
 
         self.checkMin = '0'
         self.checkMax = '0'
@@ -475,7 +475,7 @@ class PanelMeasure(wx.Panel):
         col = event.GetCol()
 
         if (row, col) in self.locsCheck.values():
-            if not self.grid.IsReadOnly(row, col):
+            if not self.grid.IsReadOnly(row, col) and self.measure is not None:
                 check = self.grid.GetCellValue(row, col)
                 if check == '1':
                     check = '0'
@@ -568,6 +568,7 @@ class PanelMeasure(wx.Panel):
         self.set_measure_value('avg',
                                "{0:.2f} dB".format(avg))
 
+        self.measure = Measure()
         self.measure.set(minP, maxP, avg)
 
     def show(self, show):
