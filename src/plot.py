@@ -50,8 +50,8 @@ class Plotter():
         self.bar = None
         self.threadPlot = None
         self.extent = None
-        self.minAvgP = None
-        self.maxAvgP = None
+        self.lineMinP = None
+        self.lineMaxP = None
         self.lineAvgP = None
         self.setup_plot()
         self.set_grid(self.settings.grid)
