@@ -72,7 +72,9 @@ When asked it is recommended to use the default options for all software $\r$\n$
 It will add the new installation of Python to the path, potentially causing problems $\r$\n\
 to previous Python installs $\r$\n$\r$\n\
 You can update to the latest versions of RTLSDR-Scanner, $\r$\n\
-the rtlsdr driver and pyrtlsdr by running this installer again $\r$\n"'
+the rtlsdr driver and pyrtlsdr by running this installer again $\r$\n$\r$\n\
+Some systems will require the Microsoft Visual C++ 2010 Redistributable availabel from: $\r$\n\
+http://www.microsoft.com/en-gb/download/details.aspx?id=5555"'
 
 !define FILE_CLASS "RTLSDRScanner.Scan"
 !define FILE_TYPE "rfs"
