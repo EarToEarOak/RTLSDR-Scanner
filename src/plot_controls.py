@@ -31,9 +31,12 @@ from plot3d import Plotter3d
 class MouseZoom():
     SCALE_STEP = 1.3
 
-    def __init__(self, plot, toolbar):
+    def __init__(self, plot, toolbar, callbackPre, callbackPost):
         if isinstance(plot, Plotter3d):
             return
+
+        self.callbackPre = callbackPre
+        self.callbackPost = callbackPost
         self.axes = plot.get_axes()
         self.toolbar = toolbar
         figure = self.axes.get_figure()
@@ -46,6 +49,8 @@ class MouseZoom():
             scale = self.SCALE_STEP
         else:
             return
+
+        self.callbackPre()
 
         if self.toolbar._views.empty():
             self.toolbar.push_current()
@@ -69,6 +74,8 @@ class MouseZoom():
         self.toolbar.push_current()
 
         self.axes.figure.canvas.draw()
+
+        self.callbackPost()
 
         return
 

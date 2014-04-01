@@ -136,6 +136,11 @@ class Plotter():
 
         canvas.blit(self.axes.bbox)
 
+    def hide_measure(self):
+        self.lineMinP.set_visible(False)
+        self.lineMaxP.set_visible(False)
+        self.lineAvgP.set_visible(False)
+
     def redraw_plot(self):
         if self.figure is not None:
             post_event(self.notify, EventThreadStatus(Event.DRAW))

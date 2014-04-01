@@ -477,7 +477,7 @@ class FrameMain(wx.Frame):
         self.menuShowMeasure.Check(show)
         self.popupMenuShowMeasure.Check(show)
         self.settings.showMeasure = show
-        self.graph.show_measure(show)
+        self.graph.show_measureTable(show)
         self.Layout()
 
     def on_cal(self, _event):

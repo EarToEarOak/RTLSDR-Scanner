@@ -70,19 +70,24 @@ class PanelGraph(wx.Panel):
         self.selectStart = None
         self.selectEnd = None
 
+        self.measure = None
+        self.showMinP = None
+        self.showMaxP = None
+        self.showAvgP = None
+
         wx.Panel.__init__(self, panel)
 
         self.figure = matplotlib.figure.Figure(facecolor='white')
         self.canvas = FigureCanvas(self, -1, self.figure)
 
-        self.measure = PanelMeasure(self)
+        self.measureTable = PanelMeasure(self)
 
         self.toolbar = NavigationToolbar(self.canvas, self, settings)
         self.toolbar.Realize()
 
         vbox = wx.BoxSizer(wx.VERTICAL)
         vbox.Add(self.canvas, 1, wx.EXPAND | wx.ALL)
-        vbox.Add(self.measure, 0, wx.EXPAND | wx.ALL)
+        vbox.Add(self.measureTable, 0, wx.EXPAND | wx.ALL)
         vbox.Add(self.toolbar, 0, wx.EXPAND | wx.ALL)
         self.SetSizer(vbox)
         vbox.Fit(self)
@@ -108,14 +113,15 @@ class PanelGraph(wx.Panel):
 
         self.toolbar.set_plot(self.plot)
         self.toolbar.set_type(self.settings.display)
-        self.measure.set_type(self.settings.display)
+        self.measureTable.set_type(self.settings.display)
 
         self.set_plot_title()
         self.redraw_plot()
         self.plot.scale_plot(True)
-        self.mouseZoom = MouseZoom(self.plot, self.toolbar)
+        self.mouseZoom = MouseZoom(self.plot, self.toolbar, self.hide_measure,
+                                   self.draw_measure)
         self.mouseSelect = MouseSelect(self.plot, self.on_select)
-        self.measure.show(self.settings.showMeasure)
+        self.measureTable.show(self.settings.showMeasure)
         self.panel.SetFocus()
 
     def on_draw(self, _event):
@@ -126,10 +132,10 @@ class PanelGraph(wx.Panel):
         self.on_draw(None)
         self.selectStart = start
         self.selectEnd = end
-        self.measure.set_selected(self.spectrum, start, end)
+        self.measureTable.set_selected(self.spectrum, start, end)
 
-    def show_measure(self, show):
-        self.measure.show(show)
+    def show_measureTable(self, show):
+        self.measureTable.show(show)
         self.Layout()
 
     def set_plot(self, spectrum, extent, annotate=False):
@@ -154,9 +160,24 @@ class PanelGraph(wx.Panel):
         if self.selectStart is not None and self.selectEnd is not None:
             self.mouseSelect.draw(self.selectStart, self.selectEnd)
 
-    def draw_measure(self, measure, minP, maxP, avgP):
-        if measure is not None and self.background is not None:
-            self.plot.draw_measure(self.background, measure, minP, maxP, avgP)
+    def hide_measure(self):
+        self.plot.hide_measure()
+
+    def draw_measure(self):
+        if self.measure is not None and self.background is not None:
+            self.plot.draw_measure(self.background,
+                                   self.measure,
+                                   self.showMinP,
+                                   self.showMaxP,
+                                   self.showAvgP)
+
+    def set_measure(self, measure, showMinP, showMaxP, showAvgP):
+        self.measure = measure
+        self.showMinP = showMinP
+        self.showMaxP = showMaxP
+        self.showAvgP = showAvgP
+
+        self.draw_measure()
 
     def get_figure(self):
         return self.figure
@@ -511,7 +532,7 @@ class PanelMeasure(wx.Panel):
         minP = self.str_to_bool(self.checkMin)
         maxP = self.str_to_bool(self.checkMax)
         avgP = self.str_to_bool(self.checkAvg)
-        self.graph.draw_measure(self.measure, minP, maxP, avgP)
+        self.graph.set_measure(self.measure, minP, maxP, avgP)
 
     def set_selected(self, spectrum, start, end):
         sweep = slice_spectrum(spectrum, start, end)
