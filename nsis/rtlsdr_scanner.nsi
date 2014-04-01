@@ -364,6 +364,7 @@ Function get_rtlsdr_scanner
     CopyFiles "$TEMP\RTLSDR-Scanner-master\*.ico" "$INSTDIR"
     ;Delete "$TEMP\master.zip"
     RmDir /r "$TEMP\RTLSDR-Scanner-master"
+    ${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR"
 FunctionEnd
 
 Function get_rtlsdr
