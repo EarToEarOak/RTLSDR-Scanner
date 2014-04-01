@@ -32,11 +32,12 @@ from matplotlib.collections import LineCollection
 from matplotlib.colorbar import ColorbarBase
 from matplotlib.colors import Normalize
 from matplotlib.gridspec import GridSpec
+from matplotlib.lines import Line2D
+from matplotlib.text import Text
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 import numpy
 
 from events import EventThreadStatus, Event, post_event
-from matplotlib.lines import Line2D
 
 
 class Plotter():
@@ -53,6 +54,9 @@ class Plotter():
         self.lineMinP = None
         self.lineMaxP = None
         self.lineAvgP = None
+        self.labelMinP = None
+        self.labelMaxP = None
+        self.labelAvgP = None
         self.setup_plot()
         self.set_grid(self.settings.grid)
 
@@ -86,6 +90,17 @@ class Plotter():
         self.axes.add_line(self.lineMaxP)
         self.axes.add_line(self.lineAvgP)
 
+        box = dict(boxstyle='round', fc='white')
+        self.labelMinP = Text(0, 0, 'Min', ha="right", va="bottom", bbox=box)
+        self.labelMaxP = Text(0, 0, 'Max', ha="right", va="top", bbox=box)
+        self.labelAvgP = Text(0, 0, 'Avg', ha="right", va="center", bbox=box)
+        self.labelMinP.set_visible(False)
+        self.labelMaxP.set_visible(False)
+        self.labelAvgP.set_visible(False)
+        self.axes.add_artist(self.labelMinP)
+        self.axes.add_artist(self.labelMaxP)
+        self.axes.add_artist(self.labelAvgP)
+
     def scale_plot(self, force=False):
         if self.extent is not None:
             with self.lock:
@@ -106,31 +121,45 @@ class Plotter():
     def draw_measure(self, background, measure, minP, maxP, avgP):
         canvas = self.axes.get_figure().canvas
         canvas.restore_region(background)
+        x = self.axes.get_xlim()
 
         if minP:
             y = measure.get_min_p()
             self.lineMinP.set_visible(True)
-            self.lineMinP.set_xdata([0, 10000])
+            self.lineMinP.set_xdata([x[0], x[1]])
             self.lineMinP.set_ydata([y, y])
             self.axes.draw_artist(self.lineMinP)
+
+            self.labelMinP.set_visible(True)
+            self.labelMinP.set_position((x[1], y))
+            self.axes.draw_artist(self.labelMinP)
         else:
             self.lineMinP.set_visible(False)
+            self.labelMinP.set_visible(False)
 
         if maxP:
             y = measure.get_max_p()
             self.lineMaxP.set_visible(True)
-            self.lineMaxP.set_xdata([0, 10000])
+            self.lineMaxP.set_xdata([x[0], x[1]])
             self.lineMaxP.set_ydata([y, y])
             self.axes.draw_artist(self.lineMaxP)
+
+            self.labelMaxP.set_visible(True)
+            self.labelMaxP.set_position((x[1], y))
+            self.axes.draw_artist(self.labelMaxP)
         else:
             self.lineMaxP.set_visible(False)
 
         if avgP:
             y = measure.get_avg_p()
             self.lineAvgP.set_visible(True)
-            self.lineAvgP.set_xdata([0, 10000])
+            self.lineAvgP.set_xdata([x[0], x[1]])
             self.lineAvgP.set_ydata([y, y])
             self.axes.draw_artist(self.lineAvgP)
+
+            self.labelAvgP.set_visible(True)
+            self.labelAvgP.set_position((x[1], y))
+            self.axes.draw_artist(self.labelAvgP)
         else:
             self.lineAvgP.set_visible(False)
 
@@ -140,6 +169,9 @@ class Plotter():
         self.lineMinP.set_visible(False)
         self.lineMaxP.set_visible(False)
         self.lineAvgP.set_visible(False)
+        self.labelMinP.set_visible(False)
+        self.labelMaxP.set_visible(False)
+        self.labelAvgP.set_visible(False)
 
     def redraw_plot(self):
         if self.figure is not None:
