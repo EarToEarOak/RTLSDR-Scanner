@@ -33,7 +33,6 @@ from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
 import wx
 
 from constants import Display
-from events import EventThreadStatus, Event, post_event
 from misc import  close_modeless
 from plot import Plotter
 from plot3d import Plotter3d
