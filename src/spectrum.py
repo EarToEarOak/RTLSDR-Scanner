@@ -90,6 +90,25 @@ class Extent():
         return self.fPeak, self.lPeak, self.tPeak
 
 
+class Measure():
+    def __init__(self, minP=None, maxP=None, avgP=None):
+        self.set(minP, maxP, avgP)
+
+    def set(self, minP=None, maxP=None, avgP=None):
+        self.minP = minP
+        self.maxP = maxP
+        self.avgP = avgP
+
+    def get_min_p(self):
+        return self.minP[1]
+
+    def get_max_p(self):
+        return self.maxP[1]
+
+    def get_avg_p(self):
+        return self.avgP
+
+
 def count_points(spectrum):
     points = 0
     for timeStamp in spectrum:

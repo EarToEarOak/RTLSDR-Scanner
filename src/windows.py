@@ -39,7 +39,7 @@ from plot import Plotter
 from plot3d import Plotter3d
 from plot_controls import MouseZoom, MouseSelect
 from spectrogram import Spectrogram
-from spectrum import split_spectrum_sort, slice_spectrum
+from spectrum import split_spectrum_sort, slice_spectrum, Measure
 from toolbars import NavigationToolbar, NavigationToolbarCompare
 import wx.grid as grid
 
@@ -120,9 +120,11 @@ class PanelGraph(wx.Panel):
         self.panel.SetFocus()
 
     def on_draw(self, _event):
-        post_event(self.notify, EventThreadStatus(Event.PLOTTED))
+        axes = self.plot.get_axes()
+        self.background = self.canvas.copy_from_bbox(axes.bbox)
 
     def on_select(self, start, end):
+        self.on_draw(None)
         self.selectStart = start
         self.selectEnd = end
         self.measure.set_selected(self.spectrum, start, end)
@@ -135,7 +137,6 @@ class PanelGraph(wx.Panel):
         self.spectrum = spectrum
         self.extent = extent
         self.plot.set_plot(spectrum, extent, annotate)
-        self.measure.set_plot(spectrum)
 
     def set_plot_title(self):
         if len(self.settings.devices) > 0:
@@ -153,6 +154,10 @@ class PanelGraph(wx.Panel):
     def draw_select(self):
         if self.selectStart is not None and self.selectEnd is not None:
             self.mouseSelect.draw(self.selectStart, self.selectEnd)
+
+    def draw_measure(self, measure, minP, maxP, avgP):
+        if measure is not None and self.background is not None:
+            self.plot.draw_measure(self.background, measure, minP, maxP, avgP)
 
     def get_figure(self):
         return self.figure
@@ -339,10 +344,12 @@ class PanelColourBar(wx.Panel):
 
 
 class PanelMeasure(wx.Panel):
-    def __init__(self, parent):
-        wx.Panel.__init__(self, parent)
+    def __init__(self, graph):
+        wx.Panel.__init__(self, graph)
 
-        self.plot = None
+        self.graph = graph
+
+        self.measure = Measure()
 
         self.checkMin = '0'
         self.checkMax = '0'
@@ -502,9 +509,10 @@ class PanelMeasure(wx.Panel):
         wx.TheClipboard.Close()
 
     def update_plot(self):
-        start = self.str_to_bool(self.checkMin)
-        end = self.str_to_bool(self.checkMax)
-        avg = self.str_to_bool(self.checkAvg)
+        minP = self.str_to_bool(self.checkMin)
+        maxP = self.str_to_bool(self.checkMax)
+        avgP = self.str_to_bool(self.checkAvg)
+        self.graph.draw_measure(self.measure, minP, maxP, avgP)
 
     def set_selected(self, spectrum, start, end):
         sweep = slice_spectrum(spectrum, start, end)
@@ -515,8 +523,8 @@ class PanelMeasure(wx.Panel):
 
         minF = min(sweep)[0]
         maxF = max(sweep)[0]
-        minLoc = min(sweep, key=lambda v: v[1])
-        maxLoc = max(sweep, key=lambda v: v[1])
+        minP = min(sweep, key=lambda v: v[1])
+        maxP = max(sweep, key=lambda v: v[1])
         avg = sum((v[1] for v in sweep), 0.0) / len(sweep)
 
         self.set_measure_value('start',
@@ -526,19 +534,21 @@ class PanelMeasure(wx.Panel):
         self.set_measure_value('deltaF',
                                "{0:.6f} MHz".format(maxF - minF))
         self.set_measure_value('minFP',
-                               "{0:.6f} MHz".format(minLoc[0]))
+                               "{0:.6f} MHz".format(minP[0]))
         self.set_measure_value('maxFP',
-                               "{0:.6f} MHz".format(maxLoc[0]))
+                               "{0:.6f} MHz".format(maxP[0]))
         self.set_measure_value('deltaFP',
-                               "{0:.6f} MHz".format(maxLoc[0] - minLoc[0]))
+                               "{0:.6f} MHz".format(maxP[0] - minP[0]))
         self.set_measure_value('minP',
-                               "{0:.2f} dB".format(minLoc[1]))
+                               "{0:.2f} dB".format(minP[1]))
         self.set_measure_value('maxP',
-                               "{0:.2f} dB".format(maxLoc[1]))
+                               "{0:.2f} dB".format(maxP[1]))
         self.set_measure_value('deltaP',
-                               "{0:.2f} dB".format(maxLoc[1] - minLoc[1]))
+                               "{0:.2f} dB".format(maxP[1] - minP[1]))
         self.set_measure_value('avg',
                                "{0:.2f} dB".format(avg))
+
+        self.measure.set(minP, maxP, avg)
 
     def show(self, show):
         if show:
@@ -546,9 +556,6 @@ class PanelMeasure(wx.Panel):
         else:
             self.Hide()
         self.Layout()
-
-    def set_plot(self, plot):
-        self.plot = plot
 
     def set_type(self, display):
         if display == Display.PLOT or display == Display.SURFACE:

@@ -36,6 +36,7 @@ from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 import numpy
 
 from events import EventThreadStatus, Event, post_event
+from matplotlib.lines import Line2D
 
 
 class Plotter():
@@ -49,6 +50,9 @@ class Plotter():
         self.bar = None
         self.threadPlot = None
         self.extent = None
+        self.minAvgP = None
+        self.maxAvgP = None
+        self.lineAvgP = None
         self.setup_plot()
         self.set_grid(self.settings.grid)
 
@@ -74,6 +78,14 @@ class Plotter():
                                     cmap=cm.get_cmap(self.settings.colourMap))
         self.barBase.set_label('Level (dB)')
 
+        dashes = [4, 5, 1, 5, 1, 5]
+        self.lineMinP = Line2D([0, 0], [0, 0], linestyle='--', color='black')
+        self.lineMaxP = Line2D([0, 0], [0, 0], linestyle='-.', color='black')
+        self.lineAvgP = Line2D([0, 0], [0, 0], dashes=dashes, color='black')
+        self.axes.add_line(self.lineMinP)
+        self.axes.add_line(self.lineMaxP)
+        self.axes.add_line(self.lineAvgP)
+
     def scale_plot(self, force=False):
         if self.extent is not None:
             with self.lock:
@@ -90,6 +102,39 @@ class Plotter():
                         self.barBase.draw_all()
                     except:
                         pass
+
+    def draw_measure(self, background, measure, minP, maxP, avgP):
+        canvas = self.axes.get_figure().canvas
+        canvas.restore_region(background)
+
+        if minP:
+            y = measure.get_min_p()
+            self.lineMinP.set_visible(True)
+            self.lineMinP.set_xdata([0, 10000])
+            self.lineMinP.set_ydata([y, y])
+            self.axes.draw_artist(self.lineMinP)
+        else:
+            self.lineMinP.set_visible(False)
+
+        if maxP:
+            y = measure.get_max_p()
+            self.lineMaxP.set_visible(True)
+            self.lineMaxP.set_xdata([0, 10000])
+            self.lineMaxP.set_ydata([y, y])
+            self.axes.draw_artist(self.lineMaxP)
+        else:
+            self.lineMaxP.set_visible(False)
+
+        if avgP:
+            y = measure.get_avg_p()
+            self.lineAvgP.set_visible(True)
+            self.lineAvgP.set_xdata([0, 10000])
+            self.lineAvgP.set_ydata([y, y])
+            self.axes.draw_artist(self.lineAvgP)
+        else:
+            self.lineAvgP.set_visible(False)
+
+        canvas.blit(self.axes.bbox)
 
     def redraw_plot(self):
         if self.figure is not None:
