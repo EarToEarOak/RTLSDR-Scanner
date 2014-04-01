@@ -145,11 +145,11 @@ class RangeSelector():
         return
 
     def skip_event(self, event):
-        if self.eventPressed is None:
-            return event.inaxes != self.axes
-
         if event.button != 2:
             return True
+
+        if self.eventPressed is None:
+            return event.inaxes != self.axes
 
         if event.button == self.eventPressed.button and event.inaxes != self.axes:
             transform = self.axes.transData.inverted()
