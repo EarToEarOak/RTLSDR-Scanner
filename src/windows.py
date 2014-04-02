@@ -61,6 +61,30 @@ class CellRenderer(wxGrid.PyGridCellRenderer):
                           rect.height / 4)
 
 
+# Based on http://wiki.wxpython.org/wxGrid%20ToolTips
+class GridToolTips():
+    def __init__(self, grid, toolTips):
+        self.lastPos = (None, None)
+        self.grid = grid
+        self.toolTips = toolTips
+
+        grid.GetGridWindow().Bind(wx.EVT_MOTION, self.on_motion)
+
+    def on_motion(self, event):
+        x, y = self.grid.CalcUnscrolledPosition(event.GetPosition())
+        row = self.grid.YToRow(y)
+        col = self.grid.XToCol(x)
+
+        if (row, col) != self.lastPos:
+            if row >= 0 and col >= 0:
+                self.lastPos = (row, col)
+                if (row, col) in self.toolTips:
+                    toolTip = self.toolTips[(row, col)]
+                else:
+                    toolTip = ''
+                self.grid.GetGridWindow().SetToolTipString(toolTip)
+
+
 class PanelGraph(wx.Panel):
     def __init__(self, panel, notify, settings, lock, callbackMotion):
         self.panel = panel
@@ -440,7 +464,7 @@ class PanelMeasure(wx.Panel):
         self.locsMeasure = {'start': (0, 1), 'end': (1, 1), 'deltaF': (2, 1),
                             'minFP': (0, 4), 'maxFP': (1, 4), 'deltaFP': (2, 4),
                             'minP': (0, 5), 'maxP': (1, 5), 'deltaP': (2, 5),
-                            'avg': (0, 8), 'gmean':(1, 8), 'flat':(2, 8)}
+                            'avg': (0, 8), 'gmean': (1, 8), 'flat': (2, 8)}
 
         font = self.grid.GetCellFont(0, 0)
         font.SetWeight(wx.BOLD)
@@ -450,6 +474,20 @@ class PanelMeasure(wx.Panel):
 
         for x in [0, 2, 3, 6, 7]:
             self.grid.AutoSizeColumn(x)
+
+        toolTips = {(0, 1): 'Selection start',
+                    (1, 1): 'Selection end',
+                    (2, 1): 'Selection width',
+                    (0, 4): 'Minimum power location',
+                    (1, 4): 'Maximum power location',
+                    (2, 4): 'Power location difference',
+                    (0, 5): 'Minimum power',
+                    (1, 5): 'Maximum power',
+                    (2, 5): 'Power difference',
+                    (0, 8): 'Mean power',
+                    (1, 8): 'Geometric mean power',
+                    (2, 8): 'Spectral flatness'}
+        self.toolTips = GridToolTips(self.grid, toolTips)
 
         self.popupMenu = wx.Menu()
         self.popupMenuCopy = self.popupMenu.Append(wx.ID_ANY, "&Copy",
