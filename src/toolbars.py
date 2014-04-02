@@ -74,13 +74,13 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
 
         liveId = wx.NewId()
         self.AddCheckTool(liveId, load_bitmap('auto_refresh'),
-                          shortHelp='Live update')
+                          shortHelp='Real time plotting\n(slow and buggy)')
         self.ToggleTool(liveId, settings.liveUpdate)
         wx.EVT_TOOL(self, liveId, self.on_check_update)
 
         gridId = wx.NewId()
         self.AddCheckTool(gridId, load_bitmap('grid'),
-                          shortHelp='Grid')
+                          shortHelp='Toggle plot grid')
         self.ToggleTool(gridId, settings.grid)
         wx.EVT_TOOL(self, gridId, self.on_check_grid)
 
