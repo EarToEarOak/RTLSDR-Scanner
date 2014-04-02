@@ -123,7 +123,8 @@ class PanelGraph(wx.Panel):
         self.plot.scale_plot(True)
         self.mouseZoom = MouseZoom(self.plot, self.toolbar, self.hide_measure,
                                    self.draw_measure)
-        self.mouseSelect = MouseSelect(self.plot, self.on_select)
+        self.mouseSelect = MouseSelect(self.plot, self.on_select,
+                                       self.on_selected)
         self.measureTable.show(self.settings.showMeasure)
         self.panel.SetFocus()
 
@@ -134,7 +135,10 @@ class PanelGraph(wx.Panel):
     def on_changed(self, _event):
         self.draw_measure()
 
-    def on_select(self, start, end):
+    def on_select(self):
+        self.hide_measure()
+
+    def on_selected(self, start, end):
         self.on_draw(None)
         self.selectStart = start
         self.selectEnd = end
