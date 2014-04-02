@@ -456,10 +456,8 @@ class PanelMeasure(wx.Panel):
                                                    "Copy entry")
         self.Bind(wx.EVT_MENU, self.on_copy, self.popupMenuCopy)
 
-        self.Bind(wxGrid.EVT_GRID_CELL_RIGHT_CLICK, self.on_popup_menu,
-                  self.grid)
-        self.Bind(wxGrid.EVT_GRID_RANGE_SELECT, self.on_select_range,
-                  self.grid)
+        self.Bind(wxGrid.EVT_GRID_CELL_RIGHT_CLICK, self.on_popup_menu)
+        self.Bind(wxGrid.EVT_GRID_RANGE_SELECT, self.on_select_range)
         self.Bind(wxGrid.EVT_GRID_CELL_LEFT_CLICK, self.on_cell_click)
 
         box = wx.BoxSizer(wx.VERTICAL)
