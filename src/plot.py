@@ -83,17 +83,28 @@ class Plotter():
         self.barBase.set_label('Level (dB)')
 
         dashes = [4, 5, 1, 5, 1, 5]
+
         self.lineMinP = Line2D([0, 0], [0, 0], linestyle='--', color='black')
         self.lineMaxP = Line2D([0, 0], [0, 0], linestyle='-.', color='black')
         self.lineAvgP = Line2D([0, 0], [0, 0], dashes=dashes, color='black')
+        if matplotlib.__version__ >= '1.3':
+            effect = patheffects.withStroke(linewidth=3, foreground="w",
+                                            alpha=0.75)
+            self.lineMinP.set_path_effects([effect])
+            self.lineMaxP.set_path_effects([effect])
+            self.lineAvgP.set_path_effects([effect])
+
         self.axes.add_line(self.lineMinP)
         self.axes.add_line(self.lineMaxP)
         self.axes.add_line(self.lineAvgP)
 
         box = dict(boxstyle='round', fc='white')
-        self.labelMinP = Text(0, 0, 'Min', ha="right", va="bottom", bbox=box)
-        self.labelMaxP = Text(0, 0, 'Max', ha="right", va="top", bbox=box)
-        self.labelAvgP = Text(0, 0, 'Avg', ha="right", va="center", bbox=box)
+        self.labelMinP = Text(0, 0, 'Min', fontsize='x-small', ha="right",
+                              va="bottom", bbox=box)
+        self.labelMaxP = Text(0, 0, 'Max', fontsize='x-small', ha="right",
+                              va="top", bbox=box)
+        self.labelAvgP = Text(0, 0, 'Avg', fontsize='x-small', ha="right",
+                              va="center", bbox=box)
         self.labelMinP.set_visible(False)
         self.labelMaxP.set_visible(False)
         self.labelAvgP.set_visible(False)
