@@ -423,7 +423,7 @@ class PanelMeasure(wx.Panel):
         self.grid.SetCellValue(0, 3, 'Min')
         self.grid.SetCellValue(1, 3, 'Max')
         self.grid.SetCellValue(2, 3, u'\u0394')
-        self.grid.SetCellValue(0, 7, 'Avg')
+        self.grid.SetCellValue(0, 7, 'Mean')
 
         self.locsMeasure = {'start': (0, 1), 'end': (1, 1), 'deltaF': (2, 1),
                             'minFP': (0, 4), 'maxFP': (1, 4), 'deltaFP': (2, 4),

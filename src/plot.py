@@ -103,7 +103,7 @@ class Plotter():
                               va="bottom", bbox=box)
         self.labelMaxP = Text(0, 0, 'Max', fontsize='x-small', ha="right",
                               va="top", bbox=box)
-        self.labelAvgP = Text(0, 0, 'Avg', fontsize='x-small', ha="right",
+        self.labelAvgP = Text(0, 0, 'Mean', fontsize='x-small', ha="right",
                               va="center", bbox=box)
         self.labelMinP.set_visible(False)
         self.labelMaxP.set_visible(False)
