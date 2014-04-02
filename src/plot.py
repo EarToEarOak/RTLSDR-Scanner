@@ -138,55 +138,42 @@ class Plotter():
                     except:
                         pass
 
+    def draw_line(self, line, xLim, y):
+        line.set_visible(True)
+        line.set_xdata([xLim[0], xLim[1]])
+        line.set_ydata([y, y])
+        self.axes.draw_artist(line)
+
+    def draw_label(self, label, xLim, y):
+        label.set_visible(True)
+        label.set_position((xLim[1], y))
+        self.axes.draw_artist(label)
+
     def draw_measure(self, background, measure, minP, maxP, avgP, gMeanP):
         self.hide_measure()
         canvas = self.axes.get_figure().canvas
         canvas.restore_region(background)
-        x = self.axes.get_xlim()
+        xLim = self.axes.get_xlim()
 
         if minP:
             y = measure.get_min_p()
-            self.lineMinP.set_visible(True)
-            self.lineMinP.set_xdata([x[0], x[1]])
-            self.lineMinP.set_ydata([y, y])
-            self.axes.draw_artist(self.lineMinP)
-
-            self.labelMinP.set_visible(True)
-            self.labelMinP.set_position((x[1], y))
-            self.axes.draw_artist(self.labelMinP)
+            self.draw_line(self.lineMinP, xLim, y)
+            self.draw_label(self.labelMinP, xLim, y)
 
         if maxP:
             y = measure.get_max_p()
-            self.lineMaxP.set_visible(True)
-            self.lineMaxP.set_xdata([x[0], x[1]])
-            self.lineMaxP.set_ydata([y, y])
-            self.axes.draw_artist(self.lineMaxP)
-
-            self.labelMaxP.set_visible(True)
-            self.labelMaxP.set_position((x[1], y))
-            self.axes.draw_artist(self.labelMaxP)
+            self.draw_line(self.lineMaxP, xLim, y)
+            self.draw_label(self.labelMaxP, xLim, y)
 
         if avgP:
             y = measure.get_avg_p()
-            self.lineAvgP.set_visible(True)
-            self.lineAvgP.set_xdata([x[0], x[1]])
-            self.lineAvgP.set_ydata([y, y])
-            self.axes.draw_artist(self.lineAvgP)
-
-            self.labelAvgP.set_visible(True)
-            self.labelAvgP.set_position((x[1], y))
-            self.axes.draw_artist(self.labelAvgP)
+            self.draw_line(self.lineAvgP, xLim, y)
+            self.draw_label(self.labelAvgP, xLim, y)
 
         if gMeanP:
             y = measure.get_gmean_p()
-            self.lineGMP.set_visible(True)
-            self.lineGMP.set_xdata([x[0], x[1]])
-            self.lineGMP.set_ydata([y, y])
-            self.axes.draw_artist(self.lineGMP)
-
-            self.labelGMP.set_visible(True)
-            self.labelGMP.set_position((x[1], y))
-            self.axes.draw_artist(self.labelGMP)
+            self.draw_line(self.lineGMP, xLim, y)
+            self.draw_label(self.labelGMP, xLim, y)
 
         canvas.blit(self.axes.bbox)
 
