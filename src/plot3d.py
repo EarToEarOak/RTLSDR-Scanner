@@ -22,7 +22,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-import os
+
 import threading
 import time
 
@@ -35,24 +35,24 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 
 from events import post_event, EventThreadStatus, Event
-from misc import epoch_to_mpl, format_time, create_mesh
+from misc import format_time
 from mpl_toolkits.mplot3d import Axes3D  # @UnresolvedImport @UnusedImport
+from spectrum import epoch_to_mpl, create_mesh
 
 
 class Plotter3d():
-    def __init__(self, notify, graph, settings, grid, lock):
+    def __init__(self, notify, figure, settings, lock):
         self.notify = notify
+        self.figure = figure
         self.settings = settings
-        self.graph = graph
         self.lock = lock
-        self.figure = self.graph.get_figure()
         self.axes = None
         self.plot = None
         self.extent = None
         self.threadPlot = None
         self.wireframe = settings.wireframe
         self.setup_plot()
-        self.set_grid(grid)
+        self.set_grid(settings.grid)
 
     def setup_plot(self):
         gs = GridSpec(1, 2, width_ratios=[9.5, 0.5])
@@ -102,10 +102,7 @@ class Plotter3d():
 
     def redraw_plot(self):
         if self.figure is not None:
-            if os.name == "nt":
-                threading.Thread(target=self.thread_draw, name='Draw').start()
-            else:
-                post_event(self.notify, EventThreadStatus(Event.DRAW))
+            post_event(self.notify, EventThreadStatus(Event.DRAW))
 
     def get_axes(self):
         return self.axes
@@ -150,15 +147,6 @@ class Plotter3d():
     def close(self):
         self.figure.clear()
         self.figure = None
-
-    def thread_draw(self):
-        with self.lock:
-            if self.figure is not None:
-                try:
-                    self.graph.get_figure().tight_layout()
-                    self.graph.get_canvas().draw()
-                except:
-                    pass
 
 
 class ThreadPlot(threading.Thread):

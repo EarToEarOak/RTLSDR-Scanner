@@ -23,7 +23,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
 import threading
 import time
 
@@ -34,27 +33,27 @@ from matplotlib.colors import Normalize
 from matplotlib.dates import DateFormatter
 from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
+import numpy
 
 from events import EventThreadStatus, Event, post_event
-from misc import split_spectrum, epoch_to_mpl, format_time
-import numpy as np
+from misc import format_time
+from spectrum import epoch_to_mpl, split_spectrum
 
 
 class Spectrogram:
-    def __init__(self, notify, graph, settings, grid, lock):
+    def __init__(self, notify, figure, settings, lock):
         self.notify = notify
+        self.figure = figure
         self.settings = settings
-        self.graph = graph
         self.data = [[], [], []]
         self.index = 0
-        self.figure = self.graph.get_figure()
         self.lock = lock
         self.axes = None
         self.plot = None
         self.extent = None
         self.threadPlot = None
         self.setup_plot()
-        self.set_grid(grid)
+        self.set_grid(self.settings.grid)
 
     def setup_plot(self):
         gs = GridSpec(1, 2, width_ratios=[9.5, 0.5])
@@ -100,10 +99,7 @@ class Spectrogram:
 
     def redraw_plot(self):
         if self.figure is not None:
-            if os.name == "nt":
-                threading.Thread(target=self.thread_draw, name='Draw').start()
-            else:
-                post_event(self.notify, EventThreadStatus(Event.DRAW))
+            post_event(self.notify, EventThreadStatus(Event.DRAW))
 
     def get_axes(self):
         return self.axes
@@ -152,15 +148,6 @@ class Spectrogram:
         self.figure.clear()
         self.figure = None
 
-    def thread_draw(self):
-        with self.lock:
-            if self.figure is not None:
-                try:
-                    self.graph.get_figure().tight_layout()
-                    self.graph.get_canvas().draw()
-                except:
-                    pass
-
 
 class ThreadPlot(threading.Thread):
     def __init__(self, parent, lock, axes, data, extent, retainMax, colourMap,
@@ -186,7 +173,7 @@ class ThreadPlot(threading.Thread):
             total = len(self.data)
             if total > 0:
                 width = len(self.data[min(self.data)])
-                c = np.ma.masked_all((self.retainMax, width))
+                c = numpy.ma.masked_all((self.retainMax, width))
                 self.parent.clear_plots()
                 j = self.retainMax
                 for ys in self.data:

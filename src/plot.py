@@ -24,7 +24,6 @@
 #
 
 from collections import OrderedDict
-import os
 import threading
 
 from matplotlib import patheffects, cm
@@ -33,6 +32,8 @@ from matplotlib.collections import LineCollection
 from matplotlib.colorbar import ColorbarBase
 from matplotlib.colors import Normalize
 from matplotlib.gridspec import GridSpec
+from matplotlib.lines import Line2D
+from matplotlib.text import Text
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 import numpy
 
@@ -40,19 +41,26 @@ from events import EventThreadStatus, Event, post_event
 
 
 class Plotter():
-    def __init__(self, notify, graph, settings, grid, lock):
+    def __init__(self, notify, figure, settings, lock):
         self.notify = notify
+        self.figure = figure
         self.settings = settings
-        self.graph = graph
         self.average = settings.average
         self.lock = lock
-        self.figure = self.graph.get_figure()
         self.axes = None
         self.bar = None
         self.threadPlot = None
         self.extent = None
+        self.lineMinP = None
+        self.lineMaxP = None
+        self.lineAvgP = None
+        self.lineGMP = None
+        self.labelMinP = None
+        self.labelMaxP = None
+        self.labelAvgP = None
+        self.labelGMP = None
         self.setup_plot()
-        self.set_grid(grid)
+        self.set_grid(self.settings.grid)
 
     def setup_plot(self):
         formatter = ScalarFormatter(useOffset=False)
@@ -76,6 +84,43 @@ class Plotter():
                                     cmap=cm.get_cmap(self.settings.colourMap))
         self.barBase.set_label('Level (dB)')
 
+        dashesAvg = [4, 5, 1, 5, 1, 5]
+        dashesGM = [1, 5, 5, 5, 5, 5]
+        self.lineMinP = Line2D([0, 0], [0, 0], linestyle='--', color='black')
+        self.lineMaxP = Line2D([0, 0], [0, 0], linestyle='-.', color='black')
+        self.lineAvgP = Line2D([0, 0], [0, 0], dashes=dashesAvg, color='black')
+        self.lineGMP = Line2D([0, 0], [0, 0], dashes=dashesGM, color='black')
+        if matplotlib.__version__ >= '1.3':
+            effect = patheffects.withStroke(linewidth=3, foreground="w",
+                                            alpha=0.75)
+            self.lineMinP.set_path_effects([effect])
+            self.lineMaxP.set_path_effects([effect])
+            self.lineAvgP.set_path_effects([effect])
+            self.lineGMP.set_path_effects([effect])
+
+        self.axes.add_line(self.lineMinP)
+        self.axes.add_line(self.lineMaxP)
+        self.axes.add_line(self.lineAvgP)
+        self.axes.add_line(self.lineGMP)
+
+        box = dict(boxstyle='round', fc='white')
+        self.labelMinP = Text(0, 0, 'Min', fontsize='x-small', ha="right",
+                              va="bottom", bbox=box)
+        self.labelMaxP = Text(0, 0, 'Max', fontsize='x-small', ha="right",
+                              va="top", bbox=box)
+        self.labelAvgP = Text(0, 0, 'Mean', fontsize='x-small', ha="right",
+                              va="center", bbox=box)
+        self.labelGMP = Text(0, 0, 'GMean', fontsize='x-small', ha="right",
+                              va="center", bbox=box)
+        self.labelMinP.set_visible(False)
+        self.labelMaxP.set_visible(False)
+        self.labelAvgP.set_visible(False)
+        self.labelGMP.set_visible(False)
+        self.axes.add_artist(self.labelMinP)
+        self.axes.add_artist(self.labelMaxP)
+        self.axes.add_artist(self.labelAvgP)
+        self.axes.add_artist(self.labelGMP)
+
     def scale_plot(self, force=False):
         if self.extent is not None:
             with self.lock:
@@ -93,12 +138,58 @@ class Plotter():
                     except:
                         pass
 
+    def draw_line(self, line, xLim, y):
+        line.set_visible(True)
+        line.set_xdata([xLim[0], xLim[1]])
+        line.set_ydata([y, y])
+        self.axes.draw_artist(line)
+
+    def draw_label(self, label, xLim, y):
+        label.set_visible(True)
+        label.set_position((xLim[1], y))
+        self.axes.draw_artist(label)
+
+    def draw_measure(self, background, measure, minP, maxP, avgP, gMeanP):
+        self.hide_measure()
+        canvas = self.axes.get_figure().canvas
+        canvas.restore_region(background)
+        xLim = self.axes.get_xlim()
+
+        if minP:
+            y = measure.get_min_p()
+            self.draw_line(self.lineMinP, xLim, y)
+            self.draw_label(self.labelMinP, xLim, y)
+
+        if maxP:
+            y = measure.get_max_p()
+            self.draw_line(self.lineMaxP, xLim, y)
+            self.draw_label(self.labelMaxP, xLim, y)
+
+        if avgP:
+            y = measure.get_avg_p()
+            self.draw_line(self.lineAvgP, xLim, y)
+            self.draw_label(self.labelAvgP, xLim, y)
+
+        if gMeanP:
+            y = measure.get_gmean_p()
+            self.draw_line(self.lineGMP, xLim, y)
+            self.draw_label(self.labelGMP, xLim, y)
+
+        canvas.blit(self.axes.bbox)
+
+    def hide_measure(self):
+        self.lineMinP.set_visible(False)
+        self.lineMaxP.set_visible(False)
+        self.lineAvgP.set_visible(False)
+        self.lineGMP.set_visible(False)
+        self.labelMinP.set_visible(False)
+        self.labelMaxP.set_visible(False)
+        self.labelAvgP.set_visible(False)
+        self.labelGMP.set_visible(False)
+
     def redraw_plot(self):
         if self.figure is not None:
-            if os.name == "nt":
-                threading.Thread(target=self.thread_draw, name='Draw').start()
-            else:
-                post_event(self.notify, EventThreadStatus(Event.DRAW))
+            post_event(self.notify, EventThreadStatus(Event.DRAW))
 
     def get_axes(self):
         return self.axes
@@ -106,13 +197,13 @@ class Plotter():
     def set_title(self, title):
         self.axes.set_title(title)
 
-    def set_plot(self, data, extent, annotate=False):
+    def set_plot(self, spectrum, extent, annotate=False):
         if self.threadPlot is not None and self.threadPlot.isAlive():
             self.threadPlot.cancel()
             self.threadPlot.join()
 
         self.extent = extent
-        self.threadPlot = ThreadPlot(self, self.lock, self.axes, data,
+        self.threadPlot = ThreadPlot(self, self.lock, self.axes, spectrum,
                                      self.extent,
                                      self.settings.colourMap,
                                      self.settings.autoL,
@@ -144,15 +235,6 @@ class Plotter():
     def close(self):
         self.figure.clear()
         self.figure = None
-
-    def thread_draw(self):
-        with self.lock:
-            if self.figure is not None:
-                try:
-                    self.graph.get_figure().tight_layout()
-                    self.graph.get_canvas().draw()
-                except:
-                    pass
 
 
 class ThreadPlot(threading.Thread):
@@ -280,7 +362,7 @@ class ThreadPlot(threading.Thread):
         textX = ((stop - start) / 50.0) + x
 
         if(matplotlib.__version__ < '1.3'):
-            self.axes.annotate('{0:.6f}MHz\n{1:.2f}dB'.format(x, y),
+            self.axes.annotate('{0:.6f} MHz\n{1:.2f} dB'.format(x, y),
                                xy=(x, y), xytext=(textX, y),
                                ha='left', va='top', size='small',
                                gid='peak')
@@ -291,7 +373,7 @@ class ThreadPlot(threading.Thread):
         else:
             effect = patheffects.withStroke(linewidth=3, foreground="w",
                                             alpha=0.75)
-            self.axes.annotate('{0:.6f}MHz\n{1:.2f}dB'.format(x, y),
+            self.axes.annotate('{0:.6f} MHz\n{1:.2f} dB'.format(x, y),
                                xy=(x, y), xytext=(textX, y),
                                ha='left', va='top', size='small',
                                path_effects=[effect], gid='peak')

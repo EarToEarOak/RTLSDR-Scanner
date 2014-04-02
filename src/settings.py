@@ -53,6 +53,7 @@ class Settings():
         self.average = False
         self.pointsLimit = False
         self.pointsMax = 5000
+        self.grid = True
 
         self.start = 87
         self.stop = 108
@@ -67,6 +68,8 @@ class Settings():
         self.autoF = True
         self.autoL = True
         self.autoT = True
+
+        self.showMeasure = True
 
         self.alert = False
         self.alertLevel = -20
@@ -106,6 +109,7 @@ class Settings():
         self.average = self.cfg.ReadBool('average', self.average)
         self.pointsLimit = self.cfg.ReadBool('pointsLimit', self.pointsLimit)
         self.pointsMax = self.cfg.ReadInt('pointsMax', self.pointsMax)
+        self.grid = self.cfg.ReadBool('grid', self.grid)
         self.start = self.cfg.ReadInt('start', self.start)
         self.stop = self.cfg.ReadInt('stop', self.stop)
         self.mode = self.cfg.ReadInt('mode', self.mode)
@@ -118,6 +122,7 @@ class Settings():
         self.autoF = self.cfg.ReadBool('autoF', self.autoF)
         self.autoL = self.cfg.ReadBool('autoL', self.autoL)
         self.autoT = self.cfg.ReadBool('autoT', self.autoT)
+        self.showMeasure = self.cfg.ReadBool('showMeasure', self.showMeasure)
         self.alert = self.cfg.ReadBool('alert', self.alert)
         self.alertLevel = self.cfg.ReadFloat('alertLevel', self.alertLevel)
         self.index = self.cfg.ReadInt('index', self.index)
@@ -158,6 +163,7 @@ class Settings():
         self.cfg.WriteBool('average', self.average)
         self.cfg.WriteBool('pointsLimit', self.pointsLimit)
         self.cfg.WriteInt('pointsMax', self.pointsMax)
+        self.cfg.WriteBool('grid', self.grid)
         self.cfg.WriteInt('start', self.start)
         self.cfg.WriteInt('stop', self.stop)
         self.cfg.WriteInt('mode', self.mode)
@@ -170,6 +176,7 @@ class Settings():
         self.cfg.WriteBool('autoF', self.autoF)
         self.cfg.WriteBool('autoL', self.autoL)
         self.cfg.WriteBool('autoT', self.autoT)
+        self.cfg.WriteBool('showMeasure', self.showMeasure)
         self.cfg.WriteBool('alert', self.alert)
         self.cfg.WriteFloat('alertLevel', self.alertLevel)
         self.cfg.WriteInt('index', self.index)
