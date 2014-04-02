@@ -44,12 +44,12 @@ from plot_controls import MouseZoom, MouseSelect
 from spectrogram import Spectrogram
 from spectrum import split_spectrum_sort, slice_spectrum, Measure
 from toolbars import NavigationToolbar, NavigationToolbarCompare
-import wx.grid as grid
+import wx.grid as wxGrid
 
 
-class CellRenderer(grid.PyGridCellRenderer):
+class CellRenderer(wxGrid.PyGridCellRenderer):
     def __init__(self):
-        grid.PyGridCellRenderer.__init__(self)
+        wxGrid.PyGridCellRenderer.__init__(self)
 
     def Draw(self, grid, attr, dc, rect, row, col, _isSelected):
         dc.SetBrush(wx.Brush(attr.GetBackgroundColour()))
@@ -400,7 +400,7 @@ class PanelMeasure(wx.Panel):
 
         self.SetBackgroundColour('white')
 
-        self.grid = grid.Grid(self)
+        self.grid = wxGrid.Grid(self)
         self.grid.CreateGrid(3, 9)
         self.grid.EnableEditing(False)
         self.grid.EnableDragGridSize(False)
@@ -409,7 +409,7 @@ class PanelMeasure(wx.Panel):
 
         self.locsCheck = {'min': (0, 2), 'max': (1, 2), 'avg': (0, 6),
                           'gmean': (1, 6)}
-        checkEditor = grid.GridCellBoolEditor()
+        checkEditor = wxGrid.GridCellBoolEditor()
         self.set_check_editor('min', checkEditor)
         self.set_check_editor('max', checkEditor)
         self.set_check_editor('avg', checkEditor)
@@ -456,11 +456,11 @@ class PanelMeasure(wx.Panel):
                                                    "Copy entry")
         self.Bind(wx.EVT_MENU, self.on_copy, self.popupMenuCopy)
 
-        self.Bind(grid.EVT_GRID_CELL_RIGHT_CLICK, self.on_popup_menu,
+        self.Bind(wxGrid.EVT_GRID_CELL_RIGHT_CLICK, self.on_popup_menu,
                   self.grid)
-        self.Bind(grid.EVT_GRID_RANGE_SELECT, self.on_select_range,
+        self.Bind(wxGrid.EVT_GRID_RANGE_SELECT, self.on_select_range,
                   self.grid)
-        self.Bind(grid.EVT_GRID_CELL_LEFT_CLICK, self.on_cell_click)
+        self.Bind(wxGrid.EVT_GRID_CELL_LEFT_CLICK, self.on_cell_click)
 
         box = wx.BoxSizer(wx.VERTICAL)
         box.Add(self.grid, 1, wx.ALIGN_CENTER)
