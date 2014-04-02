@@ -73,7 +73,7 @@ It will add the new installation of Python to the path, potentially causing prob
 to previous Python installs $\r$\n$\r$\n\
 You can update to the latest versions of RTLSDR-Scanner, $\r$\n\
 the rtlsdr driver and pyrtlsdr by running this installer again $\r$\n$\r$\n\
-Some systems will require the Microsoft Visual C++ 2010 Redistributable availabel from: $\r$\n\
+Some systems will require the Microsoft Visual C++ 2010 Redistributable available from: $\r$\n\
 http://www.microsoft.com/en-gb/download/details.aspx?id=5555"'
 
 !define FILE_CLASS "RTLSDRScanner.Scan"
