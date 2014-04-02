@@ -408,7 +408,7 @@ class DialogProperties(wx.Dialog):
 
         textRbw = wx.StaticText(self, label="RBW")
         gridScan.Add(textRbw, (6, 0), (1, 1), wx.ALL, 5)
-        rbw = (SAMPLE_RATE / scanInfo.nfft) / 1000.0
+        rbw = ((SAMPLE_RATE / scanInfo.nfft) / 1000.0) * 2.0
         textCtrlStop = wx.TextCtrl(self, value="{0:.3f}".format(rbw),
                                    style=wx.TE_READONLY)
         gridScan.Add(textCtrlStop, (6, 1), (1, 1), wx.ALL, 5)
