@@ -181,9 +181,11 @@ class Plotter():
         self.lineMinP.set_visible(False)
         self.lineMaxP.set_visible(False)
         self.lineAvgP.set_visible(False)
+        self.lineGMP.set_visible(False)
         self.labelMinP.set_visible(False)
         self.labelMaxP.set_visible(False)
         self.labelAvgP.set_visible(False)
+        self.labelGMP.set_visible(False)
 
     def redraw_plot(self):
         if self.figure is not None:
