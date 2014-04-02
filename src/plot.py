@@ -129,6 +129,7 @@ class Plotter():
                     except:
                         pass
 
+    # TODO: shows old markers
     def draw_measure(self, background, measure, minP, maxP, avgP):
         self.hide_measure()
         canvas = self.axes.get_figure().canvas

@@ -92,10 +92,13 @@ class PanelGraph(wx.Panel):
         self.SetSizer(vbox)
         vbox.Fit(self)
 
+        self.create_plot()
+
         self.canvas.mpl_connect('motion_notify_event', callbackMotion)
         self.canvas.mpl_connect('draw_event', self.on_draw)
 
-        self.create_plot()
+        self.get_axes().callbacks.connect('xlim_changed', self.on_changed)
+        self.get_axes().callbacks.connect('ylim_changed', self.on_changed)
 
     def create_plot(self):
         if self.plot is not None:
@@ -127,6 +130,9 @@ class PanelGraph(wx.Panel):
     def on_draw(self, _event):
         axes = self.plot.get_axes()
         self.background = self.canvas.copy_from_bbox(axes.bbox)
+
+    def on_changed(self, _event):
+        self.draw_measure()
 
     def on_select(self, start, end):
         self.on_draw(None)
