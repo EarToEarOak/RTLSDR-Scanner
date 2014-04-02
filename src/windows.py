@@ -133,6 +133,7 @@ class PanelGraph(wx.Panel):
         self.selectStart = start
         self.selectEnd = end
         self.measureTable.set_selected(self.spectrum, start, end)
+        self.draw_measure()
 
     def show_measureTable(self, show):
         self.measureTable.show(show)
@@ -142,6 +143,8 @@ class PanelGraph(wx.Panel):
         self.spectrum = spectrum
         self.extent = extent
         self.plot.set_plot(spectrum, extent, annotate)
+        self.measureTable.set_selected(spectrum, self.selectStart,
+                                       self.selectEnd)
 
     def set_plot_title(self):
         if len(self.settings.devices) > 0:
@@ -570,6 +573,7 @@ class PanelMeasure(wx.Panel):
 
         self.measure = Measure()
         self.measure.set(minP, maxP, avg)
+        self.update_plot()
 
     def show(self, show):
         if show:
