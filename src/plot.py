@@ -54,9 +54,11 @@ class Plotter():
         self.lineMinP = None
         self.lineMaxP = None
         self.lineAvgP = None
+        self.lineGMP = None
         self.labelMinP = None
         self.labelMaxP = None
         self.labelAvgP = None
+        self.labelGMP = None
         self.setup_plot()
         self.set_grid(self.settings.grid)
 
@@ -82,21 +84,24 @@ class Plotter():
                                     cmap=cm.get_cmap(self.settings.colourMap))
         self.barBase.set_label('Level (dB)')
 
-        dashes = [4, 5, 1, 5, 1, 5]
-
+        dashesAvg = [4, 5, 1, 5, 1, 5]
+        dashesGM = [1, 5, 5, 5, 5, 5]
         self.lineMinP = Line2D([0, 0], [0, 0], linestyle='--', color='black')
         self.lineMaxP = Line2D([0, 0], [0, 0], linestyle='-.', color='black')
-        self.lineAvgP = Line2D([0, 0], [0, 0], dashes=dashes, color='black')
+        self.lineAvgP = Line2D([0, 0], [0, 0], dashes=dashesAvg, color='black')
+        self.lineGMP = Line2D([0, 0], [0, 0], dashes=dashesGM, color='black')
         if matplotlib.__version__ >= '1.3':
             effect = patheffects.withStroke(linewidth=3, foreground="w",
                                             alpha=0.75)
             self.lineMinP.set_path_effects([effect])
             self.lineMaxP.set_path_effects([effect])
             self.lineAvgP.set_path_effects([effect])
+            self.lineGMP.set_path_effects([effect])
 
         self.axes.add_line(self.lineMinP)
         self.axes.add_line(self.lineMaxP)
         self.axes.add_line(self.lineAvgP)
+        self.axes.add_line(self.lineGMP)
 
         box = dict(boxstyle='round', fc='white')
         self.labelMinP = Text(0, 0, 'Min', fontsize='x-small', ha="right",
@@ -105,12 +110,16 @@ class Plotter():
                               va="top", bbox=box)
         self.labelAvgP = Text(0, 0, 'Mean', fontsize='x-small', ha="right",
                               va="center", bbox=box)
+        self.labelGMP = Text(0, 0, 'GMean', fontsize='x-small', ha="right",
+                              va="center", bbox=box)
         self.labelMinP.set_visible(False)
         self.labelMaxP.set_visible(False)
         self.labelAvgP.set_visible(False)
+        self.labelGMP.set_visible(False)
         self.axes.add_artist(self.labelMinP)
         self.axes.add_artist(self.labelMaxP)
         self.axes.add_artist(self.labelAvgP)
+        self.axes.add_artist(self.labelGMP)
 
     def scale_plot(self, force=False):
         if self.extent is not None:
@@ -129,8 +138,7 @@ class Plotter():
                     except:
                         pass
 
-    # TODO: shows old markers
-    def draw_measure(self, background, measure, minP, maxP, avgP):
+    def draw_measure(self, background, measure, minP, maxP, avgP, gMeanP):
         self.hide_measure()
         canvas = self.axes.get_figure().canvas
         canvas.restore_region(background)
@@ -168,6 +176,17 @@ class Plotter():
             self.labelAvgP.set_visible(True)
             self.labelAvgP.set_position((x[1], y))
             self.axes.draw_artist(self.labelAvgP)
+
+        if gMeanP:
+            y = measure.get_gmean_p()
+            self.lineGMP.set_visible(True)
+            self.lineGMP.set_xdata([x[0], x[1]])
+            self.lineGMP.set_ydata([y, y])
+            self.axes.draw_artist(self.lineGMP)
+
+            self.labelGMP.set_visible(True)
+            self.labelGMP.set_position((x[1], y))
+            self.axes.draw_artist(self.labelGMP)
 
         canvas.blit(self.axes.bbox)
 

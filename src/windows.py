@@ -23,6 +23,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from decimal import Decimal
+import math
+from operator import mul
+
 from matplotlib import cm
 import matplotlib
 from matplotlib.backends.backend_wxagg import \
@@ -74,6 +78,7 @@ class PanelGraph(wx.Panel):
         self.showMinP = None
         self.showMaxP = None
         self.showAvgP = None
+        self.showGMeanP = None
 
         wx.Panel.__init__(self, panel)
 
@@ -182,13 +187,15 @@ class PanelGraph(wx.Panel):
                                    self.measure,
                                    self.showMinP,
                                    self.showMaxP,
-                                   self.showAvgP)
+                                   self.showAvgP,
+                                   self.showGMeanP)
 
-    def set_measure(self, measure, showMinP, showMaxP, showAvgP):
+    def set_measure(self, measure, showMinP, showMaxP, showAvgP, showGMeanP):
         self.measure = measure
         self.showMinP = showMinP
         self.showMaxP = showMaxP
         self.showAvgP = showAvgP
+        self.showGMeanP = showGMeanP
 
         self.draw_measure()
 
@@ -387,6 +394,7 @@ class PanelMeasure(wx.Panel):
         self.checkMin = '0'
         self.checkMax = '0'
         self.checkAvg = '0'
+        self.checkGMean = '0'
 
         self.selected = None
 
@@ -399,20 +407,22 @@ class PanelMeasure(wx.Panel):
         self.grid.SetColLabelSize(0)
         self.grid.SetRowLabelSize(0)
 
-        self.locsCheck = {'min': (0, 2), 'max': (1, 2), 'avg': (0, 6)}
+        self.locsCheck = {'min': (0, 2), 'max': (1, 2), 'avg': (0, 6),
+                          'gmean': (1, 6)}
         checkEditor = grid.GridCellBoolEditor()
         self.set_check_editor('min', checkEditor)
         self.set_check_editor('max', checkEditor)
         self.set_check_editor('avg', checkEditor)
+        self.set_check_editor('gmean', checkEditor)
 
         colour = self.grid.GetBackgroundColour()
         self.grid.SetCellTextColour(2, 2, colour)
-        self.grid.SetCellTextColour(1, 6, colour)
         self.grid.SetCellTextColour(2, 6, colour)
 
         self.set_check_value('min', self.checkMin)
         self.set_check_value('max', self.checkMax)
         self.set_check_value('avg', self.checkAvg)
+        self.set_check_value('gmean', self.checkGMean)
 
         self.grid.SetColFormatBool(2)
         self.grid.SetColFormatBool(6)
@@ -424,11 +434,13 @@ class PanelMeasure(wx.Panel):
         self.grid.SetCellValue(1, 3, 'Max')
         self.grid.SetCellValue(2, 3, u'\u0394')
         self.grid.SetCellValue(0, 7, 'Mean')
+        self.grid.SetCellValue(1, 7, 'GMean')
+        self.grid.SetCellValue(2, 7, 'Flatness')
 
         self.locsMeasure = {'start': (0, 1), 'end': (1, 1), 'deltaF': (2, 1),
                             'minFP': (0, 4), 'maxFP': (1, 4), 'deltaFP': (2, 4),
                             'minP': (0, 5), 'maxP': (1, 5), 'deltaP': (2, 5),
-                            'avg': (0, 8)}
+                            'avg': (0, 8), 'gmean':(1, 8), 'flat':(2, 8)}
 
         font = self.grid.GetCellFont(0, 0)
         font.SetWeight(wx.BOLD)
@@ -507,6 +519,9 @@ class PanelMeasure(wx.Panel):
                         elif control == 'avg':
                             self.checkAvg = check
                             break
+                        elif control == 'gmean':
+                            self.checkGMean = check
+                            break
 
                 if self.selected is None:
                     self.selected = self.locsMeasure['start']
@@ -545,7 +560,8 @@ class PanelMeasure(wx.Panel):
         minP = self.str_to_bool(self.checkMin)
         maxP = self.str_to_bool(self.checkMax)
         avgP = self.str_to_bool(self.checkAvg)
-        self.graph.set_measure(self.measure, minP, maxP, avgP)
+        gMeanP = self.str_to_bool(self.checkGMean)
+        self.graph.set_measure(self.measure, minP, maxP, avgP, gMeanP)
 
     def set_selected(self, spectrum, start, end):
         sweep = slice_spectrum(spectrum, start, end)
@@ -558,7 +574,18 @@ class PanelMeasure(wx.Panel):
         maxF = max(sweep)[0]
         minP = min(sweep, key=lambda v: v[1])
         maxP = max(sweep, key=lambda v: v[1])
-        avg = sum((v[1] for v in sweep), 0.0) / len(sweep)
+
+        powers = [Decimal(math.pow(10, p[1] / 10.0)) for p in sweep]
+        length = len(powers)
+
+        avg = sum(powers, Decimal(0)) / length
+        avgP = 10 * math.log10(avg)
+
+        product = reduce(mul, iter(powers))
+        gMean = product ** (Decimal(1.0) / length)
+        gMeanP = 10 * math.log10(gMean)
+
+        flatness = gMean / avg
 
         self.set_measure_value('start',
                                "{0:.6f} MHz".format(minF))
@@ -579,10 +606,13 @@ class PanelMeasure(wx.Panel):
         self.set_measure_value('deltaP',
                                "{0:.2f} dB".format(maxP[1] - minP[1]))
         self.set_measure_value('avg',
-                               "{0:.2f} dB".format(avg))
+                               "{0:.2f} dB".format(avgP))
+        self.set_measure_value('gmean',
+                               "{0:.2f} dB".format(gMeanP))
+        self.set_measure_value('flat',
+                               "{0:.4f}".format(flatness))
 
-        self.measure = Measure()
-        self.measure.set(minP, maxP, avg)
+        self.measure = Measure(minP, maxP, avgP, gMeanP)
         self.update_plot()
 
     def show(self, show):

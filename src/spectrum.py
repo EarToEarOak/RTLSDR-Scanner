@@ -91,13 +91,11 @@ class Extent():
 
 
 class Measure():
-    def __init__(self, minP=None, maxP=None, avgP=None):
-        self.set(minP, maxP, avgP)
-
-    def set(self, minP=None, maxP=None, avgP=None):
+    def __init__(self, minP, maxP, avgP, gMeanP):
         self.minP = minP
         self.maxP = maxP
         self.avgP = avgP
+        self.gMeanP = gMeanP
 
     def get_min_p(self):
         return self.minP[1]
@@ -107,6 +105,9 @@ class Measure():
 
     def get_avg_p(self):
         return self.avgP
+
+    def get_gmean_p(self):
+        return self.gMeanP
 
 
 def count_points(spectrum):
