@@ -536,7 +536,7 @@ class PanelMeasure(wx.Panel):
 
     def set_selected(self, spectrum, start, end):
         sweep = slice_spectrum(spectrum, start, end)
-        if sweep is None:
+        if sweep is None or len(sweep) == 0:
             for control in self.locsMeasure:
                 self.set_measure_value(control, "")
             return

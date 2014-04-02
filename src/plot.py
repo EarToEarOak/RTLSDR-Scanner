@@ -119,6 +119,7 @@ class Plotter():
                         pass
 
     def draw_measure(self, background, measure, minP, maxP, avgP):
+        self.hide_measure()
         canvas = self.axes.get_figure().canvas
         canvas.restore_region(background)
         x = self.axes.get_xlim()
@@ -133,9 +134,6 @@ class Plotter():
             self.labelMinP.set_visible(True)
             self.labelMinP.set_position((x[1], y))
             self.axes.draw_artist(self.labelMinP)
-        else:
-            self.lineMinP.set_visible(False)
-            self.labelMinP.set_visible(False)
 
         if maxP:
             y = measure.get_max_p()
@@ -147,8 +145,6 @@ class Plotter():
             self.labelMaxP.set_visible(True)
             self.labelMaxP.set_position((x[1], y))
             self.axes.draw_artist(self.labelMaxP)
-        else:
-            self.lineMaxP.set_visible(False)
 
         if avgP:
             y = measure.get_avg_p()
@@ -160,8 +156,6 @@ class Plotter():
             self.labelAvgP.set_visible(True)
             self.labelAvgP.set_position((x[1], y))
             self.axes.draw_artist(self.labelAvgP)
-        else:
-            self.lineAvgP.set_visible(False)
 
         canvas.blit(self.axes.bbox)
 
