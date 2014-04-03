@@ -159,13 +159,8 @@ class PanelGraph(wx.Panel):
         self.panel.SetFocus()
 
     def on_draw(self, _event):
-        self.get_axes().callbacks.connect('xlim_changed', self.on_changed)
-        self.get_axes().callbacks.connect('ylim_changed', self.on_changed)
         axes = self.plot.get_axes()
         self.background = self.canvas.copy_from_bbox(axes.bbox)
-
-    def on_changed(self, _event):
-        self.draw_measure()
 
     def on_select(self):
         self.hide_measure()
