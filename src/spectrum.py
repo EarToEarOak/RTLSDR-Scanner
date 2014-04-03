@@ -91,11 +91,12 @@ class Extent():
 
 
 class Measure():
-    def __init__(self, minP, maxP, avgP, gMeanP):
+    def __init__(self, minP, maxP, avgP, gMeanP, halfP):
         self.minP = minP
         self.maxP = maxP
         self.avgP = avgP
         self.gMeanP = gMeanP
+        self.halfP = halfP
 
     def get_min_p(self):
         return self.minP[1]
@@ -108,6 +109,9 @@ class Measure():
 
     def get_gmean_p(self):
         return self.gMeanP
+
+    def get_half_p(self):
+        return self.halfP
 
 
 def count_points(spectrum):
@@ -151,6 +155,8 @@ def split_spectrum_sort(spectrum):
 
 
 def slice_spectrum(spectrum, start, end):
+    if start is None or end is None:
+        return None
     sweepTemp = {}
     if len(spectrum) < 1:
         return None

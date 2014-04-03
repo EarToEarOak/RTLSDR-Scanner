@@ -105,6 +105,7 @@ class PanelGraph(wx.Panel):
         self.showMaxP = None
         self.showAvgP = None
         self.showGMeanP = None
+        self.showHalfP = None
 
         wx.Panel.__init__(self, panel)
 
@@ -217,14 +218,17 @@ class PanelGraph(wx.Panel):
                                    self.showMinP,
                                    self.showMaxP,
                                    self.showAvgP,
-                                   self.showGMeanP)
+                                   self.showGMeanP,
+                                   self.showHalfP)
 
-    def update_measure(self, measure, showMinP, showMaxP, showAvgP, showGMeanP):
+    def update_measure(self, measure, showMinP, showMaxP, showAvgP, showGMeanP,
+                       showHalfP):
         self.measure = measure
         self.showMinP = showMinP
         self.showMaxP = showMaxP
         self.showAvgP = showAvgP
         self.showGMeanP = showGMeanP
+        self.showHalfP = showHalfP
 
         self.draw_measure()
 
@@ -431,13 +435,14 @@ class PanelMeasure(wx.Panel):
         self.checkMax = None
         self.checkAvg = None
         self.checkGMean = None
+        self.checkHalf = None
 
         self.selected = None
 
         self.SetBackgroundColour('white')
 
         self.grid = wxGrid.Grid(self)
-        self.grid.CreateGrid(3, 9)
+        self.grid.CreateGrid(3, 12)
         self.grid.EnableEditing(False)
         self.grid.EnableDragGridSize(False)
         self.grid.SetColLabelSize(1)
@@ -448,21 +453,25 @@ class PanelMeasure(wx.Panel):
             self.grid.SetColLabelValue(y, '')
 
         self.locsCheck = {'min': (0, 2), 'max': (1, 2), 'avg': (0, 6),
-                          'gmean': (1, 6)}
+                          'gmean': (1, 6), 'half': (0, 9)}
         checkEditor = wxGrid.GridCellBoolEditor()
         self.set_check_editor('min', checkEditor)
         self.set_check_editor('max', checkEditor)
         self.set_check_editor('avg', checkEditor)
         self.set_check_editor('gmean', checkEditor)
+        self.set_check_editor('half', checkEditor)
 
         colour = self.grid.GetBackgroundColour()
         self.grid.SetCellTextColour(2, 2, colour)
         self.grid.SetCellTextColour(2, 6, colour)
+        self.grid.SetCellTextColour(1, 9, colour)
+        self.grid.SetCellTextColour(2, 9, colour)
 
         self.clear_checks()
 
         self.grid.SetColFormatBool(2)
         self.grid.SetColFormatBool(6)
+        self.grid.SetColFormatBool(9)
 
         self.grid.SetCellValue(0, 0, 'Start')
         self.grid.SetCellValue(1, 0, 'End')
@@ -473,11 +482,15 @@ class PanelMeasure(wx.Panel):
         self.grid.SetCellValue(0, 7, 'Mean')
         self.grid.SetCellValue(1, 7, 'GMean')
         self.grid.SetCellValue(2, 7, 'Flatness')
+        self.grid.SetCellValue(0, 10, '-3dB Start')
+        self.grid.SetCellValue(1, 10, '-3dB End')
+        self.grid.SetCellValue(2, 10, u'-3dB \u0394')
 
         self.locsMeasure = {'start': (0, 1), 'end': (1, 1), 'deltaF': (2, 1),
                             'minFP': (0, 4), 'maxFP': (1, 4), 'deltaFP': (2, 4),
                             'minP': (0, 5), 'maxP': (1, 5), 'deltaP': (2, 5),
-                            'avg': (0, 8), 'gmean': (1, 8), 'flat': (2, 8)}
+                            'avg': (0, 8), 'gmean': (1, 8), 'flat': (2, 8),
+                            'halfstart': (0, 11), 'halfend': (1, 11), 'halfdelta': (2, 11)}
 
         font = self.grid.GetCellFont(0, 0)
         font.SetWeight(wx.BOLD)
@@ -485,7 +498,7 @@ class PanelMeasure(wx.Panel):
             for y in xrange(self.grid.GetNumberRows()):
                 self.grid.SetCellFont(y, x, font)
 
-        for x in [0, 2, 3, 6, 7]:
+        for x in [0, 2, 3, 6, 7, 9, 10]:
             self.grid.AutoSizeColumn(x)
 
         toolTips = {(0, 1): 'Selection start',
@@ -499,7 +512,10 @@ class PanelMeasure(wx.Panel):
                     (2, 5): 'Power difference',
                     (0, 8): 'Mean power',
                     (1, 8): 'Geometric mean power',
-                    (2, 8): 'Spectral flatness'}
+                    (2, 8): 'Spectral flatness',
+                    (0, 11): '-3db start location',
+                    (1, 11): '-3db end location',
+                    (2, 11): '-3db bandwidth'}
         self.toolTips = GridToolTips(self.grid, toolTips)
 
         self.popupMenu = wx.Menu()
@@ -543,12 +559,14 @@ class PanelMeasure(wx.Panel):
         self.set_check_value('max', self.checkMax)
         self.set_check_value('avg', self.checkAvg)
         self.set_check_value('gmean', self.checkGMean)
+        self.set_check_value('half', self.checkHalf)
 
     def clear_checks(self):
         self.checkMin = '0'
         self.checkMax = '0'
         self.checkAvg = '0'
         self.checkGMean = '0'
+        self.checkHalf = '0'
         self.update_checks()
 
     def str_to_bool(self, string):
@@ -583,6 +601,9 @@ class PanelMeasure(wx.Panel):
                             break
                         elif control == 'gmean':
                             self.checkGMean = check
+                            break
+                        elif control == 'half':
+                            self.checkHalf = check
                             break
 
                 if self.selected is None:
@@ -623,7 +644,8 @@ class PanelMeasure(wx.Panel):
         maxP = self.str_to_bool(self.checkMax)
         avgP = self.str_to_bool(self.checkAvg)
         gMeanP = self.str_to_bool(self.checkGMean)
-        self.graph.update_measure(self.measure, minP, maxP, avgP, gMeanP)
+        halfP = self.str_to_bool(self.checkHalf)
+        self.graph.update_measure(self.measure, minP, maxP, avgP, gMeanP, halfP)
 
     def clear_measurement(self):
         self.clear_checks()
@@ -633,8 +655,6 @@ class PanelMeasure(wx.Panel):
         self.measure = None
 
     def set_selected(self, spectrum, start, end):
-        if start is None or end is None:
-            return
         sweep = slice_spectrum(spectrum, start, end)
         if sweep is None or len(sweep) == 0:
             self.clear_measurement()
@@ -657,12 +677,26 @@ class PanelMeasure(wx.Panel):
 
         flatness = gMean / avg
 
+        halfP = [None, None, maxP[1] - 3]
+        if halfP[2] >= minP[1]:
+            for (f, p) in sweep:
+                if p >= halfP[2]:
+                    halfP[0] = f
+                    break
+            for (f, p) in reversed(sweep):
+                if f <= halfP[0]:
+                    continue
+                if p >= halfP[2]:
+                    halfP[1] = f
+                    break
+
         self.set_measure_value('start',
                                "{0:.6f} MHz".format(minF))
         self.set_measure_value('end',
                                "{0:.6f} MHz".format(maxF))
         self.set_measure_value('deltaF',
                                "{0:.6f} MHz".format(maxF - minF))
+
         self.set_measure_value('minFP',
                                "{0:.6f} MHz".format(minP[0]))
         self.set_measure_value('maxFP',
@@ -675,6 +709,7 @@ class PanelMeasure(wx.Panel):
                                "{0:.2f} dB".format(maxP[1]))
         self.set_measure_value('deltaP',
                                "{0:.2f} dB".format(maxP[1] - minP[1]))
+
         self.set_measure_value('avg',
                                "{0:.2f} dB".format(avgP))
         self.set_measure_value('gmean',
@@ -682,7 +717,23 @@ class PanelMeasure(wx.Panel):
         self.set_measure_value('flat',
                                "{0:.4f}".format(flatness))
 
-        self.measure = Measure(minP, maxP, avgP, gMeanP)
+        if halfP[0] is not None:
+            text = "{0:.6f} MHz".format(halfP[0])
+        else:
+            text = ''
+        self.set_measure_value('halfstart', text)
+        if halfP[1] is not None:
+            text = "{0:.6f} MHz".format(halfP[1])
+        else:
+            text = ''
+        self.set_measure_value('halfend', text)
+        if halfP[0] is not None and halfP[1] is not None:
+            text = "{0:.6f} MHz".format(halfP[1] - halfP[0])
+        else:
+            text = ''
+        self.set_measure_value('halfdelta', text)
+
+        self.measure = Measure(minP, maxP, avgP, gMeanP, halfP)
         self.update_measure()
 
     def show(self, show):

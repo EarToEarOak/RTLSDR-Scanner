@@ -55,10 +55,18 @@ class Plotter():
         self.lineMaxP = None
         self.lineAvgP = None
         self.lineGMP = None
+        self.lineHalfP = None
+        self.lineHalfFS = None
+        self.lineHalfFE = None
+
         self.labelMinP = None
         self.labelMaxP = None
         self.labelAvgP = None
         self.labelGMP = None
+        self.labelHalfP = None
+        self.labelHalfFS = None
+        self.labelHalfFE = None
+
         self.setup_plot()
         self.set_grid(self.settings.grid)
 
@@ -85,11 +93,15 @@ class Plotter():
         self.barBase.set_label('Level (dB)')
 
         dashesAvg = [4, 5, 1, 5, 1, 5]
-        dashesGM = [1, 5, 5, 5, 5, 5]
+        dashesGM = [5, 5, 5, 5, 1, 5, 1, 5]
+        dashesHalf = [1, 5, 5, 5, 5, 5]
         self.lineMinP = Line2D([0, 0], [0, 0], linestyle='--', color='black')
         self.lineMaxP = Line2D([0, 0], [0, 0], linestyle='-.', color='black')
         self.lineAvgP = Line2D([0, 0], [0, 0], dashes=dashesAvg, color='black')
         self.lineGMP = Line2D([0, 0], [0, 0], dashes=dashesGM, color='black')
+        self.lineHalfP = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='black')
+        self.lineHalfFS = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='black')
+        self.lineHalfFE = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='black')
         if matplotlib.__version__ >= '1.3':
             effect = patheffects.withStroke(linewidth=3, foreground="w",
                                             alpha=0.75)
@@ -97,11 +109,17 @@ class Plotter():
             self.lineMaxP.set_path_effects([effect])
             self.lineAvgP.set_path_effects([effect])
             self.lineGMP.set_path_effects([effect])
+            self.lineHalfP.set_path_effects([effect])
+            self.lineHalfFS.set_path_effects([effect])
+            self.lineHalfFE.set_path_effects([effect])
 
         self.axes.add_line(self.lineMinP)
         self.axes.add_line(self.lineMaxP)
         self.axes.add_line(self.lineAvgP)
         self.axes.add_line(self.lineGMP)
+        self.axes.add_line(self.lineHalfP)
+        self.axes.add_line(self.lineHalfFS)
+        self.axes.add_line(self.lineHalfFE)
 
         box = dict(boxstyle='round', fc='white')
         self.labelMinP = Text(0, 0, 'Min', fontsize='x-small', ha="right",
@@ -111,15 +129,21 @@ class Plotter():
         self.labelAvgP = Text(0, 0, 'Mean', fontsize='x-small', ha="right",
                               va="center", bbox=box)
         self.labelGMP = Text(0, 0, 'GMean', fontsize='x-small', ha="right",
+                            va="center", bbox=box)
+        self.labelHalfP = Text(0, 0, '-3dB', fontsize='x-small', ha="right",
                               va="center", bbox=box)
-        self.labelMinP.set_visible(False)
-        self.labelMaxP.set_visible(False)
-        self.labelAvgP.set_visible(False)
-        self.labelGMP.set_visible(False)
+        self.labelHalfFS = Text(0, 0, '-3dB', fontsize='x-small', ha="center",
+                                va="top", bbox=box)
+        self.labelHalfFE = Text(0, 0, '-3dB', fontsize='x-small', ha="center",
+                                va="top", bbox=box)
+        self.hide_measure()
         self.axes.add_artist(self.labelMinP)
         self.axes.add_artist(self.labelMaxP)
         self.axes.add_artist(self.labelAvgP)
         self.axes.add_artist(self.labelGMP)
+        self.axes.add_artist(self.labelHalfP)
+        self.axes.add_artist(self.labelHalfFS)
+        self.axes.add_artist(self.labelHalfFE)
 
     def scale_plot(self, force=False):
         if self.extent is not None:
@@ -138,43 +162,54 @@ class Plotter():
                     except:
                         pass
 
-    def draw_line(self, line, xLim, y):
+    def draw_hline(self, line, label, y):
+        xLim = self.axes.get_xlim()
         line.set_visible(True)
         line.set_xdata([xLim[0], xLim[1]])
         line.set_ydata([y, y])
         self.axes.draw_artist(line)
-
-    def draw_label(self, label, xLim, y):
         label.set_visible(True)
         label.set_position((xLim[1], y))
         self.axes.draw_artist(label)
 
+    def draw_vline(self, line, label, x):
+        yLim = self.axes.get_ylim()
+        line.set_visible(True)
+        line.set_xdata([x, x])
+        line.set_ydata([yLim[0], yLim[1]])
+        self.axes.draw_artist(line)
+        label.set_visible(True)
+        label.set_position((x, yLim[1]))
+        self.axes.draw_artist(label)
+
     # TODO: update after draw
-    def draw_measure(self, background, measure, minP, maxP, avgP, gMeanP):
+    def draw_measure(self, background, measure, minP, maxP, avgP, gMeanP,
+                     halfP):
         self.hide_measure()
         canvas = self.axes.get_figure().canvas
         canvas.restore_region(background)
-        xLim = self.axes.get_xlim()
 
         if minP:
             y = measure.get_min_p()
-            self.draw_line(self.lineMinP, xLim, y)
-            self.draw_label(self.labelMinP, xLim, y)
+            self.draw_hline(self.lineMinP, self.labelMinP, y)
 
         if maxP:
             y = measure.get_max_p()
-            self.draw_line(self.lineMaxP, xLim, y)
-            self.draw_label(self.labelMaxP, xLim, y)
+            self.draw_hline(self.lineMaxP, self.labelMaxP, y)
 
         if avgP:
             y = measure.get_avg_p()
-            self.draw_line(self.lineAvgP, xLim, y)
-            self.draw_label(self.labelAvgP, xLim, y)
+            self.draw_hline(self.lineAvgP, self.labelAvgP, y)
 
         if gMeanP:
             y = measure.get_gmean_p()
-            self.draw_line(self.lineGMP, xLim, y)
-            self.draw_label(self.labelGMP, xLim, y)
+            self.draw_hline(self.lineGMP, self.labelGMP, y)
+
+        if halfP:
+            xStart, xEnd, y = measure.get_half_p()
+            self.draw_hline(self.lineHalfP, self.labelHalfP, y)
+            self.draw_vline(self.lineHalfFS, self.labelHalfFS, xStart)
+            self.draw_vline(self.lineHalfFE, self.labelHalfFE, xEnd)
 
         canvas.blit(self.axes.bbox)
 
@@ -183,10 +218,16 @@ class Plotter():
         self.lineMaxP.set_visible(False)
         self.lineAvgP.set_visible(False)
         self.lineGMP.set_visible(False)
+        self.lineHalfP.set_visible(False)
+        self.lineHalfFS.set_visible(False)
+        self.lineHalfFE.set_visible(False)
         self.labelMinP.set_visible(False)
         self.labelMaxP.set_visible(False)
         self.labelAvgP.set_visible(False)
         self.labelGMP.set_visible(False)
+        self.labelHalfP.set_visible(False)
+        self.labelHalfFS.set_visible(False)
+        self.labelHalfFE.set_visible(False)
 
     def redraw_plot(self):
         if self.figure is not None:
