@@ -155,6 +155,10 @@ class Plotter():
         canvas.restore_region(background)
         xLim = self.axes.get_xlim()
 
+        # TODO: update after draw
+        if self.axes._cachedRenderer is not None:
+            return
+
         if minP:
             y = measure.get_min_p()
             self.draw_line(self.lineMinP, xLim, y)
