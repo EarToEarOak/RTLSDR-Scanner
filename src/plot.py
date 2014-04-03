@@ -149,15 +149,12 @@ class Plotter():
         label.set_position((xLim[1], y))
         self.axes.draw_artist(label)
 
+    # TODO: update after draw
     def draw_measure(self, background, measure, minP, maxP, avgP, gMeanP):
         self.hide_measure()
         canvas = self.axes.get_figure().canvas
         canvas.restore_region(background)
         xLim = self.axes.get_xlim()
-
-        # TODO: update after draw
-        if self.axes._cachedRenderer is not None:
-            return
 
         if minP:
             y = measure.get_min_p()
