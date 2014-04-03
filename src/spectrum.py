@@ -155,7 +155,7 @@ def split_spectrum_sort(spectrum):
 
 
 def slice_spectrum(spectrum, start, end):
-    if start is None or end is None:
+    if spectrum is None or start is None or end is None:
         return None
     sweepTemp = {}
     if len(spectrum) < 1:
