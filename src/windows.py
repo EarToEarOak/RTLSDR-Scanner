@@ -37,7 +37,7 @@ from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
 import wx
 
 from constants import Display
-from misc import  close_modeless
+from misc import  close_modeless, db_to_level, level_to_db
 from plot import Plotter
 from plot3d import Plotter3d
 from plot_controls import MouseZoom, MouseSelect
@@ -440,8 +440,12 @@ class PanelMeasure(wx.Panel):
         self.grid.CreateGrid(3, 9)
         self.grid.EnableEditing(False)
         self.grid.EnableDragGridSize(False)
-        self.grid.SetColLabelSize(0)
-        self.grid.SetRowLabelSize(0)
+        self.grid.SetColLabelSize(1)
+        self.grid.SetRowLabelSize(1)
+        for x in xrange(self.grid.GetNumberRows()):
+            self.grid.SetRowLabelValue(x, '')
+        for y in xrange(self.grid.GetNumberCols()):
+            self.grid.SetColLabelValue(y, '')
 
         self.locsCheck = {'min': (0, 2), 'max': (1, 2), 'avg': (0, 6),
                           'gmean': (1, 6)}
@@ -477,7 +481,7 @@ class PanelMeasure(wx.Panel):
 
         font = self.grid.GetCellFont(0, 0)
         font.SetWeight(wx.BOLD)
-        for x in [0, 3, 7]:
+        for x in [0, 3, 7, 10]:
             for y in xrange(self.grid.GetNumberRows()):
                 self.grid.SetCellFont(y, x, font)
 
@@ -508,7 +512,7 @@ class PanelMeasure(wx.Panel):
         self.Bind(wxGrid.EVT_GRID_CELL_LEFT_CLICK, self.on_cell_click)
 
         box = wx.BoxSizer(wx.VERTICAL)
-        box.Add(self.grid, 1, wx.ALIGN_CENTER)
+        box.Add(self.grid, 1, wx.ALIGN_CENTER | wx.TOP, border=10)
         self.SetSizer(box)
 
     def set_check_editor(self, cell, editor):
@@ -641,15 +645,15 @@ class PanelMeasure(wx.Panel):
         minP = min(sweep, key=lambda v: v[1])
         maxP = max(sweep, key=lambda v: v[1])
 
-        powers = [Decimal(math.pow(10, p[1] / 10.0)) for p in sweep]
+        powers = [Decimal(db_to_level(p[1])) for p in sweep]
         length = len(powers)
 
         avg = sum(powers, Decimal(0)) / length
-        avgP = 10 * math.log10(avg)
+        avgP = level_to_db(avg)
 
         product = reduce(mul, iter(powers))
         gMean = product ** (Decimal(1.0) / length)
-        gMeanP = 10 * math.log10(gMean)
+        gMeanP = level_to_db(gMean)
 
         flatness = gMean / avg
 

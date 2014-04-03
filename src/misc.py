@@ -23,6 +23,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import math
 import os
 import sys
 import time
@@ -73,6 +74,14 @@ class ValidatorCoord(wx.PyValidator):
 
     def Clone(self):
         return ValidatorCoord(self.isLat)
+
+
+def level_to_db(level):
+    return 10 * math.log10(level)
+
+
+def db_to_level(dB):
+    return math.pow(10, dB / 10.0)
 
 
 def next_2_to_pow(val):
