@@ -114,7 +114,8 @@ class PanelGraph(wx.Panel):
 
         self.measureTable = PanelMeasure(self)
 
-        self.toolbar = NavigationToolbar(self.canvas, self, settings)
+        self.toolbar = NavigationToolbar(self.canvas, self, settings,
+                                         self.on_nav_changed)
         self.toolbar.Realize()
 
         vbox = wx.BoxSizer(wx.VERTICAL)
@@ -161,6 +162,9 @@ class PanelGraph(wx.Panel):
     def on_draw(self, _event):
         axes = self.plot.get_axes()
         self.background = self.canvas.copy_from_bbox(axes.bbox)
+
+    def on_nav_changed(self, _event):
+        self.draw_measure()
 
     def on_select(self):
         self.hide_measure()

@@ -23,6 +23,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from matplotlib.backend_bases import NavigationToolbar2
 from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
 import wx
 
@@ -63,9 +64,10 @@ class Statusbar(wx.StatusBar):
 
 
 class NavigationToolbar(NavigationToolbar2WxAgg):
-    def __init__(self, canvas, panel, settings):
+    def __init__(self, canvas, panel, settings, onNavChange):
         self.panel = panel
         self.settings = settings
+        self.onNavChange = onNavChange
         self.plot = None
         self.extraTools = []
 
@@ -103,6 +105,26 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
                           shortHelp='Auto range level')
         self.ToggleTool(self.autoLId, settings.autoL)
         wx.EVT_TOOL(self, self.autoLId, self.on_check_auto_l)
+
+    def home(self, event):
+        NavigationToolbar2.home(self, event)
+        self.onNavChange(None)
+
+    def back(self, event):
+        NavigationToolbar2.back(self, event)
+        self.onNavChange(None)
+
+    def forward(self, event):
+        NavigationToolbar2.forward(self, event)
+        self.onNavChange(None)
+
+    def drag_pan(self, event):
+        NavigationToolbar2.drag_pan(self, event)
+        self.onNavChange(None)
+
+    def release_zoom(self, event):
+        NavigationToolbar2.release_zoom(self, event)
+        self.onNavChange(None)
 
     def on_check_auto_f(self, event):
         self.settings.autoF = event.Checked()
