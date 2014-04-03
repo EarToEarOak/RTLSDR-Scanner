@@ -99,6 +99,8 @@ class PanelGraph(wx.Panel):
         self.selectStart = None
         self.selectEnd = None
 
+        self.menuClearSelect = []
+
         self.measure = None
         self.showMinP = None
         self.showMaxP = None
@@ -158,6 +160,14 @@ class PanelGraph(wx.Panel):
         self.measureTable.show(self.settings.showMeasure)
         self.panel.SetFocus()
 
+    def add_menu_clear_select(self, menu):
+        self.menuClearSelect.append(menu)
+        menu.Enable(False)
+
+    def enable_menu(self, state):
+        for menu in self.menuClearSelect:
+            menu.Enable(state)
+
     def on_draw(self, _event):
         axes = self.plot.get_axes()
         self.background = self.canvas.copy_from_bbox(axes.bbox)
@@ -169,6 +179,7 @@ class PanelGraph(wx.Panel):
         self.hide_measure()
 
     def on_selected(self, start, end):
+        self.enable_menu(True)
         self.on_draw(None)
         self.selectStart = start
         self.selectEnd = end
@@ -254,6 +265,7 @@ class PanelGraph(wx.Panel):
         self.selectStart = None
         self.selectStop = None
         self.mouseSelect.clear()
+        self.enable_menu(False)
 
     def close(self):
         close_modeless()

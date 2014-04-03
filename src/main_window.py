@@ -272,6 +272,7 @@ class FrameMain(wx.Frame):
         menuView = wx.Menu()
         self.menuClearSelect = menuView.Append(wx.ID_ANY, "Clear selection",
                                                "Clear current selection")
+        self.graph.add_menu_clear_select(self.menuClearSelect)
         self.menuShowMeasure = menuView.Append(wx.ID_ANY, "Show &measurements",
                                                "Show measurements window",
                                                kind=wx.ITEM_CHECK)
@@ -359,6 +360,7 @@ class FrameMain(wx.Frame):
         self.popupMenu.AppendSeparator()
         self.popupmenuClearSelect = self.popupMenu.Append(wx.ID_ANY, "Clear selection",
                                                           "Clear current selection")
+        self.graph.add_menu_clear_select(self.popupmenuClearSelect)
         self.popupMenuShowMeasure = self.popupMenu.Append(wx.ID_ANY,
                                                           "Show &measurements",
                                                           "Show measurements window",
