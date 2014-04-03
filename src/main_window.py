@@ -252,7 +252,7 @@ class FrameMain(wx.Frame):
         menuFile.AppendMenu(wx.ID_ANY, "&Recent Files", recent)
         menuFile.AppendSeparator()
         self.menuSave = menuFile.Append(wx.ID_SAVE, "&Save As...",
-                                          "Save polot")
+                                          "Save plot")
         self.menuExport = menuFile.Append(wx.ID_ANY, "&Export...",
                                             "Export plot")
         menuFile.AppendSeparator()
