@@ -97,6 +97,12 @@ class Spectrogram:
                 if self.settings.autoT or force:
                     self.axes.set_ylim(extent[2], extent[3])
 
+    def draw_measure(self, _background, _measure, _minP, _maxP, _avgP, _gMeanP):
+        pass
+
+    def hide_measure(self):
+        pass
+
     def redraw_plot(self):
         if self.figure is not None:
             post_event(self.notify, EventThreadStatus(Event.DRAW))
