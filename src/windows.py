@@ -95,6 +95,8 @@ class PanelGraph(wx.Panel):
         self.spectrum = None
         self.extent = None
 
+        self.background = None
+
         self.selectStart = None
         self.selectEnd = None
 
@@ -214,7 +216,7 @@ class PanelGraph(wx.Panel):
                                    self.showAvgP,
                                    self.showGMeanP)
 
-    def set_measure(self, measure, showMinP, showMaxP, showAvgP, showGMeanP):
+    def update_measure(self, measure, showMinP, showMaxP, showAvgP, showGMeanP):
         self.measure = measure
         self.showMinP = showMinP
         self.showMaxP = showMaxP
@@ -240,6 +242,13 @@ class PanelGraph(wx.Panel):
 
     def clear_plots(self):
         self.plot.clear_plots()
+
+    def clear_selection(self):
+        self.measure = None
+        self.measureTable.clear_measurement()
+        self.selectStart = None
+        self.selectStop = None
+        self.mouseSelect.clear()
 
     def close(self):
         close_modeless()
@@ -415,10 +424,10 @@ class PanelMeasure(wx.Panel):
 
         self.measure = None
 
-        self.checkMin = '0'
-        self.checkMax = '0'
-        self.checkAvg = '0'
-        self.checkGMean = '0'
+        self.checkMin = None
+        self.checkMax = None
+        self.checkAvg = None
+        self.checkGMean = None
 
         self.selected = None
 
@@ -443,10 +452,7 @@ class PanelMeasure(wx.Panel):
         self.grid.SetCellTextColour(2, 2, colour)
         self.grid.SetCellTextColour(2, 6, colour)
 
-        self.set_check_value('min', self.checkMin)
-        self.set_check_value('max', self.checkMax)
-        self.set_check_value('avg', self.checkAvg)
-        self.set_check_value('gmean', self.checkGMean)
+        self.clear_checks()
 
         self.grid.SetColFormatBool(2)
         self.grid.SetColFormatBool(6)
@@ -525,6 +531,19 @@ class PanelMeasure(wx.Panel):
         self.grid.SetCellTextColour(row, col, colour)
         self.grid.Refresh()
 
+    def update_checks(self):
+        self.set_check_value('min', self.checkMin)
+        self.set_check_value('max', self.checkMax)
+        self.set_check_value('avg', self.checkAvg)
+        self.set_check_value('gmean', self.checkGMean)
+
+    def clear_checks(self):
+        self.checkMin = '0'
+        self.checkMax = '0'
+        self.checkAvg = '0'
+        self.checkGMean = '0'
+        self.update_checks()
+
     def str_to_bool(self, string):
         if string == '1':
             return True
@@ -564,7 +583,7 @@ class PanelMeasure(wx.Panel):
                     row = self.selected[0]
                     col = self.selected[1]
                     self.grid.SetGridCursor(row, col)
-                self.update_plot()
+                self.update_measure()
 
         elif (row, col) in self.locsMeasure.itervalues():
             self.selected = (row, col)
@@ -592,18 +611,24 @@ class PanelMeasure(wx.Panel):
         wx.TheClipboard.SetData(clip)
         wx.TheClipboard.Close()
 
-    def update_plot(self):
+    def update_measure(self):
         minP = self.str_to_bool(self.checkMin)
         maxP = self.str_to_bool(self.checkMax)
         avgP = self.str_to_bool(self.checkAvg)
         gMeanP = self.str_to_bool(self.checkGMean)
-        self.graph.set_measure(self.measure, minP, maxP, avgP, gMeanP)
+        self.graph.update_measure(self.measure, minP, maxP, avgP, gMeanP)
+
+    def clear_measurement(self):
+        self.clear_checks()
+        for control in self.locsMeasure:
+                    self.set_measure_value(control, "")
+        self.update_measure()
+        self.measure = None
 
     def set_selected(self, spectrum, start, end):
         sweep = slice_spectrum(spectrum, start, end)
         if sweep is None or len(sweep) == 0:
-            for control in self.locsMeasure:
-                self.set_measure_value(control, "")
+            self.clear_measurement()
             return
 
         minF = min(sweep)[0]
@@ -649,7 +674,7 @@ class PanelMeasure(wx.Panel):
                                "{0:.4f}".format(flatness))
 
         self.measure = Measure(minP, maxP, avgP, gMeanP)
-        self.update_plot()
+        self.update_measure()
 
     def show(self, show):
         if show:

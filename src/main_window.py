@@ -92,6 +92,8 @@ class FrameMain(wx.Frame):
         self.menuProperties = None
         self.menuPref = None
         self.menuAdvPref = None
+        self.menuClearSelect = None
+        self.menuShowMeasure = None
         self.menuDevices = None
         self.menuStart = None
         self.menuStop = None
@@ -105,6 +107,7 @@ class FrameMain(wx.Frame):
         self.popupMenuStopEnd = None
         self.popupMenuRangeLim = None
         self.popupMenuPointsLim = None
+        self.popupMenuClearSelect = None
         self.popupMenuShowMeasure = None
 
         self.graph = None
@@ -267,6 +270,8 @@ class FrameMain(wx.Frame):
                                    "Device selection and configuration")
 
         menuView = wx.Menu()
+        self.menuClearSelect = menuView.Append(wx.ID_ANY, "Clear selection",
+                                               "Clear current selection")
         self.menuShowMeasure = menuView.Append(wx.ID_ANY, "Show &measurements",
                                                "Show measurements window",
                                                kind=wx.ITEM_CHECK)
@@ -313,6 +318,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_pref, self.menuPref)
         self.Bind(wx.EVT_MENU, self.on_adv_pref, self.menuAdvPref)
         self.Bind(wx.EVT_MENU, self.on_devices, self.menuDevices)
+        self.Bind(wx.EVT_MENU, self.on_clear_select, self.menuClearSelect)
         self.Bind(wx.EVT_MENU, self.on_show_measure, self.menuShowMeasure)
         self.Bind(wx.EVT_MENU, self.on_start, self.menuStart)
         self.Bind(wx.EVT_MENU, self.on_stop, self.menuStop)
@@ -351,6 +357,8 @@ class FrameMain(wx.Frame):
         self.popupMenuPointsLim.Check(self.settings.pointsLimit)
 
         self.popupMenu.AppendSeparator()
+        self.popupmenuClearSelect = self.popupMenu.Append(wx.ID_ANY, "Clear selection",
+                                                          "Clear current selection")
         self.popupMenuShowMeasure = self.popupMenu.Append(wx.ID_ANY,
                                                           "Show &measurements",
                                                           "Show measurements window",
@@ -362,6 +370,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_stop_end, self.popupMenuStopEnd)
         self.Bind(wx.EVT_MENU, self.on_range_lim, self.popupMenuRangeLim)
         self.Bind(wx.EVT_MENU, self.on_points_lim, self.popupMenuPointsLim)
+        self.Bind(wx.EVT_MENU, self.on_clear_select, self.popupmenuClearSelect)
         self.Bind(wx.EVT_MENU, self.on_show_measure, self.popupMenuShowMeasure)
 
         self.Bind(wx.EVT_CONTEXT_MENU, self.on_popup_menu)
@@ -471,6 +480,9 @@ class FrameMain(wx.Frame):
         dlg = DialogCompare(self, self.settings.dirScans, self.filename)
         dlg.ShowModal()
         dlg.Destroy()
+
+    def on_clear_select(self, _event):
+        self.graph.clear_selection()
 
     def on_show_measure(self, event):
         show = event.Checked()

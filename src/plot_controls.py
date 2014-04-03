@@ -91,6 +91,9 @@ class MouseSelect():
         if self.selector is not None:
             self.selector.draw(xMin, xMax)
 
+    def clear(self):
+        self.selector.clear()
+
 
 # Based on http://matplotlib.org/1.3.1/users/event_handling.html
 class RangeSelector():
@@ -187,6 +190,11 @@ class RangeSelector():
             canvas.restore_region(self.background)
             self.axes.draw_artist(self.rect)
             canvas.blit(self.axes.bbox)
+
+    def clear(self):
+        self.rect.set_visible(False)
+        canvas = self.axes.get_figure().canvas
+        canvas.draw()
 
 
 if __name__ == '__main__':
