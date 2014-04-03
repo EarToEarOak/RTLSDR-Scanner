@@ -24,7 +24,6 @@
 #
 
 from decimal import Decimal
-import math
 from operator import mul
 
 from matplotlib import cm
