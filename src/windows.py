@@ -128,12 +128,10 @@ class PanelGraph(wx.Panel):
         self.canvas.mpl_connect('motion_notify_event', callbackMotion)
         self.canvas.mpl_connect('draw_event', self.on_draw)
 
-        self.get_axes().callbacks.connect('xlim_changed', self.on_changed)
-        self.get_axes().callbacks.connect('ylim_changed', self.on_changed)
-
     def create_plot(self):
         if self.plot is not None:
             self.plot.close()
+            self.clear_selection()
 
         if self.settings.display == Display.PLOT:
             self.plot = Plotter(self.notify, self.figure, self.settings,
@@ -160,6 +158,8 @@ class PanelGraph(wx.Panel):
         self.panel.SetFocus()
 
     def on_draw(self, _event):
+        self.get_axes().callbacks.connect('xlim_changed', self.on_changed)
+        self.get_axes().callbacks.connect('ylim_changed', self.on_changed)
         axes = self.plot.get_axes()
         self.background = self.canvas.copy_from_bbox(axes.bbox)
 
@@ -175,6 +175,9 @@ class PanelGraph(wx.Panel):
         self.selectEnd = end
         self.measureTable.set_selected(self.spectrum, start, end)
         self.draw_measure()
+
+    def draw(self):
+        self.canvas.draw()
 
     def show_measureTable(self, show):
         self.measureTable.show(show)
@@ -626,6 +629,8 @@ class PanelMeasure(wx.Panel):
         self.measure = None
 
     def set_selected(self, spectrum, start, end):
+        if start is None or end is None:
+            return
         sweep = slice_spectrum(spectrum, start, end)
         if sweep is None or len(sweep) == 0:
             self.clear_measurement()
@@ -688,10 +693,12 @@ class PanelMeasure(wx.Panel):
             self.set_check_read_only('min', False)
             self.set_check_read_only('max', False)
             self.set_check_read_only('avg', False)
+            self.set_check_read_only('gmean', False)
         elif display == Display.SPECT:
             self.set_check_read_only('min', True)
             self.set_check_read_only('max', True)
             self.set_check_read_only('avg', True)
+            self.set_check_read_only('gmean', True)
 
 
 if __name__ == '__main__':

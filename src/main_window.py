@@ -652,7 +652,7 @@ class FrameMain(wx.Frame):
                               self.settings.mode == Mode.CONTIN)
             self.progress()
         elif status == Event.DRAW:
-            self.graph.get_canvas().draw()
+            self.graph.draw()
         elif status == Event.VER_UPD:
             self.update_checked(True, freq, data)
         elif status == Event.VER_NOUPD:
