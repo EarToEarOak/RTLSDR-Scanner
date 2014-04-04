@@ -92,7 +92,8 @@ class MouseSelect():
             self.selector.draw(xMin, xMax)
 
     def clear(self):
-        self.selector.clear()
+        if self.selector is not None:
+            self.selector.clear()
 
 
 # Based on http://matplotlib.org/1.3.1/users/event_handling.html
