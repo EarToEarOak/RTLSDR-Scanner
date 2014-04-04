@@ -694,8 +694,6 @@ class PanelMeasure(wx.Panel):
                     halfP[0] = f
                     break
             for (f, p) in reversed(sweep):
-                if f <= halfP[0]:
-                    continue
                 if p >= halfP[2]:
                     halfP[1] = f
                     break
