@@ -117,9 +117,9 @@ class Plotter3d():
         self.axes.set_title(title)
 
     def set_plot(self, data, extent, annotate=False):
-        if self.threadPlot is not None and self.threadPlot.isAlive():
+        if self.threadPlot is not None:
             self.threadPlot.cancel()
-            self.threadPlot.join()
+            self.threadPlot = None
 
         self.extent = extent
         self.threadPlot = ThreadPlot(self, self.lock, self.axes,
@@ -128,7 +128,8 @@ class Plotter3d():
                                      self.settings.colourMap,
                                      self.settings.autoF,
                                      self.barBase,
-                                     annotate).start()
+                                     annotate)
+        self.threadPlot.start()
 
     def clear_plots(self):
         children = self.axes.get_children()
@@ -211,7 +212,7 @@ class ThreadPlot(threading.Thread):
                 if self.annotate:
                     self.annotate_plot()
 
-        if total > 0:
+        if total > 0 and not self.abort:
             self.parent.scale_plot()
             self.parent.redraw_plot()
 
