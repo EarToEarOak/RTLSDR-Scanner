@@ -108,6 +108,8 @@ class PanelGraph(wx.Panel):
         self.showGMeanP = None
         self.showHalfP = None
 
+        self.doDraw = False
+
         wx.Panel.__init__(self, panel)
 
         self.figure = matplotlib.figure.Figure(facecolor='white')
@@ -130,6 +132,7 @@ class PanelGraph(wx.Panel):
 
         self.canvas.mpl_connect('motion_notify_event', callbackMotion)
         self.canvas.mpl_connect('draw_event', self.on_draw)
+        self.canvas.mpl_connect('idle_event', self.on_idle)
 
     def create_plot(self):
         if self.plot is not None:
@@ -186,8 +189,13 @@ class PanelGraph(wx.Panel):
         self.measureTable.set_selected(self.spectrum, start, end)
         self.draw_measure()
 
+    def on_idle(self, _event):
+        if self.doDraw:
+            self.canvas.draw()
+            self.doDraw = False
+
     def draw(self):
-        self.canvas.draw()
+        self.doDraw = True
 
     def show_measureTable(self, show):
         self.measureTable.show(show)
