@@ -279,7 +279,7 @@ class PanelGraph(wx.Panel):
         self.measure = None
         self.measureTable.clear_measurement()
         self.selectStart = None
-        self.selectStop = None
+        self.selectEnd = None
         self.mouseSelect.clear()
         self.enable_menu(False)
 
