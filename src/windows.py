@@ -495,10 +495,6 @@ class PanelMeasure(wx.Panel):
         self.set_check_editor('gmean')
         self.set_check_editor('half')
 
-        self.grid.SetColFormatBool(3)
-        self.grid.SetColFormatBool(8)
-        self.grid.SetColFormatBool(12)
-
         colour = self.grid.GetBackgroundColour()
         self.grid.SetCellTextColour(2, 3, colour)
         self.grid.SetCellTextColour(2, 8, colour)
@@ -562,6 +558,7 @@ class PanelMeasure(wx.Panel):
         (row, col) = self.locsCheck[cell]
         self.grid.SetCellEditor(row, col, editor)
         self.grid.SetCellAlignment(row, col, wx.ALIGN_RIGHT, wx.ALIGN_CENTRE)
+        self.grid.SetColFormatBool(col)
 
     def set_check_value(self, cell, value):
         (row, col) = self.locsCheck[cell]
