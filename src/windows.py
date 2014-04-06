@@ -538,7 +538,6 @@ class PanelMeasure(wx.Panel):
         self.Bind(wx.EVT_MENU, self.on_copy, self.popupMenuCopy)
 
         self.Bind(wxGrid.EVT_GRID_CELL_RIGHT_CLICK, self.on_popup_menu)
-        self.Bind(wxGrid.EVT_GRID_RANGE_SELECT, self.on_select_range)
         self.Bind(wxGrid.EVT_GRID_CELL_LEFT_CLICK, self.on_cell_click)
 
         box = wx.BoxSizer(wx.VERTICAL)
@@ -641,14 +640,11 @@ class PanelMeasure(wx.Panel):
         elif (row, col) in self.locsMeasure.itervalues():
             self.selected = (row, col)
             self.grid.SetGridCursor(row, col)
-        else:
+        elif self.selected is None:
             self.selected = self.locsMeasure['start']
             row = self.selected[0]
             col = self.selected[1]
             self.grid.SetGridCursor(row, col)
-
-    def on_select_range(self, _event):
-        self.selected = None
 
     def on_popup_menu(self, _event):
         if self.selected:
