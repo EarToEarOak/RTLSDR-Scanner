@@ -513,8 +513,10 @@ class PanelMeasure(wx.Panel):
                             'avg': (0, 10), 'gmean': (1, 10), 'flat': (2, 10),
                             'halfstart': (0, 14), 'halfend': (1, 14), 'halfdelta': (2, 14)}
 
-        for x in [0, 3, 8, 12]:
-            self.grid.AutoSizeColumn(x)
+        for _desc, (_row, col) in self.locsDesc.iteritems():
+            self.grid.AutoSizeColumn(col)
+        for _desc, (_row, col) in self.locsCheck.iteritems():
+            self.grid.AutoSizeColumn(col)
 
         toolTips = {}
         toolTips[self.locsMeasure['start']] = 'Selection start'
