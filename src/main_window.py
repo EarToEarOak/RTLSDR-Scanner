@@ -162,8 +162,7 @@ class FrameMain(wx.Frame):
     def create_widgets(self):
         panel = wx.Panel(self)
 
-        self.graph = PanelGraph(panel, self, self.settings, self.lock,
-                                self.on_motion)
+        self.graph = PanelGraph(panel, self, self.settings, self.on_motion)
         self.toolbar = wx.Panel(panel)
 
         self.buttonStart = wx.Button(self.toolbar, wx.ID_ANY, 'Start')

@@ -41,13 +41,12 @@ from spectrum import epoch_to_mpl, split_spectrum
 
 
 class Spectrogram:
-    def __init__(self, notify, figure, settings, lock):
+    def __init__(self, notify, figure, settings):
         self.notify = notify
         self.figure = figure
         self.settings = settings
         self.data = [[], [], []]
         self.index = 0
-        self.lock = lock
         self.axes = None
         self.plot = None
         self.extent = None
@@ -81,23 +80,22 @@ class Spectrogram:
 
     def scale_plot(self, force=False):
         if self.figure is not None and self.plot is not None:
-            with self.lock:
-                extent = self.plot.get_extent()
-                if self.settings.autoF or force:
-                    if extent[0] == extent[1]:
-                        extent[1] += 1
-                    self.axes.set_xlim(extent[0], extent[1])
-                if self.settings.autoL or force:
-                    vmin, vmax = self.plot.get_clim()
-                    self.barBase.set_clim(vmin, vmax)
-                    try:
-                        self.barBase.draw_all()
-                    except:
-                        pass
-                if self.settings.autoT or force:
-                    self.axes.set_ylim(extent[2], extent[3])
+            extent = self.plot.get_extent()
+            if self.settings.autoF or force:
+                if extent[0] == extent[1]:
+                    extent[1] += 1
+                self.axes.set_xlim(extent[0], extent[1])
+            if self.settings.autoL or force:
+                vmin, vmax = self.plot.get_clim()
+                self.barBase.set_clim(vmin, vmax)
+                try:
+                    self.barBase.draw_all()
+                except:
+                    pass
+            if self.settings.autoT or force:
+                self.axes.set_ylim(extent[2], extent[3])
 
-    def draw_measure(self, _background, _measure, _minP, _maxP, _avgP, _gMeanP):
+    def draw_measure(self, *args):
         pass
 
     def hide_measure(self):
@@ -110,16 +108,15 @@ class Spectrogram:
     def get_axes(self):
         return self.axes
 
+    def get_plot_thread(self):
+        return self.threadPlot
+
     def set_title(self, title):
         self.axes.set_title(title)
 
     def set_plot(self, data, extent, annotate=False):
-        if self.threadPlot is not None:
-            self.threadPlot.cancel()
-            self.threadPlot = None
-
         self.extent = extent
-        self.threadPlot = ThreadPlot(self, self.lock, self.axes,
+        self.threadPlot = ThreadPlot(self, self.axes,
                                      data, self.extent,
                                      self.settings.retainMax,
                                      self.settings.colourMap,
@@ -157,12 +154,11 @@ class Spectrogram:
 
 
 class ThreadPlot(threading.Thread):
-    def __init__(self, parent, lock, axes, data, extent, retainMax, colourMap,
+    def __init__(self, parent, axes, data, extent, retainMax, colourMap,
                  autoL, barBase, annotate):
         threading.Thread.__init__(self)
         self.name = "Plot"
         self.parent = parent
-        self.lock = lock
         self.axes = axes
         self.data = data
         self.extent = extent
@@ -171,45 +167,45 @@ class ThreadPlot(threading.Thread):
         self.autoL = autoL
         self.barBase = barBase
         self.annotate = annotate
-        self.abort = False
 
     def run(self):
-        with self.lock:
-            if self.abort:
-                return
-            total = len(self.data)
-            if total > 0:
-                width = len(self.data[min(self.data)])
-                c = numpy.ma.masked_all((self.retainMax, width))
-                self.parent.clear_plots()
-                j = self.retainMax
-                for ys in self.data:
-                    j -= 1
-                    _xs, zs = split_spectrum(self.data[ys])
-                    for i in range(len(zs)):
-                        if self.abort:
-                            return
-                        c[j, i] = zs[i]
+        if self.data is None:
+            self.parent.threadPlot = None
+            return
 
-                norm = None
-                if not self.autoL:
-                    minY, maxY = self.barBase.get_clim()
-                    norm = Normalize(vmin=minY, vmax=maxY)
+        total = len(self.data)
+        if total > 0:
+            width = len(self.data[min(self.data)])
+            c = numpy.ma.masked_all((self.retainMax, width))
+            self.parent.clear_plots()
+            j = self.retainMax
+            for ys in self.data:
+                j -= 1
+                _xs, zs = split_spectrum(self.data[ys])
+                for i in range(len(zs)):
+                    c[j, i] = zs[i]
 
-                extent = self.extent.get_ft()
-                self.parent.plot = self.axes.imshow(c, aspect='auto',
-                                                    extent=extent,
-                                                    norm=norm,
-                                                    cmap=cm.get_cmap(self.colourMap),
-                                                    interpolation='spline16',
-                                                    gid="plot")
+            norm = None
+            if not self.autoL:
+                minY, maxY = self.barBase.get_clim()
+                norm = Normalize(vmin=minY, vmax=maxY)
 
-                if self.annotate:
-                    self.annotate_plot()
+            extent = self.extent.get_ft()
+            self.parent.plot = self.axes.imshow(c, aspect='auto',
+                                                extent=extent,
+                                                norm=norm,
+                                                cmap=cm.get_cmap(self.colourMap),
+                                                interpolation='spline16',
+                                                gid="plot")
 
-        if total > 0 and not self.abort:
+            if self.annotate:
+                self.annotate_plot()
+
+        if total > 0:
             self.parent.scale_plot()
             self.parent.redraw_plot()
+
+        self.parent.threadPlot = None
 
     def annotate_plot(self):
 
@@ -250,9 +246,6 @@ class ThreadPlot(threading.Thread):
                 if child.get_gid() is not None:
                     if child.get_gid() == 'peak':
                         child.remove()
-
-    def cancel(self):
-        self.abort = True
 
 
 if __name__ == '__main__':

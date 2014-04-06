@@ -23,6 +23,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import copy
+
 from matplotlib import cm
 import matplotlib
 from matplotlib.backends.backend_wxagg import \
@@ -41,6 +43,7 @@ from spectrogram import Spectrogram
 from spectrum import split_spectrum_sort, Measure
 from toolbars import NavigationToolbar, NavigationToolbarCompare
 import wx.grid as wxGrid
+
 
 
 class CellRenderer(wxGrid.PyGridCellRenderer):
@@ -82,12 +85,11 @@ class GridToolTips():
 
 
 class PanelGraph(wx.Panel):
-    def __init__(self, panel, notify, settings, lock, callbackMotion):
+    def __init__(self, panel, notify, settings, callbackMotion):
         self.panel = panel
         self.notify = notify
         self.plot = None
         self.settings = settings
-        self.lock = lock
         self.spectrum = None
         self.extent = None
 
@@ -131,20 +133,20 @@ class PanelGraph(wx.Panel):
         self.canvas.mpl_connect('draw_event', self.on_draw)
         self.canvas.mpl_connect('idle_event', self.on_idle)
 
+        self.timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.on_timer, self.timer)
+
     def create_plot(self):
         if self.plot is not None:
             self.plot.close()
             self.clear_selection()
 
         if self.settings.display == Display.PLOT:
-            self.plot = Plotter(self.notify, self.figure, self.settings,
-                                self.lock)
+            self.plot = Plotter(self.notify, self.figure, self.settings)
         elif self.settings.display == Display.SPECT:
-            self.plot = Spectrogram(self.notify, self.figure, self.settings,
-                                    self.lock)
+            self.plot = Spectrogram(self.notify, self.figure, self.settings)
         else:
-            self.plot = Plotter3d(self.notify, self.figure, self.settings,
-                                  self.lock)
+            self.plot = Plotter3d(self.notify, self.figure, self.settings)
 
         self.toolbar.set_plot(self.plot)
         self.toolbar.set_type(self.settings.display)
@@ -187,9 +189,13 @@ class PanelGraph(wx.Panel):
         self.draw_measure()
 
     def on_idle(self, _event):
-        if self.doDraw:
+        if self.doDraw and self.plot.get_plot_thread() is None:
             self.canvas.draw()
             self.doDraw = False
+
+    def on_timer(self, _event):
+        self.timer.Stop()
+        self.set_plot(None, None, self.annotate)
 
     def draw(self):
         self.doDraw = True
@@ -199,11 +205,17 @@ class PanelGraph(wx.Panel):
         self.Layout()
 
     def set_plot(self, spectrum, extent, annotate=False):
-        self.spectrum = spectrum
-        self.extent = extent
-        self.plot.set_plot(spectrum, extent, annotate)
-        self.measureTable.set_selected(spectrum, self.selectStart,
-                                       self.selectEnd)
+        if spectrum is not None and extent is not None:
+            self.spectrum = copy.copy(spectrum)
+            self.extent = extent
+            self.annotate = annotate
+        if self.plot.get_plot_thread() is None:
+            self.timer.Stop()
+            self.plot.set_plot(spectrum, extent, annotate)
+            self.measureTable.set_selected(spectrum, self.selectStart,
+                                           self.selectEnd)
+        else:
+            self.timer.Start(200, oneShot=True)
 
     def set_plot_title(self):
         if len(self.settings.devices) > 0:

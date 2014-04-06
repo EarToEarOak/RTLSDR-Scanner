@@ -41,12 +41,11 @@ from events import EventThreadStatus, Event, post_event
 
 
 class Plotter():
-    def __init__(self, notify, figure, settings, lock):
+    def __init__(self, notify, figure, settings):
         self.notify = notify
         self.figure = figure
         self.settings = settings
         self.average = settings.average
-        self.lock = lock
         self.axes = None
         self.bar = None
         self.threadPlot = None
@@ -147,20 +146,19 @@ class Plotter():
 
     def scale_plot(self, force=False):
         if self.extent is not None:
-            with self.lock:
-                if self.settings.autoF or force:
-                    self.axes.set_xlim(self.extent.get_f())
-                if self.settings.autoL or force:
-                    self.axes.set_ylim(self.extent.get_l())
-                    self.barBase.set_clim(self.extent.get_l())
-                    norm = Normalize(vmin=self.extent.get_l()[0],
-                                     vmax=self.extent.get_l()[1])
-                    for collection in self.axes.collections:
-                        collection.set_norm(norm)
-                    try:
-                        self.barBase.draw_all()
-                    except:
-                        pass
+            if self.settings.autoF or force:
+                self.axes.set_xlim(self.extent.get_f())
+            if self.settings.autoL or force:
+                self.axes.set_ylim(self.extent.get_l())
+                self.barBase.set_clim(self.extent.get_l())
+                norm = Normalize(vmin=self.extent.get_l()[0],
+                                 vmax=self.extent.get_l()[1])
+                for collection in self.axes.collections:
+                    collection.set_norm(norm)
+                try:
+                    self.barBase.draw_all()
+                except:
+                    pass
 
     def draw_hline(self, line, label, y):
         xLim = self.axes.get_xlim()
@@ -236,16 +234,15 @@ class Plotter():
     def get_axes(self):
         return self.axes
 
+    def get_plot_thread(self):
+        return self.threadPlot
+
     def set_title(self, title):
         self.axes.set_title(title)
 
     def set_plot(self, spectrum, extent, annotate=False):
-        if self.threadPlot is not None:
-            self.threadPlot.cancel()
-            self.threadPlot = None
-
         self.extent = extent
-        self.threadPlot = ThreadPlot(self, self.lock, self.axes, spectrum,
+        self.threadPlot = ThreadPlot(self, self.axes, spectrum,
                                      self.extent,
                                      self.settings.colourMap,
                                      self.settings.autoL,
@@ -281,13 +278,12 @@ class Plotter():
 
 
 class ThreadPlot(threading.Thread):
-    def __init__(self, parent, lock, axes, data, extent,
+    def __init__(self, parent, axes, data, extent,
                  colourMap, autoL, lineWidth,
                  barBase, fade, annotate, average):
         threading.Thread.__init__(self)
         self.name = "Plot"
         self.parent = parent
-        self.lock = lock
         self.axes = axes
         self.data = data
         self.extent = extent
@@ -298,38 +294,60 @@ class ThreadPlot(threading.Thread):
         self.annotate = annotate
         self.fade = fade
         self.average = average
-        self.abort = False
 
     def run(self):
+        if self.data is None:
+            self.parent.threadPlot = None
+            return
+
         peakF = None
         peakL = None
+        total = len(self.data)
+        if total > 0:
+            self.parent.clear_plots()
+            lc = None
+            if self.average:
+                avg = OrderedDict()
+                count = len(self.data)
 
-        with self.lock:
-            if self.abort:
-                return
-            total = len(self.data)
-            if total > 0:
-                self.parent.clear_plots()
-                lc = None
-                if self.average:
-                    avg = OrderedDict()
-                    count = len(self.data)
+                for timeStamp in self.data:
 
-                    for timeStamp in self.data:
-                        if self.abort:
-                            return
+                    if len(self.data[timeStamp]) < 2:
+                        return
 
-                        if len(self.data[timeStamp]) < 2:
-                            return
+                    for x, y in self.data[timeStamp].items():
+                        if x in avg:
+                            avg[x] = (avg[x] + y) / 2
+                        else:
+                            avg[x] = y
 
-                        for x, y in self.data[timeStamp].items():
-                            if x in avg:
-                                avg[x] = (avg[x] + y) / 2
-                            else:
-                                avg[x] = y
+                data = avg.items()
+                peakF, peakL = max(data, key=lambda item: item[1])
 
-                    data = avg.items()
-                    peakF, peakL = max(data, key=lambda item: item[1])
+                segments, levels = self.create_segments(data)
+                lc = LineCollection(segments)
+                lc.set_array(numpy.array(levels))
+                lc.set_norm(self.get_norm(self.autoL, self.extent))
+                lc.set_cmap(self.colourMap)
+                lc.set_linewidth(self.lineWidth)
+                lc.set_gid('plot')
+                self.axes.add_collection(lc)
+                self.parent.lc = lc
+            else:
+                count = 0.0
+                for timeStamp in self.data:
+
+                    if len(self.data[timeStamp]) < 2:
+                        self.parent.threadPlot = None
+                        return
+
+                    if self.fade:
+                        alpha = (total - count) / total
+                    else:
+                        alpha = 1
+
+                    data = self.data[timeStamp].items()
+                    peakF, peakL = self.extent.get_peak_fl()
 
                     segments, levels = self.create_segments(data)
                     lc = LineCollection(segments)
@@ -338,42 +356,18 @@ class ThreadPlot(threading.Thread):
                     lc.set_cmap(self.colourMap)
                     lc.set_linewidth(self.lineWidth)
                     lc.set_gid('plot')
+                    lc.set_alpha(alpha)
                     self.axes.add_collection(lc)
-                    self.parent.lc = lc
-                else:
-                    count = 0.0
-                    for timeStamp in self.data:
-                        if self.abort:
-                            return
+                    count += 1
 
-                        if len(self.data[timeStamp]) < 2:
-                            return
+            if self.annotate:
+                self.annotate_plot(peakF, peakL)
 
-                        if self.fade:
-                            alpha = (total - count) / total
-                        else:
-                            alpha = 1
-
-                        data = self.data[timeStamp].items()
-                        peakF, peakL = self.extent.get_peak_fl()
-
-                        segments, levels = self.create_segments(data)
-                        lc = LineCollection(segments)
-                        lc.set_array(numpy.array(levels))
-                        lc.set_norm(self.get_norm(self.autoL, self.extent))
-                        lc.set_cmap(self.colourMap)
-                        lc.set_linewidth(self.lineWidth)
-                        lc.set_gid('plot')
-                        lc.set_alpha(alpha)
-                        self.axes.add_collection(lc)
-                        count += 1
-
-                if self.annotate:
-                    self.annotate_plot(peakF, peakL)
-
-        if total > 0 and not self.abort:
+        if total > 0:
             self.parent.scale_plot()
             self.parent.redraw_plot()
+
+        self.parent.threadPlot = None
 
     def create_segments(self, points):
         segments = []
@@ -439,9 +433,6 @@ class ThreadPlot(threading.Thread):
                 if child.get_gid() is not None:
                     if child.get_gid() == 'peak':
                         child.remove()
-
-    def cancel(self):
-        self.abort = True
 
 
 if __name__ == '__main__':

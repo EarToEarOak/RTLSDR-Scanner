@@ -41,11 +41,10 @@ from spectrum import epoch_to_mpl, create_mesh
 
 
 class Plotter3d():
-    def __init__(self, notify, figure, settings, lock):
+    def __init__(self, notify, figure, settings):
         self.notify = notify
         self.figure = figure
         self.settings = settings
-        self.lock = lock
         self.axes = None
         self.plot = None
         self.extent = None
@@ -86,21 +85,20 @@ class Plotter3d():
 
     def scale_plot(self, force=False):
         if self.extent is not None and self.plot is not None:
-            with self.lock:
-                if self.settings.autoF or force:
-                    self.axes.set_xlim(self.extent.get_f())
-                if self.settings.autoL or force:
-                    self.axes.set_zlim(self.extent.get_l())
-                    self.plot.set_clim(self.extent.get_l())
-                    self.barBase.set_clim(self.extent.get_l())
-                    try:
-                        self.barBase.draw_all()
-                    except:
-                        pass
-                if self.settings.autoT or force:
-                    self.axes.set_ylim(self.extent.get_t())
+            if self.settings.autoF or force:
+                self.axes.set_xlim(self.extent.get_f())
+            if self.settings.autoL or force:
+                self.axes.set_zlim(self.extent.get_l())
+                self.plot.set_clim(self.extent.get_l())
+                self.barBase.set_clim(self.extent.get_l())
+                try:
+                    self.barBase.draw_all()
+                except:
+                    pass
+            if self.settings.autoT or force:
+                self.axes.set_ylim(self.extent.get_t())
 
-    def draw_measure(self, _background, _measure, _minP, _maxP, _avgP, _gMeanP):
+    def draw_measure(self, *args):
         pass
 
     def hide_measure(self):
@@ -113,16 +111,15 @@ class Plotter3d():
     def get_axes(self):
         return self.axes
 
+    def get_plot_thread(self):
+        return self.threadPlot
+
     def set_title(self, title):
         self.axes.set_title(title)
 
     def set_plot(self, data, extent, annotate=False):
-        if self.threadPlot is not None:
-            self.threadPlot.cancel()
-            self.threadPlot = None
-
         self.extent = extent
-        self.threadPlot = ThreadPlot(self, self.lock, self.axes,
+        self.threadPlot = ThreadPlot(self, self.axes,
                                      data, self.extent,
                                      self.settings.retainMax,
                                      self.settings.colourMap,
@@ -157,12 +154,11 @@ class Plotter3d():
 
 
 class ThreadPlot(threading.Thread):
-    def __init__(self, parent, lock, axes, data, extent, retainMax, colourMap,
+    def __init__(self, parent, axes, data, extent, retainMax, colourMap,
                  autoL, barBase, annotate):
         threading.Thread.__init__(self)
         self.name = "Plot"
         self.parent = parent
-        self.lock = lock
         self.axes = axes
         self.data = data
         self.extent = extent
@@ -171,50 +167,51 @@ class ThreadPlot(threading.Thread):
         self.autoL = autoL
         self.barBase = barBase
         self.annotate = annotate
-        self.abort = False
 
     def run(self):
+        if self.data is None:
+            self.parent.threadPlot = None
+            return
 
-        with self.lock:
-            if self.abort:
-                return
-            total = len(self.data)
-            if total > 0:
-                x, y, z = create_mesh(self.data, True)
-                self.parent.clear_plots()
+        total = len(self.data)
+        if total > 0:
+            x, y, z = create_mesh(self.data, True)
+            self.parent.clear_plots()
 
-                if self.autoL:
-                    vmin, vmax = self.barBase.get_clim()
-                else:
-                    zExtent = self.extent.get_l()
-                    vmin = zExtent[0]
-                    vmax = zExtent[1]
-                if self.parent.wireframe:
-                    self.parent.plot = \
-                    self.axes.plot_wireframe(x, y, z,
-                                             rstride=1, cstride=1,
-                                             linewidth=0.1,
-                                             cmap=cm.get_cmap(self.colourMap),
-                                             gid='plot',
-                                             antialiased=True,
-                                             alpha=1)
-                else:
-                    self.parent.plot = \
-                    self.axes.plot_surface(x, y, z,
-                                           rstride=1, cstride=1,
-                                           vmin=vmin, vmax=vmax,
-                                           linewidth=0,
-                                           cmap=cm.get_cmap(self.colourMap),
-                                           gid='plot',
-                                           antialiased=True,
-                                           alpha=1)
+            if self.autoL:
+                vmin, vmax = self.barBase.get_clim()
+            else:
+                zExtent = self.extent.get_l()
+                vmin = zExtent[0]
+                vmax = zExtent[1]
+            if self.parent.wireframe:
+                self.parent.plot = \
+                self.axes.plot_wireframe(x, y, z,
+                                         rstride=1, cstride=1,
+                                         linewidth=0.1,
+                                         cmap=cm.get_cmap(self.colourMap),
+                                         gid='plot',
+                                         antialiased=True,
+                                         alpha=1)
+            else:
+                self.parent.plot = \
+                self.axes.plot_surface(x, y, z,
+                                       rstride=1, cstride=1,
+                                       vmin=vmin, vmax=vmax,
+                                       linewidth=0,
+                                       cmap=cm.get_cmap(self.colourMap),
+                                       gid='plot',
+                                       antialiased=True,
+                                       alpha=1)
 
-                if self.annotate:
-                    self.annotate_plot()
+            if self.annotate:
+                self.annotate_plot()
 
-        if total > 0 and not self.abort:
+        if total > 0:
             self.parent.scale_plot()
             self.parent.redraw_plot()
+
+        self.parent.threadPlot = None
 
     def annotate_plot(self):
         f, l, t = self.extent.get_peak_flt()
@@ -244,9 +241,6 @@ class ThreadPlot(threading.Thread):
                 if child.get_gid() is not None:
                     if child.get_gid() == 'peak':
                         child.remove()
-
-    def cancel(self):
-        self.abort = True
 
 
 if __name__ == '__main__':
