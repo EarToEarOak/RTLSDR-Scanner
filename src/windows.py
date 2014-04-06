@@ -45,7 +45,6 @@ from toolbars import NavigationToolbar, NavigationToolbarCompare
 import wx.grid as wxGrid
 
 
-
 class CellRenderer(wxGrid.PyGridCellRenderer):
     def __init__(self):
         wxGrid.PyGridCellRenderer.__init__(self)
@@ -521,8 +520,26 @@ class PanelMeasure(wx.Panel):
                             'avg': (0, 10), 'gmean': (1, 10), 'flat': (2, 10),
                             'halfstart': (0, 14), 'halfend': (1, 14), 'halfdelta': (2, 14)}
 
+        fontCell = self.grid.GetDefaultCellFont()
+        fontSize = fontCell.GetPointSize()
+        fontStyle = fontCell.GetStyle()
+        fontWeight = fontCell.GetWeight()
+        font = wx.Font(fontSize, wx.FONTFAMILY_MODERN, fontStyle,
+                       fontWeight)
+        dc = wx.WindowDC(self.grid)
+        dc.SetFont(font)
+        widthMHz = dc.GetTextExtent('###.###### MHz')[0] * 1.2
+        widthdB = dc.GetTextExtent('-##.## dB')[0] * 1.2
         for _desc, (_row, col) in self.locsDesc.iteritems():
             self.grid.AutoSizeColumn(col)
+        for col in [1, 5, 14]:
+            self.grid.SetColSize(col, widthMHz)
+            for row in xrange(self.grid.GetNumberRows()):
+                self.grid.SetCellFont(row, col, font)
+        for col in [6, 10]:
+            self.grid.SetColSize(col, widthdB)
+            for row in xrange(self.grid.GetNumberRows()):
+                self.grid.SetCellFont(row, col, font)
         for _desc, (_row, col) in self.locsCheck.iteritems():
             self.grid.AutoSizeColumn(col)
 
@@ -702,44 +719,44 @@ class PanelMeasure(wx.Panel):
         halfP = self.measure.get_half_p()
 
         self.set_measure_value('start',
-                               "{0:.6f} MHz".format(minF))
+                               "{0:10.6f} MHz".format(minF))
         self.set_measure_value('end',
-                               "{0:.6f} MHz".format(maxF))
+                               "{0:10.6f} MHz".format(maxF))
         self.set_measure_value('deltaF',
-                               "{0:.6f} MHz".format(maxF - minF))
+                               "{0:10.6f} MHz".format(maxF - minF))
 
         self.set_measure_value('minFP',
-                               "{0:.6f} MHz".format(minP[0]))
+                               "{0:10.6f} MHz".format(minP[0]))
         self.set_measure_value('maxFP',
-                               "{0:.6f} MHz".format(maxP[0]))
+                               "{0:10.6f} MHz".format(maxP[0]))
         self.set_measure_value('deltaFP',
-                               "{0:.6f} MHz".format(maxP[0] - minP[0]))
+                               "{0:10.6f} MHz".format(maxP[0] - minP[0]))
         self.set_measure_value('minP',
-                               "{0:.2f} dB".format(minP[1]))
+                               "{0:6.2f} dB".format(minP[1]))
         self.set_measure_value('maxP',
-                               "{0:.2f} dB".format(maxP[1]))
+                               "{0:6.2f} dB".format(maxP[1]))
         self.set_measure_value('deltaP',
-                               "{0:.2f} dB".format(maxP[1] - minP[1]))
+                               "{0:6.2f} dB".format(maxP[1] - minP[1]))
 
         self.set_measure_value('avg',
-                               "{0:.2f} dB".format(avgP))
+                               "{0:6.2f} dB".format(avgP))
         self.set_measure_value('gmean',
-                               "{0:.2f} dB".format(gMeanP))
+                               "{0:6.2f} dB".format(gMeanP))
         self.set_measure_value('flat',
                                "{0:.4f}".format(flatness))
 
         if halfP[0] is not None:
-            text = "{0:.6f} MHz".format(halfP[0])
+            text = "{0:10.6f} MHz".format(halfP[0])
         else:
             text = ''
         self.set_measure_value('halfstart', text)
         if halfP[1] is not None:
-            text = "{0:.6f} MHz".format(halfP[1])
+            text = "{0:10.6f} MHz".format(halfP[1])
         else:
             text = ''
         self.set_measure_value('halfend', text)
         if halfP[0] is not None and halfP[1] is not None:
-            text = "{0:.6f} MHz".format(halfP[1] - halfP[0])
+            text = "{0:10.6f} MHz".format(halfP[1] - halfP[0])
         else:
             text = ''
         self.set_measure_value('halfdelta', text)
