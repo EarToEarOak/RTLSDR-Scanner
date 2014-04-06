@@ -118,7 +118,7 @@ class FrameMain(wx.Frame):
 
         self.buttonStart = None
         self.buttonStop = None
-        self.choiceGain = None
+        self.controlGain = None
         self.choiceMode = None
         self.choiceDwell = None
         self.choiceNfft = None
@@ -235,6 +235,7 @@ class FrameMain(wx.Frame):
         self.toolbar.SetSizer(grid)
 
         self.set_controls()
+        self.set_gain_control()
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.graph, 1, wx.EXPAND)
@@ -862,6 +863,7 @@ class FrameMain(wx.Frame):
         self.choiceNfft.SetSelection(NFFT.index(self.settings.nfft))
         self.choiceDisplay.SetSelection(DISPLAY[1::2].index(self.settings.display))
 
+    def set_gain_control(self):
         grid = self.controlGain.GetContainingSizer()
         if len(self.devices) > 0:
             self.controlGain.Destroy()
