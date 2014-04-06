@@ -456,7 +456,7 @@ class FrameMain(wx.Frame):
         self.get_controls()
         dlg = DialogPrefs(self, self.settings)
         if dlg.ShowModal() == wx.ID_OK:
-            self.create_plot()
+            self.graph.create_plot()
             self.set_control_state(True)
             self.set_controls()
         dlg.Destroy()
