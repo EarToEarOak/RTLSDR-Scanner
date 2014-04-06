@@ -190,11 +190,11 @@ class Plotter():
         canvas.restore_region(background)
 
         if minP:
-            y = measure.get_min_p()
+            y = measure.get_min_p()[1]
             self.draw_hline(self.lineMinP, self.labelMinP, y)
 
         if maxP:
-            y = measure.get_max_p()
+            y = measure.get_max_p()[1]
             self.draw_hline(self.lineMaxP, self.labelMaxP, y)
 
         if avgP:

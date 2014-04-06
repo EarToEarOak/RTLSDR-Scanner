@@ -24,11 +24,14 @@
 #
 from collections import OrderedDict
 import datetime
-from operator import itemgetter
+from decimal import Decimal
+from operator import itemgetter, mul
 import time
 
 from matplotlib.dates import date2num, seconds
 import numpy
+
+from misc import db_to_level, level_to_db
 
 
 class Extent():
@@ -91,24 +94,74 @@ class Extent():
 
 
 class Measure():
-    def __init__(self, minP, maxP, avgP, gMeanP, halfP):
-        self.minP = minP
-        self.maxP = maxP
-        self.avgP = avgP
-        self.gMeanP = gMeanP
-        self.halfP = halfP
+    def __init__(self, spectrum, start, end):
+        self.isValid = False
+        self.minF = None
+        self.maxF = None
+        self.minP = None
+        self.maxP = None
+        self.avgP = None
+        self.gMeanP = None
+        self.flatness = None
+        self.halfP = None
+
+        self.calculate(spectrum, start, end)
+
+    def calculate(self, spectrum, start, end):
+        sweep = slice_spectrum(spectrum, start, end)
+        if sweep is None or len(sweep) == 0:
+            return
+
+        self.minF = min(sweep)[0]
+        self.maxF = max(sweep)[0]
+        self.minP = min(sweep, key=lambda v: v[1])
+        self.maxP = max(sweep, key=lambda v: v[1])
+
+        powers = [Decimal(db_to_level(p[1])) for p in sweep]
+        length = len(powers)
+
+        avg = sum(powers, Decimal(0)) / length
+        self.avgP = level_to_db(avg)
+
+        product = reduce(mul, iter(powers))
+        gMean = product ** (Decimal(1.0) / length)
+        self.gMeanP = level_to_db(gMean)
+
+        self.flatness = gMean / avg
+
+        self.halfP = [None, None, self.maxP[1] - 3]
+        if self.halfP[2] >= self.minP[1]:
+            for (f, p) in sweep:
+                if p >= self.halfP[2]:
+                    self.halfP[0] = f
+                    break
+            for (f, p) in reversed(sweep):
+                if p >= self.halfP[2]:
+                    self.halfP[1] = f
+                    break
+
+        self.isValid = True
+
+    def is_valid(self):
+        return self.isValid
+
+    def get_f(self):
+        return self.minF, self.maxF
 
     def get_min_p(self):
-        return self.minP[1]
+        return self.minP
 
     def get_max_p(self):
-        return self.maxP[1]
+        return self.maxP
 
     def get_avg_p(self):
         return self.avgP
 
     def get_gmean_p(self):
         return self.gMeanP
+
+    def get_flatness(self):
+        return self.flatness
 
     def get_half_p(self):
         return self.halfP

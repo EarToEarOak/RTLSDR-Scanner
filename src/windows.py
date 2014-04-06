@@ -23,9 +23,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from decimal import Decimal
-from operator import mul
-
 from matplotlib import cm
 import matplotlib
 from matplotlib.backends.backend_wxagg import \
@@ -36,12 +33,12 @@ from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
 import wx
 
 from constants import Display
-from misc import  close_modeless, db_to_level, level_to_db
+from misc import  close_modeless
 from plot import Plotter
 from plot3d import Plotter3d
 from plot_controls import MouseZoom, MouseSelect
 from spectrogram import Spectrogram
-from spectrum import split_spectrum_sort, slice_spectrum, Measure
+from spectrum import split_spectrum_sort, Measure
 from toolbars import NavigationToolbar, NavigationToolbarCompare
 import wx.grid as wxGrid
 
@@ -465,6 +462,9 @@ class PanelMeasure(wx.Panel):
         self.grid.EnableDragGridSize(False)
         self.grid.SetColLabelSize(1)
         self.grid.SetRowLabelSize(1)
+        self.grid.SetColMinimalAcceptableWidth(1)
+        self.grid.SetColSize(2,1)
+
         for x in xrange(self.grid.GetNumberRows()):
             self.grid.SetRowLabelValue(x, '')
         for y in xrange(self.grid.GetNumberCols()):
@@ -673,38 +673,18 @@ class PanelMeasure(wx.Panel):
         self.measure = None
 
     def set_selected(self, spectrum, start, end):
-        sweep = slice_spectrum(spectrum, start, end)
-        if sweep is None or len(sweep) == 0:
+        self.measure = Measure(spectrum, start, end)
+        if not self.measure.is_valid():
             self.clear_measurement()
             return
 
-        minF = min(sweep)[0]
-        maxF = max(sweep)[0]
-        minP = min(sweep, key=lambda v: v[1])
-        maxP = max(sweep, key=lambda v: v[1])
-
-        powers = [Decimal(db_to_level(p[1])) for p in sweep]
-        length = len(powers)
-
-        avg = sum(powers, Decimal(0)) / length
-        avgP = level_to_db(avg)
-
-        product = reduce(mul, iter(powers))
-        gMean = product ** (Decimal(1.0) / length)
-        gMeanP = level_to_db(gMean)
-
-        flatness = gMean / avg
-
-        halfP = [None, None, maxP[1] - 3]
-        if halfP[2] >= minP[1]:
-            for (f, p) in sweep:
-                if p >= halfP[2]:
-                    halfP[0] = f
-                    break
-            for (f, p) in reversed(sweep):
-                if p >= halfP[2]:
-                    halfP[1] = f
-                    break
+        minF, maxF = self.measure.get_f()
+        minP = self.measure.get_min_p()
+        maxP = self.measure.get_max_p()
+        avgP = self.measure.get_avg_p()
+        gMeanP = self.measure.get_gmean_p()
+        flatness = self.measure.get_flatness()
+        halfP = self.measure.get_half_p()
 
         self.set_measure_value('start',
                                "{0:.6f} MHz".format(minF))
@@ -749,7 +729,6 @@ class PanelMeasure(wx.Panel):
             text = ''
         self.set_measure_value('halfdelta', text)
 
-        self.measure = Measure(minP, maxP, avgP, gMeanP, halfP)
         self.update_measure()
 
     def show(self, show):
