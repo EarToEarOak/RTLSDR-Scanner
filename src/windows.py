@@ -457,83 +457,81 @@ class PanelMeasure(wx.Panel):
         self.SetBackgroundColour('white')
 
         self.grid = wxGrid.Grid(self)
-        self.grid.CreateGrid(3, 12)
+        self.grid.CreateGrid(3, 15)
         self.grid.EnableEditing(False)
         self.grid.EnableDragGridSize(False)
         self.grid.SetColLabelSize(1)
         self.grid.SetRowLabelSize(1)
         self.grid.SetColMinimalAcceptableWidth(1)
-        self.grid.SetColSize(2,1)
+        self.grid.SetColSize(2, 1)
+        self.grid.SetColSize(7, 1)
+        self.grid.SetColSize(11, 1)
 
         for x in xrange(self.grid.GetNumberRows()):
             self.grid.SetRowLabelValue(x, '')
         for y in xrange(self.grid.GetNumberCols()):
             self.grid.SetColLabelValue(y, '')
 
-        self.locsCheck = {'min': (0, 2), 'max': (1, 2), 'avg': (0, 6),
-                          'gmean': (1, 6), 'half': (0, 9)}
-        checkEditor = wxGrid.GridCellBoolEditor()
-        self.set_check_editor('min', checkEditor)
-        self.set_check_editor('max', checkEditor)
-        self.set_check_editor('avg', checkEditor)
-        self.set_check_editor('gmean', checkEditor)
-        self.set_check_editor('half', checkEditor)
+        self.locsDesc = {'Start': (0, 0),
+                         'End': (1, 0),
+                         u'\u0394': (2, 0),
+                         'Min': (0, 4),
+                         'Max': (1, 4),
+                         u'\u0394': (2, 4),
+                         'Mean': (0, 9),
+                         'GMean': (1, 9),
+                         'Flatness': (2, 9),
+                         '-3dB Start': (0, 13),
+                         '-3dB End': (1, 13),
+                         u'-3dB \u0394': (2, 13)}
+        self.set_descs()
+
+        self.locsCheck = {'min': (0, 3), 'max': (1, 3),
+                          'avg': (0, 8), 'gmean': (1, 8),
+                          'half': (0, 12)}
+        self.set_check_editor('min')
+        self.set_check_editor('max')
+        self.set_check_editor('avg')
+        self.set_check_editor('gmean')
+        self.set_check_editor('half')
+
+        self.grid.SetColFormatBool(3)
+        self.grid.SetColFormatBool(8)
+        self.grid.SetColFormatBool(12)
 
         colour = self.grid.GetBackgroundColour()
-        self.grid.SetCellTextColour(2, 2, colour)
-        self.grid.SetCellTextColour(2, 6, colour)
-        self.grid.SetCellTextColour(1, 9, colour)
-        self.grid.SetCellTextColour(2, 9, colour)
+        self.grid.SetCellTextColour(2, 3, colour)
+        self.grid.SetCellTextColour(2, 8, colour)
+        self.grid.SetCellTextColour(1, 12, colour)
+        self.grid.SetCellTextColour(2, 12, colour)
 
         self.clear_checks()
 
-        self.grid.SetColFormatBool(2)
-        self.grid.SetColFormatBool(6)
-        self.grid.SetColFormatBool(9)
-
-        self.grid.SetCellValue(0, 0, 'Start')
-        self.grid.SetCellValue(1, 0, 'End')
-        self.grid.SetCellValue(2, 0, u'\u0394')
-        self.grid.SetCellValue(0, 3, 'Min')
-        self.grid.SetCellValue(1, 3, 'Max')
-        self.grid.SetCellValue(2, 3, u'\u0394')
-        self.grid.SetCellValue(0, 7, 'Mean')
-        self.grid.SetCellValue(1, 7, 'GMean')
-        self.grid.SetCellValue(2, 7, 'Flatness')
-        self.grid.SetCellValue(0, 10, '-3dB Start')
-        self.grid.SetCellValue(1, 10, '-3dB End')
-        self.grid.SetCellValue(2, 10, u'-3dB \u0394')
-
         self.locsMeasure = {'start': (0, 1), 'end': (1, 1), 'deltaF': (2, 1),
-                            'minFP': (0, 4), 'maxFP': (1, 4), 'deltaFP': (2, 4),
-                            'minP': (0, 5), 'maxP': (1, 5), 'deltaP': (2, 5),
-                            'avg': (0, 8), 'gmean': (1, 8), 'flat': (2, 8),
-                            'halfstart': (0, 11), 'halfend': (1, 11), 'halfdelta': (2, 11)}
+                            'minFP': (0, 5), 'maxFP': (1, 5), 'deltaFP': (2, 5),
+                            'minP': (0, 6), 'maxP': (1, 6), 'deltaP': (2, 6),
+                            'avg': (0, 10), 'gmean': (1, 10), 'flat': (2, 10),
+                            'halfstart': (0, 14), 'halfend': (1, 14), 'halfdelta': (2, 14)}
 
-        font = self.grid.GetCellFont(0, 0)
-        font.SetWeight(wx.BOLD)
-        for x in [0, 3, 7, 10]:
-            for y in xrange(self.grid.GetNumberRows()):
-                self.grid.SetCellFont(y, x, font)
-
-        for x in [0, 2, 3, 6, 7, 9, 10]:
+        for x in [0, 3, 8, 12]:
             self.grid.AutoSizeColumn(x)
 
-        toolTips = {(0, 1): 'Selection start',
-                    (1, 1): 'Selection end',
-                    (2, 1): 'Selection width',
-                    (0, 4): 'Minimum power location',
-                    (1, 4): 'Maximum power location',
-                    (2, 4): 'Power location difference',
-                    (0, 5): 'Minimum power',
-                    (1, 5): 'Maximum power',
-                    (2, 5): 'Power difference',
-                    (0, 8): 'Mean power',
-                    (1, 8): 'Geometric mean power',
-                    (2, 8): 'Spectral flatness',
-                    (0, 11): '-3db start location',
-                    (1, 11): '-3db end location',
-                    (2, 11): '-3db bandwidth'}
+        toolTips = {}
+        toolTips[self.locsMeasure['start']] = 'Selection start'
+        toolTips[self.locsMeasure['end']] = 'Selection end'
+        toolTips[self.locsMeasure['deltaF']] = 'Selection bandwidth'
+        toolTips[self.locsMeasure['minFP']] = 'Minimum power location'
+        toolTips[self.locsMeasure['maxFP']] = 'Maximum power location'
+        toolTips[self.locsMeasure['deltaFP']] = 'Power location difference'
+        toolTips[self.locsMeasure['minP']] = 'Minimum power'
+        toolTips[self.locsMeasure['maxP']] = 'Maximum power'
+        toolTips[self.locsMeasure['deltaP']] = 'Power difference'
+        toolTips[self.locsMeasure['avg']] = 'Mean power'
+        toolTips[self.locsMeasure['gmean']] = 'Geometric mean power'
+        toolTips[self.locsMeasure['flat']] = 'Spectral flatness'
+        toolTips[self.locsMeasure['halfstart']] = '-3db start location'
+        toolTips[self.locsMeasure['halfend']] = '-3db end location'
+        toolTips[self.locsMeasure['halfdelta']] = '-3db bandwidth'
         self.toolTips = GridToolTips(self.grid, toolTips)
 
         self.popupMenu = wx.Menu()
@@ -549,9 +547,19 @@ class PanelMeasure(wx.Panel):
         box.Add(self.grid, 1, wx.ALIGN_CENTER | wx.TOP, border=10)
         self.SetSizer(box)
 
-    def set_check_editor(self, cell, editor):
+    def set_descs(self):
+        font = self.grid.GetCellFont(0, 0)
+        font.SetWeight(wx.BOLD)
+
+        for desc, (row, col) in self.locsDesc.iteritems():
+            self.grid.SetCellValue(row, col, desc)
+            self.grid.SetCellFont(row, col, font)
+
+    def set_check_editor(self, cell):
+        editor = wxGrid.GridCellBoolEditor()
         (row, col) = self.locsCheck[cell]
         self.grid.SetCellEditor(row, col, editor)
+        self.grid.SetCellAlignment(row, col, wx.ALIGN_RIGHT, wx.ALIGN_CENTRE)
 
     def set_check_value(self, cell, value):
         (row, col) = self.locsCheck[cell]
