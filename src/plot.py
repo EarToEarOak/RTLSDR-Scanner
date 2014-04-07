@@ -180,7 +180,6 @@ class Plotter():
         label.set_position((x, yLim[1]))
         self.axes.draw_artist(label)
 
-    # TODO: update after draw
     def draw_measure(self, background, measure, minP, maxP, avgP, gMeanP,
                      halfP):
         self.hide_measure()

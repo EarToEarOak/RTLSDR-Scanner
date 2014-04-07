@@ -132,8 +132,10 @@ class PanelGraph(wx.Panel):
         self.canvas.mpl_connect('draw_event', self.on_draw)
         self.canvas.mpl_connect('idle_event', self.on_idle)
 
-        self.timer = wx.Timer(self)
-        self.Bind(wx.EVT_TIMER, self.on_timer, self.timer)
+        self.timerDraw = wx.Timer(self)
+        self.timerDrawSelect = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.on_timer_draw, self.timerDraw)
+        self.Bind(wx.EVT_TIMER, self.on_timer_draw_select, self.timerDrawSelect)
 
     def create_plot(self):
         if self.plot is not None:
@@ -157,7 +159,6 @@ class PanelGraph(wx.Panel):
                                    self.draw_measure)
         self.mouseSelect = MouseSelect(self.plot, self.on_select,
                                        self.on_selected)
-        self.draw_select()
         self.measureTable.show(self.settings.showMeasure)
         self.panel.SetFocus()
 
@@ -192,9 +193,13 @@ class PanelGraph(wx.Panel):
             self.canvas.draw()
             self.doDraw = False
 
-    def on_timer(self, _event):
-        self.timer.Stop()
+    def on_timer_draw(self, _event):
+        self.timerDraw.Stop()
         self.set_plot(None, None, self.annotate)
+
+    def on_timer_draw_select(self, _event):
+        self.timerDraw.Stop()
+        self.draw_select()
 
     def draw(self):
         self.doDraw = True
@@ -209,13 +214,14 @@ class PanelGraph(wx.Panel):
             self.extent = extent
             self.annotate = annotate
         if self.plot.get_plot_thread() is None:
-            self.timer.Stop()
+            self.timerDraw.Stop()
+            self.timerDrawSelect.Stop()
             self.plot.set_plot(spectrum, extent, annotate)
             self.measureTable.set_selected(spectrum, self.selectStart,
                                            self.selectEnd)
-            self.draw_select()
+            self.timerDrawSelect.Start(1000)
         else:
-            self.timer.Start(200, oneShot=True)
+            self.timerDraw.Start(200, oneShot=True)
 
     def set_plot_title(self):
         if len(self.settings.devices) > 0:
