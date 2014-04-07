@@ -138,7 +138,6 @@ class PanelGraph(wx.Panel):
     def create_plot(self):
         if self.plot is not None:
             self.plot.close()
-            self.clear_selection()
 
         if self.settings.display == Display.PLOT:
             self.plot = Plotter(self.notify, self.figure, self.settings)
@@ -158,6 +157,7 @@ class PanelGraph(wx.Panel):
                                    self.draw_measure)
         self.mouseSelect = MouseSelect(self.plot, self.on_select,
                                        self.on_selected)
+        self.draw_select()
         self.measureTable.show(self.settings.showMeasure)
         self.panel.SetFocus()
 
@@ -213,6 +213,7 @@ class PanelGraph(wx.Panel):
             self.plot.set_plot(spectrum, extent, annotate)
             self.measureTable.set_selected(spectrum, self.selectStart,
                                            self.selectEnd)
+            self.draw_select()
         else:
             self.timer.Start(200, oneShot=True)
 
