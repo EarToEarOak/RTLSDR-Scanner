@@ -173,6 +173,7 @@ class PanelGraph(wx.Panel):
     def on_draw(self, _event):
         axes = self.plot.get_axes()
         self.background = self.canvas.copy_from_bbox(axes.bbox)
+        self.draw_measure()
 
     def on_nav_changed(self, _event):
         self.draw_measure()
