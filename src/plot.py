@@ -162,23 +162,27 @@ class Plotter():
 
     def draw_hline(self, line, label, y):
         xLim = self.axes.get_xlim()
-        line.set_visible(True)
-        line.set_xdata([xLim[0], xLim[1]])
-        line.set_ydata([y, y])
-        self.axes.draw_artist(line)
-        label.set_visible(True)
-        label.set_position((xLim[1], y))
-        self.axes.draw_artist(label)
+        yLim = self.axes.get_ylim()
+        if yLim[0] < y < yLim[1]:
+            line.set_visible(True)
+            line.set_xdata([xLim[0], xLim[1]])
+            line.set_ydata([y, y])
+            self.axes.draw_artist(line)
+            label.set_visible(True)
+            label.set_position((xLim[1], y))
+            self.axes.draw_artist(label)
 
     def draw_vline(self, line, label, x):
         yLim = self.axes.get_ylim()
-        line.set_visible(True)
-        line.set_xdata([x, x])
-        line.set_ydata([yLim[0], yLim[1]])
-        self.axes.draw_artist(line)
-        label.set_visible(True)
-        label.set_position((x, yLim[1]))
-        self.axes.draw_artist(label)
+        xLim = self.axes.get_xlim()
+        if xLim[0] < x < xLim[1]:
+            line.set_visible(True)
+            line.set_xdata([x, x])
+            line.set_ydata([yLim[0], yLim[1]])
+            self.axes.draw_artist(line)
+            label.set_visible(True)
+            label.set_position((x, yLim[1]))
+            self.axes.draw_artist(label)
 
     def draw_measure(self, background, measure, minP, maxP, avgP, gMeanP,
                      halfP):

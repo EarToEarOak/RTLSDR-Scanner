@@ -158,7 +158,6 @@ class PanelGraph(wx.Panel):
         self.mouseSelect = MouseSelect(self.plot, self.on_select,
                                        self.on_selected)
         self.draw_select()
-#         self.measureTable.clear_checks()
         self.measureTable.show(self.settings.showMeasure)
         self.panel.SetFocus()
 
