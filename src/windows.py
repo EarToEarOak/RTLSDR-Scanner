@@ -503,11 +503,7 @@ class PanelMeasure(wx.Panel):
         self.locsCheck = {'min': (0, 3), 'max': (1, 3),
                           'avg': (0, 8), 'gmean': (1, 8),
                           'half': (0, 12)}
-        self.set_check_editor('min')
-        self.set_check_editor('max')
-        self.set_check_editor('avg')
-        self.set_check_editor('gmean')
-        self.set_check_editor('half')
+        self.set_check_editor()
 
         colour = self.grid.GetBackgroundColour()
         self.grid.SetCellTextColour(2, 3, colour)
@@ -584,12 +580,12 @@ class PanelMeasure(wx.Panel):
             self.grid.SetCellValue(row, col, desc)
             self.grid.SetCellFont(row, col, font)
 
-    def set_check_editor(self, cell):
+    def set_check_editor(self):
         editor = wxGrid.GridCellBoolEditor()
-        (row, col) = self.locsCheck[cell]
-        self.grid.SetCellEditor(row, col, editor)
-        self.grid.SetCellAlignment(row, col, wx.ALIGN_RIGHT, wx.ALIGN_CENTRE)
-        self.grid.SetColFormatBool(col)
+        for _desc, (row, col) in self.locsCheck.iteritems():
+            self.grid.SetCellEditor(row, col, editor)
+            self.grid.SetCellAlignment(row, col, wx.ALIGN_RIGHT, wx.ALIGN_CENTRE)
+            self.grid.SetColFormatBool(col)
 
     def set_check_value(self, cell, value):
         (row, col) = self.locsCheck[cell]
@@ -599,15 +595,16 @@ class PanelMeasure(wx.Panel):
         (row, col) = self.locsMeasure[cell]
         self.grid.SetCellValue(row, col, value)
 
-    def set_check_read_only(self, cell, readOnly):
-        (row, col) = self.locsCheck[cell]
-        self.grid.SetReadOnly(row, col, readOnly)
-        if readOnly:
-            colour = 'grey'
-        else:
-            colour = self.grid.GetDefaultCellTextColour()
+    def set_check_read_only(self, readOnly):
+        for _desc, (row, col) in self.locsCheck.iteritems():
+            self.grid.SetReadOnly(row, col, readOnly)
+            if readOnly:
+                colour = 'grey'
+            else:
+                colour = self.grid.GetDefaultCellTextColour()
 
-        self.grid.SetCellTextColour(row, col, colour)
+            self.grid.SetCellTextColour(row, col, colour)
+
         self.grid.Refresh()
 
     def update_checks(self):
@@ -775,15 +772,9 @@ class PanelMeasure(wx.Panel):
 
     def set_type(self, display):
         if display == Display.PLOT or display == Display.SURFACE:
-            self.set_check_read_only('min', False)
-            self.set_check_read_only('max', False)
-            self.set_check_read_only('avg', False)
-            self.set_check_read_only('gmean', False)
+            self.set_check_read_only(False)
         elif display == Display.SPECT:
-            self.set_check_read_only('min', True)
-            self.set_check_read_only('max', True)
-            self.set_check_read_only('avg', True)
-            self.set_check_read_only('gmean', True)
+            self.set_check_read_only(True)
 
 
 if __name__ == '__main__':
