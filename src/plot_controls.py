@@ -91,6 +91,10 @@ class MouseSelect():
         if self.selector is not None:
             self.selector.draw(xMin, xMax)
 
+    def set_background(self, background):
+        if self.selector is not None:
+            self.selector.set_background(background)
+
     def clear(self):
         if self.selector is not None:
             self.selector.clear()
@@ -116,11 +120,6 @@ class RangeSelector():
         figure.canvas.mpl_connect('motion_notify_event', self.on_move)
         figure.canvas.mpl_connect('button_press_event', self.on_press)
         figure.canvas.mpl_connect('button_release_event', self.on_release)
-        figure.canvas.mpl_connect('draw_event', self.on_draw)
-
-    def on_draw(self, _event):
-        canvas = self.axes.get_figure().canvas
-        self.background = canvas.copy_from_bbox(self.axes.bbox)
 
     def on_press(self, event):
         if self.skip_event(event):
@@ -191,6 +190,9 @@ class RangeSelector():
             canvas.restore_region(self.background)
             self.axes.draw_artist(self.rect)
             canvas.blit(self.axes.bbox)
+
+    def set_background(self, background):
+        self.background = background
 
     def clear(self):
         self.rect.set_visible(False)
