@@ -186,6 +186,9 @@ class Plotter():
         canvas = self.axes.get_figure().canvas
         canvas.restore_region(background)
 
+        if self.axes._cachedRenderer is None:
+            return
+
         if minP:
             y = measure.get_min_p()[1]
             self.draw_hline(self.lineMinP, self.labelMinP, y)
