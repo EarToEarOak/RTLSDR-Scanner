@@ -771,9 +771,9 @@ class PanelMeasure(wx.Panel):
         self.Layout()
 
     def set_type(self, display):
-        if display == Display.PLOT or display == Display.SURFACE:
+        if display == Display.PLOT:
             self.set_check_read_only(False)
-        elif display == Display.SPECT:
+        else:
             self.set_check_read_only(True)
 
 
