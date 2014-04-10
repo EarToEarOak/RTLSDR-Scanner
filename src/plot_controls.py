@@ -33,7 +33,7 @@ class MouseZoom():
     SCALE_STEP = 1.3
 
     def __init__(self, plot, toolbar, callbackPre, callbackPost):
-        if not isinstance(plot, Plotter3d):
+        if isinstance(plot, Plotter3d):
             return
 
         self.callbackPre = callbackPre
