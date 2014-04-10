@@ -25,6 +25,7 @@
 
 from matplotlib.patches import Rectangle
 
+from plot import Plotter
 from plot3d import Plotter3d
 
 
@@ -32,7 +33,7 @@ class MouseZoom():
     SCALE_STEP = 1.3
 
     def __init__(self, plot, toolbar, callbackPre, callbackPost):
-        if isinstance(plot, Plotter3d):
+        if not isinstance(plot, Plotter3d):
             return
 
         self.callbackPre = callbackPre
@@ -83,7 +84,7 @@ class MouseZoom():
 class MouseSelect():
     def __init__(self, plot, callbackPre, callbackPost):
         self.selector = None
-        if not isinstance(plot, Plotter3d):
+        if isinstance(plot, Plotter):
             axes = plot.get_axes()
             self.selector = RangeSelector(axes, callbackPre, callbackPost)
 
