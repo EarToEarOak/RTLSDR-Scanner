@@ -595,17 +595,15 @@ class PanelMeasure(wx.Panel):
         (row, col) = self.locsMeasure[cell]
         self.grid.SetCellValue(row, col, value)
 
-    def set_check_read_only(self, readOnly):
-        for _desc, (row, col) in self.locsCheck.iteritems():
-            self.grid.SetReadOnly(row, col, readOnly)
-            if readOnly:
-                colour = 'grey'
-            else:
-                colour = self.grid.GetDefaultCellTextColour()
+    def set_check_read_only(self, cell, readOnly):
+        (row, col) = self.locsCheck[cell]
+        self.grid.SetReadOnly(row, col, readOnly)
+        if readOnly:
+            colour = 'grey'
+        else:
+            colour = self.grid.GetDefaultCellTextColour()
 
-            self.grid.SetCellTextColour(row, col, colour)
-
-        self.grid.Refresh()
+        self.grid.SetCellTextColour(row, col, colour)
 
     def update_checks(self):
         self.set_check_value('min', self.checkMin)
@@ -771,10 +769,15 @@ class PanelMeasure(wx.Panel):
         self.Layout()
 
     def set_type(self, display):
+        for cell in self.locsCheck:
+                self.set_check_read_only(cell, True)
         if display == Display.PLOT:
-            self.set_check_read_only(False)
-        else:
-            self.set_check_read_only(True)
+            for cell in self.locsCheck:
+                self.set_check_read_only(cell, False)
+        elif display == Display.SPECT:
+            self.set_check_read_only('half', False)
+
+        self.grid.Refresh()
 
 
 if __name__ == '__main__':

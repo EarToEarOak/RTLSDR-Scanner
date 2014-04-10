@@ -32,6 +32,8 @@ from matplotlib.colorbar import ColorbarBase
 from matplotlib.colors import Normalize
 from matplotlib.dates import DateFormatter
 from matplotlib.gridspec import GridSpec
+from matplotlib.lines import Line2D
+from matplotlib.text import Text
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 import numpy
 
@@ -50,6 +52,12 @@ class Spectrogram:
         self.axes = None
         self.plot = None
         self.extent = None
+        self.lineHalfFS = None
+        self.lineHalfFE = None
+
+        self.labelHalfFS = None
+        self.labelHalfFE = None
+
         self.threadPlot = None
         self.setup_plot()
         self.set_grid(self.settings.grid)
@@ -78,11 +86,63 @@ class Spectrogram:
                                     cmap=cm.get_cmap(self.settings.colourMap))
         self.barBase.set_label('Level (dB)')
 
-    def draw_measure(self, *args):
-        pass
+        self.setup_measure()
+
+    def setup_measure(self):
+        dashesHalf = [1, 5, 5, 5, 5, 5]
+        self.lineHalfFS = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='purple')
+        self.lineHalfFE = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='purple')
+        if matplotlib.__version__ >= '1.3':
+            effect = patheffects.withStroke(linewidth=3, foreground="w",
+                                            alpha=0.75)
+            self.lineHalfFS.set_path_effects([effect])
+            self.lineHalfFE.set_path_effects([effect])
+
+        self.axes.add_line(self.lineHalfFS)
+        self.axes.add_line(self.lineHalfFE)
+
+        box = dict(boxstyle='round', fc='white', ec='purple')
+        self.labelHalfFS = Text(0, 0, '-3dB', fontsize='x-small', ha="center",
+                                va="top", bbox=box, color='purple')
+        self.labelHalfFE = Text(0, 0, '-3dB', fontsize='x-small', ha="center",
+                                va="top", bbox=box, color='purple')
+
+        self.axes.add_artist(self.labelHalfFS)
+        self.axes.add_artist(self.labelHalfFE)
+
+        self.hide_measure()
+
+    def draw_vline(self, line, label, x):
+        yLim = self.axes.get_ylim()
+        xLim = self.axes.get_xlim()
+        if xLim[0] < x < xLim[1]:
+            line.set_visible(True)
+            line.set_xdata([x, x])
+            line.set_ydata([yLim[0], yLim[1]])
+            self.axes.draw_artist(line)
+            label.set_visible(True)
+            label.set_position((x, yLim[1]))
+            self.axes.draw_artist(label)
+
+    def draw_measure(self, background, measure, _minP, _maxP, _avgP, _gMeanP,
+                     halfP):
+        if self.axes._cachedRenderer is None:
+            return
+
+        self.hide_measure()
+        canvas = self.axes.get_figure().canvas
+        canvas.restore_region(background)
+
+        if halfP:
+            xStart, xEnd, y = measure.get_half_p()
+            self.draw_vline(self.lineHalfFS, self.labelHalfFS, xStart)
+            self.draw_vline(self.lineHalfFE, self.labelHalfFE, xEnd)
+
+        canvas.blit(self.axes.bbox)
 
     def hide_measure(self):
-        pass
+        self.labelHalfFS.set_visible(False)
+        self.labelHalfFE.set_visible(False)
 
     def scale_plot(self, force=False):
         if self.figure is not None and self.plot is not None:
