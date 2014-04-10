@@ -175,7 +175,8 @@ def count_points(spectrum):
     return points
 
 
-def reduce_points(spectrum, limit, total):
+def reduce_points(spectrum, limit):
+    total = count_points(spectrum)
     if total < limit:
         return spectrum
 

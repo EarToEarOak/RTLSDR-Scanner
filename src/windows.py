@@ -40,7 +40,7 @@ from plot import Plotter
 from plot3d import Plotter3d
 from plot_controls import MouseZoom, MouseSelect
 from spectrogram import Spectrogram
-from spectrum import split_spectrum_sort, Measure
+from spectrum import split_spectrum_sort, Measure, reduce_points
 from toolbars import NavigationToolbar, NavigationToolbarCompare
 import wx.grid as wxGrid
 
@@ -205,16 +205,20 @@ class PanelGraph(wx.Panel):
         self.measureTable.show(show)
         self.Layout()
 
-    def set_plot(self, spectrum, extent, annotate=False):
+    def set_plot(self, spectrum, isLimited, limit, extent, annotate=False):
         if spectrum is not None and extent is not None:
             self.spectrum = copy.copy(spectrum)
             self.extent = extent
             self.annotate = annotate
+
         if self.plot.get_plot_thread() is None:
             self.timer.Stop()
-            self.plot.set_plot(spectrum, extent, annotate)
             self.measureTable.set_selected(spectrum, self.selectStart,
                                            self.selectEnd)
+            if isLimited:
+                spectrum = reduce_points(spectrum, limit)
+            self.plot.set_plot(spectrum, extent, annotate)
+
             self.draw_select()
         else:
             self.timer.Start(200, oneShot=True)
@@ -230,7 +234,10 @@ class PanelGraph(wx.Panel):
 
     def redraw_plot(self):
         if self.spectrum is not None:
-            self.set_plot(self.spectrum, self.extent, self.settings.annotate)
+            self.set_plot(self.spectrum,
+                          self.settings.pointsLimit,
+                          self.settings.pointsMax,
+                          self.extent, self.settings.annotate)
 
     def draw_select(self):
         if self.selectStart is not None and self.selectEnd is not None:

@@ -820,10 +820,10 @@ class FrameMain(wx.Frame):
             if total > 0:
                 spectrum = sort_spectrum(spectrum)
                 extent = Extent(spectrum)
-                if self.settings.pointsLimit:
-                    spectrum = reduce_points(spectrum, self.settings.pointsMax,
-                                             total)
-                self.graph.set_plot(spectrum, extent, annotate)
+                self.graph.set_plot(spectrum,
+                                    self.settings.pointsLimit,
+                                    self.settings.pointsMax,
+                                    extent, annotate)
 
     def set_control_state(self, state):
         hasDevices = len(self.devices) > 0
