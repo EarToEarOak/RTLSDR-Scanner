@@ -96,11 +96,11 @@ class Plotter():
         dashesHalf = [1, 5, 5, 5, 5, 5]
         self.lineMinP = Line2D([0, 0], [0, 0], linestyle='--', color='black')
         self.lineMaxP = Line2D([0, 0], [0, 0], linestyle='-.', color='black')
-        self.lineAvgP = Line2D([0, 0], [0, 0], dashes=dashesAvg, color='black')
-        self.lineGMP = Line2D([0, 0], [0, 0], dashes=dashesGM, color='black')
-        self.lineHalfP = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='black')
-        self.lineHalfFS = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='black')
-        self.lineHalfFE = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='black')
+        self.lineAvgP = Line2D([0, 0], [0, 0], dashes=dashesAvg, color='blue')
+        self.lineGMP = Line2D([0, 0], [0, 0], dashes=dashesGM, color='green')
+        self.lineHalfP = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='purple')
+        self.lineHalfFS = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='purple')
+        self.lineHalfFE = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='purple')
         if matplotlib.__version__ >= '1.3':
             effect = patheffects.withStroke(linewidth=3, foreground="w",
                                             alpha=0.75)
@@ -120,21 +120,24 @@ class Plotter():
         self.axes.add_line(self.lineHalfFS)
         self.axes.add_line(self.lineHalfFE)
 
-        box = dict(boxstyle='round', fc='white')
+        box = dict(boxstyle='round', fc='white', ec='black')
         self.labelMinP = Text(0, 0, 'Min', fontsize='x-small', ha="right",
-                              va="bottom", bbox=box)
+                              va="bottom", bbox=box, color='black')
         self.labelMaxP = Text(0, 0, 'Max', fontsize='x-small', ha="right",
-                              va="top", bbox=box)
+                              va="top", bbox=box, color='black')
+        box['ec'] = 'blue'
         self.labelAvgP = Text(0, 0, 'Mean', fontsize='x-small', ha="right",
-                              va="center", bbox=box)
+                              va="center", bbox=box, color='blue')
+        box['ec'] = 'green'
         self.labelGMP = Text(0, 0, 'GMean', fontsize='x-small', ha="right",
-                            va="center", bbox=box)
+                            va="center", bbox=box, color='green')
+        box['ec'] = 'purple'
         self.labelHalfP = Text(0, 0, '-3dB', fontsize='x-small', ha="right",
-                              va="center", bbox=box)
+                              va="center", bbox=box, color='purple')
         self.labelHalfFS = Text(0, 0, '-3dB', fontsize='x-small', ha="center",
-                                va="top", bbox=box)
+                                va="top", bbox=box, color='purple')
         self.labelHalfFE = Text(0, 0, '-3dB', fontsize='x-small', ha="center",
-                                va="top", bbox=box)
+                                va="top", bbox=box, color='purple')
         self.hide_measure()
         self.axes.add_artist(self.labelMinP)
         self.axes.add_artist(self.labelMaxP)
