@@ -78,6 +78,12 @@ class Spectrogram:
                                     cmap=cm.get_cmap(self.settings.colourMap))
         self.barBase.set_label('Level (dB)')
 
+    def draw_measure(self, *args):
+        pass
+
+    def hide_measure(self):
+        pass
+
     def scale_plot(self, force=False):
         if self.figure is not None and self.plot is not None:
             extent = self.plot.get_extent()
@@ -94,12 +100,6 @@ class Spectrogram:
                     pass
             if self.settings.autoT or force:
                 self.axes.set_ylim(extent[2], extent[3])
-
-    def draw_measure(self, *args):
-        pass
-
-    def hide_measure(self):
-        pass
 
     def redraw_plot(self):
         if self.figure is not None:

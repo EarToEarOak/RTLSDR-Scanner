@@ -91,12 +91,15 @@ class Plotter():
                                     cmap=cm.get_cmap(self.settings.colourMap))
         self.barBase.set_label('Level (dB)')
 
+        self.setup_measure()
+
+    def setup_measure(self):
         dashesAvg = [4, 5, 1, 5, 1, 5]
         dashesGM = [5, 5, 5, 5, 1, 5, 1, 5]
         dashesHalf = [1, 5, 5, 5, 5, 5]
         self.lineMinP = Line2D([0, 0], [0, 0], linestyle='--', color='black')
         self.lineMaxP = Line2D([0, 0], [0, 0], linestyle='-.', color='black')
-        self.lineAvgP = Line2D([0, 0], [0, 0], dashes=dashesAvg, color='blue')
+        self.lineAvgP = Line2D([0, 0], [0, 0], dashes=dashesAvg, color='magenta')
         self.lineGMP = Line2D([0, 0], [0, 0], dashes=dashesGM, color='green')
         self.lineHalfP = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='purple')
         self.lineHalfFS = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='purple')
@@ -125,9 +128,9 @@ class Plotter():
                               va="bottom", bbox=box, color='black')
         self.labelMaxP = Text(0, 0, 'Max', fontsize='x-small', ha="right",
                               va="top", bbox=box, color='black')
-        box['ec'] = 'blue'
+        box['ec'] = 'magenta'
         self.labelAvgP = Text(0, 0, 'Mean', fontsize='x-small', ha="right",
-                              va="center", bbox=box, color='blue')
+                              va="center", bbox=box, color='magenta')
         box['ec'] = 'green'
         self.labelGMP = Text(0, 0, 'GMean', fontsize='x-small', ha="right",
                             va="center", bbox=box, color='green')
@@ -138,7 +141,7 @@ class Plotter():
                                 va="top", bbox=box, color='purple')
         self.labelHalfFE = Text(0, 0, '-3dB', fontsize='x-small', ha="center",
                                 va="top", bbox=box, color='purple')
-        self.hide_measure()
+
         self.axes.add_artist(self.labelMinP)
         self.axes.add_artist(self.labelMaxP)
         self.axes.add_artist(self.labelAvgP)
@@ -147,21 +150,7 @@ class Plotter():
         self.axes.add_artist(self.labelHalfFS)
         self.axes.add_artist(self.labelHalfFE)
 
-    def scale_plot(self, force=False):
-        if self.extent is not None:
-            if self.settings.autoF or force:
-                self.axes.set_xlim(self.extent.get_f())
-            if self.settings.autoL or force:
-                self.axes.set_ylim(self.extent.get_l())
-                self.barBase.set_clim(self.extent.get_l())
-                norm = Normalize(vmin=self.extent.get_l()[0],
-                                 vmax=self.extent.get_l()[1])
-                for collection in self.axes.collections:
-                    collection.set_norm(norm)
-                try:
-                    self.barBase.draw_all()
-                except:
-                    pass
+        self.hide_measure()
 
     def draw_hline(self, line, label, y):
         xLim = self.axes.get_xlim()
@@ -189,12 +178,12 @@ class Plotter():
 
     def draw_measure(self, background, measure, minP, maxP, avgP, gMeanP,
                      halfP):
+        if self.axes._cachedRenderer is None:
+            return
+
         self.hide_measure()
         canvas = self.axes.get_figure().canvas
         canvas.restore_region(background)
-
-        if self.axes._cachedRenderer is None:
-            return
 
         if minP:
             y = measure.get_min_p()[1]
@@ -235,6 +224,22 @@ class Plotter():
         self.labelHalfP.set_visible(False)
         self.labelHalfFS.set_visible(False)
         self.labelHalfFE.set_visible(False)
+
+    def scale_plot(self, force=False):
+        if self.extent is not None:
+            if self.settings.autoF or force:
+                self.axes.set_xlim(self.extent.get_f())
+            if self.settings.autoL or force:
+                self.axes.set_ylim(self.extent.get_l())
+                self.barBase.set_clim(self.extent.get_l())
+                norm = Normalize(vmin=self.extent.get_l()[0],
+                                 vmax=self.extent.get_l()[1])
+                for collection in self.axes.collections:
+                    collection.set_norm(norm)
+                try:
+                    self.barBase.draw_all()
+                except:
+                    pass
 
     def redraw_plot(self):
         if self.figure is not None:
