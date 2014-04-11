@@ -527,11 +527,11 @@ class PanelMeasure(wx.Panel):
                        fontWeight)
         dc = wx.WindowDC(self.grid)
         dc.SetFont(font)
-        widthMHz = dc.GetTextExtent('###.###### MHz')[0] * 1.2
-        widthdB = dc.GetTextExtent('-##.## dB')[0] * 1.2
+        widthMHz = dc.GetTextExtent('###.######')[0] * 1.2
+        widthdB = dc.GetTextExtent('-##.##')[0] * 1.2
         for _desc, (_row, col) in self.locsDesc.iteritems():
             self.grid.AutoSizeColumn(col)
-        for col in [1, 5, 14]:
+        for col in [1, 5, 14, 18]:
             self.grid.SetColSize(col, widthMHz)
             for row in xrange(self.grid.GetNumberRows()):
                 self.grid.SetCellFont(row, col, font)
@@ -543,24 +543,24 @@ class PanelMeasure(wx.Panel):
             self.grid.AutoSizeColumn(col)
 
         toolTips = {}
-        toolTips[self.locsMeasure['start']] = 'Selection start'
-        toolTips[self.locsMeasure['end']] = 'Selection end'
-        toolTips[self.locsMeasure['deltaF']] = 'Selection bandwidth'
-        toolTips[self.locsMeasure['minFP']] = 'Minimum power location'
-        toolTips[self.locsMeasure['maxFP']] = 'Maximum power location'
-        toolTips[self.locsMeasure['deltaFP']] = 'Power location difference'
-        toolTips[self.locsMeasure['minP']] = 'Minimum power'
-        toolTips[self.locsMeasure['maxP']] = 'Maximum power'
-        toolTips[self.locsMeasure['deltaP']] = 'Power difference'
-        toolTips[self.locsMeasure['avg']] = 'Mean power'
-        toolTips[self.locsMeasure['gmean']] = 'Geometric mean power'
+        toolTips[self.locsMeasure['start']] = 'Selection start (MHz)'
+        toolTips[self.locsMeasure['end']] = 'Selection end (MHz)'
+        toolTips[self.locsMeasure['deltaF']] = 'Selection bandwidth (MHz)'
+        toolTips[self.locsMeasure['minFP']] = 'Minimum power location (MHz)'
+        toolTips[self.locsMeasure['maxFP']] = 'Maximum power location (MHz)'
+        toolTips[self.locsMeasure['deltaFP']] = 'Power location difference (MHz)'
+        toolTips[self.locsMeasure['minP']] = 'Minimum power (dB)'
+        toolTips[self.locsMeasure['maxP']] = 'Maximum power (dB)'
+        toolTips[self.locsMeasure['deltaP']] = 'Power difference (dB)'
+        toolTips[self.locsMeasure['avg']] = 'Mean power (dB)'
+        toolTips[self.locsMeasure['gmean']] = 'Geometric mean power (dB)'
         toolTips[self.locsMeasure['flat']] = 'Spectral flatness'
-        toolTips[self.locsMeasure['hbwstart']] = '-3db start location'
-        toolTips[self.locsMeasure['hbwend']] = '-3db end location'
-        toolTips[self.locsMeasure['hbwdelta']] = '-3db bandwidth'
-        toolTips[self.locsMeasure['obwstart']] = '99% start location'
-        toolTips[self.locsMeasure['obwend']] = '99% end location'
-        toolTips[self.locsMeasure['obwdelta']] = '99% bandwidth'
+        toolTips[self.locsMeasure['hbwstart']] = '-3db start location (MHz)'
+        toolTips[self.locsMeasure['hbwend']] = '-3db end location (MHz)'
+        toolTips[self.locsMeasure['hbwdelta']] = '-3db bandwidth (MHz)'
+        toolTips[self.locsMeasure['obwstart']] = '99% start location (MHz)'
+        toolTips[self.locsMeasure['obwend']] = '99% end location (MHz)'
+        toolTips[self.locsMeasure['obwdelta']] = '99% bandwidth (MHz)'
 
         self.toolTips = GridToolTips(self.grid, toolTips)
 
@@ -703,60 +703,60 @@ class PanelMeasure(wx.Panel):
         obw = self.measure.get_obw()
 
         self.set_measure_value('start',
-                               "{0:10.6f} MHz".format(minF))
+                               "{0:10.6f}".format(minF))
         self.set_measure_value('end',
-                               "{0:10.6f} MHz".format(maxF))
+                               "{0:10.6f}".format(maxF))
         self.set_measure_value('deltaF',
-                               "{0:10.6f} MHz".format(maxF - minF))
+                               "{0:10.6f}".format(maxF - minF))
 
         self.set_measure_value('minFP',
-                               "{0:10.6f} MHz".format(minP[0]))
+                               "{0:10.6f}".format(minP[0]))
         self.set_measure_value('maxFP',
-                               "{0:10.6f} MHz".format(maxP[0]))
+                               "{0:10.6f}".format(maxP[0]))
         self.set_measure_value('deltaFP',
-                               "{0:10.6f} MHz".format(maxP[0] - minP[0]))
+                               "{0:10.6f}".format(maxP[0] - minP[0]))
         self.set_measure_value('minP',
-                               "{0:6.2f} dB".format(minP[1]))
+                               "{0:6.2f}".format(minP[1]))
         self.set_measure_value('maxP',
-                               "{0:6.2f} dB".format(maxP[1]))
+                               "{0:6.2f}".format(maxP[1]))
         self.set_measure_value('deltaP',
-                               "{0:6.2f} dB".format(maxP[1] - minP[1]))
+                               "{0:6.2f}".format(maxP[1] - minP[1]))
 
         self.set_measure_value('avg',
-                               "{0:6.2f} dB".format(avgP))
+                               "{0:6.2f}".format(avgP))
         self.set_measure_value('gmean',
-                               "{0:6.2f} dB".format(gMeanP))
+                               "{0:6.2f}".format(gMeanP))
         self.set_measure_value('flat',
                                "{0:.4f}".format(flatness))
 
         if hbw[0] is not None:
-            text = "{0:10.6f} MHz".format(hbw[0])
+            text = "{0:10.6f}".format(hbw[0])
         else:
             text = ''
         self.set_measure_value('hbwstart', text)
         if hbw[1] is not None:
-            text = "{0:10.6f} MHz".format(hbw[1])
+            text = "{0:10.6f}".format(hbw[1])
         else:
             text = ''
         self.set_measure_value('hbwend', text)
         if hbw[0] is not None and hbw[1] is not None:
-            text = "{0:10.6f} MHz".format(hbw[1] - hbw[0])
+            text = "{0:10.6f}".format(hbw[1] - hbw[0])
         else:
             text = ''
         self.set_measure_value('hbwdelta', text)
 
         if obw[0] is not None:
-            text = "{0:10.6f} MHz".format(obw[0])
+            text = "{0:10.6f}".format(obw[0])
         else:
             text = ''
         self.set_measure_value('obwstart', text)
         if obw[1] is not None:
-            text = "{0:10.6f} MHz".format(obw[1])
+            text = "{0:10.6f}".format(obw[1])
         else:
             text = ''
         self.set_measure_value('obwend', text)
         if obw[0] is not None and obw[1] is not None:
-            text = "{0:10.6f} MHz".format(obw[1] - obw[0])
+            text = "{0:10.6f}".format(obw[1] - obw[0])
         else:
             text = ''
         self.set_measure_value('obwdelta', text)
