@@ -57,6 +57,9 @@ class Plotter():
         self.lineHalfP = None
         self.lineHalfFS = None
         self.lineHalfFE = None
+        self.lineObwP = None
+        self.lineObwFS = None
+        self.lineObwFE = None
 
         self.labelMinP = None
         self.labelMaxP = None
@@ -65,6 +68,8 @@ class Plotter():
         self.labelHalfP = None
         self.labelHalfFS = None
         self.labelHalfFE = None
+        self.labelObwFS = None
+        self.labelObwFE = None
 
         self.setup_plot()
         self.set_grid(self.settings.grid)
@@ -104,6 +109,9 @@ class Plotter():
         self.lineHalfP = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='purple')
         self.lineHalfFS = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='purple')
         self.lineHalfFE = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='purple')
+        self.lineObwP = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='#996600')
+        self.lineObwFS = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='#996600')
+        self.lineObwFE = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='#996600')
         if matplotlib.__version__ >= '1.3':
             effect = patheffects.withStroke(linewidth=3, foreground="w",
                                             alpha=0.75)
@@ -114,6 +122,9 @@ class Plotter():
             self.lineHalfP.set_path_effects([effect])
             self.lineHalfFS.set_path_effects([effect])
             self.lineHalfFE.set_path_effects([effect])
+            self.lineObwP.set_path_effects([effect])
+            self.lineObwFS.set_path_effects([effect])
+            self.lineObwFE.set_path_effects([effect])
 
         self.axes.add_line(self.lineMinP)
         self.axes.add_line(self.lineMaxP)
@@ -122,6 +133,9 @@ class Plotter():
         self.axes.add_line(self.lineHalfP)
         self.axes.add_line(self.lineHalfFS)
         self.axes.add_line(self.lineHalfFE)
+        self.axes.add_line(self.lineObwP)
+        self.axes.add_line(self.lineObwFS)
+        self.axes.add_line(self.lineObwFE)
 
         box = dict(boxstyle='round', fc='white', ec='black')
         self.labelMinP = Text(0, 0, 'Min', fontsize='x-small', ha="right",
@@ -141,6 +155,13 @@ class Plotter():
                                 va="top", bbox=box, color='purple')
         self.labelHalfFE = Text(0, 0, '-3dB', fontsize='x-small', ha="center",
                                 va="top", bbox=box, color='purple')
+        box['ec'] = '#996600'
+        self.labelObwP = Text(0, 0, 'OBW', fontsize='x-small', ha="right",
+                              va="center", bbox=box, color='#996600')
+        self.labelObwFS = Text(0, 0, 'OBW', fontsize='x-small', ha="center",
+                                va="top", bbox=box, color='#996600')
+        self.labelObwFE = Text(0, 0, 'OBW', fontsize='x-small', ha="center",
+                                va="top", bbox=box, color='#996600')
 
         self.axes.add_artist(self.labelMinP)
         self.axes.add_artist(self.labelMaxP)
@@ -149,6 +170,9 @@ class Plotter():
         self.axes.add_artist(self.labelHalfP)
         self.axes.add_artist(self.labelHalfFS)
         self.axes.add_artist(self.labelHalfFE)
+        self.axes.add_artist(self.labelObwP)
+        self.axes.add_artist(self.labelObwFS)
+        self.axes.add_artist(self.labelObwFE)
 
         self.hide_measure()
 
@@ -177,7 +201,7 @@ class Plotter():
             self.axes.draw_artist(label)
 
     def draw_measure(self, background, measure, minP, maxP, avgP, gMeanP,
-                     halfP):
+                     halfP, obw):
         if self.axes._cachedRenderer is None:
             return
 
@@ -207,6 +231,12 @@ class Plotter():
             self.draw_vline(self.lineHalfFS, self.labelHalfFS, xStart)
             self.draw_vline(self.lineHalfFE, self.labelHalfFE, xEnd)
 
+        if obw:
+            xStart, xEnd, y = measure.get_obw()
+            self.draw_hline(self.lineObwP, self.labelObwP, y)
+            self.draw_vline(self.lineObwFS, self.labelObwFS, xStart)
+            self.draw_vline(self.lineObwFE, self.labelObwFE, xEnd)
+
         canvas.blit(self.axes.bbox)
 
     def hide_measure(self):
@@ -217,6 +247,9 @@ class Plotter():
         self.lineHalfP.set_visible(False)
         self.lineHalfFS.set_visible(False)
         self.lineHalfFE.set_visible(False)
+        self.lineObwP.set_visible(False)
+        self.lineObwFS.set_visible(False)
+        self.lineObwFE.set_visible(False)
         self.labelMinP.set_visible(False)
         self.labelMaxP.set_visible(False)
         self.labelAvgP.set_visible(False)
@@ -224,6 +257,9 @@ class Plotter():
         self.labelHalfP.set_visible(False)
         self.labelHalfFS.set_visible(False)
         self.labelHalfFE.set_visible(False)
+        self.labelObwP.set_visible(False)
+        self.labelObwFS.set_visible(False)
+        self.labelObwFE.set_visible(False)
 
     def scale_plot(self, force=False):
         if self.extent is not None:

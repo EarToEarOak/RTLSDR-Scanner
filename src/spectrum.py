@@ -104,6 +104,7 @@ class Measure():
         self.gMeanP = None
         self.flatness = None
         self.halfP = None
+        self.obw = None
 
         self.calculate(spectrum, start, end)
 
@@ -129,18 +130,43 @@ class Measure():
 
         self.flatness = gMean / avg
 
-        self.halfP = [None, None, self.maxP[1] - 3]
-        if self.halfP[2] >= self.minP[1]:
+        self.calc_half_p(sweep)
+        self.calc_obw(sweep)
+
+        self.isValid = True
+
+    def calc_half_p(self, sweep):
+        power = self.maxP[1] - 3
+        self.halfP = [None, None, power]
+
+        if power >= self.minP[1]:
             for (f, p) in sweep:
-                if p >= self.halfP[2]:
+                if p >= power:
                     self.halfP[0] = f
                     break
             for (f, p) in reversed(sweep):
-                if p >= self.halfP[2]:
+                if p >= power:
                     self.halfP[1] = f
                     break
 
-        self.isValid = True
+    def calc_obw(self, sweep):
+        self.obw = [None, None, None]
+
+        totalP = 0
+        for (_f, p) in sweep:
+            totalP += p
+        power = totalP * 0.005
+        self.obw[2] = power
+
+        if power >= self.minP[1]:
+            for (f, p) in sweep:
+                if p >= power:
+                    self.obw[0] = f
+                    break
+            for (f, p) in reversed(sweep):
+                if p >= power:
+                    self.obw[1] = f
+                    break
 
     def is_valid(self):
         return self.isValid
@@ -165,6 +191,9 @@ class Measure():
 
     def get_half_p(self):
         return self.halfP
+
+    def get_obw(self):
+        return self.obw
 
 
 def count_points(spectrum):

@@ -54,9 +54,13 @@ class Spectrogram:
         self.extent = None
         self.lineHalfFS = None
         self.lineHalfFE = None
+        self.lineObwFS = None
+        self.lineObwFE = None
 
         self.labelHalfFS = None
         self.labelHalfFE = None
+        self.labelObwFS = None
+        self.labelObwFE = None
 
         self.threadPlot = None
         self.setup_plot()
@@ -92,23 +96,36 @@ class Spectrogram:
         dashesHalf = [1, 5, 5, 5, 5, 5]
         self.lineHalfFS = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='purple')
         self.lineHalfFE = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='purple')
+        self.lineObwFS = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='#996600')
+        self.lineObwFE = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='#996600')
         if matplotlib.__version__ >= '1.3':
             effect = patheffects.withStroke(linewidth=3, foreground="w",
                                             alpha=0.75)
             self.lineHalfFS.set_path_effects([effect])
             self.lineHalfFE.set_path_effects([effect])
+            self.lineObwFS.set_path_effects([effect])
+            self.lineObwFE.set_path_effects([effect])
 
         self.axes.add_line(self.lineHalfFS)
         self.axes.add_line(self.lineHalfFE)
+        self.axes.add_line(self.lineObwFS)
+        self.axes.add_line(self.lineObwFE)
 
         box = dict(boxstyle='round', fc='white', ec='purple')
         self.labelHalfFS = Text(0, 0, '-3dB', fontsize='x-small', ha="center",
                                 va="top", bbox=box, color='purple')
         self.labelHalfFE = Text(0, 0, '-3dB', fontsize='x-small', ha="center",
                                 va="top", bbox=box, color='purple')
+        box['ec'] = '#996600'
+        self.labelObwFS = Text(0, 0, 'OBW', fontsize='x-small', ha="center",
+                                va="top", bbox=box, color='#996600')
+        self.labelObwFE = Text(0, 0, 'OBW', fontsize='x-small', ha="center",
+                                va="top", bbox=box, color='#996600')
 
         self.axes.add_artist(self.labelHalfFS)
         self.axes.add_artist(self.labelHalfFE)
+        self.axes.add_artist(self.labelObwFS)
+        self.axes.add_artist(self.labelObwFE)
 
         self.hide_measure()
 
@@ -125,7 +142,7 @@ class Spectrogram:
             self.axes.draw_artist(label)
 
     def draw_measure(self, background, measure, _minP, _maxP, _avgP, _gMeanP,
-                     halfP):
+                     halfP, obw):
         if self.axes._cachedRenderer is None:
             return
 
@@ -138,11 +155,18 @@ class Spectrogram:
             self.draw_vline(self.lineHalfFS, self.labelHalfFS, xStart)
             self.draw_vline(self.lineHalfFE, self.labelHalfFE, xEnd)
 
+        if obw:
+            xStart, xEnd, y = measure.get_obw()
+            self.draw_vline(self.lineObwFS, self.labelObwFS, xStart)
+            self.draw_vline(self.lineObwFE, self.labelObwFE, xEnd)
+
         canvas.blit(self.axes.bbox)
 
     def hide_measure(self):
         self.labelHalfFS.set_visible(False)
         self.labelHalfFE.set_visible(False)
+        self.labelObwFS.set_visible(False)
+        self.labelObwFE.set_visible(False)
 
     def scale_plot(self, force=False):
         if self.figure is not None and self.plot is not None:

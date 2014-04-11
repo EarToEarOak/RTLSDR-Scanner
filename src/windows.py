@@ -105,6 +105,7 @@ class PanelGraph(wx.Panel):
         self.showAvgP = None
         self.showGMeanP = None
         self.showHalfP = None
+        self.showObw = None
 
         self.doDraw = False
 
@@ -254,16 +255,18 @@ class PanelGraph(wx.Panel):
                                    self.showMaxP,
                                    self.showAvgP,
                                    self.showGMeanP,
-                                   self.showHalfP)
+                                   self.showHalfP,
+                                   self.showObw)
 
     def update_measure(self, measure, showMinP, showMaxP, showAvgP, showGMeanP,
-                       showHalfP):
+                       showHalfP, showObw):
         self.measure = measure
         self.showMinP = showMinP
         self.showMaxP = showMaxP
         self.showAvgP = showAvgP
         self.showGMeanP = showGMeanP
         self.showHalfP = showHalfP
+        self.showObw = showObw
 
         self.draw_measure()
 
@@ -472,13 +475,14 @@ class PanelMeasure(wx.Panel):
         self.checkAvg = None
         self.checkGMean = None
         self.checkHalf = None
+        self.checkObw = None
 
         self.selected = None
 
         self.SetBackgroundColour('white')
 
         self.grid = wxGrid.Grid(self)
-        self.grid.CreateGrid(3, 15)
+        self.grid.CreateGrid(3, 19)
         self.grid.EnableEditing(False)
         self.grid.EnableDragGridSize(False)
         self.grid.SetColLabelSize(1)
@@ -487,6 +491,7 @@ class PanelMeasure(wx.Panel):
         self.grid.SetColSize(2, 1)
         self.grid.SetColSize(7, 1)
         self.grid.SetColSize(11, 1)
+        self.grid.SetColSize(15, 1)
 
         for x in xrange(self.grid.GetNumberRows()):
             self.grid.SetRowLabelValue(x, '')
@@ -496,20 +501,24 @@ class PanelMeasure(wx.Panel):
         self.locsDesc = {'Start': (0, 0),
                          'End': (1, 0),
                          u'\u0394': (2, 0),
-                         'Min': (0, 4),
-                         'Max': (1, 4),
+                         u'Min': (0, 4),
+                         u'Max': (1, 4),
                          u'\u0394': (2, 4),
-                         'Mean': (0, 9),
-                         'GMean': (1, 9),
-                         'Flatness': (2, 9),
-                         '-3dB Start': (0, 13),
-                         '-3dB End': (1, 13),
-                         u'-3dB \u0394': (2, 13)}
+                         u'Mean': (0, 9),
+                         u'GMean': (1, 9),
+                         u'Flatness': (2, 9),
+                         u'-3dB Start': (0, 13),
+                         u'-3dB End': (1, 13),
+                         u'-3dB \u0394': (2, 13),
+                         u'OBW Start': (0, 17),
+                         u'OBW End': (1, 17),
+                         u'OBW \u0394': (2, 17)}
         self.set_descs()
 
         self.locsCheck = {'min': (0, 3), 'max': (1, 3),
                           'avg': (0, 8), 'gmean': (1, 8),
-                          'half': (0, 12)}
+                          'half': (0, 12),
+                          'obw':(0, 16)}
         self.set_check_editor()
 
         colour = self.grid.GetBackgroundColour()
@@ -517,6 +526,8 @@ class PanelMeasure(wx.Panel):
         self.grid.SetCellTextColour(2, 8, colour)
         self.grid.SetCellTextColour(1, 12, colour)
         self.grid.SetCellTextColour(2, 12, colour)
+        self.grid.SetCellTextColour(1, 16, colour)
+        self.grid.SetCellTextColour(2, 16, colour)
 
         self.clear_checks()
 
@@ -524,7 +535,8 @@ class PanelMeasure(wx.Panel):
                             'minFP': (0, 5), 'maxFP': (1, 5), 'deltaFP': (2, 5),
                             'minP': (0, 6), 'maxP': (1, 6), 'deltaP': (2, 6),
                             'avg': (0, 10), 'gmean': (1, 10), 'flat': (2, 10),
-                            'halfstart': (0, 14), 'halfend': (1, 14), 'halfdelta': (2, 14)}
+                            'halfstart': (0, 14), 'halfend': (1, 14), 'halfdelta': (2, 14),
+                            'obwstart': (0, 18), 'obwend': (1, 18), 'obwdelta': (2, 18)}
 
         fontCell = self.grid.GetDefaultCellFont()
         fontSize = fontCell.GetPointSize()
@@ -565,6 +577,10 @@ class PanelMeasure(wx.Panel):
         toolTips[self.locsMeasure['halfstart']] = '-3db start location'
         toolTips[self.locsMeasure['halfend']] = '-3db end location'
         toolTips[self.locsMeasure['halfdelta']] = '-3db bandwidth'
+        toolTips[self.locsMeasure['obwstart']] = '99% start location'
+        toolTips[self.locsMeasure['obwend']] = '99% end location'
+        toolTips[self.locsMeasure['obwdelta']] = '99% bandwidth'
+
         self.toolTips = GridToolTips(self.grid, toolTips)
 
         self.popupMenu = wx.Menu()
@@ -618,6 +634,7 @@ class PanelMeasure(wx.Panel):
         self.set_check_value('avg', self.checkAvg)
         self.set_check_value('gmean', self.checkGMean)
         self.set_check_value('half', self.checkHalf)
+        self.set_check_value('obw', self.checkObw)
 
     def clear_checks(self):
         self.checkMin = '0'
@@ -625,6 +642,7 @@ class PanelMeasure(wx.Panel):
         self.checkAvg = '0'
         self.checkGMean = '0'
         self.checkHalf = '0'
+        self.checkObw = '0'
         self.update_checks()
 
     def str_to_bool(self, string):
@@ -663,6 +681,9 @@ class PanelMeasure(wx.Panel):
                         elif control == 'half':
                             self.checkHalf = check
                             break
+                        elif control == 'obw':
+                            self.checkObw = check
+                            break
 
                 if self.selected is None:
                     self.selected = self.locsMeasure['start']
@@ -700,7 +721,9 @@ class PanelMeasure(wx.Panel):
         avgP = self.str_to_bool(self.checkAvg)
         gMeanP = self.str_to_bool(self.checkGMean)
         halfP = self.str_to_bool(self.checkHalf)
-        self.graph.update_measure(self.measure, minP, maxP, avgP, gMeanP, halfP)
+        obw = self.str_to_bool(self.checkObw)
+        self.graph.update_measure(self.measure, minP, maxP, avgP, gMeanP,
+                                  halfP, obw)
 
     def clear_measurement(self):
         self.clear_checks()
@@ -722,6 +745,7 @@ class PanelMeasure(wx.Panel):
         gMeanP = self.measure.get_gmean_p()
         flatness = self.measure.get_flatness()
         halfP = self.measure.get_half_p()
+        obw = self.measure.get_obw()
 
         self.set_measure_value('start',
                                "{0:10.6f} MHz".format(minF))
@@ -766,6 +790,22 @@ class PanelMeasure(wx.Panel):
             text = ''
         self.set_measure_value('halfdelta', text)
 
+        if obw[0] is not None:
+            text = "{0:10.6f} MHz".format(obw[0])
+        else:
+            text = ''
+        self.set_measure_value('obwstart', text)
+        if obw[1] is not None:
+            text = "{0:10.6f} MHz".format(obw[1])
+        else:
+            text = ''
+        self.set_measure_value('obwend', text)
+        if obw[0] is not None and obw[1] is not None:
+            text = "{0:10.6f} MHz".format(obw[1] - obw[0])
+        else:
+            text = ''
+        self.set_measure_value('obwdelta', text)
+
         self.update_measure()
 
     def show(self, show):
@@ -783,6 +823,7 @@ class PanelMeasure(wx.Panel):
                 self.set_check_read_only(cell, False)
         elif display == Display.SPECT:
             self.set_check_read_only('half', False)
+            self.set_check_read_only('obw', False)
 
         self.grid.Refresh()
 
