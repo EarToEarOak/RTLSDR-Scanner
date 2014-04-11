@@ -14,6 +14,7 @@ A basic [user manual](https://github.com/EarToEarOak/RTLSDR-Scanner/blob/master/
 Tested on:
 
 - Windows 7 (x86 and x64)
+- Windows 8.1 (x64)
 - Windows XP (x86)
 - Ubuntu 12.04 (x86)
 - Ubuntu 12.10 (x64)
