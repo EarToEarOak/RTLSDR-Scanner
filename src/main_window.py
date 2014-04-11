@@ -232,15 +232,17 @@ class FrameMain(wx.Frame):
         grid.Add(textDisplay, pos=(0, 13), flag=wx.ALIGN_CENTER)
         grid.Add(self.choiceDisplay, pos=(1, 13), flag=wx.ALIGN_CENTER)
 
-        self.toolbar.SetSizer(grid)
-
         self.set_controls()
         self.set_gain_control()
+
+        self.toolbar.SetSizer(grid)
+        self.toolbar.Layout()
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.graph, 1, wx.EXPAND)
         sizer.Add(self.toolbar, 0, wx.EXPAND)
         panel.SetSizer(sizer)
+        panel.Layout()
 
     def create_menu(self):
         menuFile = wx.Menu()

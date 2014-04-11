@@ -116,9 +116,9 @@ class PanelGraph(wx.Panel):
         self.toolbar.Realize()
 
         vbox = wx.BoxSizer(wx.VERTICAL)
-        vbox.Add(self.canvas, 1, wx.EXPAND | wx.ALL)
-        vbox.Add(self.measureTable, 0, wx.EXPAND | wx.ALL)
-        vbox.Add(self.toolbar, 0, wx.EXPAND | wx.ALL)
+        vbox.Add(self.canvas, 1, wx.EXPAND)
+        vbox.Add(self.measureTable, 0, wx.EXPAND)
+        vbox.Add(self.toolbar, 0, wx.EXPAND)
         self.SetSizer(vbox)
         vbox.Fit(self)
 
@@ -342,7 +342,7 @@ class PanelGraphCompare(wx.Panel):
 
         vbox = wx.BoxSizer(wx.VERTICAL)
         vbox.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
-        vbox.Add(grid, 0, wx.ALIGN_CENTRE | wx.ALL, border=5)
+        vbox.Add(grid, 0, wx.EXPAND | wx.ALL, border=5)
         vbox.Add(toolbar, 0, wx.EXPAND)
 
         self.SetSizer(vbox)
@@ -473,6 +473,7 @@ class PanelMeasure(wx.Panel):
         self.grid.SetColSize(7, 1)
         self.grid.SetColSize(11, 1)
         self.grid.SetColSize(15, 1)
+        self.grid.SetMargins(0, wx.SystemSettings_GetMetric(wx.SYS_HSCROLL_Y))
 
         for x in xrange(self.grid.GetNumberRows()):
             self.grid.SetRowLabelValue(x, '')
@@ -573,7 +574,8 @@ class PanelMeasure(wx.Panel):
         self.Bind(wxGrid.EVT_GRID_CELL_LEFT_CLICK, self.on_cell_click)
 
         box = wx.BoxSizer(wx.VERTICAL)
-        box.Add(self.grid, 1, wx.ALIGN_CENTER | wx.TOP, border=10)
+        box.Add(self.grid, 0, wx.EXPAND | wx.TOP | wx.LEFT | wx.RIGHT,
+                border=10)
         self.SetSizer(box)
 
     def set_descs(self):
