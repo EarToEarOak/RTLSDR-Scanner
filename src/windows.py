@@ -90,6 +90,8 @@ class PanelGraph(wx.Panel):
         self.plot = None
         self.settings = settings
         self.spectrum = None
+        self.isLimited = None
+        self.limit = None
         self.extent = None
 
         self.background = None
@@ -192,7 +194,7 @@ class PanelGraph(wx.Panel):
 
     def on_timer(self, _event):
         self.timer.Stop()
-        self.set_plot(None, None, self.annotate)
+        self.set_plot(None, None, None, None, self.annotate)
 
     def draw(self):
         self.doDraw = True
@@ -203,9 +205,12 @@ class PanelGraph(wx.Panel):
 
     def set_plot(self, spectrum, isLimited, limit, extent, annotate=False):
         if spectrum is not None and extent is not None:
-            self.spectrum = copy.copy(spectrum)
-            self.extent = extent
-            self.annotate = annotate
+            if isLimited is not None and limit is not None:
+                self.spectrum = copy.copy(spectrum)
+                self.extent = extent
+                self.annotate = annotate
+                self.isLimited = isLimited
+                self.limit = limit
 
         if self.plot.get_plot_thread() is None:
             self.timer.Stop()
