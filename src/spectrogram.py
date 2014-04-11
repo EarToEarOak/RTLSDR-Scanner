@@ -39,7 +39,7 @@ import numpy
 
 from events import EventThreadStatus, Event, post_event
 from misc import format_time
-from spectrum import epoch_to_mpl, split_spectrum
+from spectrum import epoch_to_mpl, split_spectrum, Measure
 
 
 class Spectrogram:
@@ -141,8 +141,7 @@ class Spectrogram:
             label.set_position((x, yLim[1]))
             self.axes.draw_artist(label)
 
-    def draw_measure(self, background, measure, _minP, _maxP, _avgP, _gMeanP,
-                     halfP, obw):
+    def draw_measure(self, background, measure, show):
         if self.axes._cachedRenderer is None:
             return
 
@@ -150,12 +149,12 @@ class Spectrogram:
         canvas = self.axes.get_figure().canvas
         canvas.restore_region(background)
 
-        if halfP:
-            xStart, xEnd, y = measure.get_half_p()
+        if show[Measure.HBW]:
+            xStart, xEnd, y = measure.get_hpw()
             self.draw_vline(self.lineHalfFS, self.labelHalfFS, xStart)
             self.draw_vline(self.lineHalfFE, self.labelHalfFE, xEnd)
 
-        if obw:
+        if show[Measure.OBW]:
             xStart, xEnd, y = measure.get_obw()
             self.draw_vline(self.lineObwFS, self.labelObwFS, xStart)
             self.draw_vline(self.lineObwFE, self.labelObwFE, xEnd)

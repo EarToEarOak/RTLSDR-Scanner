@@ -94,6 +94,8 @@ class Extent():
 
 
 class Measure():
+    MIN, MAX, AVG, GMEAN, HBW, OBW = range(6)
+
     def __init__(self, spectrum, start, end):
         self.isValid = False
         self.minF = None
@@ -103,7 +105,7 @@ class Measure():
         self.avgP = None
         self.gMeanP = None
         self.flatness = None
-        self.halfP = None
+        self.hbw = None
         self.obw = None
 
         self.calculate(spectrum, start, end)
@@ -130,23 +132,23 @@ class Measure():
 
         self.flatness = gMean / avg
 
-        self.calc_half_p(sweep)
+        self.calc_hbw(sweep)
         self.calc_obw(sweep)
 
         self.isValid = True
 
-    def calc_half_p(self, sweep):
+    def calc_hbw(self, sweep):
         power = self.maxP[1] - 3
-        self.halfP = [None, None, power]
+        self.hbw = [None, None, power]
 
         if power >= self.minP[1]:
             for (f, p) in sweep:
                 if p >= power:
-                    self.halfP[0] = f
+                    self.hbw[0] = f
                     break
             for (f, p) in reversed(sweep):
                 if p >= power:
-                    self.halfP[1] = f
+                    self.hbw[1] = f
                     break
 
     def calc_obw(self, sweep):
@@ -189,8 +191,8 @@ class Measure():
     def get_flatness(self):
         return self.flatness
 
-    def get_half_p(self):
-        return self.halfP
+    def get_hpw(self):
+        return self.hbw
 
     def get_obw(self):
         return self.obw

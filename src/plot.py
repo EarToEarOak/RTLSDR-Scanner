@@ -38,6 +38,7 @@ from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 import numpy
 
 from events import EventThreadStatus, Event, post_event
+from spectrum import Measure
 
 
 class Plotter():
@@ -200,8 +201,7 @@ class Plotter():
             label.set_position((x, yLim[1]))
             self.axes.draw_artist(label)
 
-    def draw_measure(self, background, measure, minP, maxP, avgP, gMeanP,
-                     halfP, obw):
+    def draw_measure(self, background, measure, show):
         if self.axes._cachedRenderer is None:
             return
 
@@ -209,29 +209,29 @@ class Plotter():
         canvas = self.axes.get_figure().canvas
         canvas.restore_region(background)
 
-        if minP:
+        if show[Measure.MIN]:
             y = measure.get_min_p()[1]
             self.draw_hline(self.lineMinP, self.labelMinP, y)
 
-        if maxP:
+        if show[Measure.MAX]:
             y = measure.get_max_p()[1]
             self.draw_hline(self.lineMaxP, self.labelMaxP, y)
 
-        if avgP:
+        if show[Measure.AVG]:
             y = measure.get_avg_p()
             self.draw_hline(self.lineAvgP, self.labelAvgP, y)
 
-        if gMeanP:
+        if show[Measure.GMEAN]:
             y = measure.get_gmean_p()
             self.draw_hline(self.lineGMP, self.labelGMP, y)
 
-        if halfP:
-            xStart, xEnd, y = measure.get_half_p()
+        if show[Measure.HBW]:
+            xStart, xEnd, y = measure.get_hpw()
             self.draw_hline(self.lineHalfP, self.labelHalfP, y)
             self.draw_vline(self.lineHalfFS, self.labelHalfFS, xStart)
             self.draw_vline(self.lineHalfFE, self.labelHalfFE, xEnd)
 
-        if obw:
+        if show[Measure.OBW]:
             xStart, xEnd, y = measure.get_obw()
             self.draw_hline(self.lineObwP, self.labelObwP, y)
             self.draw_vline(self.lineObwFS, self.labelObwFS, xStart)
