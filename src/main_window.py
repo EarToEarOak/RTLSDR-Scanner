@@ -46,7 +46,7 @@ from misc import calc_samples, calc_real_dwell, \
     get_version_timestamp, get_version_timestamp_repo, add_colours
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
-from spectrum import count_points, sort_spectrum, Extent, reduce_points
+from spectrum import count_points, sort_spectrum, Extent
 from toolbars import Statusbar
 from windows import PanelGraph
 

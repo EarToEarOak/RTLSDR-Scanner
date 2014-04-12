@@ -150,12 +150,12 @@ class Spectrogram:
         canvas.restore_region(background)
 
         if show[Measure.HBW]:
-            xStart, xEnd, y = measure.get_hpw()
+            xStart, xEnd, _y = measure.get_hpw()
             self.draw_vline(self.lineHalfFS, self.labelHalfFS, xStart)
             self.draw_vline(self.lineHalfFE, self.labelHalfFE, xEnd)
 
         if show[Measure.OBW]:
-            xStart, xEnd, y = measure.get_obw()
+            xStart, xEnd, _y = measure.get_obw()
             self.draw_vline(self.lineObwFS, self.labelObwFS, xStart)
             self.draw_vline(self.lineObwFE, self.labelObwFE, xEnd)
 
