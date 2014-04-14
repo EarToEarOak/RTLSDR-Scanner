@@ -96,6 +96,12 @@ class Plot:
     STR_PARTIAL = 'Partial'
 
 
+class Markers:
+    MIN, MAX, AVG, GMEAN, \
+    HP, HFS, HFE, \
+    OP, OFS, OFE = range(10)
+
+
 class File:
     class ExportType:
         CSV, GNUPLOT, FREEMAT = range(3)

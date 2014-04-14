@@ -37,6 +37,7 @@ from matplotlib.text import Text
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 import numpy
 
+from constants import Markers
 from events import EventThreadStatus, Event, post_event
 from spectrum import Measure
 
@@ -51,26 +52,8 @@ class Plotter():
         self.bar = None
         self.threadPlot = None
         self.extent = None
-        self.lineMinP = None
-        self.lineMaxP = None
-        self.lineAvgP = None
-        self.lineGMP = None
-        self.lineHalfP = None
-        self.lineHalfFS = None
-        self.lineHalfFE = None
-        self.lineObwP = None
-        self.lineObwFS = None
-        self.lineObwFE = None
-
-        self.labelMinP = None
-        self.labelMaxP = None
-        self.labelAvgP = None
-        self.labelGMP = None
-        self.labelHalfP = None
-        self.labelHalfFS = None
-        self.labelHalfFE = None
-        self.labelObwFS = None
-        self.labelObwFE = None
+        self.lines = {}
+        self.labels = {}
 
         self.setup_plot()
         self.set_grid(self.settings.grid)
@@ -103,81 +86,103 @@ class Plotter():
         dashesAvg = [4, 5, 1, 5, 1, 5]
         dashesGM = [5, 5, 5, 5, 1, 5, 1, 5]
         dashesHalf = [1, 5, 5, 5, 5, 5]
-        self.lineMinP = Line2D([0, 0], [0, 0], linestyle='--', color='black')
-        self.lineMaxP = Line2D([0, 0], [0, 0], linestyle='-.', color='black')
-        self.lineAvgP = Line2D([0, 0], [0, 0], dashes=dashesAvg, color='magenta')
-        self.lineGMP = Line2D([0, 0], [0, 0], dashes=dashesGM, color='green')
-        self.lineHalfP = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='purple')
-        self.lineHalfFS = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='purple')
-        self.lineHalfFE = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='purple')
-        self.lineObwP = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='#996600')
-        self.lineObwFS = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='#996600')
-        self.lineObwFE = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='#996600')
+        self.lines[Markers.MIN] = Line2D([0, 0], [0, 0], linestyle='--',
+                                         color='black')
+        self.lines[Markers.MAX] = Line2D([0, 0], [0, 0], linestyle='-.',
+                                         color='black')
+        self.lines[Markers.AVG] = Line2D([0, 0], [0, 0], dashes=dashesAvg,
+                                         color='magenta')
+        self.lines[Markers.GMEAN] = Line2D([0, 0], [0, 0], dashes=dashesGM,
+                                           color='green')
+        self.lines[Markers.HP] = Line2D([0, 0], [0, 0], dashes=dashesHalf,
+                                        color='purple')
+        self.lines[Markers.HFS] = Line2D([0, 0], [0, 0], dashes=dashesHalf,
+                                         color='purple')
+        self.lines[Markers.HFE] = Line2D([0, 0], [0, 0], dashes=dashesHalf,
+                                         color='purple')
+        self.lines[Markers.OP] = Line2D([0, 0], [0, 0], dashes=dashesHalf,
+                                        color='#996600')
+        self.lines[Markers.OFS] = Line2D([0, 0], [0, 0], dashes=dashesHalf,
+                                         color='#996600')
+        self.lines[Markers.OFE] = Line2D([0, 0], [0, 0], dashes=dashesHalf,
+                                         color='#996600')
         if matplotlib.__version__ >= '1.3':
             effect = patheffects.withStroke(linewidth=3, foreground="w",
                                             alpha=0.75)
-            self.lineMinP.set_path_effects([effect])
-            self.lineMaxP.set_path_effects([effect])
-            self.lineAvgP.set_path_effects([effect])
-            self.lineGMP.set_path_effects([effect])
-            self.lineHalfP.set_path_effects([effect])
-            self.lineHalfFS.set_path_effects([effect])
-            self.lineHalfFE.set_path_effects([effect])
-            self.lineObwP.set_path_effects([effect])
-            self.lineObwFS.set_path_effects([effect])
-            self.lineObwFE.set_path_effects([effect])
+            self.lines[Markers.MIN].set_path_effects([effect])
+            self.lines[Markers.MAX].set_path_effects([effect])
+            self.lines[Markers.AVG].set_path_effects([effect])
+            self.lines[Markers.GMEAN].set_path_effects([effect])
+            self.lines[Markers.HP].set_path_effects([effect])
+            self.lines[Markers.HFS].set_path_effects([effect])
+            self.lines[Markers.HFE].set_path_effects([effect])
+            self.lines[Markers.OP].set_path_effects([effect])
+            self.lines[Markers.OFS].set_path_effects([effect])
+            self.lines[Markers.OFE].set_path_effects([effect])
 
-        self.axes.add_line(self.lineMinP)
-        self.axes.add_line(self.lineMaxP)
-        self.axes.add_line(self.lineAvgP)
-        self.axes.add_line(self.lineGMP)
-        self.axes.add_line(self.lineHalfP)
-        self.axes.add_line(self.lineHalfFS)
-        self.axes.add_line(self.lineHalfFE)
-        self.axes.add_line(self.lineObwP)
-        self.axes.add_line(self.lineObwFS)
-        self.axes.add_line(self.lineObwFE)
+        self.axes.add_line(self.lines[Markers.MIN])
+        self.axes.add_line(self.lines[Markers.MAX])
+        self.axes.add_line(self.lines[Markers.AVG])
+        self.axes.add_line(self.lines[Markers.GMEAN])
+        self.axes.add_line(self.lines[Markers.HP])
+        self.axes.add_line(self.lines[Markers.HFS])
+        self.axes.add_line(self.lines[Markers.HFE])
+        self.axes.add_line(self.lines[Markers.OP])
+        self.axes.add_line(self.lines[Markers.OFS])
+        self.axes.add_line(self.lines[Markers.OFE])
 
         box = dict(boxstyle='round', fc='white', ec='black')
-        self.labelMinP = Text(0, 0, 'Min', fontsize='x-small', ha="right",
-                              va="bottom", bbox=box, color='black')
-        self.labelMaxP = Text(0, 0, 'Max', fontsize='x-small', ha="right",
-                              va="top", bbox=box, color='black')
+        self.labels[Markers.MIN] = Text(0, 0, 'Min', fontsize='x-small',
+                                        ha="right", va="bottom", bbox=box,
+                                        color='black')
+        self.labels[Markers.MAX] = Text(0, 0, 'Max', fontsize='x-small',
+                                        ha="right", va="top", bbox=box,
+                                        color='black')
         box['ec'] = 'magenta'
-        self.labelAvgP = Text(0, 0, 'Mean', fontsize='x-small', ha="right",
-                              va="center", bbox=box, color='magenta')
+        self.labels[Markers.AVG] = Text(0, 0, 'Mean', fontsize='x-small',
+                                        ha="right", va="center", bbox=box,
+                                        color='magenta')
         box['ec'] = 'green'
-        self.labelGMP = Text(0, 0, 'GMean', fontsize='x-small', ha="right",
-                            va="center", bbox=box, color='green')
+        self.labels[Markers.GMEAN] = Text(0, 0, 'GMean', fontsize='x-small',
+                                          ha="right", va="center", bbox=box,
+                                          color='green')
         box['ec'] = 'purple'
-        self.labelHalfP = Text(0, 0, '-3dB', fontsize='x-small', ha="right",
-                              va="center", bbox=box, color='purple')
-        self.labelHalfFS = Text(0, 0, '-3dB', fontsize='x-small', ha="center",
-                                va="top", bbox=box, color='purple')
-        self.labelHalfFE = Text(0, 0, '-3dB', fontsize='x-small', ha="center",
-                                va="top", bbox=box, color='purple')
+        self.labels[Markers.HP] = Text(0, 0, '-3dB', fontsize='x-small',
+                                       ha="right", va="center", bbox=box,
+                                       color='purple')
+        self.labels[Markers.HFS] = Text(0, 0, '-3dB', fontsize='x-small',
+                                        ha="center", va="top", bbox=box,
+                                        color='purple')
+        self.labels[Markers.HFE] = Text(0, 0, '-3dB', fontsize='x-small',
+                                        ha="center", va="top", bbox=box,
+                                        color='purple')
         box['ec'] = '#996600'
-        self.labelObwP = Text(0, 0, 'OBW', fontsize='x-small', ha="right",
-                              va="center", bbox=box, color='#996600')
-        self.labelObwFS = Text(0, 0, 'OBW', fontsize='x-small', ha="center",
-                                va="top", bbox=box, color='#996600')
-        self.labelObwFE = Text(0, 0, 'OBW', fontsize='x-small', ha="center",
-                                va="top", bbox=box, color='#996600')
+        self.labels[Markers.OP] = Text(0, 0, 'OBW', fontsize='x-small',
+                                       ha="right", va="center", bbox=box,
+                                       color='#996600')
+        self.labels[Markers.OFS] = Text(0, 0, 'OBW', fontsize='x-small',
+                                        ha="center", va="top", bbox=box,
+                                        color='#996600')
+        self.labels[Markers.OFE] = Text(0, 0, 'OBW', fontsize='x-small',
+                                        ha="center", va="top", bbox=box,
+                                        color='#996600')
 
-        self.axes.add_artist(self.labelMinP)
-        self.axes.add_artist(self.labelMaxP)
-        self.axes.add_artist(self.labelAvgP)
-        self.axes.add_artist(self.labelGMP)
-        self.axes.add_artist(self.labelHalfP)
-        self.axes.add_artist(self.labelHalfFS)
-        self.axes.add_artist(self.labelHalfFE)
-        self.axes.add_artist(self.labelObwP)
-        self.axes.add_artist(self.labelObwFS)
-        self.axes.add_artist(self.labelObwFE)
+        self.axes.add_artist(self.labels[Markers.MIN])
+        self.axes.add_artist(self.labels[Markers.MAX])
+        self.axes.add_artist(self.labels[Markers.AVG])
+        self.axes.add_artist(self.labels[Markers.GMEAN])
+        self.axes.add_artist(self.labels[Markers.HP])
+        self.axes.add_artist(self.labels[Markers.HFS])
+        self.axes.add_artist(self.labels[Markers.HFE])
+        self.axes.add_artist(self.labels[Markers.OP])
+        self.axes.add_artist(self.labels[Markers.OFS])
+        self.axes.add_artist(self.labels[Markers.OFE])
 
         self.hide_measure()
 
-    def draw_hline(self, line, label, y):
+    def draw_hline(self, marker, y):
+        line = self.lines[marker]
+        label = self.labels[marker]
         xLim = self.axes.get_xlim()
         yLim = self.axes.get_ylim()
         if yLim[0] < y < yLim[1]:
@@ -189,7 +194,9 @@ class Plotter():
             label.set_position((xLim[1], y))
             self.axes.draw_artist(label)
 
-    def draw_vline(self, line, label, x):
+    def draw_vline(self, marker, x):
+        line = self.lines[marker]
+        label = self.labels[marker]
         yLim = self.axes.get_ylim()
         xLim = self.axes.get_xlim()
         if xLim[0] < x < xLim[1]:
@@ -211,55 +218,39 @@ class Plotter():
 
         if show[Measure.MIN]:
             y = measure.get_min_p()[1]
-            self.draw_hline(self.lineMinP, self.labelMinP, y)
+            self.draw_hline(Markers.MIN, y)
 
         if show[Measure.MAX]:
             y = measure.get_max_p()[1]
-            self.draw_hline(self.lineMaxP, self.labelMaxP, y)
+            self.draw_hline(Markers.MAX, y)
 
         if show[Measure.AVG]:
             y = measure.get_avg_p()
-            self.draw_hline(self.lineAvgP, self.labelAvgP, y)
+            self.draw_hline(Markers.AVG, y)
 
         if show[Measure.GMEAN]:
             y = measure.get_gmean_p()
-            self.draw_hline(self.lineGMP, self.labelGMP, y)
+            self.draw_hline(Markers.GMEAN, y)
 
         if show[Measure.HBW]:
             xStart, xEnd, y = measure.get_hpw()
-            self.draw_hline(self.lineHalfP, self.labelHalfP, y)
-            self.draw_vline(self.lineHalfFS, self.labelHalfFS, xStart)
-            self.draw_vline(self.lineHalfFE, self.labelHalfFE, xEnd)
+            self.draw_hline(Markers.HP, y)
+            self.draw_vline(Markers.HFS, xStart)
+            self.draw_vline(Markers.HFE, xEnd)
 
         if show[Measure.OBW]:
             xStart, xEnd, y = measure.get_obw()
-            self.draw_hline(self.lineObwP, self.labelObwP, y)
-            self.draw_vline(self.lineObwFS, self.labelObwFS, xStart)
-            self.draw_vline(self.lineObwFE, self.labelObwFE, xEnd)
+            self.draw_hline(Markers.OP, y)
+            self.draw_vline(Markers.OFE, xStart)
+            self.draw_vline(Markers.OFE, xEnd)
 
         canvas.blit(self.axes.bbox)
 
     def hide_measure(self):
-        self.lineMinP.set_visible(False)
-        self.lineMaxP.set_visible(False)
-        self.lineAvgP.set_visible(False)
-        self.lineGMP.set_visible(False)
-        self.lineHalfP.set_visible(False)
-        self.lineHalfFS.set_visible(False)
-        self.lineHalfFE.set_visible(False)
-        self.lineObwP.set_visible(False)
-        self.lineObwFS.set_visible(False)
-        self.lineObwFE.set_visible(False)
-        self.labelMinP.set_visible(False)
-        self.labelMaxP.set_visible(False)
-        self.labelAvgP.set_visible(False)
-        self.labelGMP.set_visible(False)
-        self.labelHalfP.set_visible(False)
-        self.labelHalfFS.set_visible(False)
-        self.labelHalfFE.set_visible(False)
-        self.labelObwP.set_visible(False)
-        self.labelObwFS.set_visible(False)
-        self.labelObwFE.set_visible(False)
+        for line in self.lines.itervalues():
+            line.set_visible(False)
+        for label in self.labels.itervalues():
+            label.set_visible(False)
 
     def scale_plot(self, force=False):
         if self.extent is not None:

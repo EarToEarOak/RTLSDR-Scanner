@@ -37,6 +37,7 @@ from matplotlib.text import Text
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 import numpy
 
+from constants import Markers
 from events import EventThreadStatus, Event, post_event
 from misc import format_time
 from spectrum import epoch_to_mpl, split_spectrum, Measure
@@ -52,15 +53,8 @@ class Spectrogram:
         self.axes = None
         self.plot = None
         self.extent = None
-        self.lineHalfFS = None
-        self.lineHalfFE = None
-        self.lineObwFS = None
-        self.lineObwFE = None
-
-        self.labelHalfFS = None
-        self.labelHalfFE = None
-        self.labelObwFS = None
-        self.labelObwFE = None
+        self.lines = {}
+        self.labels = {}
 
         self.threadPlot = None
         self.setup_plot()
@@ -94,42 +88,52 @@ class Spectrogram:
 
     def setup_measure(self):
         dashesHalf = [1, 5, 5, 5, 5, 5]
-        self.lineHalfFS = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='purple')
-        self.lineHalfFE = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='purple')
-        self.lineObwFS = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='#996600')
-        self.lineObwFE = Line2D([0, 0], [0, 0], dashes=dashesHalf, color='#996600')
+        self.lines[Markers.HFS] = Line2D([0, 0], [0, 0], dashes=dashesHalf,
+                                         color='purple')
+        self.lines[Markers.HFE] = Line2D([0, 0], [0, 0], dashes=dashesHalf,
+                                         color='purple')
+        self.lines[Markers.OFS] = Line2D([0, 0], [0, 0], dashes=dashesHalf,
+                                         color='#996600')
+        self.lines[Markers.OFE] = Line2D([0, 0], [0, 0], dashes=dashesHalf,
+                                         color='#996600')
         if matplotlib.__version__ >= '1.3':
             effect = patheffects.withStroke(linewidth=3, foreground="w",
                                             alpha=0.75)
-            self.lineHalfFS.set_path_effects([effect])
-            self.lineHalfFE.set_path_effects([effect])
-            self.lineObwFS.set_path_effects([effect])
-            self.lineObwFE.set_path_effects([effect])
+            self.lines[Markers.HFS].set_path_effects([effect])
+            self.lines[Markers.HFE].set_path_effects([effect])
+            self.lines[Markers.OFS].set_path_effects([effect])
+            self.lines[Markers.OFE].set_path_effects([effect])
 
-        self.axes.add_line(self.lineHalfFS)
-        self.axes.add_line(self.lineHalfFE)
-        self.axes.add_line(self.lineObwFS)
-        self.axes.add_line(self.lineObwFE)
+        self.axes.add_line(self.lines[Markers.HFS])
+        self.axes.add_line(self.lines[Markers.HFE])
+        self.axes.add_line(self.lines[Markers.OFS])
+        self.axes.add_line(self.lines[Markers.OFE])
 
         box = dict(boxstyle='round', fc='white', ec='purple')
-        self.labelHalfFS = Text(0, 0, '-3dB', fontsize='x-small', ha="center",
-                                va="top", bbox=box, color='purple')
-        self.labelHalfFE = Text(0, 0, '-3dB', fontsize='x-small', ha="center",
-                                va="top", bbox=box, color='purple')
+        self.labels[Markers.HFS] = Text(0, 0, '-3dB', fontsize='x-small',
+                                       ha="center", va="top", bbox=box,
+                                       color='purple')
+        self.labels[Markers.HFE] = Text(0, 0, '-3dB', fontsize='x-small',
+                                       ha="center", va="top", bbox=box,
+                                       color='purple')
         box['ec'] = '#996600'
-        self.labelObwFS = Text(0, 0, 'OBW', fontsize='x-small', ha="center",
-                                va="top", bbox=box, color='#996600')
-        self.labelObwFE = Text(0, 0, 'OBW', fontsize='x-small', ha="center",
-                                va="top", bbox=box, color='#996600')
+        self.labels[Markers.OFS] = Text(0, 0, 'OBW', fontsize='x-small',
+                                       ha="center", va="top", bbox=box,
+                                       color='#996600')
+        self.labels[Markers.OFE] = Text(0, 0, 'OBW', fontsize='x-small',
+                                       ha="center", va="top", bbox=box,
+                                       color='#996600')
 
-        self.axes.add_artist(self.labelHalfFS)
-        self.axes.add_artist(self.labelHalfFE)
-        self.axes.add_artist(self.labelObwFS)
-        self.axes.add_artist(self.labelObwFE)
+        self.axes.add_artist(self.labels[Markers.HFS])
+        self.axes.add_artist(self.labels[Markers.HFE])
+        self.axes.add_artist(self.labels[Markers.OFS])
+        self.axes.add_artist(self.labels[Markers.OFE])
 
         self.hide_measure()
 
-    def draw_vline(self, line, label, x):
+    def draw_vline(self, marker, x):
+        line = self.lines[marker]
+        label = self.labels[marker]
         yLim = self.axes.get_ylim()
         xLim = self.axes.get_xlim()
         if xLim[0] < x < xLim[1]:
@@ -151,21 +155,21 @@ class Spectrogram:
 
         if show[Measure.HBW]:
             xStart, xEnd, _y = measure.get_hpw()
-            self.draw_vline(self.lineHalfFS, self.labelHalfFS, xStart)
-            self.draw_vline(self.lineHalfFE, self.labelHalfFE, xEnd)
+            self.draw_vline(Markers.HFS, xStart)
+            self.draw_vline(Markers.HFE, xEnd)
 
         if show[Measure.OBW]:
             xStart, xEnd, _y = measure.get_obw()
-            self.draw_vline(self.lineObwFS, self.labelObwFS, xStart)
-            self.draw_vline(self.lineObwFE, self.labelObwFE, xEnd)
+            self.draw_vline(Markers.OFS, xStart)
+            self.draw_vline(Markers.OFE, xEnd)
 
         canvas.blit(self.axes.bbox)
 
     def hide_measure(self):
-        self.labelHalfFS.set_visible(False)
-        self.labelHalfFE.set_visible(False)
-        self.labelObwFS.set_visible(False)
-        self.labelObwFE.set_visible(False)
+        for line in self.lines.itervalues():
+            line.set_visible(False)
+        for label in self.labels.itervalues():
+            label.set_visible(False)
 
     def scale_plot(self, force=False):
         if self.figure is not None and self.plot is not None:
