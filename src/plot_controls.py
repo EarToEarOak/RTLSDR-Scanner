@@ -84,7 +84,7 @@ class MouseZoom():
 class MouseSelect():
     def __init__(self, plot, callbackPre, callbackPost):
         self.selector = None
-        if isinstance(plot, Plotter):
+        if not isinstance(plot, Plotter3d):
             axes = plot.get_axes()
             self.selector = RangeSelector(axes, callbackPre, callbackPost)
 
