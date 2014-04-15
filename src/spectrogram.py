@@ -55,6 +55,9 @@ class Spectrogram:
         self.extent = None
         self.lines = {}
         self.labels = {}
+        self.overflowLabels = {}
+        self.overflow = {'left': [],
+                         'right': []}
 
         self.threadPlot = None
         self.setup_plot()
@@ -84,6 +87,8 @@ class Spectrogram:
                                     cmap=cm.get_cmap(self.settings.colourMap))
 
         self.setup_measure()
+        self.setup_overflow()
+        self.hide_measure()
 
     def setup_measure(self):
         dashesHalf = [1, 5, 5, 5, 5, 5]
@@ -125,7 +130,25 @@ class Spectrogram:
         for label in self.labels.itervalues():
             self.axes.add_artist(label)
 
-        self.hide_measure()
+    def setup_overflow(self):
+        bbox = self.axes.bbox
+        box = dict(boxstyle='round', fc='white', ec='black', alpha=0.5,
+                   clip_box=bbox)
+        self.overflowLabels['left'] = Text(0, 0.9, '', fontsize='x-small',
+                                           ha="left", va="top", bbox=box,
+                                           transform=self.axes.transAxes,
+                                           alpha=0.5)
+        self.overflowLabels['right'] = Text(1, 0.9, '', fontsize='x-small',
+                                            ha="right", va="top", bbox=box,
+                                            transform=self.axes.transAxes,
+                                            alpha=0.5)
+
+        for label in self.overflowLabels.itervalues():
+            self.axes.add_artist(label)
+
+    def clear_overflow(self):
+        for label in self.overflowLabels:
+            self.overflow[label] = []
 
     def draw_vline(self, marker, x):
         line = self.lines[marker]
@@ -140,12 +163,36 @@ class Spectrogram:
             label.set_visible(True)
             label.set_position((x, yLim[1]))
             self.axes.draw_artist(label)
+        elif x is not None and x < xLim[0]:
+            self.overflow['left'].append(marker)
+        elif x is not None and x > xLim[1]:
+            self.overflow['right'].append(marker)
+
+    def draw_overflow(self):
+        for pos, overflow in self.overflow.iteritems():
+            if len(overflow) > 0:
+                text = ''
+                for measure in overflow:
+                    if len(text) > 0:
+                        text += '\n'
+                    text += self.labels[measure].get_text()
+
+                label = self.overflowLabels[pos]
+                if pos == 'left':
+                    textMath = '$\Leftarrow$\n' + text
+                elif pos == 'right':
+                    textMath = '$\Rightarrow$\n' + text
+
+                label.set_text(textMath)
+                label.set_visible(True)
+                self.axes.draw_artist(label)
 
     def draw_measure(self, background, measure, show):
         if self.axes._cachedRenderer is None:
             return
 
         self.hide_measure()
+        self.clear_overflow()
         canvas = self.axes.get_figure().canvas
         canvas.restore_region(background)
 
@@ -159,12 +206,16 @@ class Spectrogram:
             self.draw_vline(Markers.OFS, xStart)
             self.draw_vline(Markers.OFE, xEnd)
 
+        self.draw_overflow()
+
         canvas.blit(self.axes.bbox)
 
     def hide_measure(self):
         for line in self.lines.itervalues():
             line.set_visible(False)
         for label in self.labels.itervalues():
+            label.set_visible(False)
+        for label in self.overflowLabels.itervalues():
             label.set_visible(False)
 
     def scale_plot(self, force=False):
