@@ -109,6 +109,9 @@ class PanelGraph(wx.Panel):
         wx.Panel.__init__(self, panel)
 
         self.figure = matplotlib.figure.Figure(facecolor='white')
+        self.figure.subplots_adjust(left=0.10, right=0.92,
+                                    top=0.85, bottom=0.15,
+                                    wspace=0.05)
         self.canvas = FigureCanvas(self, -1, self.figure)
 
         self.measureTable = PanelMeasure(self)

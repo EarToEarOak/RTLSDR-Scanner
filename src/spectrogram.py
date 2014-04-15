@@ -82,7 +82,6 @@ class Spectrogram:
         norm = Normalize(vmin=-50, vmax=0)
         self.barBase = ColorbarBase(self.bar, norm=norm,
                                     cmap=cm.get_cmap(self.settings.colourMap))
-        self.barBase.set_label('Level (dB)')
 
         self.setup_measure()
 

@@ -81,7 +81,6 @@ class Plotter3d():
         norm = Normalize(vmin=-50, vmax=0)
         self.barBase = ColorbarBase(self.bar, norm=norm,
                                     cmap=cm.get_cmap(self.settings.colourMap))
-        self.barBase.set_label('Level (dB)')
 
     def scale_plot(self, force=False):
         if self.extent is not None and self.plot is not None:
