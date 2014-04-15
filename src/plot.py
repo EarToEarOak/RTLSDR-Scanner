@@ -129,7 +129,8 @@ class Plotter():
         for line in self.lines.itervalues():
             self.axes.add_line(line)
 
-        box = dict(boxstyle='round', fc='white', ec='black')
+        bbox = self.axes.bbox
+        box = dict(boxstyle='round', fc='white', ec='black', clip_box=bbox)
         self.labels[Markers.MIN] = Text(0, 0, 'Min', fontsize='x-small',
                                         ha="right", va="bottom", bbox=box,
                                         color='black')
@@ -169,7 +170,9 @@ class Plotter():
             self.axes.add_artist(label)
 
     def setup_overflow(self):
-        box = dict(boxstyle='round', fc='white', ec='black', alpha=0.5)
+        bbox = self.axes.bbox
+        box = dict(boxstyle='round', fc='white', ec='black', alpha=0.5,
+                   clip_box=bbox)
         self.overflowLabels['left'] = Text(0, 0.9, '', fontsize='x-small',
                                            ha="left", va="top", bbox=box,
                                            transform=self.axes.transAxes,

@@ -108,7 +108,8 @@ class Spectrogram:
         self.axes.add_line(self.lines[Markers.OFS])
         self.axes.add_line(self.lines[Markers.OFE])
 
-        box = dict(boxstyle='round', fc='white', ec='purple')
+        bbox = self.axes.bbox
+        box = dict(boxstyle='round', fc='white', ec='purple', clip_box=bbox)
         self.labels[Markers.HFS] = Text(0, 0, '-3dB', fontsize='x-small',
                                        ha="center", va="top", bbox=box,
                                        color='purple')
