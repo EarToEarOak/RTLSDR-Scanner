@@ -23,6 +23,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import matplotlib
 from matplotlib.backend_bases import NavigationToolbar2
 from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
 import wx
@@ -72,6 +73,14 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.extraTools = []
 
         NavigationToolbar2WxAgg.__init__(self, canvas)
+        if matplotlib.__version__ >= '1.2':
+            panId = self.wx_ids['Pan']
+        else:
+            panId = self.FindById(self._NTB2_PAN).GetId()
+
+        self.ToggleTool(panId, True)
+        self.pan()
+
         self.add_spacer()
 
         liveId = wx.NewId()
