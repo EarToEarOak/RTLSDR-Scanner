@@ -179,9 +179,9 @@ class Spectrogram:
 
                 label = self.overflowLabels[pos]
                 if pos == 'left':
-                    textMath = '$\Leftarrow$\n' + text
+                    textMath = '$\\blacktriangleleft$\n' + text
                 elif pos == 'right':
-                    textMath = '$\Rightarrow$\n' + text
+                    textMath = '$\\blacktriangleright$\n' + text
 
                 label.set_text(textMath)
                 label.set_visible(True)

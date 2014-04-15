@@ -244,13 +244,13 @@ class Plotter():
 
                 label = self.overflowLabels[pos]
                 if pos == 'top':
-                    textMath = '$\Uparrow$' + text
+                    textMath = '$\\blacktriangle$\n' + text
                 elif pos == 'bottom':
-                    textMath = '$\Downarrow$' + text
+                    textMath = '$\\blacktriangledown$\n' + text
                 elif pos == 'left':
-                    textMath = '$\Leftarrow$\n' + text
+                    textMath = '$\\blacktriangleleft$\n' + text
                 elif pos == 'right':
-                    textMath = '$\Rightarrow$\n' + text
+                    textMath = '$\\blacktriangleright$\n' + text
 
                 label.set_text(textMath)
                 label.set_visible(True)
