@@ -103,10 +103,8 @@ class Spectrogram:
             self.lines[Markers.OFS].set_path_effects([effect])
             self.lines[Markers.OFE].set_path_effects([effect])
 
-        self.axes.add_line(self.lines[Markers.HFS])
-        self.axes.add_line(self.lines[Markers.HFE])
-        self.axes.add_line(self.lines[Markers.OFS])
-        self.axes.add_line(self.lines[Markers.OFE])
+        for line in self.lines.itervalues():
+            self.axes.add_line(line)
 
         bbox = self.axes.bbox
         box = dict(boxstyle='round', fc='white', ec='purple', clip_box=bbox)
@@ -124,10 +122,8 @@ class Spectrogram:
                                        ha="center", va="top", bbox=box,
                                        color='#996600')
 
-        self.axes.add_artist(self.labels[Markers.HFS])
-        self.axes.add_artist(self.labels[Markers.HFE])
-        self.axes.add_artist(self.labels[Markers.OFS])
-        self.axes.add_artist(self.labels[Markers.OFE])
+        for label in self.labels.itervalues():
+            self.axes.add_artist(label)
 
         self.hide_measure()
 
