@@ -25,7 +25,6 @@
 
 from matplotlib.patches import Rectangle
 
-from plot import Plotter
 from plot3d import Plotter3d
 
 
@@ -51,6 +50,7 @@ class MouseZoom():
         else:
             return
 
+        self.toolbar.clear_auto()
         self.callbackPre()
 
         if self.toolbar._views.empty():

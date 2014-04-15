@@ -115,24 +115,31 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.ToggleTool(self.autoLId, settings.autoL)
         wx.EVT_TOOL(self, self.autoLId, self.on_check_auto_l)
 
+        self.autoTId = None
+
     def home(self, event):
         NavigationToolbar2.home(self, event)
+        self.clear_auto()
         self.onNavChange(None)
 
     def back(self, event):
         NavigationToolbar2.back(self, event)
+        self.clear_auto()
         self.onNavChange(None)
 
     def forward(self, event):
         NavigationToolbar2.forward(self, event)
+        self.clear_auto()
         self.onNavChange(None)
 
     def drag_pan(self, event):
         NavigationToolbar2.drag_pan(self, event)
+        self.clear_auto()
         self.onNavChange(None)
 
     def release_zoom(self, event):
         NavigationToolbar2.release_zoom(self, event)
+        self.clear_auto()
         self.onNavChange(None)
 
     def on_check_auto_f(self, event):
@@ -186,6 +193,15 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.EnableTool(sepId, False)
         return sepId
 
+    def clear_auto(self):
+        self.settings.autoF = False
+        self.settings.autoL = False
+        self.settings.autoT = False
+        self.ToggleTool(self.autoFId, False)
+        self.ToggleTool(self.autoLId, False)
+        if self.autoTId is not None:
+            self.ToggleTool(self.autoTId, False)
+
     def set_plot(self, plot):
         self.plot = plot
 
@@ -195,12 +211,12 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.extraTools = []
 
         if not display == Display.PLOT:
-            autoTId = wx.NewId()
-            self.AddCheckTool(autoTId, load_bitmap('auto_t'),
+            self.autoTId = wx.NewId()
+            self.AddCheckTool(self.autoTId, load_bitmap('auto_t'),
                               shortHelp='Auto range time')
-            self.ToggleTool(autoTId, self.settings.autoT)
-            wx.EVT_TOOL(self, autoTId, self.on_check_auto_t)
-            self.extraTools.append(autoTId)
+            self.ToggleTool(self.autoTId, self.settings.autoT)
+            wx.EVT_TOOL(self, self.autoTId, self.on_check_auto_t)
+            self.extraTools.append(self.autoTId)
 
         self.extraTools.append(self.add_spacer())
 
