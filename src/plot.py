@@ -54,6 +54,11 @@ class Plotter():
         self.extent = None
         self.lines = {}
         self.labels = {}
+        self.overflowLabels = {}
+        self.overflow = {'left': [],
+                         'right': [],
+                         'top': [],
+                         'bottom': []}
 
         self.setup_plot()
         self.set_grid(self.settings.grid)
@@ -80,6 +85,8 @@ class Plotter():
                                     cmap=cm.get_cmap(self.settings.colourMap))
 
         self.setup_measure()
+        self.setup_overflow()
+        self.hide_measure()
 
     def setup_measure(self):
         dashesAvg = [4, 5, 1, 5, 1, 5]
@@ -119,16 +126,8 @@ class Plotter():
             self.lines[Markers.OFS].set_path_effects([effect])
             self.lines[Markers.OFE].set_path_effects([effect])
 
-        self.axes.add_line(self.lines[Markers.MIN])
-        self.axes.add_line(self.lines[Markers.MAX])
-        self.axes.add_line(self.lines[Markers.AVG])
-        self.axes.add_line(self.lines[Markers.GMEAN])
-        self.axes.add_line(self.lines[Markers.HP])
-        self.axes.add_line(self.lines[Markers.HFS])
-        self.axes.add_line(self.lines[Markers.HFE])
-        self.axes.add_line(self.lines[Markers.OP])
-        self.axes.add_line(self.lines[Markers.OFS])
-        self.axes.add_line(self.lines[Markers.OFE])
+        for line in self.lines.itervalues():
+            self.axes.add_line(line)
 
         box = dict(boxstyle='round', fc='white', ec='black')
         self.labels[Markers.MIN] = Text(0, 0, 'Min', fontsize='x-small',
@@ -149,42 +148,58 @@ class Plotter():
         self.labels[Markers.HP] = Text(0, 0, '-3dB', fontsize='x-small',
                                        ha="right", va="center", bbox=box,
                                        color='purple')
-        self.labels[Markers.HFS] = Text(0, 0, '-3dB', fontsize='x-small',
+        self.labels[Markers.HFS] = Text(0, 0, '-3dB Start', fontsize='x-small',
                                         ha="center", va="top", bbox=box,
                                         color='purple')
-        self.labels[Markers.HFE] = Text(0, 0, '-3dB', fontsize='x-small',
+        self.labels[Markers.HFE] = Text(0, 0, '-3dB End', fontsize='x-small',
                                         ha="center", va="top", bbox=box,
                                         color='purple')
         box['ec'] = '#996600'
         self.labels[Markers.OP] = Text(0, 0, 'OBW', fontsize='x-small',
                                        ha="right", va="center", bbox=box,
                                        color='#996600')
-        self.labels[Markers.OFS] = Text(0, 0, 'OBW', fontsize='x-small',
+        self.labels[Markers.OFS] = Text(0, 0, 'OBW Start', fontsize='x-small',
                                         ha="center", va="top", bbox=box,
                                         color='#996600')
-        self.labels[Markers.OFE] = Text(0, 0, 'OBW', fontsize='x-small',
+        self.labels[Markers.OFE] = Text(0, 0, 'OBW End', fontsize='x-small',
                                         ha="center", va="top", bbox=box,
                                         color='#996600')
 
-        self.axes.add_artist(self.labels[Markers.MIN])
-        self.axes.add_artist(self.labels[Markers.MAX])
-        self.axes.add_artist(self.labels[Markers.AVG])
-        self.axes.add_artist(self.labels[Markers.GMEAN])
-        self.axes.add_artist(self.labels[Markers.HP])
-        self.axes.add_artist(self.labels[Markers.HFS])
-        self.axes.add_artist(self.labels[Markers.HFE])
-        self.axes.add_artist(self.labels[Markers.OP])
-        self.axes.add_artist(self.labels[Markers.OFS])
-        self.axes.add_artist(self.labels[Markers.OFE])
+        for label in self.labels.itervalues():
+            self.axes.add_artist(label)
 
-        self.hide_measure()
+    def setup_overflow(self):
+        box = dict(boxstyle='round', fc='white', ec='black', alpha=0.5)
+        self.overflowLabels['left'] = Text(0, 0.9, '', fontsize='x-small',
+                                           ha="left", va="top", bbox=box,
+                                           transform=self.axes.transAxes,
+                                           alpha=0.5)
+        self.overflowLabels['right'] = Text(1, 0.9, '', fontsize='x-small',
+                                            ha="right", va="top", bbox=box,
+                                            transform=self.axes.transAxes,
+                                            alpha=0.5)
+        self.overflowLabels['top'] = Text(0.9, 1, '', fontsize='x-small',
+                                          ha="right", va="top", bbox=box,
+                                          transform=self.axes.transAxes,
+                                          alpha=0.5)
+        self.overflowLabels['bottom'] = Text(0.9, 0, '', fontsize='x-small',
+                                             ha="right", va="bottom", bbox=box,
+                                             transform=self.axes.transAxes,
+                                             alpha=0.5)
+
+        for label in self.overflowLabels.itervalues():
+            self.axes.add_artist(label)
+
+    def clear_overflow(self):
+        for label in self.overflowLabels:
+            self.overflow[label] = []
 
     def draw_hline(self, marker, y):
         line = self.lines[marker]
         label = self.labels[marker]
         xLim = self.axes.get_xlim()
         yLim = self.axes.get_ylim()
-        if yLim[0] < y < yLim[1]:
+        if yLim[0] <= y <= yLim[1]:
             line.set_visible(True)
             line.set_xdata([xLim[0], xLim[1]])
             line.set_ydata([y, y])
@@ -192,13 +207,17 @@ class Plotter():
             label.set_visible(True)
             label.set_position((xLim[1], y))
             self.axes.draw_artist(label)
+        elif y is not None and y < yLim[0]:
+            self.overflow['bottom'].append(marker)
+        elif y is not None and y > yLim[1]:
+            self.overflow['top'].append(marker)
 
     def draw_vline(self, marker, x):
         line = self.lines[marker]
         label = self.labels[marker]
         yLim = self.axes.get_ylim()
         xLim = self.axes.get_xlim()
-        if xLim[0] < x < xLim[1]:
+        if xLim[0] <= x <= xLim[1]:
             line.set_visible(True)
             line.set_xdata([x, x])
             line.set_ydata([yLim[0], yLim[1]])
@@ -206,12 +225,40 @@ class Plotter():
             label.set_visible(True)
             label.set_position((x, yLim[1]))
             self.axes.draw_artist(label)
+        elif x is not None and x < xLim[0]:
+            self.overflow['left'].append(marker)
+        elif x is not None and x > xLim[1]:
+            self.overflow['right'].append(marker)
+
+    def draw_overflow(self):
+        for pos, overflow in self.overflow.iteritems():
+            if len(overflow) > 0:
+                text = ''
+                for measure in overflow:
+                    if len(text) > 0:
+                        text += '\n'
+                    text += self.labels[measure].get_text()
+
+                label = self.overflowLabels[pos]
+                if pos == 'top':
+                    textMath = '$\Uparrow$' + text
+                elif pos == 'bottom':
+                    textMath = '$\Downarrow$' + text
+                elif pos == 'left':
+                    textMath = '$\Leftarrow$\n' + text
+                elif pos == 'right':
+                    textMath = '$\Rightarrow$\n' + text
+
+                label.set_text(textMath)
+                label.set_visible(True)
+                self.axes.draw_artist(label)
 
     def draw_measure(self, background, measure, show):
         if self.axes._cachedRenderer is None:
             return
 
         self.hide_measure()
+        self.clear_overflow()
         canvas = self.axes.get_figure().canvas
         canvas.restore_region(background)
 
@@ -243,12 +290,16 @@ class Plotter():
             self.draw_vline(Markers.OFE, xStart)
             self.draw_vline(Markers.OFE, xEnd)
 
+        self.draw_overflow()
+
         canvas.blit(self.axes.bbox)
 
     def hide_measure(self):
         for line in self.lines.itervalues():
             line.set_visible(False)
         for label in self.labels.itervalues():
+            label.set_visible(False)
+        for label in self.overflowLabels.itervalues():
             label.set_visible(False)
 
     def scale_plot(self, force=False):
