@@ -44,6 +44,7 @@ from events import EVT_THREAD_STATUS, Event, EventThreadStatus, post_event
 from file import save_plot, export_plot, open_plot, ScanInfo
 from misc import calc_samples, calc_real_dwell, \
     get_version_timestamp, get_version_timestamp_repo, add_colours
+from printer import PrintOut
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
 from spectrum import count_points, sort_spectrum, Extent
@@ -89,6 +90,9 @@ class FrameMain(wx.Frame):
         self.menuOpen = None
         self.menuSave = None
         self.menuExport = None
+        self.menuPreview = None
+        self.menuPage = None
+        self.menuPrint = None
         self.menuProperties = None
         self.menuPref = None
         self.menuAdvPref = None
@@ -135,6 +139,14 @@ class FrameMain(wx.Frame):
         self.devices = get_devices(self.settings.devices)
         self.filename = ""
         self.oldCal = 0
+
+        self.pageConfig = wx.PageSetupDialogData()
+        self.pageConfig.GetPrintData().SetOrientation(wx.LANDSCAPE)
+        self.pageConfig.SetMarginTopLeft((20, 20))
+        self.pageConfig.SetMarginBottomRight((20, 20))
+        self.printConfig = wx.PrintDialogData(self.pageConfig.GetPrintData())
+        self.printConfig.EnableSelection(False)
+        self.printConfig.EnablePageNumbers(False)
 
         wx.Frame.__init__(self, None, title=title)
 
@@ -254,22 +266,29 @@ class FrameMain(wx.Frame):
         menuFile.AppendMenu(wx.ID_ANY, "&Recent Files", recent)
         menuFile.AppendSeparator()
         self.menuSave = menuFile.Append(wx.ID_SAVE, "&Save As...",
-                                          "Save plot")
+                                        "Save plot")
         self.menuExport = menuFile.Append(wx.ID_ANY, "&Export...",
-                                            "Export plot")
+                                          "Export plot")
         menuFile.AppendSeparator()
-        self.menuProperties = menuFile.Append(wx.ID_ANY, "&Properties...",
-                                            "Show properties")
+        self.menuPage = menuFile.Append(wx.ID_ANY, "Page setup...",
+                                        "Page setup")
+        self.menuPreview = menuFile.Append(wx.ID_ANY, "Print preview...",
+                                        "Print preview")
+        self.menuPrint = menuFile.Append(wx.ID_ANY, "&Print...",
+                                        "Print plot")
+        menuFile.AppendSeparator()
+        self.menuProperties = menuFile.Append(wx.ID_ANY, "P&roperties...",
+                                              "Show properties")
         menuFile.AppendSeparator()
         menuExit = menuFile.Append(wx.ID_EXIT, "E&xit", "Exit the program")
 
         menuEdit = wx.Menu()
         self.menuPref = menuEdit.Append(wx.ID_ANY, "&Preferences...",
-                                   "Preferences")
+                                        "Preferences")
         self.menuAdvPref = menuEdit.Append(wx.ID_ANY, "&Advanced preferences...",
-                                   "Advanced preferences")
+                                           "Advanced preferences")
         self.menuDevices = menuEdit.Append(wx.ID_ANY, "&Devices...",
-                                   "Device selection and configuration")
+                                           "Device selection and configuration")
 
         menuView = wx.Menu()
         self.menuClearSelect = menuView.Append(wx.ID_ANY, "Clear selection",
@@ -292,7 +311,7 @@ class FrameMain(wx.Frame):
         self.menuCompare = menuTools.Append(wx.ID_ANY, "&Compare...",
                                             "Compare plots")
         self.menuCal = menuTools.Append(wx.ID_ANY, "&Auto Calibration...",
-                               "Automatically calibrate to a known frequency")
+                                        "Automatically calibrate to a known frequency")
 
         menuHelp = wx.Menu()
         menuHelpLink = menuHelp.Append(wx.ID_HELP, "&Help...",
@@ -316,6 +335,9 @@ class FrameMain(wx.Frame):
                   id2=wx.ID_FILE9)
         self.Bind(wx.EVT_MENU, self.on_save, self.menuSave)
         self.Bind(wx.EVT_MENU, self.on_export, self.menuExport)
+        self.Bind(wx.EVT_MENU, self.on_page, self.menuPage)
+        self.Bind(wx.EVT_MENU, self.on_preview, self.menuPreview)
+        self.Bind(wx.EVT_MENU, self.on_print, self.menuPrint)
         self.Bind(wx.EVT_MENU, self.on_properties, self.menuProperties)
         self.Bind(wx.EVT_MENU, self.on_exit, menuExit)
         self.Bind(wx.EVT_MENU, self.on_pref, self.menuPref)
@@ -429,6 +451,29 @@ class FrameMain(wx.Frame):
                         dlg.GetFilterIndex(), self.spectrum)
             self.status.set_general("Finished")
         dlg.Destroy()
+
+    def on_page(self, _event):
+        dlg = wx.PageSetupDialog(self, self.pageConfig)
+        if dlg.ShowModal() == wx.ID_OK:
+            self.pageConfig = wx.PageSetupDialogData(dlg.GetPageSetupDialogData())
+            self.printConfig.SetPrintData(self.pageConfig.GetPrintData())
+        dlg.Destroy()
+
+    def on_preview(self, _event):
+        printout = PrintOut(self.graph, self.filename, self.pageConfig)
+        printoutPrinting = PrintOut(self.graph, self.filename, self.pageConfig)
+        preview = wx.PrintPreview(printout, printoutPrinting, self.printConfig)
+        frame = wx.PreviewFrame(preview, self, 'Print Preview')
+        frame.Initialize()
+        frame.SetSize(self.GetSize())
+        frame.Show(True)
+
+    def on_print(self, _event):
+        printer = wx.Printer(self.printConfig)
+        printout = PrintOut(self.graph, self.filename, self.pageConfig)
+        if printer.Print(self, printout, True):
+            self.printConfig = wx.PrintDialogData(printer.GetPrintDialogData())
+            self.pageConfig.SetPrintData(self.printConfig.GetPrintData())
 
     def on_properties(self, _event):
         if len(self.spectrum) > 0:
@@ -840,6 +885,9 @@ class FrameMain(wx.Frame):
         self.menuOpen.Enable(state)
         self.menuSave.Enable(state and len(self.spectrum) > 0)
         self.menuExport.Enable(state and len(self.spectrum) > 0)
+        self.menuPage.Enable(state)
+        self.menuPreview.Enable(state)
+        self.menuPrint.Enable(state)
         self.menuStart.Enable(state)
         self.menuStop.Enable(not state)
         self.menuPref.Enable(state)
