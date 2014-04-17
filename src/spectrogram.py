@@ -242,6 +242,9 @@ class Spectrogram:
     def get_axes(self):
         return self.axes
 
+    def get_axes_bar(self):
+        return self.barBase.ax
+
     def get_plot_thread(self):
         return self.threadPlot
 
@@ -356,7 +359,7 @@ class ThreadPlot(threading.Thread):
                                                                    lMax,
                                                                    when),
                                xy=(fMax, y), xytext=(textX, y),
-                               ha='left', va='bottom', size='small',
+                               ha='left', va='bottom', size='x-small',
                                color='w', gid='peak')
             self.axes.plot(fMax, y, marker='x', markersize=10, color='w',
                            mew=3, gid='peak')
@@ -369,7 +372,7 @@ class ThreadPlot(threading.Thread):
                                                                    lMax,
                                                                    when),
                                xy=(fMax, y), xytext=(textX, y),
-                               ha='left', va='bottom', size='small',
+                               ha='left', va='bottom', size='x-small',
                                path_effects=[effect], gid='peak')
             self.axes.plot(fMax, y, marker='x', markersize=10, color='r',
                            path_effects=[effect], gid='peak')

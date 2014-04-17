@@ -328,6 +328,9 @@ class Plotter():
     def get_axes(self):
         return self.axes
 
+    def get_axes_bar(self):
+        return self.barBase.ax
+
     def get_plot_thread(self):
         return self.threadPlot
 
@@ -495,7 +498,7 @@ class ThreadPlot(threading.Thread):
         if(matplotlib.__version__ < '1.3'):
             self.axes.annotate('{0:.6f} MHz\n{1:.2f} dB'.format(x, y),
                                xy=(x, y), xytext=(textX, y),
-                               ha='left', va='top', size='small',
+                               ha='left', va='top', size='x-small',
                                gid='peak')
             self.axes.plot(x, y, marker='x', markersize=10, color='w',
                            mew=3, gid='peak')
@@ -506,7 +509,7 @@ class ThreadPlot(threading.Thread):
                                             alpha=0.75)
             self.axes.annotate('{0:.6f} MHz\n{1:.2f} dB'.format(x, y),
                                xy=(x, y), xytext=(textX, y),
-                               ha='left', va='top', size='small',
+                               ha='left', va='top', size='x-small',
                                path_effects=[effect], gid='peak')
             self.axes.plot(x, y, marker='x', markersize=10, color='r',
                            path_effects=[effect], gid='peak')

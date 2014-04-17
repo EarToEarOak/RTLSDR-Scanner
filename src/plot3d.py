@@ -110,6 +110,9 @@ class Plotter3d():
     def get_axes(self):
         return self.axes
 
+    def get_axes_bar(self):
+        return self.barBase.ax
+
     def get_plot_thread(self):
         return self.threadPlot
 
@@ -219,7 +222,7 @@ class ThreadPlot(threading.Thread):
         if(matplotlib.__version__ < '1.3'):
             self.axes.text(f, tPos, l,
                            '{0:.6f}MHz\n{1:.2f}dB\n{2}'.format(f, l, when),
-                           ha='left', va='bottom', size='small', gid='peak')
+                           ha='left', va='bottom', size='x-small', gid='peak')
             self.axes.plot([f], [tPos], [l], marker='x', markersize=10,
                            mew=3, color='w', gid='peak')
             self.axes.plot([f], [tPos], [l], marker='x', markersize=10,
@@ -229,7 +232,7 @@ class ThreadPlot(threading.Thread):
                                             alpha=0.75)
             self.axes.text(f, tPos, l,
                            '{0:.6f}MHz\n{1:.2f}dB\n{2}'.format(f, l, when),
-                           ha='left', va='bottom', size='small', gid='peak',
+                           ha='left', va='bottom', size='x-small', gid='peak',
                            path_effects=[effect])
             self.axes.plot([f], [tPos], [l], marker='x', markersize=10,
                            color='r', gid='peak', path_effects=[effect])

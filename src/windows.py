@@ -148,6 +148,8 @@ class PanelGraph(wx.Panel):
         else:
             self.plot = Plotter3d(self.notify, self.figure, self.settings)
 
+        self.set_fonts()
+
         self.toolbar.set_plot(self.plot)
         self.toolbar.set_type(self.settings.display)
         self.measureTable.set_type(self.settings.display)
@@ -162,6 +164,16 @@ class PanelGraph(wx.Panel):
         self.clear_selection()
         self.measureTable.show(self.settings.showMeasure)
         self.panel.SetFocus()
+
+    def set_fonts(self):
+        axes = self.plot.get_axes()
+        axes.xaxis.label.set_size('small')
+        axes.yaxis.label.set_size('small')
+        if self.settings.display == Display.SURFACE:
+            axes.zaxis.label.set_size('small')
+        axes.tick_params(axis='both', which='major', labelsize='small')
+        axes = self.plot.get_axes_bar()
+        axes.tick_params(axis='both', which='major', labelsize='small')
 
     def add_menu_clear_select(self, menu):
         self.menuClearSelect.append(menu)
