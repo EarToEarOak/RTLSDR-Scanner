@@ -132,6 +132,7 @@ class PanelGraph(wx.Panel):
         self.canvas.mpl_connect('motion_notify_event', callbackMotion)
         self.canvas.mpl_connect('draw_event', self.on_draw)
         self.canvas.mpl_connect('idle_event', self.on_idle)
+        self.Bind(wx.EVT_SIZE, self.on_size)
 
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.on_timer, self.timer)
@@ -169,6 +170,16 @@ class PanelGraph(wx.Panel):
     def enable_menu(self, state):
         for menu in self.menuClearSelect:
             menu.Enable(state)
+
+    def on_size(self, event):
+        ppi = wx.ScreenDC().GetPPI()
+        size = [float(v) for v in self.canvas.GetSize()]
+        width = size[0] / ppi[0]
+        height = size[1] / ppi[1]
+        self.figure.set_figwidth(width)
+        self.figure.set_figheight(height)
+        self.figure.set_dpi(ppi[0])
+        event.Skip()
 
     def on_draw(self, _event):
         axes = self.plot.get_axes()
