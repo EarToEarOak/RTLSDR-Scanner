@@ -109,9 +109,6 @@ class PanelGraph(wx.Panel):
         wx.Panel.__init__(self, panel)
 
         self.figure = matplotlib.figure.Figure(facecolor='white')
-        self.figure.subplots_adjust(left=0.10, right=0.92,
-                                    top=0.85, bottom=0.15,
-                                    wspace=0.05)
         self.canvas = FigureCanvas(self, -1, self.figure)
 
         self.measureTable = PanelMeasure(self)
@@ -155,6 +152,8 @@ class PanelGraph(wx.Panel):
         self.measureTable.set_type(self.settings.display)
 
         self.set_plot_title()
+        self.figure.tight_layout()
+        self.figure.subplots_adjust(top=0.85)
         self.redraw_plot()
         self.plot.scale_plot(True)
         self.mouseZoom = MouseZoom(self.plot, self.toolbar, self.hide_measure,
