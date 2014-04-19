@@ -24,6 +24,7 @@
 #
 
 import Image
+import matplotlib
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 import wx
 
@@ -72,7 +73,10 @@ class PrintOut(wx.Printout):
         canvas = FigureCanvasAgg(self.figure)
         canvas.draw()
         renderer = canvas.get_renderer()
-        buf = renderer.buffer_rgba()
+        if matplotlib.__version__ >= '1.2':
+            buf = renderer.buffer_rgba()
+        else:
+            buf = renderer.buffer_rgba(0, 0)
         size = canvas.get_width_height()
         image = Image.frombuffer('RGBA', size, buf, 'raw', 'RGBA', 0, 1)
 
