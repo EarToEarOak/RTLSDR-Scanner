@@ -31,6 +31,7 @@ A Windows installer can be found on [SourceForge](http://sourceforge.net/project
 - [wxPython](http://www.wxpython.org/)
 - [matplotlib](http://matplotlib.org/)
 - [numpy](http://www.numpy.org/)
+- [Pillow](https://pypi.python.org/pypi/Pillow/2.4.0)
 - [rtlsdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)
 - [pyrtlsdr](https://github.com/roger-/pyrtlsdr)
 
