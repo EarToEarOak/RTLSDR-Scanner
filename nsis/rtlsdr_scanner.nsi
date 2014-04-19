@@ -32,7 +32,7 @@
 !include "include\EnvVarUpdate.nsh"
 !include "include\fileassoc.nsh"
 
-!define INSTALLER_VERSION "7"
+!define INSTALLER_VERSION "8"
 
 !define PRODUCT_NAME "RTLSDR Scanner"
 !define PRODUCT_PUBLISHER "Ear to Ear Oak"
@@ -73,7 +73,7 @@ It will add the new installation of Python to the path, potentially causing prob
 to previous Python installs $\r$\n$\r$\n\
 You can update to the latest versions of RTLSDR-Scanner, $\r$\n\
 the rtlsdr driver and pyrtlsdr by running this installer again $\r$\n$\r$\n\
-Some systems will require the Microsoft Visual C++ 2010 Redistributable available from: $\r$\n\
+Some systems will require the Microsoft Visual C++ 2010 Redistributable (32bit) available from: $\r$\n\
 http://www.microsoft.com/en-gb/download/details.aspx?id=5555"'
 
 !define FILE_CLASS "RTLSDRScanner.Scan"
@@ -143,6 +143,9 @@ SectionGroup "/e" "Dependencies" SEC_DEP
         SectionEnd
         Section "dateutil 2.2"
             Call get_dateutil
+        SectionEnd
+        Section "Pillow 2.4.0"
+            Call get_pillow
         SectionEnd
         Section "pyrtlsdr" SEC_PYRTLSDR
             Call get_pyrtlsdr
@@ -496,6 +499,19 @@ Function get_pyrtlsdr
     ExecWait "python $TEMP\pyrtlsdr-master\setup.py install"
     ;Delete "$TEMP\pyrtlsdr.zip"
     RmDir /r "$TEMP\pyrtlsdr-master"
+FunctionEnd
+
+Function get_pillow
+    IfFileExists "$TEMP\Pillow-2.4.0.win32-py2.7.exe" exists download
+    download:
+    inetc::get "https://pypi.python.org/packages/2.7/P/Pillow/Pillow-2.4.0.win32-py2.7.exe" "$TEMP\Pillow-2.4.0.win32-py2.7.exe"  /end
+    Pop $R0
+    StrCmp $R0 "OK" exists
+    MessageBox MB_OK "Pillow download failed: $R0"
+    return
+    exists:
+    ExecWait "$TEMP\Pillow-2.4.0.win32-py2.7.exe"
+    ;Delete "$TEMP\Pillow-2.4.0.win32-py2.7.exe"
 FunctionEnd
 
 Function set_installer_path
