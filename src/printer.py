@@ -23,7 +23,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import Image
+from PIL import Image
 import matplotlib
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 import wx
