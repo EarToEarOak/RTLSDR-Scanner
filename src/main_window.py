@@ -41,7 +41,7 @@ from devices import get_devices
 from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, \
     DialogDevices, DialogCompare, DialogAutoCal, DialogAbout, DialogSaveWarn
 from events import EVT_THREAD_STATUS, Event, EventThreadStatus, post_event
-from file import save_plot, export_plot, open_plot, ScanInfo
+from file import save_plot, export_plot, open_plot, ScanInfo, export_image
 from misc import calc_samples, calc_real_dwell, \
     get_version_timestamp, get_version_timestamp_repo, add_colours
 from printer import PrintOut
@@ -89,7 +89,8 @@ class FrameMain(wx.Frame):
 
         self.menuOpen = None
         self.menuSave = None
-        self.menuExport = None
+        self.menuExportScan = None
+        self.menuExportImage = None
         self.menuPreview = None
         self.menuPage = None
         self.menuPrint = None
@@ -267,8 +268,10 @@ class FrameMain(wx.Frame):
         menuFile.AppendSeparator()
         self.menuSave = menuFile.Append(wx.ID_SAVE, "&Save As...",
                                         "Save plot")
-        self.menuExport = menuFile.Append(wx.ID_ANY, "&Export...",
-                                          "Export plot")
+        self.menuExportScan = menuFile.Append(wx.ID_ANY, "&Export scan...",
+                                              "Export scan")
+        self.menuExportImage = menuFile.Append(wx.ID_ANY, "&Export image...",
+                                              "Export image")
         menuFile.AppendSeparator()
         self.menuPage = menuFile.Append(wx.ID_ANY, "Page setup...",
                                         "Page setup")
@@ -334,7 +337,8 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU_RANGE, self.on_file_history, id=wx.ID_FILE1,
                   id2=wx.ID_FILE9)
         self.Bind(wx.EVT_MENU, self.on_save, self.menuSave)
-        self.Bind(wx.EVT_MENU, self.on_export, self.menuExport)
+        self.Bind(wx.EVT_MENU, self.on_export_scan, self.menuExportScan)
+        self.Bind(wx.EVT_MENU, self.on_export_image, self.menuExportImage)
         self.Bind(wx.EVT_MENU, self.on_page, self.menuPage)
         self.Bind(wx.EVT_MENU, self.on_preview, self.menuPreview)
         self.Bind(wx.EVT_MENU, self.on_print, self.menuPrint)
@@ -439,7 +443,7 @@ class FrameMain(wx.Frame):
                                                                     dlg.GetFilename()))
         dlg.Destroy()
 
-    def on_export(self, _event):
+    def on_export_scan(self, _event):
         dlg = wx.FileDialog(self, "Export a scan", self.settings.dirExport,
                             self.filename, File.get_export_filters(),
                             wx.SAVE | wx.OVERWRITE_PROMPT)
@@ -449,6 +453,23 @@ class FrameMain(wx.Frame):
             self.settings.dirExport = dirname
             export_plot(dirname, dlg.GetFilename(),
                         dlg.GetFilterIndex(), self.spectrum)
+            self.status.set_general("Finished")
+        dlg.Destroy()
+
+    def on_export_image(self, _event):
+        dlg = wx.FileDialog(self, "Export image to file",
+                            self.settings.dirExport,
+                            self.filename,
+                            File.get_export_filters(File.Exports.IMAGE),
+                            wx.SAVE | wx.OVERWRITE_PROMPT)
+        dlg.SetFilterIndex(File.ImageType.PNG)
+        if dlg.ShowModal() == wx.ID_OK:
+            self.status.set_general("Exporting")
+            dirname = dlg.GetDirectory()
+            self.settings.dirExport = dirname
+            filename = os.path.join(dirname, dlg.GetFilename())
+            export_image(filename, dlg.GetFilterIndex(),
+                         self.graph.get_figure())
             self.status.set_general("Finished")
         dlg.Destroy()
 
@@ -884,7 +905,8 @@ class FrameMain(wx.Frame):
         self.buttonStop.Enable(not state and hasDevices)
         self.menuOpen.Enable(state)
         self.menuSave.Enable(state and len(self.spectrum) > 0)
-        self.menuExport.Enable(state and len(self.spectrum) > 0)
+        self.menuExportScan.Enable(state and len(self.spectrum) > 0)
+        self.menuExportImage.Enable(state)
         self.menuPage.Enable(state)
         self.menuPreview.Enable(state)
         self.menuPrint.Enable(state)

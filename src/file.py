@@ -27,6 +27,9 @@ import cPickle
 import json
 import os
 
+from PIL import Image
+import matplotlib
+from matplotlib.backends.backend_agg import FigureCanvasAgg
 import wx
 
 from constants import File
@@ -197,13 +200,36 @@ def save_plot(dirname, filename, scanInfo, spectrum):
 def export_plot(dirname, filename, exportType, spectrum):
     spectrum = sort_spectrum(spectrum)
     handle = open(os.path.join(dirname, filename), 'wb')
-    if exportType == File.ExportType.CSV:
+    if exportType == File.PlotType.CSV:
         export_csv(handle, spectrum)
-    elif exportType == File.ExportType.GNUPLOT:
+    elif exportType == File.PlotType.GNUPLOT:
         export_plt(handle, spectrum)
-    elif exportType == File.ExportType.FREEMAT:
+    elif exportType == File.PlotType.FREEMAT:
         export_freemat(handle, spectrum)
     handle.close()
+
+
+def export_image(filename, format, figure):
+    oldSize = figure.get_size_inches()
+    oldDpi = figure.get_dpi()
+    figure.set_size_inches((8, 4.5))
+    figure.set_dpi(600)
+
+    canvas = FigureCanvasAgg(figure)
+    canvas.draw()
+    renderer = canvas.get_renderer()
+    if matplotlib.__version__ >= '1.2':
+        buf = renderer.buffer_rgba()
+    else:
+        buf = renderer.buffer_rgba(0, 0)
+    size = canvas.get_width_height()
+    image = Image.frombuffer('RGBA', size, buf, 'raw', 'RGBA', 0, 1)
+    image = image.convert('RGB')
+    ext = File.get_export_ext(format, File.Exports.IMAGE)
+    image.save(filename, format=ext[1::])
+
+    figure.set_size_inches(oldSize)
+    figure.set_dpi(oldDpi)
 
 
 def export_csv(handle, spectrum):

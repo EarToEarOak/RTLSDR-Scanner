@@ -103,41 +103,71 @@ class Markers:
 
 
 class File:
-    class ExportType:
+    class Exports:
+        PLOT, IMAGE = range(2)
+
+    class PlotType:
         CSV, GNUPLOT, FREEMAT = range(3)
 
-    FILTERS = [""] * 3
-    FILTERS[ExportType.CSV] = "CSV table (*.csv)|*.csv"
-    FILTERS[ExportType.GNUPLOT] = "gnuplot script (*.plt)|*.plt"
-    FILTERS[ExportType.FREEMAT] = "FreeMat script (*.m)|*.m"
+    class ImageType:
+        BMP, EPS, GIF, JPEG, PDF, PNG, PPM, TIFF = range(8)
+
+    PLOT = [""] * 3
+    PLOT[PlotType.CSV] = "CSV table (*.csv)|*.csv"
+    PLOT[PlotType.GNUPLOT] = "gnuplot script (*.plt)|*.plt"
+    PLOT[PlotType.FREEMAT] = "FreeMat script (*.m)|*.m"
+
+    IMAGE = [""] * 8
+    IMAGE[ImageType.BMP] = 'Bitmap image (*.bmp)|*.bmp'
+    IMAGE[ImageType.EPS] = 'Encapsulated PostScript (*.eps)|*.eps'
+    IMAGE[ImageType.GIF] = 'GIF image (*.gif)|*.gif'
+    IMAGE[ImageType.JPEG] = 'JPEG image (*.jpeg)|*.jpeg'
+    IMAGE[ImageType.PDF] = 'Portable Document (*.pdf)|*.pdf'
+    IMAGE[ImageType.PNG] = 'Portable Network Graphics Image (*.png)|*.png'
+    IMAGE[ImageType.PPM] = 'Portable Pixmap image (*.ppm)|*.ppm'
+    IMAGE[ImageType.TIFF] = 'Tagged Image File (*.tiff)|*.tiff'
 
     HEADER = "RTLSDR Scanner"
     VERSION = 8
     RFS = "RTLSDR frequency scan (*.rfs)|*.rfs"
 
     @staticmethod
-    def get_export_ext(index):
-        filt = File.FILTERS[index]
-        delim = filt.index('|*')
-        return filt[delim + 2:]
+    def get_exports(export):
+        if export == File.Exports.PLOT:
+            exports = File.PLOT
+        else:
+            exports = File.IMAGE
+
+        return exports
 
     @staticmethod
-    def get_export_filters():
+    def get_export_ext(index, export=Exports.PLOT):
+        exports = File.get_exports(export)
+        filter = exports[index]
+        delim = filter.index('|*')
+        return filter[delim + 2:]
+
+    @staticmethod
+    def get_export_filters(export=Exports.PLOT):
+        exports = File.get_exports(export)
+
         filters = ''
-        length = len(File.FILTERS)
+        length = len(exports)
         for i in xrange(length):
-            filters += File.FILTERS[i]
+            filters += exports[i]
             if i < length - 1:
                 filters += '|'
 
         return filters
 
     @staticmethod
-    def get_export_pretty():
+    def get_export_pretty(export=Exports.PLOT):
+        exports = File.get_exports(export)
+
         pretty = ''
-        length = len(File.FILTERS)
+        length = len(exports)
         for i in xrange(length):
-            pretty += File.get_export_ext(i)
+            pretty += File.get_export_ext(i, export)
             if i < length - 2:
                 pretty += ', '
             elif i < length - 1:
@@ -146,9 +176,10 @@ class File:
         return pretty
 
     @staticmethod
-    def get_export_type(extension):
-        for i in xrange(len(File.FILTERS)):
-            if extension == File.get_export_ext(i):
+    def get_export_type(extension, export=Exports.PLOT):
+        exports = File.get_exports(export)
+        for i in xrange(len(exports)):
+            if extension == File.get_export_ext(i, export):
                 return i
 
         return -1
