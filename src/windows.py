@@ -142,6 +142,8 @@ class PanelGraph(wx.Panel):
         if self.plot is not None:
             self.plot.close()
 
+        self.toolbar.set_auto(True)
+
         if self.settings.display == Display.PLOT:
             self.plot = Plotter(self.notify, self.figure, self.settings)
         elif self.settings.display == Display.SPECT:

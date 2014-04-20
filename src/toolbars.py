@@ -193,14 +193,17 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.EnableTool(sepId, False)
         return sepId
 
-    def clear_auto(self):
-        self.settings.autoF = False
-        self.settings.autoL = False
-        self.settings.autoT = False
-        self.ToggleTool(self.autoFId, False)
-        self.ToggleTool(self.autoLId, False)
+    def set_auto(self, state):
+        self.settings.autoF = state
+        self.settings.autoL = state
+        self.settings.autoT = state
+        self.ToggleTool(self.autoFId, state)
+        self.ToggleTool(self.autoLId, state)
         if self.autoTId is not None:
-            self.ToggleTool(self.autoTId, False)
+            self.ToggleTool(self.autoTId, state)
+
+    def clear_auto(self):
+        self.set_auto(False)
 
     def set_plot(self, plot):
         self.plot = plot
