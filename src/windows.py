@@ -94,6 +94,10 @@ class PanelGraph(wx.Panel):
         self.limit = None
         self.extent = None
 
+        self.mouseSelect = None
+        self.mouseZoom = None
+        self.measureTable = None
+
         self.background = None
 
         self.selectStart = None
@@ -114,7 +118,7 @@ class PanelGraph(wx.Panel):
         self.measureTable = PanelMeasure(self)
 
         self.toolbar = NavigationToolbar(self.canvas, self, settings,
-                                         self.on_nav_changed)
+                                         self.hide_overlay)
         self.toolbar.Realize()
 
         vbox = wx.BoxSizer(wx.VERTICAL)
@@ -156,11 +160,9 @@ class PanelGraph(wx.Panel):
         self.figure.subplots_adjust(top=0.85)
         self.redraw_plot()
         self.plot.scale_plot(True)
-        self.mouseZoom = MouseZoom(self.plot, self.toolbar, self.hide_measure,
-                                   self.draw_measure)
+        self.mouseZoom = MouseZoom(self.plot, self.toolbar, self.hide_overlay)
         self.mouseSelect = MouseSelect(self.plot, self.on_select,
                                        self.on_selected)
-        self.clear_selection()
         self.measureTable.show(self.settings.showMeasure)
         self.panel.SetFocus()
 
@@ -195,25 +197,20 @@ class PanelGraph(wx.Panel):
     def on_draw(self, _event):
         axes = self.plot.get_axes()
         self.background = self.canvas.copy_from_bbox(axes.bbox)
-        self.mouseSelect.set_background(self.background)
-        self.draw_measure()
-
-    def on_nav_changed(self, _event):
-        self.draw_measure()
+        self.draw_overlay()
 
     def on_select(self):
         self.hide_measure()
 
     def on_selected(self, start, end):
         self.enable_menu(True)
-        self.on_draw(None)
         self.selectStart = start
         self.selectEnd = end
         self.measureTable.set_selected(self.spectrum, start, end)
-        self.draw_measure()
 
     def on_idle(self, _event):
         if self.doDraw and self.plot.get_plot_thread() is None:
+            self.hide_overlay()
             self.canvas.draw()
             self.doDraw = False
 
@@ -245,7 +242,6 @@ class PanelGraph(wx.Panel):
                 spectrum = reduce_points(spectrum, limit)
             self.plot.set_plot(spectrum, extent, annotate)
 
-            self.draw_select()
         else:
             self.timer.Start(200, oneShot=True)
 
@@ -265,21 +261,41 @@ class PanelGraph(wx.Panel):
                           self.settings.pointsMax,
                           self.extent, self.settings.annotate)
 
+    def set_grid(self, on):
+        self.plot.set_grid(on)
+
+    def draw_overlay(self):
+        if self.background is not None:
+            self.canvas.restore_region(self.background)
+            self.draw_select()
+            self.draw_measure()
+            self.canvas.blit(self.plot.get_axes().bbox)
+
     def draw_select(self):
         if self.selectStart is not None and self.selectEnd is not None:
             self.mouseSelect.draw(self.selectStart, self.selectEnd)
 
+    def hide_overlay(self):
+        if self.plot is not None:
+            self.plot.hide_measure()
+        self.hide_select()
+
     def hide_measure(self):
-        self.plot.hide_measure()
+        if self.plot is not None:
+            self.plot.hide_measure()
+
+    def hide_select(self):
+        if self.mouseSelect is not None:
+            self.mouseSelect.hide()
 
     def draw_measure(self):
-        if self.measure is not None and self.background is not None:
-            self.plot.draw_measure(self.background, self.measure, self.show)
+        if self.measure is not None and self.measure.is_valid():
+            self.plot.draw_measure(self.measure, self.show)
 
     def update_measure(self, measure, show):
         self.measure = measure
         self.show = show
-        self.draw_measure()
+        self.draw_overlay()
 
     def get_figure(self):
         return self.figure
@@ -713,7 +729,7 @@ class PanelMeasure(wx.Panel):
         self.graph.update_measure(self.measure, show)
 
     def clear_measurement(self):
-        self.clear_checks()
+#         self.clear_checks()
         for control in self.locsMeasure:
                     self.set_measure_value(control, "")
         self.update_measure()

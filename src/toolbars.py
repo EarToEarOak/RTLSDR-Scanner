@@ -65,10 +65,10 @@ class Statusbar(wx.StatusBar):
 
 
 class NavigationToolbar(NavigationToolbar2WxAgg):
-    def __init__(self, canvas, panel, settings, onNavChange):
+    def __init__(self, canvas, panel, settings, callBackHideOverlay):
         self.panel = panel
         self.settings = settings
-        self.onNavChange = onNavChange
+        self.callBackHideOverlay = callBackHideOverlay
         self.plot = None
         self.extraTools = []
 
@@ -118,29 +118,29 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.autoTId = None
 
     def home(self, event):
+        self.callBackHideOverlay()
         NavigationToolbar2.home(self, event)
         self.clear_auto()
-        self.onNavChange(None)
 
     def back(self, event):
+        self.callBackHideOverlay()
         NavigationToolbar2.back(self, event)
         self.clear_auto()
-        self.onNavChange(None)
 
     def forward(self, event):
+        self.callBackHideOverlay()
         NavigationToolbar2.forward(self, event)
         self.clear_auto()
-        self.onNavChange(None)
 
-    def drag_pan(self, event):
-        NavigationToolbar2.drag_pan(self, event)
+    def release_pan(self, event):
+        self.callBackHideOverlay()
+        NavigationToolbar2.release_pan(self, event)
         self.clear_auto()
-        self.onNavChange(None)
 
     def release_zoom(self, event):
+        self.callBackHideOverlay()
         NavigationToolbar2.release_zoom(self, event)
         self.clear_auto()
-        self.onNavChange(None)
 
     def on_check_auto_f(self, event):
         self.settings.autoF = event.Checked()

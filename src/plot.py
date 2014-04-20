@@ -131,38 +131,38 @@ class Plotter():
 
         bbox = self.axes.bbox
         box = dict(boxstyle='round', fc='white', ec='black', clip_box=bbox)
-        self.labels[Markers.MIN] = Text(0, 0, 'Min', fontsize='x-small',
+        self.labels[Markers.MIN] = Text(0, 0, 'Min', fontsize='xx-small',
                                         ha="right", va="bottom", bbox=box,
                                         color='black')
-        self.labels[Markers.MAX] = Text(0, 0, 'Max', fontsize='x-small',
+        self.labels[Markers.MAX] = Text(0, 0, 'Max', fontsize='xx-small',
                                         ha="right", va="top", bbox=box,
                                         color='black')
         box['ec'] = 'magenta'
-        self.labels[Markers.AVG] = Text(0, 0, 'Mean', fontsize='x-small',
+        self.labels[Markers.AVG] = Text(0, 0, 'Mean', fontsize='xx-small',
                                         ha="right", va="center", bbox=box,
                                         color='magenta')
         box['ec'] = 'green'
-        self.labels[Markers.GMEAN] = Text(0, 0, 'GMean', fontsize='x-small',
+        self.labels[Markers.GMEAN] = Text(0, 0, 'GMean', fontsize='xx-small',
                                           ha="right", va="center", bbox=box,
                                           color='green')
         box['ec'] = 'purple'
-        self.labels[Markers.HP] = Text(0, 0, '-3dB', fontsize='x-small',
+        self.labels[Markers.HP] = Text(0, 0, '-3dB', fontsize='xx-small',
                                        ha="right", va="center", bbox=box,
                                        color='purple')
-        self.labels[Markers.HFS] = Text(0, 0, '-3dB Start', fontsize='x-small',
+        self.labels[Markers.HFS] = Text(0, 0, '-3dB Start', fontsize='xx-small',
                                         ha="center", va="top", bbox=box,
                                         color='purple')
-        self.labels[Markers.HFE] = Text(0, 0, '-3dB End', fontsize='x-small',
+        self.labels[Markers.HFE] = Text(0, 0, '-3dB End', fontsize='xx-small',
                                         ha="center", va="top", bbox=box,
                                         color='purple')
         box['ec'] = '#996600'
-        self.labels[Markers.OP] = Text(0, 0, 'OBW', fontsize='x-small',
+        self.labels[Markers.OP] = Text(0, 0, 'OBW', fontsize='xx-small',
                                        ha="right", va="center", bbox=box,
                                        color='#996600')
-        self.labels[Markers.OFS] = Text(0, 0, 'OBW Start', fontsize='x-small',
+        self.labels[Markers.OFS] = Text(0, 0, 'OBW Start', fontsize='xx-small',
                                         ha="center", va="top", bbox=box,
                                         color='#996600')
-        self.labels[Markers.OFE] = Text(0, 0, 'OBW End', fontsize='x-small',
+        self.labels[Markers.OFE] = Text(0, 0, 'OBW End', fontsize='xx-small',
                                         ha="center", va="top", bbox=box,
                                         color='#996600')
 
@@ -173,19 +173,19 @@ class Plotter():
         bbox = self.axes.bbox
         box = dict(boxstyle='round', fc='white', ec='black', alpha=0.5,
                    clip_box=bbox)
-        self.overflowLabels['left'] = Text(0, 0.9, '', fontsize='x-small',
+        self.overflowLabels['left'] = Text(0, 0.9, '', fontsize='xx-small',
                                            ha="left", va="top", bbox=box,
                                            transform=self.axes.transAxes,
                                            alpha=0.5)
-        self.overflowLabels['right'] = Text(1, 0.9, '', fontsize='x-small',
+        self.overflowLabels['right'] = Text(1, 0.9, '', fontsize='xx-small',
                                             ha="right", va="top", bbox=box,
                                             transform=self.axes.transAxes,
                                             alpha=0.5)
-        self.overflowLabels['top'] = Text(0.9, 1, '', fontsize='x-small',
+        self.overflowLabels['top'] = Text(0.9, 1, '', fontsize='xx-small',
                                           ha="right", va="top", bbox=box,
                                           transform=self.axes.transAxes,
                                           alpha=0.5)
-        self.overflowLabels['bottom'] = Text(0.9, 0, '', fontsize='x-small',
+        self.overflowLabels['bottom'] = Text(0.9, 0, '', fontsize='xx-small',
                                              ha="right", va="bottom", bbox=box,
                                              transform=self.axes.transAxes,
                                              alpha=0.5)
@@ -256,14 +256,12 @@ class Plotter():
                 label.set_visible(True)
                 self.axes.draw_artist(label)
 
-    def draw_measure(self, background, measure, show):
+    def draw_measure(self, measure, show):
         if self.axes._cachedRenderer is None:
             return
 
         self.hide_measure()
         self.clear_overflow()
-        canvas = self.axes.get_figure().canvas
-        canvas.restore_region(background)
 
         if show[Measure.MIN]:
             y = measure.get_min_p()[1]
@@ -294,8 +292,6 @@ class Plotter():
             self.draw_vline(Markers.OFE, xEnd)
 
         self.draw_overflow()
-
-        canvas.blit(self.axes.bbox)
 
     def hide_measure(self):
         for line in self.lines.itervalues():

@@ -113,17 +113,17 @@ class Spectrogram:
 
         bbox = self.axes.bbox
         box = dict(boxstyle='round', fc='white', ec='purple', clip_box=bbox)
-        self.labels[Markers.HFS] = Text(0, 0, '-3dB', fontsize='x-small',
+        self.labels[Markers.HFS] = Text(0, 0, '-3dB', fontsize='xx-small',
                                        ha="center", va="top", bbox=box,
                                        color='purple')
-        self.labels[Markers.HFE] = Text(0, 0, '-3dB', fontsize='x-small',
+        self.labels[Markers.HFE] = Text(0, 0, '-3dB', fontsize='xx-small',
                                        ha="center", va="top", bbox=box,
                                        color='purple')
         box['ec'] = '#996600'
-        self.labels[Markers.OFS] = Text(0, 0, 'OBW', fontsize='x-small',
+        self.labels[Markers.OFS] = Text(0, 0, 'OBW', fontsize='xx-small',
                                        ha="center", va="top", bbox=box,
                                        color='#996600')
-        self.labels[Markers.OFE] = Text(0, 0, 'OBW', fontsize='x-small',
+        self.labels[Markers.OFE] = Text(0, 0, 'OBW', fontsize='xx-small',
                                        ha="center", va="top", bbox=box,
                                        color='#996600')
 
@@ -134,11 +134,11 @@ class Spectrogram:
         bbox = self.axes.bbox
         box = dict(boxstyle='round', fc='white', ec='black', alpha=0.5,
                    clip_box=bbox)
-        self.overflowLabels['left'] = Text(0, 0.9, '', fontsize='x-small',
+        self.overflowLabels['left'] = Text(0, 0.9, '', fontsize='xx-small',
                                            ha="left", va="top", bbox=box,
                                            transform=self.axes.transAxes,
                                            alpha=0.5)
-        self.overflowLabels['right'] = Text(1, 0.9, '', fontsize='x-small',
+        self.overflowLabels['right'] = Text(1, 0.9, '', fontsize='xx-small',
                                             ha="right", va="top", bbox=box,
                                             transform=self.axes.transAxes,
                                             alpha=0.5)
@@ -187,14 +187,12 @@ class Spectrogram:
                 label.set_visible(True)
                 self.axes.draw_artist(label)
 
-    def draw_measure(self, background, measure, show):
+    def draw_measure(self, measure, show):
         if self.axes._cachedRenderer is None:
             return
 
         self.hide_measure()
         self.clear_overflow()
-        canvas = self.axes.get_figure().canvas
-        canvas.restore_region(background)
 
         if show[Measure.HBW]:
             xStart, xEnd, _y = measure.get_hpw()
@@ -207,8 +205,6 @@ class Spectrogram:
             self.draw_vline(Markers.OFE, xEnd)
 
         self.draw_overflow()
-
-        canvas.blit(self.axes.bbox)
 
     def hide_measure(self):
         for line in self.lines.itervalues():

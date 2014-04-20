@@ -31,12 +31,12 @@ from plot3d import Plotter3d
 class MouseZoom():
     SCALE_STEP = 1.3
 
-    def __init__(self, plot, toolbar, callbackPre, callbackPost):
+    def __init__(self, plot, toolbar, callBackHideOverlay):
         if isinstance(plot, Plotter3d):
             return
 
-        self.callbackPre = callbackPre
-        self.callbackPost = callbackPost
+        self.callBackHideOverlay = callBackHideOverlay
+
         self.axes = plot.get_axes()
         self.toolbar = toolbar
         figure = self.axes.get_figure()
@@ -50,8 +50,8 @@ class MouseZoom():
         else:
             return
 
+        self.callBackHideOverlay()
         self.toolbar.clear_auto()
-        self.callbackPre()
 
         if self.toolbar._views.empty():
             self.toolbar.push_current()
@@ -76,10 +76,6 @@ class MouseZoom():
 
         self.axes.figure.canvas.draw()
 
-        self.callbackPost()
-
-        return
-
 
 class MouseSelect():
     def __init__(self, plot, callbackPre, callbackPost):
@@ -92,9 +88,9 @@ class MouseSelect():
         if self.selector is not None:
             self.selector.draw(xMin, xMax)
 
-    def set_background(self, background):
+    def hide(self):
         if self.selector is not None:
-            self.selector.set_background(background)
+            self.selector.hide()
 
     def clear(self):
         if self.selector is not None:
@@ -108,7 +104,6 @@ class RangeSelector():
         self.callbackPre = callbackPre
         self.callbackPost = callbackPost
 
-        self.background = None
         self.eventPressed = None
         self.eventReleased = None
 
@@ -125,11 +120,9 @@ class RangeSelector():
     def on_press(self, event):
         if self.skip_event(event):
             return
+
         self.eventPressed = event
         self.callbackPre()
-        self.rect.set_visible(False)
-        canvas = self.axes.get_figure().canvas
-        canvas.draw()
         self.rect.set_visible(True)
         return
 
@@ -141,13 +134,14 @@ class RangeSelector():
         xMax = event.xdata
         if xMin > xMax:
                 xMin, xMax = xMax, xMin
-        self.draw(xMin, xMax)
+        self.callbackPost(xMin, xMax)
 
         return
 
     def on_release(self, event):
         if self.eventPressed is None or self.skip_event(event):
             return
+
         self.eventReleased = event
         xMin, xMax = self.eventPressed.xdata, self.eventReleased.xdata
         if xMin > xMax:
@@ -177,6 +171,7 @@ class RangeSelector():
                 event.button != self.eventPressed.button)
 
     def draw(self, xMin, xMax):
+        self.rect.set_visible(True)
         yMin, yMax = self.axes.get_ylim()
         height = yMax - yMin
         yMin -= height * 100.0
@@ -186,14 +181,11 @@ class RangeSelector():
         self.rect.set_width(xMax - xMin)
         self.rect.set_height(yMax - yMin)
 
-        if self.background is not None:
-            canvas = self.axes.get_figure().canvas
-            canvas.restore_region(self.background)
+        if self.axes._cachedRenderer is not None:
             self.axes.draw_artist(self.rect)
-            canvas.blit(self.axes.bbox)
 
-    def set_background(self, background):
-        self.background = background
+    def hide(self):
+        self.rect.set_visible(False)
 
     def clear(self):
         self.rect.set_visible(False)
