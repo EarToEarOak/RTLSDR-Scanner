@@ -71,7 +71,7 @@ class Plotter():
         self.axes = self.figure.add_subplot(gs[0],
                                             axisbg=self.settings.background)
         self.axes.set_xlabel("Frequency (MHz)")
-        self.axes.set_ylabel('Level (dB)')
+        self.axes.set_ylabel('Level ($\mathsf{dB/\sqrt{Hz}}$)')
         self.axes.xaxis.set_major_formatter(formatter)
         self.axes.yaxis.set_major_formatter(formatter)
         self.axes.xaxis.set_minor_locator(AutoMinorLocator(10))
@@ -491,8 +491,9 @@ class ThreadPlot(threading.Thread):
         start, stop = self.axes.get_xlim()
         textX = ((stop - start) / 50.0) + x
 
+        text = '{0:.6f} MHz\n{1:.2f} $\mathsf{{dB/\sqrt{{Hz}}}}$'.format(x, y)
         if(matplotlib.__version__ < '1.3'):
-            self.axes.annotate('{0:.6f} MHz\n{1:.2f} dB'.format(x, y),
+            self.axes.annotate(text,
                                xy=(x, y), xytext=(textX, y),
                                ha='left', va='top', size='x-small',
                                gid='peak')
@@ -503,7 +504,7 @@ class ThreadPlot(threading.Thread):
         else:
             effect = patheffects.withStroke(linewidth=3, foreground="w",
                                             alpha=0.75)
-            self.axes.annotate('{0:.6f} MHz\n{1:.2f} dB'.format(x, y),
+            self.axes.annotate(text,
                                xy=(x, y), xytext=(textX, y),
                                ha='left', va='top', size='x-small',
                                path_effects=[effect], gid='peak')

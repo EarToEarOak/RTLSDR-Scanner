@@ -348,12 +348,11 @@ class ThreadPlot(threading.Thread):
 
         start, stop = self.axes.get_xlim()
         textX = ((stop - start) / 50.0) + fMax
-        when = format_time(fMax)
+        when = format_time(tMax)
 
+        text = '{0:.6f} MHz\n{1:.2f} $\mathsf{{dB/\sqrt{{Hz}}}}$\n{2}'.format(fMax, lMax, when)
         if(matplotlib.__version__ < '1.3'):
-            self.axes.annotate('{0:.6f}MHz\n{1:.2f}dB\n{2}'.format(fMax,
-                                                                   lMax,
-                                                                   when),
+            self.axes.annotate(text,
                                xy=(fMax, y), xytext=(textX, y),
                                ha='left', va='bottom', size='x-small',
                                color='w', gid='peak')
@@ -364,9 +363,7 @@ class ThreadPlot(threading.Thread):
         else:
             effect = patheffects.withStroke(linewidth=3, foreground="w",
                                             alpha=0.75)
-            self.axes.annotate('{0:.6f}MHz\n{1:.2f}dB\n{2}'.format(fMax,
-                                                                   lMax,
-                                                                   when),
+            self.axes.annotate(text,
                                xy=(fMax, y), xytext=(textX, y),
                                ha='left', va='bottom', size='x-small',
                                path_effects=[effect], gid='peak')

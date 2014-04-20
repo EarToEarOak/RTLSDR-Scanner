@@ -62,7 +62,7 @@ class Plotter3d():
 
         self.axes.set_xlabel("Frequency (MHz)")
         self.axes.set_ylabel('Time')
-        self.axes.set_zlabel('Level (dB)')
+        self.axes.set_zlabel('Level ($\mathsf{dB/\sqrt{Hz}}$)')
         self.axes.w_xaxis.set_pane_color(hex2color(self.settings.background))
         self.axes.w_yaxis.set_pane_color(hex2color(self.settings.background))
         self.axes.w_zaxis.set_pane_color(hex2color(self.settings.background))
@@ -219,9 +219,11 @@ class ThreadPlot(threading.Thread):
         f, l, t = self.extent.get_peak_flt()
         when = format_time(t)
         tPos = epoch_to_mpl(t)
+
+        text = '{0:.6f} MHz\n{1:.2f} $\mathsf{{dB/\sqrt{{Hz}}}}$\n{2}'.format(f, l, when)
         if(matplotlib.__version__ < '1.3'):
             self.axes.text(f, tPos, l,
-                           '{0:.6f}MHz\n{1:.2f}dB\n{2}'.format(f, l, when),
+                           text,
                            ha='left', va='bottom', size='x-small', gid='peak')
             self.axes.plot([f], [tPos], [l], marker='x', markersize=10,
                            mew=3, color='w', gid='peak')
@@ -231,7 +233,7 @@ class ThreadPlot(threading.Thread):
             effect = patheffects.withStroke(linewidth=3, foreground="w",
                                             alpha=0.75)
             self.axes.text(f, tPos, l,
-                           '{0:.6f}MHz\n{1:.2f}dB\n{2}'.format(f, l, when),
+                           text,
                            ha='left', va='bottom', size='x-small', gid='peak',
                            path_effects=[effect])
             self.axes.plot([f], [tPos], [l], marker='x', markersize=10,
