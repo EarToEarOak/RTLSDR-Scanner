@@ -244,6 +244,9 @@ def slice_spectrum(spectrum, start, end):
         return None
 
     sweep = spectrum[max(spectrum)]
+    if len(sweep) == 0:
+        return None
+
     if min(sweep) > start or max(sweep) < end:
         length = len(spectrum)
         if length > 1:
