@@ -238,11 +238,11 @@ class PanelGraph(wx.Panel):
 
         if self.plot.get_plot_thread() is None:
             self.timer.Stop()
-            self.measureTable.set_selected(spectrum, self.selectStart,
+            self.measureTable.set_selected(self.spectrum, self.selectStart,
                                            self.selectEnd)
             if isLimited:
                 spectrum = reduce_points(spectrum, limit)
-            self.plot.set_plot(spectrum, extent, annotate)
+            self.plot.set_plot(self.spectrum, self.extent, annotate)
 
         else:
             self.timer.Start(200, oneShot=True)
@@ -731,7 +731,6 @@ class PanelMeasure(wx.Panel):
         self.graph.update_measure(self.measure, show)
 
     def clear_measurement(self):
-#         self.clear_checks()
         for control in self.locsMeasure:
                     self.set_measure_value(control, "")
         self.update_measure()

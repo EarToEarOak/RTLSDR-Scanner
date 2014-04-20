@@ -240,13 +240,19 @@ def split_spectrum_sort(spectrum):
 
 
 def slice_spectrum(spectrum, start, end):
-    if spectrum is None or start is None or end is None:
-        return None
-    sweepTemp = {}
-    if len(spectrum) < 1:
+    if spectrum is None or start is None or end is None or len(spectrum) < 1:
         return None
 
-    for f, p in spectrum[max(spectrum)].iteritems():
+    sweep = spectrum[max(spectrum)]
+    if min(sweep) > start or max(sweep) < end:
+        length = len(spectrum)
+        if length > 1:
+            sweep = spectrum.values()[length - 2]
+        else:
+            return None
+
+    sweepTemp = {}
+    for f, p in sweep.iteritems():
         if start <= f <= end:
             sweepTemp[f] = p
     return sorted(sweepTemp.items(), key=lambda t: t[0])
