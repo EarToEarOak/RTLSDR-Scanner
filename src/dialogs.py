@@ -268,7 +268,7 @@ class DialogOffset(wx.Dialog):
         self.band1 = None
         self.band2 = None
         self.axes.set_xlabel("Frequency (MHz)")
-        self.axes.set_ylabel('Level (dB)')
+        self.axes.set_ylabel('Level ($\mathsf{dB/\sqrt{Hz}}$)')
         self.axes.set_yscale('log')
         self.axes.set_xlim(-1, 1)
         self.axes.set_ylim(auto=True)
@@ -1026,7 +1026,7 @@ class DialogWinFunc(wx.Dialog):
         self.axesFft.clear()
         self.axesFft.psd(self.data, NFFT=512, Fs=1000, window=function)
         self.axesFft.set_xlabel('Frequency')
-        self.axesFft.set_ylabel('dB')
+        self.axesFft.set_ylabel('$\mathsf{dB/\sqrt{Hz}}$')
         self.axesFft.set_xlim(-256, 256)
         self.axesFft.set_xticklabels([])
         self.figure.tight_layout()

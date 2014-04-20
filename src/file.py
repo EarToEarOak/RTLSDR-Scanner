@@ -233,7 +233,7 @@ def export_image(filename, format, figure):
 
 
 def export_csv(handle, spectrum):
-    handle.write("Time (UTC), Frequency (MHz),Level (dB/Hz)\n")
+    handle.write(u"Time (UTC), Frequency (MHz),Level (dB/Hz)\n")
     for plot in spectrum.iteritems():
         for freq, pwr in plot[1].iteritems():
             handle.write("{0}, {1}, {2}\n".format(plot[0], freq, pwr))
@@ -243,7 +243,7 @@ def export_plt(handle, spectrum):
     handle.write('set title "RTLSDR Scan"\n')
     handle.write('set xlabel "Frequency (MHz)"\n')
     handle.write('set ylabel "Time"\n')
-    handle.write('set zlabel "Level (dB)"\n')
+    handle.write('set zlabel "Level (dB/Hz)"\n')
     handle.write('set ydata time\n')
     handle.write('set timefmt "%s"\n')
     handle.write('set format y "%H:%M:%S"\n')
@@ -269,7 +269,7 @@ def export_freemat(handle, spectrum):
     handle.write("title('RTLSDR Scan')\n")
     handle.write("xlabel('Frequency (MHz)')\n")
     handle.write("ylabel('Time')\n")
-    handle.write("zlabel('Level (dB)')\n")
+    handle.write("zlabel('Level (dB/Hz)')\n")
     handle.write("grid('on')\n")
 
 
