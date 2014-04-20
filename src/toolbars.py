@@ -135,7 +135,8 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
     def release_pan(self, event):
         self.callBackHideOverlay()
         NavigationToolbar2.release_pan(self, event)
-        self.clear_auto()
+        if event.button != 2:
+            self.clear_auto()
 
     def release_zoom(self, event):
         self.callBackHideOverlay()
