@@ -74,6 +74,8 @@ class Settings():
         self.alert = False
         self.alertLevel = -20
 
+        self.exportDpi = 600
+
         self.devices = []
         self.index = 0
 
@@ -125,6 +127,7 @@ class Settings():
         self.showMeasure = self.cfg.ReadBool('showMeasure', self.showMeasure)
         self.alert = self.cfg.ReadBool('alert', self.alert)
         self.alertLevel = self.cfg.ReadFloat('alertLevel', self.alertLevel)
+        self.exportDpi = self.cfg.ReadInt('exportDpi', self.exportDpi)
         self.index = self.cfg.ReadInt('index', self.index)
         self.cfg.SetPath("/Devices")
         group = self.cfg.GetFirstGroup()
@@ -179,6 +182,7 @@ class Settings():
         self.cfg.WriteBool('showMeasure', self.showMeasure)
         self.cfg.WriteBool('alert', self.alert)
         self.cfg.WriteFloat('alertLevel', self.alertLevel)
+        self.cfg.WriteInt('exportDpi', self.exportDpi)
         self.cfg.WriteInt('index', self.index)
         self.clear_servers()
         if self.devices:

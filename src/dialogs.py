@@ -574,6 +574,10 @@ class DialogPrefs(wx.Dialog):
         self.spinPoints.Enable(settings.pointsLimit)
         self.spinPoints.SetValue(settings.pointsMax)
         self.spinPoints.SetToolTip(wx.ToolTip('Maximum number of points to plot'))
+        textDpi = wx.StaticText(self, label='Export DPI')
+        self.spinDpi = wx.SpinCtrl(self, wx.ID_ANY, min=72, max=6000)
+        self.spinDpi.SetValue(settings.exportDpi)
+        self.spinDpi.SetToolTip(wx.ToolTip('DPI of exported images'))
 
         self.radioAvg = wx.RadioButton(self, wx.ID_ANY, 'Average Scans',
                                        style=wx.RB_GROUP)
@@ -620,6 +624,8 @@ class DialogPrefs(wx.Dialog):
         gengrid.Add(self.colourBar, pos=(3, 2))
         gengrid.Add(self.checkPoints, pos=(4, 0))
         gengrid.Add(self.spinPoints, pos=(4, 1))
+        gengrid.Add(textDpi, pos=(5, 0))
+        gengrid.Add(self.spinDpi, pos=(5, 1))
         genbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "General"))
         genbox.Add(gengrid, 0, wx.ALL | wx.ALIGN_CENTRE_VERTICAL, 10)
 
@@ -689,6 +695,7 @@ class DialogPrefs(wx.Dialog):
         self.settings.alertLevel = self.spinLevel.GetValue()
         self.settings.pointsLimit = self.checkPoints.GetValue()
         self.settings.pointsMax = self.spinPoints.GetValue()
+        self.settings.exportDpi = self.spinDpi.GetValue()
         self.settings.retainScans = self.radioRetain.GetValue()
         self.settings.fadeScans = self.checkFade.GetValue()
         self.settings.lineWidth = self.ctrlWidth.GetValue()

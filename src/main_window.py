@@ -469,7 +469,7 @@ class FrameMain(wx.Frame):
             self.settings.dirExport = dirname
             filename = os.path.join(dirname, dlg.GetFilename())
             export_image(filename, dlg.GetFilterIndex(),
-                         self.graph.get_figure())
+                         self.graph.get_figure(), self.settings.exportDpi)
             self.status.set_general("Finished")
         dlg.Destroy()
 

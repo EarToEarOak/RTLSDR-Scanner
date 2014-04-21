@@ -209,11 +209,11 @@ def export_plot(dirname, filename, exportType, spectrum):
     handle.close()
 
 
-def export_image(filename, format, figure):
+def export_image(filename, format, figure, dpi):
     oldSize = figure.get_size_inches()
     oldDpi = figure.get_dpi()
     figure.set_size_inches((8, 4.5))
-    figure.set_dpi(600)
+    figure.set_dpi(dpi)
 
     canvas = FigureCanvasAgg(figure)
     canvas.draw()
@@ -226,7 +226,7 @@ def export_image(filename, format, figure):
     image = Image.frombuffer('RGBA', size, buf, 'raw', 'RGBA', 0, 1)
     image = image.convert('RGB')
     ext = File.get_export_ext(format, File.Exports.IMAGE)
-    image.save(filename, format=ext[1::])
+    image.save(filename, format=ext[1::], dpi=(dpi, dpi))
 
     figure.set_size_inches(oldSize)
     figure.set_dpi(oldDpi)
