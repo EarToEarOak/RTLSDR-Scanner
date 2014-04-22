@@ -341,7 +341,6 @@ class ThreadPlot(threading.Thread):
         self.parent.threadPlot = None
 
     def annotate_plot(self):
-
         self.clear_markers()
         fMax, lMax, tMax = self.extent.get_peak_flt()
         y = epoch_to_mpl(tMax)

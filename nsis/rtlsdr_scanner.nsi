@@ -217,6 +217,8 @@ Section Uninstall
     Delete "$INSTDIR\res\wireframe.png"
     Delete "$INSTDIR\res\spacer.png"
     Delete "$INSTDIR\res\peak.png"
+    Delete "$INSTDIR\res\min.png"
+    Delete "$INSTDIR\res\max.png"
     Delete "$INSTDIR\res\icon.png"
     Delete "$INSTDIR\res\grid.png"
     Delete "$INSTDIR\res\fade.png"

@@ -37,7 +37,7 @@ from matplotlib.text import Text
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 import numpy
 
-from constants import Markers
+from constants import Markers, PlotFunc
 from events import EventThreadStatus, Event, post_event
 from spectrum import Measure
 
@@ -47,7 +47,6 @@ class Plotter():
         self.notify = notify
         self.figure = figure
         self.settings = settings
-        self.average = settings.average
         self.axes = None
         self.bar = None
         self.threadPlot = None
@@ -342,7 +341,7 @@ class Plotter():
                                      self.settings.lineWidth,
                                      self.barBase,
                                      self.settings.fadeScans,
-                                     annotate, self.settings.average)
+                                     annotate, self.settings.plotFunc)
         self.threadPlot.start()
 
     def clear_plots(self):
@@ -373,7 +372,7 @@ class Plotter():
 class ThreadPlot(threading.Thread):
     def __init__(self, parent, axes, data, extent,
                  colourMap, autoL, lineWidth,
-                 barBase, fade, annotate, average):
+                 barBase, fade, annotate, plotFunc):
         threading.Thread.__init__(self)
         self.name = "Plot"
         self.parent = parent
@@ -386,81 +385,117 @@ class ThreadPlot(threading.Thread):
         self.barBase = barBase
         self.annotate = annotate
         self.fade = fade
-        self.average = average
+        self.plotFunc = plotFunc
 
     def run(self):
         if self.data is None:
             self.parent.threadPlot = None
             return
 
-        peakF = None
-        peakL = None
         total = len(self.data)
         if total > 0:
             self.parent.clear_plots()
-            lc = None
-            if self.average:
-                avg = OrderedDict()
-                count = len(self.data)
 
-                for timeStamp in self.data:
-
-                    if len(self.data[timeStamp]) < 2:
-                        return
-
-                    for x, y in self.data[timeStamp].items():
-                        if x in avg:
-                            avg[x] = (avg[x] + y) / 2
-                        else:
-                            avg[x] = y
-
-                data = avg.items()
-                peakF, peakL = max(data, key=lambda item: item[1])
-
-                segments, levels = self.create_segments(data)
-                lc = LineCollection(segments)
-                lc.set_array(numpy.array(levels))
-                lc.set_norm(self.get_norm(self.autoL, self.extent))
-                lc.set_cmap(self.colourMap)
-                lc.set_linewidth(self.lineWidth)
-                lc.set_gid('plot')
-                self.axes.add_collection(lc)
-                self.parent.lc = lc
-            else:
-                count = 0.0
-                for timeStamp in self.data:
-
-                    if len(self.data[timeStamp]) < 2:
-                        self.parent.threadPlot = None
-                        return
-
-                    if self.fade:
-                        alpha = (total - count) / total
-                    else:
-                        alpha = 1
-
-                    data = self.data[timeStamp].items()
-                    peakF, peakL = self.extent.get_peak_fl()
-
-                    segments, levels = self.create_segments(data)
-                    lc = LineCollection(segments)
-                    lc.set_array(numpy.array(levels))
-                    lc.set_norm(self.get_norm(self.autoL, self.extent))
-                    lc.set_cmap(self.colourMap)
-                    lc.set_linewidth(self.lineWidth)
-                    lc.set_gid('plot')
-                    lc.set_alpha(alpha)
-                    self.axes.add_collection(lc)
-                    count += 1
+            if self.plotFunc == PlotFunc.NONE:
+                peakF, peakL = self.plot_all()
+            elif self.plotFunc == PlotFunc.MIN:
+                peakF, peakL = self.plot_min()
+            elif self.plotFunc == PlotFunc.MAX:
+                peakF, peakL = self.plot_max()
+            elif self.plotFunc == PlotFunc.AVG:
+                peakF, peakL = self.plot_avg()
 
             if self.annotate:
                 self.annotate_plot(peakF, peakL)
 
-        if total > 0:
             self.parent.scale_plot()
             self.parent.redraw_plot()
 
         self.parent.threadPlot = None
+
+    def plot_all(self):
+        total = len(self.data)
+        count = 0.0
+        for timeStamp in self.data:
+            if len(self.data[timeStamp]) < 2:
+                self.parent.threadPlot = None
+                return
+
+            if self.fade:
+                alpha = (total - count) / total
+            else:
+                alpha = 1
+
+            data = self.data[timeStamp].items()
+            peakF, peakL = self.extent.get_peak_fl()
+
+            segments, levels = self.create_segments(data)
+            lc = LineCollection(segments)
+            lc.set_array(numpy.array(levels))
+            lc.set_norm(self.get_norm(self.autoL, self.extent))
+            lc.set_cmap(self.colourMap)
+            lc.set_linewidth(self.lineWidth)
+            lc.set_gid('plot')
+            lc.set_alpha(alpha)
+            self.axes.add_collection(lc)
+            count += 1
+
+        return peakF, peakL
+
+    def plot_min(self):
+        points = OrderedDict()
+
+        for timeStamp in self.data:
+            for x, y in self.data[timeStamp].items():
+                if x in points:
+                    points[x] = min(points[x], y)
+                else:
+                    points[x] = y
+
+        return self.plot_single(points)
+
+    def plot_max(self):
+        points = OrderedDict()
+
+        for timeStamp in self.data:
+            for x, y in self.data[timeStamp].items():
+                if x in points:
+                    points[x] = max(points[x], y)
+                else:
+                    points[x] = y
+
+        return self.plot_single(points)
+
+    def plot_avg(self):
+        points = OrderedDict()
+
+        for timeStamp in self.data:
+            if len(self.data[timeStamp]) < 2:
+                return
+
+            for x, y in self.data[timeStamp].items():
+                if x in points:
+                    points[x] = (points[x] + y) / 2
+                else:
+                    points[x] = y
+
+        return self.plot_single(points)
+
+    def plot_single(self, points):
+        data = points.items()
+        peakF, peakL = max(data, key=lambda item: item[1])
+
+        segments, levels = self.create_segments(data)
+        lc = LineCollection(segments)
+        lc.set_array(numpy.array(levels))
+        lc.set_norm(self.get_norm(self.autoL, self.extent))
+        lc.set_cmap(self.colourMap)
+        lc.set_linewidth(self.lineWidth)
+        lc.set_gid('plot')
+        self.axes.add_collection(lc)
+        self.parent.lc = lc
+
+        return peakF, peakL
 
     def create_segments(self, points):
         segments = []

@@ -74,7 +74,6 @@ WINFUNC = ["Bartlett", numpy.bartlett,
            "Hamming", numpy.hamming,
            "Hanning", numpy.hanning]
 
-
 class Warn:
     SCAN, OPEN, EXIT = range(3)
 
@@ -94,6 +93,10 @@ class Mode:
 class Plot:
     STR_FULL = 'Full'
     STR_PARTIAL = 'Partial'
+
+
+class PlotFunc:
+    NONE, MIN, MAX, AVG = range(4)
 
 
 class Markers:

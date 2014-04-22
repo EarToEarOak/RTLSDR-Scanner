@@ -28,7 +28,7 @@ from matplotlib.backend_bases import NavigationToolbar2
 from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
 import wx
 
-from constants import Display
+from constants import Display, PlotFunc
 from misc import load_bitmap, get_colours
 
 
@@ -116,6 +116,9 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         wx.EVT_TOOL(self, self.autoLId, self.on_check_auto_l)
 
         self.autoTId = None
+        self.maxId = None
+        self.minId = None
+        self.avgId = None
 
     def home(self, event):
         self.callBackHideOverlay()
@@ -178,8 +181,30 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.panel.create_plot()
 
     def on_check_avg(self, event):
-        avg = event.Checked()
-        self.settings.average = avg
+        check = event.Checked()
+        if check:
+            self.settings.plotFunc = PlotFunc.AVG
+        else:
+            self.settings.plotFunc = PlotFunc.NONE
+        self.set_func()
+        self.panel.redraw_plot()
+
+    def on_check_min(self, event):
+        check = event.Checked()
+        if check:
+            self.settings.plotFunc = PlotFunc.MIN
+        else:
+            self.settings.plotFunc = PlotFunc.NONE
+        self.set_func()
+        self.panel.redraw_plot()
+
+    def on_check_max(self, event):
+        check = event.Checked()
+        if check:
+            self.settings.plotFunc = PlotFunc.MAX
+        else:
+            self.settings.plotFunc = PlotFunc.NONE
+        self.set_func()
         self.panel.redraw_plot()
 
     def on_colour(self, event):
@@ -232,12 +257,25 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
             self.ToggleTool(fadeId, self.settings.fadeScans)
             self.extraTools.append(fadeId)
 
-            avgId = wx.NewId()
-            self.AddCheckTool(avgId, load_bitmap('average'),
-                              shortHelp='Average plots')
-            wx.EVT_TOOL(self, avgId, self.on_check_avg)
-            self.ToggleTool(avgId, self.settings.average)
-            self.extraTools.append(avgId)
+            self.extraTools.append(self.add_spacer())
+
+            self.minId = wx.NewId()
+            self.AddCheckTool(self.minId, load_bitmap('min'),
+                              shortHelp='Show minimum')
+            wx.EVT_TOOL(self, self.minId, self.on_check_min)
+            self.extraTools.append(self.minId)
+            self.maxId = wx.NewId()
+            self.AddCheckTool(self.maxId, load_bitmap('max'),
+                              shortHelp='Show maximum')
+            wx.EVT_TOOL(self, self.maxId, self.on_check_max)
+            self.extraTools.append(self.maxId)
+            self.avgId = wx.NewId()
+            self.AddCheckTool(self.avgId, load_bitmap('average'),
+                              shortHelp='Show average')
+            wx.EVT_TOOL(self, self.avgId, self.on_check_avg)
+            self.extraTools.append(self.avgId)
+            self.set_func()
+
             self.extraTools.append(self.add_spacer())
 
         colours = get_colours()
@@ -259,6 +297,13 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
             self.extraTools.append(wireId)
 
         self.Realize()
+
+    def set_func(self):
+        buttons = [self.minId, self.maxId, self.avgId]
+        for button in buttons:
+            self.ToggleTool(button, False)
+        if self.settings.plotFunc != PlotFunc.NONE:
+            self.ToggleTool(buttons[self.settings.plotFunc - 1], True)
 
 
 class NavigationToolbarCompare(NavigationToolbar2WxAgg):

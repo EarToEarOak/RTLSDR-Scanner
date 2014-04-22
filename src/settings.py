@@ -25,7 +25,7 @@
 
 import wx
 
-from constants import Display, Mode
+from constants import Display, Mode, PlotFunc
 from devices import Device, format_device_name
 
 
@@ -50,10 +50,10 @@ class Settings():
         self.colourMap = 'jet'
         self.background = '#f0f0f0'
         self.wireframe = False
-        self.average = False
         self.pointsLimit = False
         self.pointsMax = 5000
         self.grid = True
+        self.plotFunc = PlotFunc.NONE
 
         self.start = 87
         self.stop = 108
@@ -108,10 +108,10 @@ class Settings():
         self.colourMap = self.cfg.Read('colourMap', self.colourMap)
         self.background = self.cfg.Read('background', self.background)
         self.wireframe = self.cfg.ReadBool('wireframe', self.wireframe)
-        self.average = self.cfg.ReadBool('average', self.average)
         self.pointsLimit = self.cfg.ReadBool('pointsLimit', self.pointsLimit)
         self.pointsMax = self.cfg.ReadInt('pointsMax', self.pointsMax)
         self.grid = self.cfg.ReadBool('grid', self.grid)
+        self.plotFunc = self.cfg.ReadInt('plotFunc', self.plotFunc)
         self.start = self.cfg.ReadInt('start', self.start)
         self.stop = self.cfg.ReadInt('stop', self.stop)
         self.mode = self.cfg.ReadInt('mode', self.mode)
@@ -163,10 +163,10 @@ class Settings():
         self.cfg.Write('colourMap', self.colourMap)
         self.cfg.Write('background', self.background)
         self.cfg.WriteBool('wireframe', self.wireframe)
-        self.cfg.WriteBool('average', self.average)
         self.cfg.WriteBool('pointsLimit', self.pointsLimit)
         self.cfg.WriteInt('pointsMax', self.pointsMax)
         self.cfg.WriteBool('grid', self.grid)
+        self.cfg.WriteBool('plotFunc', self.plotFunc)
         self.cfg.WriteInt('start', self.start)
         self.cfg.WriteInt('stop', self.stop)
         self.cfg.WriteInt('mode', self.mode)
@@ -205,6 +205,7 @@ class Settings():
         self.cfg.DeleteEntry('autoScale')
         self.cfg.DeleteEntry('yMax')
         self.cfg.DeleteEntry('yMin')
+        self.cfg.DeleteEntry('average')
 
 
 if __name__ == '__main__':
