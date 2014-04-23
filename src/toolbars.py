@@ -119,6 +119,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.maxId = None
         self.minId = None
         self.avgId = None
+        self.varId = None
 
     def home(self, event):
         self.callBackHideOverlay()

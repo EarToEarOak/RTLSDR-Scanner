@@ -53,6 +53,8 @@ class Spectrogram:
         self.axes = None
         self.plot = None
         self.extent = None
+        self.bar = None
+        self.barBase = None
         self.lines = {}
         self.labels = {}
         self.overflowLabels = {}
@@ -350,7 +352,7 @@ class ThreadPlot(threading.Thread):
         when = format_time(tMax)
 
         text = '{0:.6f} MHz\n{1:.2f} $\mathsf{{dB/\sqrt{{Hz}}}}$\n{2}'.format(fMax, lMax, when)
-        if(matplotlib.__version__ < '1.3'):
+        if matplotlib.__version__ < '1.3':
             self.axes.annotate(text,
                                xy=(fMax, y), xytext=(textX, y),
                                ha='left', va='bottom', size='x-small',
@@ -372,9 +374,9 @@ class ThreadPlot(threading.Thread):
     def clear_markers(self):
         children = self.axes.get_children()
         for child in children:
-                if child.get_gid() is not None:
-                    if child.get_gid() == 'peak':
-                        child.remove()
+            if child.get_gid() is not None:
+                if child.get_gid() == 'peak':
+                    child.remove()
 
 
 if __name__ == '__main__':
