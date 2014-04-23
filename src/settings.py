@@ -166,7 +166,7 @@ class Settings():
         self.cfg.WriteBool('pointsLimit', self.pointsLimit)
         self.cfg.WriteInt('pointsMax', self.pointsMax)
         self.cfg.WriteBool('grid', self.grid)
-        self.cfg.WriteBool('plotFunc', self.plotFunc)
+        self.cfg.WriteInt('plotFunc', self.plotFunc)
         self.cfg.WriteInt('start', self.start)
         self.cfg.WriteInt('stop', self.stop)
         self.cfg.WriteInt('mode', self.mode)
