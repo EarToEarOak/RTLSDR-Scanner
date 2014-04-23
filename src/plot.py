@@ -61,10 +61,10 @@ class Plotter():
                          'top': [],
                          'bottom': []}
 
-        self.setup_plot()
+        self.__setup_plot()
         self.set_grid(self.settings.grid)
 
-    def setup_plot(self):
+    def __setup_plot(self):
         formatter = ScalarFormatter(useOffset=False)
 
         gs = GridSpec(1, 2, width_ratios=[9.5, 0.5])
@@ -85,11 +85,11 @@ class Plotter():
         self.barBase = ColorbarBase(self.bar, norm=norm,
                                     cmap=cm.get_cmap(self.settings.colourMap))
 
-        self.setup_measure()
-        self.setup_overflow()
+        self.__setup_measure()
+        self.__setup_overflow()
         self.hide_measure()
 
-    def setup_measure(self):
+    def __setup_measure(self):
         dashesAvg = [4, 5, 1, 5, 1, 5]
         dashesGM = [5, 5, 5, 5, 1, 5, 1, 5]
         dashesHalf = [1, 5, 5, 5, 5, 5]
@@ -170,7 +170,7 @@ class Plotter():
         for label in self.labels.itervalues():
             self.axes.add_artist(label)
 
-    def setup_overflow(self):
+    def __setup_overflow(self):
         bbox = self.axes.bbox
         box = dict(boxstyle='round', fc='white', ec='black', alpha=0.5,
                    clip_box=bbox)
@@ -194,11 +194,11 @@ class Plotter():
         for label in self.overflowLabels.itervalues():
             self.axes.add_artist(label)
 
-    def clear_overflow(self):
+    def __clear_overflow(self):
         for label in self.overflowLabels:
             self.overflow[label] = []
 
-    def draw_hline(self, marker, y):
+    def __draw_hline(self, marker, y):
         line = self.lines[marker]
         label = self.labels[marker]
         xLim = self.axes.get_xlim()
@@ -216,7 +216,7 @@ class Plotter():
         elif y is not None and y > yLim[1]:
             self.overflow['top'].append(marker)
 
-    def draw_vline(self, marker, x):
+    def __draw_vline(self, marker, x):
         line = self.lines[marker]
         label = self.labels[marker]
         yLim = self.axes.get_ylim()
@@ -234,7 +234,7 @@ class Plotter():
         elif x is not None and x > xLim[1]:
             self.overflow['right'].append(marker)
 
-    def draw_overflow(self):
+    def __draw_overflow(self):
         for pos, overflow in self.overflow.iteritems():
             if len(overflow) > 0:
                 text = ''
@@ -262,37 +262,37 @@ class Plotter():
             return
 
         self.hide_measure()
-        self.clear_overflow()
+        self.__clear_overflow()
 
         if show[Measure.MIN]:
             y = measure.get_min_p()[1]
-            self.draw_hline(Markers.MIN, y)
+            self.__draw_hline(Markers.MIN, y)
 
         if show[Measure.MAX]:
             y = measure.get_max_p()[1]
-            self.draw_hline(Markers.MAX, y)
+            self.__draw_hline(Markers.MAX, y)
 
         if show[Measure.AVG]:
             y = measure.get_avg_p()
-            self.draw_hline(Markers.AVG, y)
+            self.__draw_hline(Markers.AVG, y)
 
         if show[Measure.GMEAN]:
             y = measure.get_gmean_p()
-            self.draw_hline(Markers.GMEAN, y)
+            self.__draw_hline(Markers.GMEAN, y)
 
         if show[Measure.HBW]:
             xStart, xEnd, y = measure.get_hpw()
-            self.draw_hline(Markers.HP, y)
-            self.draw_vline(Markers.HFS, xStart)
-            self.draw_vline(Markers.HFE, xEnd)
+            self.__draw_hline(Markers.HP, y)
+            self.__draw_vline(Markers.HFS, xStart)
+            self.__draw_vline(Markers.HFE, xEnd)
 
         if show[Measure.OBW]:
             xStart, xEnd, y = measure.get_obw()
-            self.draw_hline(Markers.OP, y)
-            self.draw_vline(Markers.OFE, xStart)
-            self.draw_vline(Markers.OFE, xEnd)
+            self.__draw_hline(Markers.OP, y)
+            self.__draw_vline(Markers.OFE, xStart)
+            self.__draw_vline(Markers.OFE, xEnd)
 
-        self.draw_overflow()
+        self.__draw_overflow()
 
     def hide_measure(self):
         for line in self.lines.itervalues():
@@ -403,25 +403,25 @@ class ThreadPlot(threading.Thread):
             self.parent.clear_plots()
 
             if self.plotFunc == PlotFunc.NONE:
-                peakF, peakL = self.plot_all()
+                peakF, peakL = self.__plot_all()
             elif self.plotFunc == PlotFunc.MIN:
-                peakF, peakL = self.plot_min()
+                peakF, peakL = self.__plot_min()
             elif self.plotFunc == PlotFunc.MAX:
-                peakF, peakL = self.plot_max()
+                peakF, peakL = self.__plot_max()
             elif self.plotFunc == PlotFunc.AVG:
-                peakF, peakL = self.plot_avg()
+                peakF, peakL = self.__plot_avg()
             elif self.plotFunc == PlotFunc.VAR:
-                peakF, peakL = self.plot_variance()
+                peakF, peakL = self.__plot_variance()
 
             if self.annotate:
-                self.annotate_plot(peakF, peakL)
+                self.__annotate_plot(peakF, peakL)
 
             self.parent.scale_plot()
             self.parent.redraw_plot()
 
         self.parent.threadPlot = None
 
-    def calc_min(self):
+    def __calc_min(self):
         points = OrderedDict()
 
         for timeStamp in self.data:
@@ -433,7 +433,7 @@ class ThreadPlot(threading.Thread):
 
         return points
 
-    def calc_max(self):
+    def __calc_max(self):
         points = OrderedDict()
 
         for timeStamp in self.data:
@@ -445,7 +445,7 @@ class ThreadPlot(threading.Thread):
 
         return points
 
-    def plot_all(self):
+    def __plot_all(self):
         total = len(self.data)
         count = 0.0
         for timeStamp in self.data:
@@ -461,10 +461,10 @@ class ThreadPlot(threading.Thread):
             data = self.data[timeStamp].items()
             peakF, peakL = self.extent.get_peak_fl()
 
-            segments, levels = self.create_segments(data)
+            segments, levels = self.__create_segments(data)
             lc = LineCollection(segments)
             lc.set_array(numpy.array(levels))
-            lc.set_norm(self.get_norm(self.autoL, self.extent))
+            lc.set_norm(self.__get_norm(self.autoL, self.extent))
             lc.set_cmap(self.colourMap)
             lc.set_linewidth(self.lineWidth)
             lc.set_gid('plot')
@@ -474,17 +474,17 @@ class ThreadPlot(threading.Thread):
 
         return peakF, peakL
 
-    def plot_min(self):
-        points = self.calc_min()
+    def __plot_min(self):
+        points = self.__calc_min()
 
-        return self.plot_single(points)
+        return self.__plot_single(points)
 
-    def plot_max(self):
-        points = self.calc_max()
+    def __plot_max(self):
+        points = self.__calc_max()
 
-        return self.plot_single(points)
+        return self.__plot_single(points)
 
-    def plot_avg(self):
+    def __plot_avg(self):
         points = OrderedDict()
 
         for timeStamp in self.data:
@@ -497,11 +497,11 @@ class ThreadPlot(threading.Thread):
                 else:
                     points[x] = y
 
-        return self.plot_single(points)
+        return self.__plot_single(points)
 
-    def plot_variance(self):
-        pointsMin = self.calc_min()
-        pointsMax = self.calc_max()
+    def __plot_variance(self):
+        pointsMin = self.__calc_min()
+        pointsMax = self.__calc_max()
 
         polys = []
         variance = []
@@ -543,14 +543,14 @@ class ThreadPlot(threading.Thread):
 
         return None, None
 
-    def plot_single(self, points):
+    def __plot_single(self, points):
         data = points.items()
         peakF, peakL = max(data, key=lambda item: item[1])
 
-        segments, levels = self.create_segments(data)
+        segments, levels = self.__create_segments(data)
         lc = LineCollection(segments)
         lc.set_array(numpy.array(levels))
-        lc.set_norm(self.get_norm(self.autoL, self.extent))
+        lc.set_norm(self.__get_norm(self.autoL, self.extent))
         lc.set_cmap(self.colourMap)
         lc.set_linewidth(self.lineWidth)
         lc.set_gid('plot')
@@ -558,7 +558,7 @@ class ThreadPlot(threading.Thread):
 
         return peakF, peakL
 
-    def create_segments(self, points):
+    def __create_segments(self, points):
         segments = []
         levels = []
 
@@ -571,7 +571,7 @@ class ThreadPlot(threading.Thread):
 
         return segments, levels
 
-    def get_norm(self, autoL, extent):
+    def __get_norm(self, autoL, extent):
         if autoL:
             vmin, vmax = self.barBase.get_clim()
         else:
@@ -581,8 +581,8 @@ class ThreadPlot(threading.Thread):
 
         return Normalize(vmin=vmin, vmax=vmax)
 
-    def annotate_plot(self, x, y):
-        self.clear_markers()
+    def __annotate_plot(self, x, y):
+        self.__clear_markers()
 
         if x is None or y is None:
             return
@@ -610,7 +610,7 @@ class ThreadPlot(threading.Thread):
             self.axes.plot(x, y, marker='x', markersize=10, color='r',
                            path_effects=[effect], gid='peak')
 
-    def get_plots(self):
+    def __get_plots(self):
         plots = []
         children = self.axes.get_children()
         for child in children:
@@ -620,7 +620,7 @@ class ThreadPlot(threading.Thread):
 
         return plots
 
-    def clear_markers(self):
+    def __clear_markers(self):
         children = self.axes.get_children()
         for child in children:
             if child.get_gid() is not None:

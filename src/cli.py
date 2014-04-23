@@ -122,7 +122,7 @@ class Cli():
         else:
             print self.settings.devices[index].name
 
-        self.scan(self.settings, index, pool)
+        self.__scan(self.settings, index, pool)
 
         if ext == ".rfs":
             scanInfo = ScanInfo()
@@ -134,17 +134,17 @@ class Cli():
 
         print "Done"
 
-    def scan(self, settings, index, pool):
+    def __scan(self, settings, index, pool):
         samples = settings.dwell * SAMPLE_RATE
         samples = next_2_to_pow(int(samples))
         threadScan = ThreadScan(self.queue, None, settings, index, samples,
                                 False)
         while threadScan.isAlive() or self.steps > 0:
             if not self.queue.empty():
-                self.process_event(self.queue, pool)
+                self.__process_event(self.queue, pool)
         print ""
 
-    def process_event(self, queue, pool):
+    def __process_event(self, queue, pool):
         event = queue.get()
         status = event.data.get_status()
         freq = event.data.get_freq()
@@ -164,8 +164,8 @@ class Cli():
                                             self.settings.nfft,
                                             self.settings.overlap,
                                             "Hamming"),
-                             callback=self.on_process_done)
-            self.progress()
+                             callback=self.__on_process_done)
+            self.__progress()
         elif status == Event.ERROR:
             print "Error: {0}".format(data)
             exit(1)
@@ -176,14 +176,14 @@ class Cli():
                          self.settings.stop, freq,
                          data, offset, self.spectrum, False,)).start()
         elif status == Event.UPDATED:
-            self.progress()
+            self.__progress()
 
-    def on_process_done(self, data):
+    def __on_process_done(self, data):
         timeStamp, freq, scan = data
         post_event(self.queue, EventThreadStatus(Event.PROCESSED, freq,
                                                  (timeStamp, scan)))
 
-    def progress(self):
+    def __progress(self):
         self.steps -= 1
         comp = (self.stepsTotal - self.steps) * 100 / self.stepsTotal
         sys.stdout.write("\r{0:.1f}%".format(comp))

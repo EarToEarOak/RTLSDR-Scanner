@@ -50,7 +50,7 @@ from main_window import FrameMain, RtlSdrScanner
 from misc import set_version_timestamp
 
 
-def arguments():
+def __arguments():
     parser = argparse.ArgumentParser(prog="rtlsdr_scan.py",
                                      description='''
                                         Scan a range of frequencies and
@@ -101,7 +101,7 @@ if __name__ == '__main__':
     print "RTLSDR Scanner\n"
     if 'rtlsdr_update_timestamp'in os.environ:
         set_version_timestamp()
-    isGui, args = arguments()
+    isGui, args = __arguments()
     if isGui:
         app = RtlSdrScanner(pool)
         frame = FrameMain("RTLSDR Scanner", pool)

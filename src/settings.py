@@ -80,9 +80,9 @@ class Settings():
         self.index = 0
 
         if load:
-            self.load()
+            self.__load()
 
-    def clear_servers(self):
+    def __clear_servers(self):
         self.cfg.SetPath("/Devices")
         group = self.cfg.GetFirstGroup()
         while group[0]:
@@ -93,7 +93,7 @@ class Settings():
             self.cfg.SetPath("/Devices")
             group = self.cfg.GetNextGroup(group[2])
 
-    def load(self):
+    def __load(self):
         self.cfg = wx.Config('rtlsdr-scanner')
         self.display = self.cfg.ReadInt('display', self.display)
         self.saveWarn = self.cfg.ReadBool('saveWarn', self.saveWarn)
@@ -184,7 +184,7 @@ class Settings():
         self.cfg.WriteFloat('alertLevel', self.alertLevel)
         self.cfg.WriteInt('exportDpi', self.exportDpi)
         self.cfg.WriteInt('index', self.index)
-        self.clear_servers()
+        self.__clear_servers()
         if self.devices:
             for device in self.devices:
                 if device.isDevice:

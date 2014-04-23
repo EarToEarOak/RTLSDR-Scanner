@@ -136,7 +136,7 @@ class File:
     RFS = "RTLSDR frequency scan (*.rfs)|*.rfs"
 
     @staticmethod
-    def get_exports(export):
+    def __get_exports(export):
         if export == File.Exports.PLOT:
             exports = File.PLOT
         else:
@@ -146,14 +146,14 @@ class File:
 
     @staticmethod
     def get_export_ext(index, export=Exports.PLOT):
-        exports = File.get_exports(export)
+        exports = File.__get_exports(export)
         filter = exports[index]
         delim = filter.index('|*')
         return filter[delim + 2:]
 
     @staticmethod
     def get_export_filters(export=Exports.PLOT):
-        exports = File.get_exports(export)
+        exports = File.__get_exports(export)
 
         filters = ''
         length = len(exports)
@@ -166,7 +166,7 @@ class File:
 
     @staticmethod
     def get_export_pretty(export=Exports.PLOT):
-        exports = File.get_exports(export)
+        exports = File.__get_exports(export)
 
         pretty = ''
         length = len(exports)
@@ -181,7 +181,7 @@ class File:
 
     @staticmethod
     def get_export_type(extension, export=Exports.PLOT):
-        exports = File.get_exports(export)
+        exports = File.__get_exports(export)
         for i in xrange(len(exports)):
             if extension == File.get_export_ext(i, export):
                 return i

@@ -56,63 +56,20 @@ class ThreadScan(threading.Thread):
         self.cancel = False
 
         post_event(self.notify, EventThreadStatus(Event.STARTING))
-        steps = int((self.f_stop() - self.f_start()) / self.f_step())
+        steps = int((self.__f_stop() - self.__f_start()) / self.__f_step())
         post_event(self.notify, EventThreadStatus(Event.STEPS, steps))
         self.start()
 
-    def f_start(self):
+    def __f_start(self):
         return self.fstart - self.offset - BANDWIDTH
 
-    def f_stop(self):
+    def __f_stop(self):
         return self.fstop + self.offset + BANDWIDTH * 2
 
-    def f_step(self):
+    def __f_step(self):
         return BANDWIDTH / 2
 
-    def run(self):
-        tuner = self.rtl_setup()
-        if self.sdr is None:
-            return
-        post_event(self.notify, EventThreadStatus(Event.INFO, None, tuner))
-
-        freq = self.f_start()
-        timeStamp = time.time()
-        while freq <= self.f_stop():
-            if self.cancel:
-                post_event(self.notify,
-                           EventThreadStatus(Event.STOPPED))
-                self.rtl_close()
-                return
-            try:
-                scan = self.rtl_scan(freq)
-                post_event(self.notify,
-                           EventThreadStatus(Event.DATA, freq,
-                                            (timeStamp, scan)))
-            except IOError:
-                if self.sdr is not None:
-                    self.rtl_close()
-                self.rtl_setup()
-            except (TypeError, AttributeError) as error:
-                if self.notify:
-                    post_event(self.notify,
-                               EventThreadStatus(Event.ERROR,
-                                                 0, error.message))
-                return
-            except WindowsError:
-                if self.sdr is not None:
-                    self.rtl_close()
-
-            freq += self.f_step()
-
-        post_event(self.notify, EventThreadStatus(Event.FINISHED, 0, None))
-
-        if self.isCal:
-            post_event(self.notify, EventThreadStatus(Event.CAL))
-
-    def abort(self):
-        self.cancel = True
-
-    def rtl_setup(self):
+    def __rtl_setup(self):
 
         if self.sdr is not None:
             return
@@ -141,6 +98,49 @@ class ThreadScan(threading.Thread):
                                                           0, error))
 
         return tuner
+
+    def run(self):
+        tuner = self.__rtl_setup()
+        if self.sdr is None:
+            return
+        post_event(self.notify, EventThreadStatus(Event.INFO, None, tuner))
+
+        freq = self.__f_start()
+        timeStamp = time.time()
+        while freq <= self.__f_stop():
+            if self.cancel:
+                post_event(self.notify,
+                           EventThreadStatus(Event.STOPPED))
+                self.rtl_close()
+                return
+            try:
+                scan = self.rtl_scan(freq)
+                post_event(self.notify,
+                           EventThreadStatus(Event.DATA, freq,
+                                            (timeStamp, scan)))
+            except IOError:
+                if self.sdr is not None:
+                    self.rtl_close()
+                self.__rtl_setup()
+            except (TypeError, AttributeError) as error:
+                if self.notify:
+                    post_event(self.notify,
+                               EventThreadStatus(Event.ERROR,
+                                                 0, error.message))
+                return
+            except WindowsError:
+                if self.sdr is not None:
+                    self.rtl_close()
+
+            freq += self.__f_step()
+
+        post_event(self.notify, EventThreadStatus(Event.FINISHED, 0, None))
+
+        if self.isCal:
+            post_event(self.notify, EventThreadStatus(Event.CAL))
+
+    def abort(self):
+        self.cancel = True
 
     def rtl_scan(self, freq):
         self.sdr.set_center_freq(freq + self.lo)

@@ -58,13 +58,13 @@ class DialogCompare(wx.Dialog):
 
         self.buttonPlot1 = wx.Button(self, wx.ID_ANY, 'Load plot #1')
         self.buttonPlot2 = wx.Button(self, wx.ID_ANY, 'Load plot #2')
-        self.Bind(wx.EVT_BUTTON, self.on_load_plot, self.buttonPlot1)
-        self.Bind(wx.EVT_BUTTON, self.on_load_plot, self.buttonPlot2)
+        self.Bind(wx.EVT_BUTTON, self.__on_load_plot, self.buttonPlot1)
+        self.Bind(wx.EVT_BUTTON, self.__on_load_plot, self.buttonPlot2)
         self.textPlot1 = wx.StaticText(self, label="<None>")
         self.textPlot2 = wx.StaticText(self, label="<None>")
 
         buttonClose = wx.Button(self, wx.ID_CLOSE, 'Close')
-        self.Bind(wx.EVT_BUTTON, self.on_close, buttonClose)
+        self.Bind(wx.EVT_BUTTON, self.__on_close, buttonClose)
 
         grid = wx.GridBagSizer(5, 5)
         grid.AddGrowableCol(2, 0)
@@ -81,7 +81,7 @@ class DialogCompare(wx.Dialog):
 
         close_modeless()
 
-    def on_load_plot(self, event):
+    def __on_load_plot(self, event):
         dlg = wx.FileDialog(self, "Open a scan", self.dirname, self.filename,
                             File.RFS, wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
@@ -98,7 +98,7 @@ class DialogCompare(wx.Dialog):
 
         dlg.Destroy()
 
-    def on_close(self, _event):
+    def __on_close(self, _event):
         close_modeless()
         self.EndModal(wx.ID_CLOSE)
 
@@ -110,7 +110,7 @@ class DialogAutoCal(wx.Dialog):
 
         wx.Dialog.__init__(self, parent=parent, title="Auto Calibration",
                            style=wx.CAPTION)
-        self.Bind(wx.EVT_CLOSE, self.on_close)
+        self.Bind(wx.EVT_CLOSE, self.__on_close)
 
         title = wx.StaticText(self, label="Calibrate to a known stable signal")
         font = title.GetFont()
@@ -123,15 +123,15 @@ class DialogAutoCal(wx.Dialog):
         self.buttonCal = wx.Button(self, label="Calibrate")
         if len(parent.devices) == 0:
             self.buttonCal.Disable()
-        self.buttonCal.Bind(wx.EVT_BUTTON, self.on_cal)
+        self.buttonCal.Bind(wx.EVT_BUTTON, self.__on_cal)
         self.textResult = wx.StaticText(self)
 
         self.buttonOk = wx.Button(self, wx.ID_OK, 'OK')
         self.buttonOk.Disable()
         self.buttonCancel = wx.Button(self, wx.ID_CANCEL, 'Cancel')
 
-        self.buttonOk.Bind(wx.EVT_BUTTON, self.on_close)
-        self.buttonCancel.Bind(wx.EVT_BUTTON, self.on_close)
+        self.buttonOk.Bind(wx.EVT_BUTTON, self.__on_close)
+        self.buttonCancel.Bind(wx.EVT_BUTTON, self.__on_close)
 
         buttons = wx.StdDialogButtonSizer()
         buttons.AddButton(self.buttonOk)
@@ -153,7 +153,7 @@ class DialogAutoCal(wx.Dialog):
 
         self.SetSizerAndFit(sizer)
 
-    def on_cal(self, _event):
+    def __on_cal(self, _event):
         self.buttonCal.Disable()
         self.buttonOk.Disable()
         self.buttonCancel.Disable()
@@ -161,13 +161,13 @@ class DialogAutoCal(wx.Dialog):
         self.textResult.SetLabel("Calibrating...")
         self.callback(Cal.START)
 
-    def on_close(self, event):
+    def __on_close(self, event):
         status = [Cal.CANCEL, Cal.OK][event.GetId() == wx.ID_OK]
         self.callback(status)
         self.EndModal(event.GetId())
         return
 
-    def enable_controls(self):
+    def __enable_controls(self):
         self.buttonCal.Enable(True)
         self.buttonOk.Enable(True)
         self.buttonCancel.Enable(True)
@@ -175,7 +175,7 @@ class DialogAutoCal(wx.Dialog):
 
     def set_cal(self, cal):
         self.cal = cal
-        self.enable_controls()
+        self.__enable_controls()
         self.textResult.SetLabel("Correction (ppm): {0:.3f}".format(cal))
 
     def get_cal(self):
@@ -218,13 +218,13 @@ class DialogOffset(wx.Dialog):
         self.spinGain.SetValue(200)
 
         refresh = wx.Button(self, wx.ID_ANY, 'Refresh')
-        self.Bind(wx.EVT_BUTTON, self.on_refresh, refresh)
+        self.Bind(wx.EVT_BUTTON, self.__on_refresh, refresh)
 
         textOffset = wx.StaticText(self, label="Offset (kHz)")
         self.spinOffset = wx.SpinCtrl(self)
         self.spinOffset.SetRange(0, ((SAMPLE_RATE / 2) - BANDWIDTH) / 1e3)
         self.spinOffset.SetValue(offset)
-        self.Bind(wx.EVT_SPINCTRL, self.on_spin, self.spinOffset)
+        self.Bind(wx.EVT_SPINCTRL, self.__on_spin, self.spinOffset)
 
         sizerButtons = wx.StdDialogButtonSizer()
         buttonOk = wx.Button(self, wx.ID_OK)
@@ -232,7 +232,7 @@ class DialogOffset(wx.Dialog):
         sizerButtons.AddButton(buttonOk)
         sizerButtons.AddButton(buttonCancel)
         sizerButtons.Realize()
-        self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
+        self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
 
         boxSizer1 = wx.BoxSizer(wx.HORIZONTAL)
         boxSizer1.Add(textFreq, border=5)
@@ -259,11 +259,11 @@ class DialogOffset(wx.Dialog):
                   flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
 
         self.SetSizerAndFit(gridSizer)
-        self.draw_limits()
+        self.__draw_limits()
 
-        self.setup_plot()
+        self.__setup_plot()
 
-    def setup_plot(self):
+    def __setup_plot(self):
         self.axes.clear()
         self.band1 = None
         self.band2 = None
@@ -273,10 +273,10 @@ class DialogOffset(wx.Dialog):
         self.axes.set_xlim(-1, 1)
         self.axes.set_ylim(auto=True)
         self.axes.grid(True)
-        self.draw_limits()
+        self.__draw_limits()
 
-    def plot(self, capture):
-        self.setup_plot()
+    def __plot(self, capture):
+        self.__setup_plot()
         pos = WINFUNC[::2].index(self.winFunc)
         function = WINFUNC[1::2][pos]
         powers, freqs = matplotlib.mlab.psd(capture,
@@ -292,10 +292,10 @@ class DialogOffset(wx.Dialog):
         self.axes.plot(x, y, linewidth=0.4)
         self.canvas.draw()
 
-    def on_ok(self, _event):
+    def __on_ok(self, _event):
         self.EndModal(wx.ID_OK)
 
-    def on_refresh(self, _event):
+    def __on_refresh(self, _event):
 
         dlg = wx.BusyInfo('Please wait...')
 
@@ -323,15 +323,15 @@ class DialogOffset(wx.Dialog):
             dlg.Destroy()
             return
 
-        self.plot(capture)
+        self.__plot(capture)
 
         dlg.Destroy()
 
-    def on_spin(self, _event):
+    def __on_spin(self, _event):
         self.offset = self.spinOffset.GetValue() * 1e3
-        self.draw_limits()
+        self.__draw_limits()
 
-    def draw_limits(self):
+    def __draw_limits(self):
         limit1 = self.offset
         limit2 = limit1 + BANDWIDTH / 2
         limit1 /= 1e6
@@ -508,12 +508,12 @@ class DialogProperties(wx.Dialog):
         sizerButtons.AddButton(buttonOk)
         sizerButtons.AddButton(buttonCancel)
         sizerButtons.Realize()
-        self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
+        self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
         box.Add(sizerButtons, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
 
         self.SetSizerAndFit(box)
 
-    def on_ok(self, _event):
+    def __on_ok(self, _event):
         self.scanInfo.desc = self.textCtrlDesc.GetValue()
         if self.Validate():
             lat = self.textCtrlLat.GetValue()
@@ -551,7 +551,7 @@ class DialogPrefs(wx.Dialog):
                                       "Level alert (dB)")
         self.checkAlert.SetValue(settings.alert)
         self.checkAlert.SetToolTip(wx.ToolTip('Play alert when level exceeded'))
-        self.Bind(wx.EVT_CHECKBOX, self.on_alert, self.checkAlert)
+        self.Bind(wx.EVT_CHECKBOX, self.__on_alert, self.checkAlert)
         self.spinLevel = wx.SpinCtrl(self, wx.ID_ANY, min=-100, max=20)
         self.spinLevel.SetValue(settings.alertLevel)
         self.spinLevel.Enable(settings.alert)
@@ -559,17 +559,17 @@ class DialogPrefs(wx.Dialog):
         textBackground = wx.StaticText(self, label='Background colour')
         self.buttonBackground = wx.Button(self, wx.ID_ANY)
         self.buttonBackground.SetBackgroundColour(self.background)
-        self.Bind(wx.EVT_BUTTON, self.on_background, self.buttonBackground)
+        self.Bind(wx.EVT_BUTTON, self.__on_background, self.buttonBackground)
         textColour = wx.StaticText(self, label="Colour map")
         self.choiceColour = wx.Choice(self, choices=self.colours)
         self.choiceColour.SetSelection(self.colours.index(settings.colourMap))
-        self.Bind(wx.EVT_CHOICE, self.on_choice, self.choiceColour)
+        self.Bind(wx.EVT_CHOICE, self.__on_choice, self.choiceColour)
         self.colourBar = PanelColourBar(self, settings.colourMap)
         self.checkPoints = wx.CheckBox(self, wx.ID_ANY,
                                       "Limit points")
         self.checkPoints.SetValue(settings.pointsLimit)
         self.checkPoints.SetToolTip(wx.ToolTip('Limit the resolution of plots'))
-        self.Bind(wx.EVT_CHECKBOX, self.on_points, self.checkPoints)
+        self.Bind(wx.EVT_CHECKBOX, self.__on_points, self.checkPoints)
         self.spinPoints = wx.SpinCtrl(self, wx.ID_ANY, min=1000, max=100000)
         self.spinPoints.Enable(settings.pointsLimit)
         self.spinPoints.SetValue(settings.pointsMax)
@@ -582,11 +582,11 @@ class DialogPrefs(wx.Dialog):
         self.radioAvg = wx.RadioButton(self, wx.ID_ANY, 'Average Scans',
                                        style=wx.RB_GROUP)
         self.radioAvg.SetToolTip(wx.ToolTip('Average level with each scan'))
-        self.Bind(wx.EVT_RADIOBUTTON, self.on_radio, self.radioAvg)
+        self.Bind(wx.EVT_RADIOBUTTON, self.__on_radio, self.radioAvg)
         self.radioRetain = wx.RadioButton(self, wx.ID_ANY,
                                           'Retain previous scans')
         self.radioRetain.SetToolTip(wx.ToolTip('Can be slow'))
-        self.Bind(wx.EVT_RADIOBUTTON, self.on_radio, self.radioRetain)
+        self.Bind(wx.EVT_RADIOBUTTON, self.__on_radio, self.radioRetain)
         self.radioRetain.SetValue(settings.retainScans)
 
         textMaxScans = wx.StaticText(self, label="Max scans")
@@ -603,7 +603,7 @@ class DialogPrefs(wx.Dialog):
         self.ctrlWidth = NumCtrl(self, integerWidth=2, fractionWidth=1)
         self.ctrlWidth.SetValue(settings.lineWidth)
 
-        self.on_radio(None)
+        self.__on_radio(None)
 
         sizerButtons = wx.StdDialogButtonSizer()
         buttonOk = wx.Button(self, wx.ID_OK)
@@ -611,7 +611,7 @@ class DialogPrefs(wx.Dialog):
         sizerButtons.AddButton(buttonOk)
         sizerButtons.AddButton(buttonCancel)
         sizerButtons.Realize()
-        self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
+        self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
 
         gengrid = wx.GridBagSizer(10, 10)
         gengrid.Add(self.checkSaved, pos=(0, 0))
@@ -661,15 +661,15 @@ class DialogPrefs(wx.Dialog):
 
         self.SetSizerAndFit(box)
 
-    def on_alert(self, _event):
+    def __on_alert(self, _event):
         enabled = self.checkAlert.GetValue()
         self.spinLevel.Enable(enabled)
 
-    def on_points(self, _event):
+    def __on_points(self, _event):
         enabled = self.checkPoints.GetValue()
         self.spinPoints.Enable(enabled)
 
-    def on_background(self, _event):
+    def __on_background(self, _event):
         colour = wx.ColourData()
         colour.SetColour(self.background)
 
@@ -680,16 +680,16 @@ class DialogPrefs(wx.Dialog):
             self.buttonBackground.SetBackgroundColour(self.background)
         dlg.Destroy()
 
-    def on_radio(self, _event):
+    def __on_radio(self, _event):
         enabled = self.radioRetain.GetValue()
         self.checkFade.Enable(enabled)
         self.spinCtrlMaxScans.Enable(enabled)
 
-    def on_choice(self, _event):
+    def __on_choice(self, _event):
         self.colourBar.set_map(self.choiceColour.GetStringSelection())
         self.choiceColour.SetFocus()
 
-    def on_ok(self, _event):
+    def __on_ok(self, _event):
         self.settings.saveWarn = self.checkSaved.GetValue()
         self.settings.alert = self.checkAlert.GetValue()
         self.settings.alertLevel = self.spinLevel.GetValue()
@@ -723,7 +723,7 @@ class DialogAdvPrefs(wx.Dialog):
                                                     ' overlap'))
         textWindow = wx.StaticText(self, label='Window')
         self.buttonWindow = wx.Button(self, wx.ID_ANY, self.winFunc)
-        self.Bind(wx.EVT_BUTTON, self.on_window, self.buttonWindow)
+        self.Bind(wx.EVT_BUTTON, self.__on_window, self.buttonWindow)
 
         buttonOk = wx.Button(self, wx.ID_OK)
         buttonCancel = wx.Button(self, wx.ID_CANCEL)
@@ -731,7 +731,7 @@ class DialogAdvPrefs(wx.Dialog):
         sizerButtons.AddButton(buttonOk)
         sizerButtons.AddButton(buttonCancel)
         sizerButtons.Realize()
-        self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
+        self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
 
         advgrid = wx.GridBagSizer(10, 10)
         advgrid.Add(textOverlap, pos=(0, 0),
@@ -746,14 +746,14 @@ class DialogAdvPrefs(wx.Dialog):
 
         self.SetSizerAndFit(advBox)
 
-    def on_window(self, _event):
+    def __on_window(self, _event):
         dlg = DialogWinFunc(self, self.winFunc)
         if dlg.ShowModal() == wx.ID_OK:
             self.winFunc = dlg.get_win_func()
             self.buttonWindow.SetLabel(self.winFunc)
         dlg.Destroy()
 
-    def on_ok(self, _event):
+    def __on_ok(self, _event):
         self.settings.overlap = self.slideOverlap.GetValue() / 100.0
         self.settings.winFunc = self.winFunc
 
@@ -787,17 +787,17 @@ class DialogDevices(wx.Dialog):
         self.gridDev.SetColFormatFloat(self.COL_LO, -1, 3)
         self.gridDev.SetColFormatFloat(self.COL_OFF, -1, 0)
 
-        self.set_dev_grid()
-        self.Bind(grid.EVT_GRID_CELL_LEFT_CLICK, self.on_click)
+        self.__set_dev_grid()
+        self.Bind(grid.EVT_GRID_CELL_LEFT_CLICK, self.__on_click)
 
         serverSizer = wx.BoxSizer(wx.HORIZONTAL)
         buttonAdd = wx.Button(self, wx.ID_ADD)
         self.buttonDel = wx.Button(self, wx.ID_DELETE)
-        self.Bind(wx.EVT_BUTTON, self.on_add, buttonAdd)
-        self.Bind(wx.EVT_BUTTON, self.on_del, self.buttonDel)
+        self.Bind(wx.EVT_BUTTON, self.__on_add, buttonAdd)
+        self.Bind(wx.EVT_BUTTON, self.__on_del, self.buttonDel)
         serverSizer.Add(buttonAdd, 0, wx.ALL)
         serverSizer.Add(self.buttonDel, 0, wx.ALL)
-        self.button_state()
+        self.__button_state()
 
         buttonOk = wx.Button(self, wx.ID_OK)
         buttonCancel = wx.Button(self, wx.ID_CANCEL)
@@ -805,7 +805,7 @@ class DialogDevices(wx.Dialog):
         sizerButtons.AddButton(buttonOk)
         sizerButtons.AddButton(buttonCancel)
         sizerButtons.Realize()
-        self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
+        self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
 
         self.devbox = wx.BoxSizer(wx.VERTICAL)
         self.devbox.Add(self.gridDev, 1, wx.ALL | wx.EXPAND, 10)
@@ -814,7 +814,7 @@ class DialogDevices(wx.Dialog):
 
         self.SetSizerAndFit(self.devbox)
 
-    def set_dev_grid(self):
+    def __set_dev_grid(self):
         colourBackground = self.gridDev.GetLabelBackgroundColour()
         attributes = grid.GridCellAttr()
         attributes.SetBackgroundColour(colourBackground)
@@ -865,12 +865,12 @@ class DialogDevices(wx.Dialog):
 
         if self.settings.index >= len(self.devices):
             self.settings.index = len(self.devices) - 1
-        self.select_row(self.settings.index)
+        self.__select_row(self.settings.index)
         self.index = self.settings.index
 
         self.gridDev.AutoSize()
 
-    def get_dev_grid(self):
+    def __get_dev_grid(self):
         i = 0
         for device in self.devices:
             if not device.isDevice:
@@ -891,14 +891,14 @@ class DialogDevices(wx.Dialog):
             device.offset = float(self.gridDev.GetCellValue(i, self.COL_OFF)) * 1e3
             i += 1
 
-    def button_state(self):
+    def __button_state(self):
         if len(self.devices) > 0:
             if self.devices[self.index].isDevice:
                 self.buttonDel.Disable()
             else:
                 self.buttonDel.Enable()
 
-    def warn_duplicates(self):
+    def __warn_duplicates(self):
         servers = []
         for device in self.devices:
             if not device.isDevice:
@@ -915,12 +915,12 @@ class DialogDevices(wx.Dialog):
 
         return False
 
-    def on_click(self, event):
+    def __on_click(self, event):
         col = event.GetCol()
         index = event.GetRow()
         if col == self.COL_SEL:
             self.index = event.GetRow()
-            self.select_row(index)
+            self.__select_row(index)
         elif col == self.COL_OFF:
             device = self.devices[index]
             dlg = DialogOffset(self, device,
@@ -935,31 +935,31 @@ class DialogDevices(wx.Dialog):
             self.gridDev.ForceRefresh()
             event.Skip()
 
-        self.button_state()
+        self.__button_state()
 
-    def on_ok(self, _event):
-        self.get_dev_grid()
-        if self.warn_duplicates():
+    def __on_ok(self, _event):
+        self.__get_dev_grid()
+        if self.__warn_duplicates():
             return
 
         self.EndModal(wx.ID_OK)
 
-    def on_add(self, _event):
+    def __on_add(self, _event):
         device = Device()
         device.isDevice = False
         self.devices.append(device)
         self.gridDev.AppendRows(1)
-        self.set_dev_grid()
+        self.__set_dev_grid()
         self.SetSizerAndFit(self.devbox)
 
-    def on_del(self, _event):
+    def __on_del(self, _event):
         del self.devices[self.index]
         self.gridDev.DeleteRows(self.index)
-        self.set_dev_grid()
+        self.__set_dev_grid()
         self.SetSizerAndFit(self.devbox)
-        self.button_state()
+        self.__button_state()
 
-    def select_row(self, index):
+    def __select_row(self, index):
         self.gridDev.ClearSelection()
         for i in range(0, len(self.devices)):
             tick = "0"
@@ -1000,7 +1000,7 @@ class DialogWinFunc(wx.Dialog):
         sizerButtons.AddButton(buttonOk)
         sizerButtons.AddButton(buttonCancel)
         sizerButtons.Realize()
-        self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
+        self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
 
         sizerFunction = wx.BoxSizer(wx.HORIZONTAL)
         sizerFunction.Add(text, flag=wx.ALL, border=5)
@@ -1013,14 +1013,14 @@ class DialogWinFunc(wx.Dialog):
         sizerGrid.Add(sizerButtons, pos=(2, 1),
                   flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
 
-        self.Bind(wx.EVT_CHOICE, self.on_choice, self.choice)
-        self.Bind(wx.EVT_BUTTON, self.on_ok, buttonOk)
+        self.Bind(wx.EVT_CHOICE, self.__on_choice, self.choice)
+        self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
 
-        self.plot()
+        self.__plot()
 
         self.SetSizerAndFit(sizerGrid)
 
-    def plot(self):
+    def __plot(self):
         pos = WINFUNC[::2].index(self.winFunc)
         function = WINFUNC[1::2][pos](512)
 
@@ -1040,11 +1040,11 @@ class DialogWinFunc(wx.Dialog):
 
         self.canvas.draw()
 
-    def on_choice(self, _event):
+    def __on_choice(self, _event):
         self.winFunc = WINFUNC[::2][self.choice.GetSelection()]
         self.plot()
 
-    def on_ok(self, _event):
+    def __on_ok(self, _event):
         self.EndModal(wx.ID_OK)
 
     def get_win_func(self):
@@ -1075,8 +1075,8 @@ class DialogSaveWarn(wx.Dialog):
         buttonNo = wx.Button(self, wx.ID_NO, 'No')
         buttonCancel = wx.Button(self, wx.ID_CANCEL, 'Cancel')
 
-        buttonYes.Bind(wx.EVT_BUTTON, self.on_close)
-        buttonNo.Bind(wx.EVT_BUTTON, self.on_close)
+        buttonYes.Bind(wx.EVT_BUTTON, self.__on_close)
+        buttonNo.Bind(wx.EVT_BUTTON, self.__on_close)
 
         buttons = wx.StdDialogButtonSizer()
         buttons.AddButton(buttonYes)
@@ -1090,7 +1090,7 @@ class DialogSaveWarn(wx.Dialog):
 
         self.SetSizerAndFit(vbox)
 
-    def on_close(self, event):
+    def __on_close(self, event):
         self.EndModal(event.GetId())
         return
 

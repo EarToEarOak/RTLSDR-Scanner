@@ -66,9 +66,9 @@ class GridToolTips():
         self.grid = grid
         self.toolTips = toolTips
 
-        grid.GetGridWindow().Bind(wx.EVT_MOTION, self.on_motion)
+        grid.GetGridWindow().Bind(wx.EVT_MOTION, self.__on_motion)
 
-    def on_motion(self, event):
+    def __on_motion(self, event):
         x, y = self.grid.CalcUnscrolledPosition(event.GetPosition())
         row = self.grid.YToRow(y)
         col = self.grid.XToCol(x)
@@ -118,7 +118,7 @@ class PanelGraph(wx.Panel):
         self.measureTable = PanelMeasure(self)
 
         self.toolbar = NavigationToolbar(self.canvas, self, settings,
-                                         self.hide_overlay)
+                                         self.__hide_overlay)
         self.toolbar.Realize()
 
         vbox = wx.BoxSizer(wx.VERTICAL)
@@ -131,12 +131,71 @@ class PanelGraph(wx.Panel):
         self.create_plot()
 
         self.canvas.mpl_connect('motion_notify_event', callbackMotion)
-        self.canvas.mpl_connect('draw_event', self.on_draw)
-        self.canvas.mpl_connect('idle_event', self.on_idle)
-        self.Bind(wx.EVT_SIZE, self.on_size)
+        self.canvas.mpl_connect('draw_event', self.__on_draw)
+        self.canvas.mpl_connect('idle_event', self.__on_idle)
+        self.Bind(wx.EVT_SIZE, self.__on_size)
 
         self.timer = wx.Timer(self)
-        self.Bind(wx.EVT_TIMER, self.on_timer, self.timer)
+        self.Bind(wx.EVT_TIMER, self.__on_timer, self.timer)
+
+    def __set_fonts(self):
+        axes = self.plot.get_axes()
+        axes.xaxis.label.set_size('small')
+        axes.yaxis.label.set_size('small')
+        if self.settings.display == Display.SURFACE:
+            axes.zaxis.label.set_size('small')
+        axes.tick_params(axis='both', which='major', labelsize='small')
+        axes = self.plot.get_axes_bar()
+        axes.tick_params(axis='both', which='major', labelsize='small')
+
+    def __enable_menu(self, state):
+        for menu in self.menuClearSelect:
+            menu.Enable(state)
+
+    def __on_size(self, event):
+        ppi = wx.ScreenDC().GetPPI()
+        size = [float(v) for v in self.canvas.GetSize()]
+        width = size[0] / ppi[0]
+        height = size[1] / ppi[1]
+        self.figure.set_figwidth(width)
+        self.figure.set_figheight(height)
+        self.figure.set_dpi(ppi[0])
+        event.Skip()
+
+    def __on_draw(self, _event):
+        axes = self.plot.get_axes()
+        self.background = self.canvas.copy_from_bbox(axes.bbox)
+        self.__draw_overlay()
+
+    def __on_idle(self, _event):
+        if self.doDraw and self.plot.get_plot_thread() is None:
+            self.__hide_overlay()
+            self.canvas.draw()
+            self.doDraw = False
+
+    def __on_timer(self, _event):
+        self.timer.Stop()
+        self.set_plot(None, None, None, None, self.annotate)
+
+    def __draw_overlay(self):
+        if self.background is not None:
+            self.canvas.restore_region(self.background)
+            self.__draw_select()
+            self.draw_measure()
+            self.canvas.blit(self.plot.get_axes().bbox)
+
+    def __draw_select(self):
+        if self.selectStart is not None and self.selectEnd is not None:
+            self.mouseSelect.draw(self.selectStart, self.selectEnd)
+
+    def __hide_overlay(self):
+        if self.plot is not None:
+            self.plot.hide_measure()
+        self.__hide_select()
+
+    def __hide_select(self):
+        if self.mouseSelect is not None:
+            self.mouseSelect.hide()
 
     def create_plot(self):
         if self.plot is not None:
@@ -151,7 +210,7 @@ class PanelGraph(wx.Panel):
         else:
             self.plot = Plotter3d(self.notify, self.figure, self.settings)
 
-        self.set_fonts()
+        self.__set_fonts()
 
         self.toolbar.set_plot(self.plot)
         self.toolbar.set_type(self.settings.display)
@@ -162,63 +221,24 @@ class PanelGraph(wx.Panel):
         self.figure.subplots_adjust(top=0.85)
         self.redraw_plot()
         self.plot.scale_plot(True)
-        self.mouseZoom = MouseZoom(self.plot, self.toolbar, self.hide_overlay)
+        self.mouseZoom = MouseZoom(self.plot, self.toolbar, self.__hide_overlay)
         self.mouseSelect = MouseSelect(self.plot, self.on_select,
                                        self.on_selected)
         self.measureTable.show(self.settings.showMeasure)
         self.panel.SetFocus()
 
-    def set_fonts(self):
-        axes = self.plot.get_axes()
-        axes.xaxis.label.set_size('small')
-        axes.yaxis.label.set_size('small')
-        if self.settings.display == Display.SURFACE:
-            axes.zaxis.label.set_size('small')
-        axes.tick_params(axis='both', which='major', labelsize='small')
-        axes = self.plot.get_axes_bar()
-        axes.tick_params(axis='both', which='major', labelsize='small')
-
-    def add_menu_clear_select(self, menu):
-        self.menuClearSelect.append(menu)
-        menu.Enable(False)
-
-    def enable_menu(self, state):
-        for menu in self.menuClearSelect:
-            menu.Enable(state)
-
-    def on_size(self, event):
-        ppi = wx.ScreenDC().GetPPI()
-        size = [float(v) for v in self.canvas.GetSize()]
-        width = size[0] / ppi[0]
-        height = size[1] / ppi[1]
-        self.figure.set_figwidth(width)
-        self.figure.set_figheight(height)
-        self.figure.set_dpi(ppi[0])
-        event.Skip()
-
-    def on_draw(self, _event):
-        axes = self.plot.get_axes()
-        self.background = self.canvas.copy_from_bbox(axes.bbox)
-        self.draw_overlay()
-
     def on_select(self):
         self.hide_measure()
 
     def on_selected(self, start, end):
-        self.enable_menu(True)
+        self.__enable_menu(True)
         self.selectStart = start
         self.selectEnd = end
         self.measureTable.set_selected(self.spectrum, start, end)
 
-    def on_idle(self, _event):
-        if self.doDraw and self.plot.get_plot_thread() is None:
-            self.hide_overlay()
-            self.canvas.draw()
-            self.doDraw = False
-
-    def on_timer(self, _event):
-        self.timer.Stop()
-        self.set_plot(None, None, None, None, self.annotate)
+    def add_menu_clear_select(self, menu):
+        self.menuClearSelect.append(menu)
+        menu.Enable(False)
 
     def draw(self):
         self.doDraw = True
@@ -266,29 +286,9 @@ class PanelGraph(wx.Panel):
     def set_grid(self, on):
         self.plot.set_grid(on)
 
-    def draw_overlay(self):
-        if self.background is not None:
-            self.canvas.restore_region(self.background)
-            self.draw_select()
-            self.draw_measure()
-            self.canvas.blit(self.plot.get_axes().bbox)
-
-    def draw_select(self):
-        if self.selectStart is not None and self.selectEnd is not None:
-            self.mouseSelect.draw(self.selectStart, self.selectEnd)
-
-    def hide_overlay(self):
-        if self.plot is not None:
-            self.plot.hide_measure()
-        self.hide_select()
-
     def hide_measure(self):
         if self.plot is not None:
             self.plot.hide_measure()
-
-    def hide_select(self):
-        if self.mouseSelect is not None:
-            self.mouseSelect.hide()
 
     def draw_measure(self):
         if self.measure is not None and self.measure.is_valid():
@@ -297,7 +297,7 @@ class PanelGraph(wx.Panel):
     def update_measure(self, measure, show):
         self.measure = measure
         self.show = show
-        self.draw_overlay()
+        self.__draw_overlay()
 
     def get_figure(self):
         return self.figure
@@ -323,7 +323,7 @@ class PanelGraph(wx.Panel):
         self.selectStart = None
         self.selectEnd = None
         self.mouseSelect.clear()
-        self.enable_menu(False)
+        self.__enable_menu(False)
 
     def close(self):
         close_modeless()
@@ -369,10 +369,10 @@ class PanelGraphCompare(wx.Panel):
         self.check1.SetValue(True)
         self.check2.SetValue(True)
         self.checkDiff.SetValue(True)
-        self.set_grid(True)
-        self.Bind(wx.EVT_CHECKBOX, self.on_check1, self.check1)
-        self.Bind(wx.EVT_CHECKBOX, self.on_check2, self.check2)
-        self.Bind(wx.EVT_CHECKBOX, self.on_check_diff, self.checkDiff)
+        self.__set_grid(True)
+        self.Bind(wx.EVT_CHECKBOX, self.__on_check1, self.check1)
+        self.Bind(wx.EVT_CHECKBOX, self.__on_check2, self.check2)
+        self.Bind(wx.EVT_CHECKBOX, self.__on_check_diff, self.checkDiff)
 
         self.textIntersect = wx.StaticText(self, label="Intersections: ")
 
@@ -396,26 +396,23 @@ class PanelGraphCompare(wx.Panel):
         self.SetSizer(vbox)
         vbox.Fit(self)
 
-    def on_check1(self, _event):
+    def __on_check1(self, _event):
         self.plotScan1.set_visible(self.check1.GetValue())
         self.canvas.draw()
 
-    def on_check2(self, _event):
+    def __on_check2(self, _event):
         self.plotScan2.set_visible(self.check2.GetValue())
         self.canvas.draw()
 
-    def on_check_diff(self, _event):
+    def __on_check_diff(self, _event):
         self.plotDiff.set_visible(self.checkDiff.GetValue())
         self.canvas.draw()
 
-    def set_grid(self, grid):
+    def __set_grid(self, grid):
         self.axesDiff.grid(grid)
         self.canvas.draw()
 
-    def get_canvas(self):
-        return self.canvas
-
-    def plot_diff(self):
+    def __plot_diff(self):
         diff = {}
         intersections = 0
 
@@ -444,6 +441,9 @@ class PanelGraphCompare(wx.Panel):
             self.axesDiff.relim()
         self.textIntersect.SetLabel('Intersections: {0}'.format(intersections))
 
+    def get_canvas(self):
+        return self.canvas
+
     def set_spectrum1(self, spectrum):
         timeStamp = max(spectrum)
         self.spectrum1 = spectrum[timeStamp]
@@ -451,7 +451,7 @@ class PanelGraphCompare(wx.Panel):
         self.plotScan1.set_xdata(freqs)
         self.plotScan1.set_ydata(powers)
         self.axesScan.relim()
-        self.plot_diff()
+        self.__plot_diff()
         self.autoscale()
 
     def set_spectrum2(self, spectrum):
@@ -461,7 +461,7 @@ class PanelGraphCompare(wx.Panel):
         self.plotScan2.set_xdata(freqs)
         self.plotScan2.set_ydata(powers)
         self.axesScan.relim()
-        self.plot_diff()
+        self.__plot_diff()
         self.autoscale()
 
     def autoscale(self):
@@ -543,13 +543,13 @@ class PanelMeasure(wx.Panel):
                          u'OBW Start': (0, 17),
                          u'OBW End': (1, 17),
                          u'OBW \u0394': (2, 17)}
-        self.set_descs()
+        self.__set_descs()
 
         self.locsCheck = {Measure.MIN: (0, 3), Measure.MAX: (1, 3),
                           Measure.AVG: (0, 8), Measure.GMEAN: (1, 8),
                           Measure.HBW: (0, 12),
                           Measure.OBW: (0, 16)}
-        self.set_check_editor()
+        self.__set_check_editor()
 
         colour = self.grid.GetBackgroundColour()
         self.grid.SetCellTextColour(2, 3, colour)
@@ -559,7 +559,7 @@ class PanelMeasure(wx.Panel):
         self.grid.SetCellTextColour(1, 16, colour)
         self.grid.SetCellTextColour(2, 16, colour)
 
-        self.clear_checks()
+        self.__clear_checks()
 
         self.locsMeasure = {'start': (0, 1), 'end': (1, 1), 'deltaF': (2, 1),
                             'minFP': (0, 5), 'maxFP': (1, 5), 'deltaFP': (2, 5),
@@ -616,17 +616,17 @@ class PanelMeasure(wx.Panel):
         self.popupMenu = wx.Menu()
         self.popupMenuCopy = self.popupMenu.Append(wx.ID_ANY, "&Copy",
                                                    "Copy entry")
-        self.Bind(wx.EVT_MENU, self.on_copy, self.popupMenuCopy)
+        self.Bind(wx.EVT_MENU, self.__on_copy, self.popupMenuCopy)
 
-        self.Bind(wxGrid.EVT_GRID_CELL_RIGHT_CLICK, self.on_popup_menu)
-        self.Bind(wxGrid.EVT_GRID_CELL_LEFT_CLICK, self.on_cell_click)
+        self.Bind(wxGrid.EVT_GRID_CELL_RIGHT_CLICK, self.__on_popup_menu)
+        self.Bind(wxGrid.EVT_GRID_CELL_LEFT_CLICK, self.__on_cell_click)
 
         box = wx.BoxSizer(wx.VERTICAL)
         box.Add(self.grid, 0, wx.EXPAND | wx.TOP | wx.LEFT | wx.RIGHT,
                 border=10)
         self.SetSizer(box)
 
-    def set_descs(self):
+    def __set_descs(self):
         font = self.grid.GetCellFont(0, 0)
         font.SetWeight(wx.BOLD)
 
@@ -634,22 +634,22 @@ class PanelMeasure(wx.Panel):
             self.grid.SetCellValue(row, col, desc)
             self.grid.SetCellFont(row, col, font)
 
-    def set_check_editor(self):
+    def __set_check_editor(self):
         editor = wxGrid.GridCellBoolEditor()
         for _desc, (row, col) in self.locsCheck.iteritems():
             self.grid.SetCellEditor(row, col, editor)
             self.grid.SetCellAlignment(row, col, wx.ALIGN_RIGHT, wx.ALIGN_CENTRE)
             self.grid.SetColFormatBool(col)
 
-    def set_check_value(self, cell, value):
+    def __set_check_value(self, cell, value):
         (row, col) = self.locsCheck[cell]
         self.grid.SetCellValue(row, col, value)
 
-    def set_measure_value(self, cell, value):
+    def __set_measure_value(self, cell, value):
         (row, col) = self.locsMeasure[cell]
         self.grid.SetCellValue(row, col, value)
 
-    def set_check_read_only(self, cell, readOnly):
+    def __set_check_read_only(self, cell, readOnly):
         (row, col) = self.locsCheck[cell]
         self.grid.SetReadOnly(row, col, readOnly)
         if readOnly:
@@ -659,7 +659,7 @@ class PanelMeasure(wx.Panel):
 
         self.grid.SetCellTextColour(row, col, colour)
 
-    def get_checks(self):
+    def __get_checks(self):
         checks = {}
         for cell in self.checked:
             if self.checked[cell] == '1':
@@ -669,16 +669,16 @@ class PanelMeasure(wx.Panel):
 
         return checks
 
-    def update_checks(self):
+    def __update_checks(self):
         for cell in self.checked:
-            self.set_check_value(cell, self.checked[cell])
+            self.__set_check_value(cell, self.checked[cell])
 
-    def clear_checks(self):
+    def __clear_checks(self):
         for cell in self.checked:
             self.checked[cell] = '0'
-        self.update_checks()
+        self.__update_checks()
 
-    def on_cell_click(self, event):
+    def __on_cell_click(self, event):
         self.grid.ClearSelection()
         row = event.GetRow()
         col = event.GetCol()
@@ -712,14 +712,14 @@ class PanelMeasure(wx.Panel):
             col = self.selected[1]
             self.grid.SetGridCursor(row, col)
 
-    def on_popup_menu(self, _event):
+    def __on_popup_menu(self, _event):
         if self.selected:
             self.popupMenuCopy.Enable(True)
         else:
             self.popupMenuCopy.Enable(False)
         self.PopupMenu(self.popupMenu)
 
-    def on_copy(self, _event):
+    def __on_copy(self, _event):
         value = self.grid.GetCellValue(self.selected[0], self.selected[1])
         clip = wx.TextDataObject(value)
         wx.TheClipboard.Open()
@@ -727,12 +727,12 @@ class PanelMeasure(wx.Panel):
         wx.TheClipboard.Close()
 
     def update_measure(self):
-        show = self.get_checks()
+        show = self.__get_checks()
         self.graph.update_measure(self.measure, show)
 
     def clear_measurement(self):
         for control in self.locsMeasure:
-                    self.set_measure_value(control, "")
+                    self.__set_measure_value(control, "")
         self.update_measure()
         self.measure = None
 
@@ -751,64 +751,64 @@ class PanelMeasure(wx.Panel):
         hbw = self.measure.get_hpw()
         obw = self.measure.get_obw()
 
-        self.set_measure_value('start',
+        self.__set_measure_value('start',
                                "{0:10.6f}".format(minF))
-        self.set_measure_value('end',
+        self.__set_measure_value('end',
                                "{0:10.6f}".format(maxF))
-        self.set_measure_value('deltaF',
+        self.__set_measure_value('deltaF',
                                "{0:10.6f}".format(maxF - minF))
 
-        self.set_measure_value('minFP',
+        self.__set_measure_value('minFP',
                                "{0:10.6f}".format(minP[0]))
-        self.set_measure_value('maxFP',
+        self.__set_measure_value('maxFP',
                                "{0:10.6f}".format(maxP[0]))
-        self.set_measure_value('deltaFP',
+        self.__set_measure_value('deltaFP',
                                "{0:10.6f}".format(maxP[0] - minP[0]))
-        self.set_measure_value('minP',
+        self.__set_measure_value('minP',
                                "{0:6.2f}".format(minP[1]))
-        self.set_measure_value('maxP',
+        self.__set_measure_value('maxP',
                                "{0:6.2f}".format(maxP[1]))
-        self.set_measure_value('deltaP',
+        self.__set_measure_value('deltaP',
                                "{0:6.2f}".format(maxP[1] - minP[1]))
 
-        self.set_measure_value('avg',
+        self.__set_measure_value('avg',
                                "{0:6.2f}".format(avgP))
-        self.set_measure_value('gmean',
+        self.__set_measure_value('gmean',
                                "{0:6.2f}".format(gMeanP))
-        self.set_measure_value('flat',
+        self.__set_measure_value('flat',
                                "{0:.4f}".format(flatness))
 
         if hbw[0] is not None:
             text = "{0:10.6f}".format(hbw[0])
         else:
             text = ''
-        self.set_measure_value('hbwstart', text)
+        self.__set_measure_value('hbwstart', text)
         if hbw[1] is not None:
             text = "{0:10.6f}".format(hbw[1])
         else:
             text = ''
-        self.set_measure_value('hbwend', text)
+        self.__set_measure_value('hbwend', text)
         if hbw[0] is not None and hbw[1] is not None:
             text = "{0:10.6f}".format(hbw[1] - hbw[0])
         else:
             text = ''
-        self.set_measure_value('hbwdelta', text)
+        self.__set_measure_value('hbwdelta', text)
 
         if obw[0] is not None:
             text = "{0:10.6f}".format(obw[0])
         else:
             text = ''
-        self.set_measure_value('obwstart', text)
+        self.__set_measure_value('obwstart', text)
         if obw[1] is not None:
             text = "{0:10.6f}".format(obw[1])
         else:
             text = ''
-        self.set_measure_value('obwend', text)
+        self.__set_measure_value('obwend', text)
         if obw[0] is not None and obw[1] is not None:
             text = "{0:10.6f}".format(obw[1] - obw[0])
         else:
             text = ''
-        self.set_measure_value('obwdelta', text)
+        self.__set_measure_value('obwdelta', text)
 
         self.update_measure()
 
@@ -821,13 +821,13 @@ class PanelMeasure(wx.Panel):
 
     def set_type(self, display):
         for cell in self.locsCheck:
-                self.set_check_read_only(cell, True)
+                self.__set_check_read_only(cell, True)
         if display == Display.PLOT:
             for cell in self.locsCheck:
-                self.set_check_read_only(cell, False)
+                self.__set_check_read_only(cell, False)
         elif display == Display.SPECT:
-            self.set_check_read_only(Measure.HBW, False)
-            self.set_check_read_only(Measure.OBW, False)
+            self.__set_check_read_only(Measure.HBW, False)
+            self.__set_check_read_only(Measure.OBW, False)
 
         self.grid.Refresh()
 

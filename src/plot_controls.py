@@ -40,9 +40,9 @@ class MouseZoom():
         self.axes = plot.get_axes()
         self.toolbar = toolbar
         figure = self.axes.get_figure()
-        figure.canvas.mpl_connect('scroll_event', self.zoom)
+        figure.canvas.mpl_connect('scroll_event', self.__zoom)
 
-    def zoom(self, event):
+    def __zoom(self, event):
         if event.button == 'up':
             scale = 1 / self.SCALE_STEP
         elif event.button == 'down':
@@ -113,12 +113,12 @@ class RangeSelector():
         self.axes.add_patch(self.rect)
 
         figure = self.axes.get_figure()
-        figure.canvas.mpl_connect('motion_notify_event', self.on_move)
-        figure.canvas.mpl_connect('button_press_event', self.on_press)
-        figure.canvas.mpl_connect('button_release_event', self.on_release)
+        figure.canvas.mpl_connect('motion_notify_event', self.__on_move)
+        figure.canvas.mpl_connect('button_press_event', self.__on_press)
+        figure.canvas.mpl_connect('button_release_event', self.__on_release)
 
-    def on_press(self, event):
-        if self.skip_event(event):
+    def __on_press(self, event):
+        if self.__skip_event(event):
             return
 
         self.eventPressed = event
@@ -126,8 +126,8 @@ class RangeSelector():
         self.rect.set_visible(True)
         return
 
-    def on_move(self, event):
-        if self.eventPressed is None or self.skip_event(event):
+    def __on_move(self, event):
+        if self.eventPressed is None or self.__skip_event(event):
             return
 
         xMin = self.eventPressed.xdata
@@ -138,8 +138,8 @@ class RangeSelector():
 
         return
 
-    def on_release(self, event):
-        if self.eventPressed is None or self.skip_event(event):
+    def __on_release(self, event):
+        if self.eventPressed is None or self.__skip_event(event):
             return
 
         self.eventReleased = event
@@ -151,7 +151,7 @@ class RangeSelector():
         self.eventReleased = None
         return
 
-    def skip_event(self, event):
+    def __skip_event(self, event):
         if event.button != 2:
             return True
 

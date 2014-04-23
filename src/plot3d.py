@@ -50,10 +50,10 @@ class Plotter3d():
         self.extent = None
         self.threadPlot = None
         self.wireframe = settings.wireframe
-        self.setup_plot()
+        self.__setup_plot()
         self.set_grid(settings.grid)
 
-    def setup_plot(self):
+    def __setup_plot(self):
         gs = GridSpec(1, 2, width_ratios=[9.5, 0.5])
         self.axes = self.figure.add_subplot(gs[0], projection='3d')
 
@@ -207,7 +207,7 @@ class ThreadPlot(threading.Thread):
                                        alpha=1)
 
             if self.annotate:
-                self.annotate_plot()
+                self.__annotate_plot()
 
         if total > 0:
             self.parent.scale_plot()
@@ -215,7 +215,7 @@ class ThreadPlot(threading.Thread):
 
         self.parent.threadPlot = None
 
-    def annotate_plot(self):
+    def __annotate_plot(self):
         f, l, t = self.extent.get_peak_flt()
         when = format_time(t)
         tPos = epoch_to_mpl(t)
@@ -239,7 +239,7 @@ class ThreadPlot(threading.Thread):
             self.axes.plot([f], [tPos], [l], marker='x', markersize=10,
                            color='r', gid='peak', path_effects=[effect])
 
-    def clear_markers(self):
+    def __clear_markers(self):
         children = self.axes.get_children()
         for child in children:
                 if child.get_gid() is not None:

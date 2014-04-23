@@ -39,32 +39,7 @@ class PrintOut(wx.Printout):
                    pageConfig.GetMarginBottomRight().Get()[1])
         self.margins = [v / 25.4 for v in margins]
 
-    def GetPageInfo(self):
-        return 1, 1, 1, 1
-
-    def HasPage(self, page):
-        return page == 1
-
-    def OnPrintPage(self, _page):
-        dc = self.GetDC()
-        if self.IsPreview():
-            ppi = max(self.GetPPIScreen())
-            sizePixels = dc.GetSize()
-        else:
-            ppi = max(self.GetPPIPrinter())
-            sizePixels = self.GetPageSizePixels()
-        width = (sizePixels[0] / ppi) - self.margins[1] - self.margins[3]
-        height = (sizePixels[1] / ppi) - self.margins[0] - self.margins[2]
-        sizeInches = (width, height)
-
-        image = self.draw_image(sizeInches, ppi)
-        dc.DrawBitmap(image.ConvertToBitmap(),
-                      self.margins[0] * ppi,
-                      self.margins[1] * ppi)
-
-        return True
-
-    def draw_image(self, sizeInches, ppi):
+    def __draw_image(self, sizeInches, ppi):
         oldSize = self.figure.get_size_inches()
         oldDpi = self.figure.get_dpi()
         self.figure.set_size_inches(sizeInches)
@@ -87,3 +62,28 @@ class PrintOut(wx.Printout):
         imageWx.SetData(image.convert('RGB').tostring())
 
         return imageWx
+
+    def GetPageInfo(self):
+        return 1, 1, 1, 1
+
+    def HasPage(self, page):
+        return page == 1
+
+    def OnPrintPage(self, _page):
+        dc = self.GetDC()
+        if self.IsPreview():
+            ppi = max(self.GetPPIScreen())
+            sizePixels = dc.GetSize()
+        else:
+            ppi = max(self.GetPPIPrinter())
+            sizePixels = self.GetPageSizePixels()
+        width = (sizePixels[0] / ppi) - self.margins[1] - self.margins[3]
+        height = (sizePixels[1] / ppi) - self.margins[0] - self.margins[2]
+        sizeInches = (width, height)
+
+        image = self.__draw_image(sizeInches, ppi)
+        dc.DrawBitmap(image.ConvertToBitmap(),
+                      self.margins[0] * ppi,
+                      self.margins[1] * ppi)
+
+        return True

@@ -62,10 +62,10 @@ class Spectrogram:
                          'right': []}
 
         self.threadPlot = None
-        self.setup_plot()
+        self.__setup_plot()
         self.set_grid(self.settings.grid)
 
-    def setup_plot(self):
+    def __setup_plot(self):
         gs = GridSpec(1, 2, width_ratios=[9.5, 0.5])
         self.axes = self.figure.add_subplot(gs[0],
                                             axisbg=self.settings.background)
@@ -88,11 +88,11 @@ class Spectrogram:
         self.barBase = ColorbarBase(self.bar, norm=norm,
                                     cmap=cm.get_cmap(self.settings.colourMap))
 
-        self.setup_measure()
-        self.setup_overflow()
+        self.__setup_measure()
+        self.__setup_overflow()
         self.hide_measure()
 
-    def setup_measure(self):
+    def __setup_measure(self):
         dashesHalf = [1, 5, 5, 5, 5, 5]
         self.lines[Markers.HFS] = Line2D([0, 0], [0, 0], dashes=dashesHalf,
                                          color='purple')
@@ -132,7 +132,7 @@ class Spectrogram:
         for label in self.labels.itervalues():
             self.axes.add_artist(label)
 
-    def setup_overflow(self):
+    def __setup_overflow(self):
         bbox = self.axes.bbox
         box = dict(boxstyle='round', fc='white', ec='black', alpha=0.5,
                    clip_box=bbox)
@@ -148,11 +148,11 @@ class Spectrogram:
         for label in self.overflowLabels.itervalues():
             self.axes.add_artist(label)
 
-    def clear_overflow(self):
+    def __clear_overflow(self):
         for label in self.overflowLabels:
             self.overflow[label] = []
 
-    def draw_vline(self, marker, x):
+    def __draw_vline(self, marker, x):
         line = self.lines[marker]
         label = self.labels[marker]
         yLim = self.axes.get_ylim()
@@ -170,7 +170,7 @@ class Spectrogram:
         elif x is not None and x > xLim[1]:
             self.overflow['right'].append(marker)
 
-    def draw_overflow(self):
+    def __draw_overflow(self):
         for pos, overflow in self.overflow.iteritems():
             if len(overflow) > 0:
                 text = ''
@@ -194,19 +194,19 @@ class Spectrogram:
             return
 
         self.hide_measure()
-        self.clear_overflow()
+        self.__clear_overflow()
 
         if show[Measure.HBW]:
             xStart, xEnd, _y = measure.get_hpw()
-            self.draw_vline(Markers.HFS, xStart)
-            self.draw_vline(Markers.HFE, xEnd)
+            self.__draw_vline(Markers.HFS, xStart)
+            self.__draw_vline(Markers.HFE, xEnd)
 
         if show[Measure.OBW]:
             xStart, xEnd, _y = measure.get_obw()
-            self.draw_vline(Markers.OFS, xStart)
-            self.draw_vline(Markers.OFE, xEnd)
+            self.__draw_vline(Markers.OFS, xStart)
+            self.__draw_vline(Markers.OFE, xEnd)
 
-        self.draw_overflow()
+        self.__draw_overflow()
 
     def hide_measure(self):
         for line in self.lines.itervalues():
@@ -334,7 +334,7 @@ class ThreadPlot(threading.Thread):
                                                 gid="plot")
 
             if self.annotate:
-                self.annotate_plot()
+                self.__annotate_plot()
 
         if total > 0:
             self.parent.scale_plot()
@@ -342,8 +342,8 @@ class ThreadPlot(threading.Thread):
 
         self.parent.threadPlot = None
 
-    def annotate_plot(self):
-        self.clear_markers()
+    def __annotate_plot(self):
+        self.__clear_markers()
         fMax, lMax, tMax = self.extent.get_peak_flt()
         y = epoch_to_mpl(tMax)
 
@@ -371,7 +371,7 @@ class ThreadPlot(threading.Thread):
             self.axes.plot(fMax, y, marker='x', markersize=10, color='r',
                            path_effects=[effect], gid='peak')
 
-    def clear_markers(self):
+    def __clear_markers(self):
         children = self.axes.get_children()
         for child in children:
             if child.get_gid() is not None:

@@ -39,9 +39,9 @@ class Statusbar(wx.StatusBar):
         self.statusProgress = wx.Gauge(self, -1,
                                        style=wx.GA_HORIZONTAL | wx.GA_SMOOTH)
         self.statusProgress.Hide()
-        self.Bind(wx.EVT_SIZE, self.on_size)
+        self.Bind(wx.EVT_SIZE, self.__on_size)
 
-    def on_size(self, event):
+    def __on_size(self, event):
         rect = self.GetFieldRect(2)
         self.statusProgress.SetPosition((rect.x + 10, rect.y + 2))
         self.statusProgress.SetSize((rect.width - 20, rect.height - 4))
@@ -81,39 +81,39 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.ToggleTool(panId, True)
         self.pan()
 
-        self.add_spacer()
+        self.__add_spacer()
 
         liveId = wx.NewId()
         self.AddCheckTool(liveId, load_bitmap('auto_refresh'),
                           shortHelp='Real time plotting\n(slow and buggy)')
         self.ToggleTool(liveId, settings.liveUpdate)
-        wx.EVT_TOOL(self, liveId, self.on_check_update)
+        wx.EVT_TOOL(self, liveId, self.__on_check_update)
 
         gridId = wx.NewId()
         self.AddCheckTool(gridId, load_bitmap('grid'),
                           shortHelp='Toggle plot grid')
         self.ToggleTool(gridId, settings.grid)
-        wx.EVT_TOOL(self, gridId, self.on_check_grid)
+        wx.EVT_TOOL(self, gridId, self.__on_check_grid)
 
         peakId = wx.NewId()
         self.AddCheckTool(peakId, load_bitmap('peak'),
                           shortHelp='Label peak')
         self.ToggleTool(peakId, settings.annotate)
-        wx.EVT_TOOL(self, peakId, self.on_check_peak)
+        wx.EVT_TOOL(self, peakId, self.__on_check_peak)
 
-        self.add_spacer()
+        self.__add_spacer()
 
         self.autoFId = wx.NewId()
         self.AddCheckTool(self.autoFId, load_bitmap('auto_f'),
                           shortHelp='Auto range frequency')
         self.ToggleTool(self.autoFId, settings.autoF)
-        wx.EVT_TOOL(self, self.autoFId, self.on_check_auto_f)
+        wx.EVT_TOOL(self, self.autoFId, self.__on_check_auto_f)
 
         self.autoLId = wx.NewId()
         self.AddCheckTool(self.autoLId, load_bitmap('auto_l'),
                           shortHelp='Auto range level')
         self.ToggleTool(self.autoLId, settings.autoL)
-        wx.EVT_TOOL(self, self.autoLId, self.on_check_auto_l)
+        wx.EVT_TOOL(self, self.autoLId, self.__on_check_auto_l)
 
         self.autoTId = None
         self.maxId = None
@@ -147,87 +147,94 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         NavigationToolbar2.release_zoom(self, event)
         self.clear_auto()
 
-    def on_check_auto_f(self, event):
+    def __on_check_auto_f(self, event):
         self.settings.autoF = event.Checked()
         self.panel.redraw_plot()
 
-    def on_check_auto_l(self, event):
+    def __on_check_auto_l(self, event):
         self.settings.autoL = event.Checked()
         self.panel.redraw_plot()
 
-    def on_check_auto_t(self, event):
+    def __on_check_auto_t(self, event):
         self.settings.autoT = event.Checked()
         self.panel.redraw_plot()
 
-    def on_check_update(self, event):
+    def __on_check_update(self, event):
         self.settings.liveUpdate = event.Checked()
 
-    def on_check_grid(self, event):
+    def __on_check_grid(self, event):
         grid = event.Checked()
         self.panel.set_grid(grid)
 
-    def on_check_peak(self, event):
+    def __on_check_peak(self, event):
         peak = event.Checked()
         self.settings.annotate = peak
         self.panel.redraw_plot()
 
-    def on_check_fade(self, event):
+    def __on_check_fade(self, event):
         fade = event.Checked()
         self.settings.fadeScans = fade
         self.panel.redraw_plot()
 
-    def on_check_wire(self, event):
+    def __on_check_wire(self, event):
         wire = event.Checked()
         self.settings.wireframe = wire
         self.panel.create_plot()
 
-    def on_check_avg(self, event):
+    def __on_check_avg(self, event):
         check = event.Checked()
         if check:
             self.settings.plotFunc = PlotFunc.AVG
         else:
             self.settings.plotFunc = PlotFunc.NONE
-        self.set_func()
+        self.__set_func()
         self.panel.redraw_plot()
 
-    def on_check_var(self, event):
+    def __on_check_var(self, event):
         check = event.Checked()
         if check:
             self.settings.plotFunc = PlotFunc.VAR
         else:
             self.settings.plotFunc = PlotFunc.NONE
-        self.set_func()
+        self.__set_func()
         self.panel.redraw_plot()
 
-    def on_check_min(self, event):
+    def __on_check_min(self, event):
         check = event.Checked()
         if check:
             self.settings.plotFunc = PlotFunc.MIN
         else:
             self.settings.plotFunc = PlotFunc.NONE
-        self.set_func()
+        self.__set_func()
         self.panel.redraw_plot()
 
-    def on_check_max(self, event):
+    def __on_check_max(self, event):
         check = event.Checked()
         if check:
             self.settings.plotFunc = PlotFunc.MAX
         else:
             self.settings.plotFunc = PlotFunc.NONE
-        self.set_func()
+        self.__set_func()
         self.panel.redraw_plot()
 
-    def on_colour(self, event):
+    def __on_colour(self, event):
         colourMap = event.GetString()
         self.settings.colourMap = colourMap
         self.plot.set_colourmap(colourMap)
         self.panel.redraw_plot()
 
-    def add_spacer(self):
+    def __add_spacer(self):
         sepId = wx.NewId()
         self.AddCheckTool(sepId, load_bitmap('spacer'))
         self.EnableTool(sepId, False)
         return sepId
+
+    def __set_func(self):
+        buttons = [self.avgId, self.minId, self.maxId, self.varId]
+        for button in buttons:
+            self.ToggleTool(button, False)
+        if self.settings.plotFunc != PlotFunc.NONE:
+            self.ToggleTool(buttons[self.settings.plotFunc - 1], True)
 
     def set_auto(self, state):
         self.settings.autoF = state
@@ -254,72 +261,65 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
             self.AddCheckTool(self.autoTId, load_bitmap('auto_t'),
                               shortHelp='Auto range time')
             self.ToggleTool(self.autoTId, self.settings.autoT)
-            wx.EVT_TOOL(self, self.autoTId, self.on_check_auto_t)
+            wx.EVT_TOOL(self, self.autoTId, self.__on_check_auto_t)
             self.extraTools.append(self.autoTId)
 
-        self.extraTools.append(self.add_spacer())
+        self.extraTools.append(self.__add_spacer())
 
         if display == Display.PLOT:
             fadeId = wx.NewId()
             self.AddCheckTool(fadeId, load_bitmap('fade'),
                               shortHelp='Fade plots')
-            wx.EVT_TOOL(self, fadeId, self.on_check_fade)
+            wx.EVT_TOOL(self, fadeId, self.__on_check_fade)
             self.ToggleTool(fadeId, self.settings.fadeScans)
             self.extraTools.append(fadeId)
 
-            self.extraTools.append(self.add_spacer())
+            self.extraTools.append(self.__add_spacer())
 
             self.avgId = wx.NewId()
             self.AddCheckTool(self.avgId, load_bitmap('average'),
                               shortHelp='Show average')
-            wx.EVT_TOOL(self, self.avgId, self.on_check_avg)
+            wx.EVT_TOOL(self, self.avgId, self.__on_check_avg)
             self.extraTools.append(self.avgId)
             self.minId = wx.NewId()
             self.AddCheckTool(self.minId, load_bitmap('min'),
                               shortHelp='Show minimum')
-            wx.EVT_TOOL(self, self.minId, self.on_check_min)
+            wx.EVT_TOOL(self, self.minId, self.__on_check_min)
             self.extraTools.append(self.minId)
             self.maxId = wx.NewId()
             self.AddCheckTool(self.maxId, load_bitmap('max'),
                               shortHelp='Show maximum')
-            wx.EVT_TOOL(self, self.maxId, self.on_check_max)
+            wx.EVT_TOOL(self, self.maxId, self.__on_check_max)
             self.extraTools.append(self.maxId)
             self.varId = wx.NewId()
             self.AddCheckTool(self.varId, load_bitmap('variance'),
                               shortHelp='Show variance')
-            wx.EVT_TOOL(self, self.varId, self.on_check_var)
+            wx.EVT_TOOL(self, self.varId, self.__on_check_var)
             self.extraTools.append(self.varId)
 
-            self.set_func()
+            self.__set_func()
 
-            self.extraTools.append(self.add_spacer())
+            self.extraTools.append(self.__add_spacer())
 
         colours = get_colours()
         colourId = wx.NewId()
         control = wx.Choice(self, id=colourId, choices=colours)
         control.SetSelection(colours.index(self.settings.colourMap))
         self.AddControl(control)
-        self.Bind(wx.EVT_CHOICE, self.on_colour, control)
+        self.Bind(wx.EVT_CHOICE, self.__on_colour, control)
         self.extraTools.append(colourId)
 
         if display == Display.SURFACE:
-            self.extraTools.append(self.add_spacer())
+            self.extraTools.append(self.__add_spacer())
 
             wireId = wx.NewId()
             self.AddCheckTool(wireId, load_bitmap('wireframe'),
                               shortHelp='Wireframe')
-            wx.EVT_TOOL(self, wireId, self.on_check_wire)
+            wx.EVT_TOOL(self, wireId, self.__on_check_wire)
             self.ToggleTool(wireId, self.settings.wireframe)
             self.extraTools.append(wireId)
 
         self.Realize()
-
-    def set_func(self):
-        buttons = [self.avgId, self.minId, self.maxId, self.varId]
-        for button in buttons:
-            self.ToggleTool(button, False)
-        if self.settings.plotFunc != PlotFunc.NONE:
-            self.ToggleTool(buttons[self.settings.plotFunc - 1], True)
 
 
 class NavigationToolbarCompare(NavigationToolbar2WxAgg):
@@ -333,9 +333,9 @@ class NavigationToolbarCompare(NavigationToolbar2WxAgg):
         self.AddCheckTool(gridId, load_bitmap('grid'),
                           shortHelp='Toggle grid')
         self.ToggleTool(gridId, True)
-        wx.EVT_TOOL(self, gridId, self.on_check_grid)
+        wx.EVT_TOOL(self, gridId, self.__on_check_grid)
 
-    def on_check_grid(self, event):
+    def __on_check_grid(self, event):
         grid = event.Checked()
         self.panel.set_grid(grid)
 

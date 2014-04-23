@@ -36,10 +36,10 @@ from misc import db_to_level, level_to_db
 
 class Extent():
     def __init__(self, spectrum):
-        self.clear()
-        self.calc_extent(spectrum)
+        self.__clear()
+        self.__calc_extent(spectrum)
 
-    def clear(self):
+    def __clear(self):
         self.fMin = float('inf')
         self.fMax = float('-inf')
         self.lMin = float('inf')
@@ -50,7 +50,7 @@ class Extent():
         self.lPeak = None
         self.tPeak = None
 
-    def calc_extent(self, spectrum):
+    def __calc_extent(self, spectrum):
         for timeStamp in spectrum:
             points = spectrum[timeStamp].items()
             if len(points) > 0:
@@ -108,9 +108,9 @@ class Measure():
         self.hbw = None
         self.obw = None
 
-        self.calculate(spectrum, start, end)
+        self.__calculate(spectrum, start, end)
 
-    def calculate(self, spectrum, start, end):
+    def __calculate(self, spectrum, start, end):
         sweep = slice_spectrum(spectrum, start, end)
         if sweep is None or len(sweep) == 0:
             return
@@ -132,12 +132,12 @@ class Measure():
 
         self.flatness = gMean / avg
 
-        self.calc_hbw(sweep)
-        self.calc_obw(sweep)
+        self.__calc_hbw(sweep)
+        self.__calc_obw(sweep)
 
         self.isValid = True
 
-    def calc_hbw(self, sweep):
+    def __calc_hbw(self, sweep):
         power = self.maxP[1] - 3
         self.hbw = [None, None, power]
 
@@ -151,7 +151,7 @@ class Measure():
                     self.hbw[1] = f
                     break
 
-    def calc_obw(self, sweep):
+    def __calc_obw(self, sweep):
         self.obw = [None, None, None]
 
         totalP = 0
