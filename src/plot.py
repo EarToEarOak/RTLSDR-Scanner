@@ -307,7 +307,7 @@ class Plotter():
                 self.axes.set_xlim(self.extent.get_f())
             if self.settings.autoL or force:
                 self.axes.set_ylim(self.extent.get_l())
-                if self.settings.plotFunc == PlotFunc.VAR:
+                if self.settings.plotFunc == PlotFunc.VAR and len(self.axes.collections) > 0:
                     norm = self.axes.collections[0].norm
                     self.barBase.set_clim((norm.vmin, norm.vmax))
                 else:
