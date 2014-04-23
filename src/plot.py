@@ -507,15 +507,24 @@ class ThreadPlot(threading.Thread):
         varMin = 1000
         varMax = 0
         lastX = None
+        lastYMin = None
+        lastYMax = None
         for x in pointsMin.iterkeys():
             if lastX is None:
                 lastX = x
+            if lastYMin is None:
+                lastYMin = pointsMin[x]
+            if lastYMax is None:
+                lastYMax = pointsMax[x]
             polys.append([[x, pointsMin[x]],
                           [x, pointsMax[x]],
-                          [lastX, pointsMax[x]],
-                          [lastX, pointsMin[x]],
+                          [lastX, lastYMax],
+                          [lastX, lastYMin],
                           [x, pointsMin[x]]])
             lastX = x
+            lastYMin = pointsMin[x]
+            lastYMax = pointsMax[x]
+
             var = pointsMax[x] - pointsMin[x]
             variance.append(var)
             varMin = min(varMin, var)
