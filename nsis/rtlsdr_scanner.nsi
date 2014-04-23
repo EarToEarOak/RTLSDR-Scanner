@@ -215,6 +215,7 @@ Section Uninstall
     Delete "$INSTDIR\cli.py"
     Delete "$INSTDIR\version-timestamp"
     Delete "$INSTDIR\res\wireframe.png"
+    Delete "$INSTDIR\res\variance.png"
     Delete "$INSTDIR\res\spacer.png"
     Delete "$INSTDIR\res\peak.png"
     Delete "$INSTDIR\res\min.png"

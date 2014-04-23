@@ -28,7 +28,8 @@ import threading
 
 from matplotlib import patheffects, cm
 import matplotlib
-from matplotlib.collections import LineCollection
+from matplotlib.cm import ScalarMappable
+from matplotlib.collections import LineCollection, PolyCollection
 from matplotlib.colorbar import ColorbarBase
 from matplotlib.colors import Normalize
 from matplotlib.gridspec import GridSpec
@@ -306,9 +307,13 @@ class Plotter():
                 self.axes.set_xlim(self.extent.get_f())
             if self.settings.autoL or force:
                 self.axes.set_ylim(self.extent.get_l())
-                self.barBase.set_clim(self.extent.get_l())
-                norm = Normalize(vmin=self.extent.get_l()[0],
-                                 vmax=self.extent.get_l()[1])
+                if self.settings.plotFunc == PlotFunc.VAR:
+                    norm = self.axes.collections[0].norm
+                    self.barBase.set_clim((norm.vmin, norm.vmax))
+                else:
+                    self.barBase.set_clim(self.extent.get_l())
+                    norm = Normalize(vmin=self.extent.get_l()[0],
+                                     vmax=self.extent.get_l()[1])
                 for collection in self.axes.collections:
                     collection.set_norm(norm)
                 try:
@@ -404,6 +409,8 @@ class ThreadPlot(threading.Thread):
                 peakF, peakL = self.plot_max()
             elif self.plotFunc == PlotFunc.AVG:
                 peakF, peakL = self.plot_avg()
+            elif self.plotFunc == PlotFunc.VAR:
+                peakF, peakL = self.plot_variance()
 
             if self.annotate:
                 self.annotate_plot(peakF, peakL)
@@ -412,6 +419,30 @@ class ThreadPlot(threading.Thread):
             self.parent.redraw_plot()
 
         self.parent.threadPlot = None
+
+    def calc_min(self):
+        points = OrderedDict()
+
+        for timeStamp in self.data:
+            for x, y in self.data[timeStamp].items():
+                if x in points:
+                    points[x] = min(points[x], y)
+                else:
+                    points[x] = y
+
+        return points
+
+    def calc_max(self):
+        points = OrderedDict()
+
+        for timeStamp in self.data:
+            for x, y in self.data[timeStamp].items():
+                if x in points:
+                    points[x] = max(points[x], y)
+                else:
+                    points[x] = y
+
+        return points
 
     def plot_all(self):
         total = len(self.data)
@@ -443,26 +474,12 @@ class ThreadPlot(threading.Thread):
         return peakF, peakL
 
     def plot_min(self):
-        points = OrderedDict()
-
-        for timeStamp in self.data:
-            for x, y in self.data[timeStamp].items():
-                if x in points:
-                    points[x] = min(points[x], y)
-                else:
-                    points[x] = y
+        points = self.calc_min()
 
         return self.plot_single(points)
 
     def plot_max(self):
-        points = OrderedDict()
-
-        for timeStamp in self.data:
-            for x, y in self.data[timeStamp].items():
-                if x in points:
-                    points[x] = max(points[x], y)
-                else:
-                    points[x] = y
+        points = self.calc_max()
 
         return self.plot_single(points)
 
@@ -481,6 +498,41 @@ class ThreadPlot(threading.Thread):
 
         return self.plot_single(points)
 
+    def plot_variance(self):
+        pointsMin = self.calc_min()
+        pointsMax = self.calc_max()
+
+        polys = []
+        variance = []
+        varMin = 1000
+        varMax = 0
+        lastX = None
+        for x in pointsMin.iterkeys():
+            if lastX is None:
+                lastX = x
+            polys.append([[x, pointsMin[x]],
+                          [x, pointsMax[x]],
+                          [lastX, pointsMax[x]],
+                          [lastX, pointsMin[x]],
+                          [x, pointsMin[x]]])
+            lastX = x
+            var = pointsMax[x] - pointsMin[x]
+            variance.append(var)
+            varMin = min(varMin, var)
+            varMax = max(varMax, var)
+
+        norm = Normalize(vmin=varMin, vmax=varMax)
+        sm = ScalarMappable(norm, self.colourMap)
+        colours = sm.to_rgba(variance)
+
+        pc = PolyCollection(polys)
+        pc.set_gid('plot')
+        pc.set_norm(norm)
+        pc.set_color(colours)
+        self.axes.add_collection(pc)
+
+        return None, None
+
     def plot_single(self, points):
         data = points.items()
         peakF, peakL = max(data, key=lambda item: item[1])
@@ -493,7 +545,6 @@ class ThreadPlot(threading.Thread):
         lc.set_linewidth(self.lineWidth)
         lc.set_gid('plot')
         self.axes.add_collection(lc)
-        self.parent.lc = lc
 
         return peakF, peakL
 
@@ -522,6 +573,9 @@ class ThreadPlot(threading.Thread):
 
     def annotate_plot(self, x, y):
         self.clear_markers()
+
+        if x is None or y is None:
+            return
 
         start, stop = self.axes.get_xlim()
         textX = ((stop - start) / 50.0) + x

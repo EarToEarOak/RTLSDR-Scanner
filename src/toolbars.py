@@ -189,6 +189,15 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.set_func()
         self.panel.redraw_plot()
 
+    def on_check_var(self, event):
+        check = event.Checked()
+        if check:
+            self.settings.plotFunc = PlotFunc.VAR
+        else:
+            self.settings.plotFunc = PlotFunc.NONE
+        self.set_func()
+        self.panel.redraw_plot()
+
     def on_check_min(self, event):
         check = event.Checked()
         if check:
@@ -259,6 +268,11 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
 
             self.extraTools.append(self.add_spacer())
 
+            self.avgId = wx.NewId()
+            self.AddCheckTool(self.avgId, load_bitmap('average'),
+                              shortHelp='Show average')
+            wx.EVT_TOOL(self, self.avgId, self.on_check_avg)
+            self.extraTools.append(self.avgId)
             self.minId = wx.NewId()
             self.AddCheckTool(self.minId, load_bitmap('min'),
                               shortHelp='Show minimum')
@@ -269,11 +283,12 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
                               shortHelp='Show maximum')
             wx.EVT_TOOL(self, self.maxId, self.on_check_max)
             self.extraTools.append(self.maxId)
-            self.avgId = wx.NewId()
-            self.AddCheckTool(self.avgId, load_bitmap('average'),
-                              shortHelp='Show average')
-            wx.EVT_TOOL(self, self.avgId, self.on_check_avg)
-            self.extraTools.append(self.avgId)
+            self.varId = wx.NewId()
+            self.AddCheckTool(self.varId, load_bitmap('variance'),
+                              shortHelp='Show variance')
+            wx.EVT_TOOL(self, self.varId, self.on_check_var)
+            self.extraTools.append(self.varId)
+
             self.set_func()
 
             self.extraTools.append(self.add_spacer())
@@ -299,7 +314,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.Realize()
 
     def set_func(self):
-        buttons = [self.minId, self.maxId, self.avgId]
+        buttons = [self.avgId, self.minId, self.maxId, self.varId]
         for button in buttons:
             self.ToggleTool(button, False)
         if self.settings.plotFunc != PlotFunc.NONE:
