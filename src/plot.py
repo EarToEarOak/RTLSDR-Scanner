@@ -451,7 +451,7 @@ class ThreadPlot(threading.Thread):
         for timeStamp in self.data:
             if len(self.data[timeStamp]) < 2:
                 self.parent.threadPlot = None
-                return
+                return None, None
 
             if self.fade:
                 alpha = (total - count) / total
@@ -489,7 +489,7 @@ class ThreadPlot(threading.Thread):
 
         for timeStamp in self.data:
             if len(self.data[timeStamp]) < 2:
-                return
+                return None, None
 
             for x, y in self.data[timeStamp].items():
                 if x in points:
