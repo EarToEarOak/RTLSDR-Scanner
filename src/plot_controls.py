@@ -133,7 +133,7 @@ class RangeSelector():
         xMin = self.eventPressed.xdata
         xMax = event.xdata
         if xMin > xMax:
-                xMin, xMax = xMax, xMin
+            xMin, xMax = xMax, xMin
         self.callbackPost(xMin, xMax)
 
         return

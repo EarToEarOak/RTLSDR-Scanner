@@ -129,23 +129,23 @@ class ThreadBuffer(threading.Thread):
         self.start()
 
     def run(self):
-        while(not self.cancel):
+        while not self.cancel:
             if self.readLen > 0:
                 self.__read_stream()
             else:
                 self.__skip_stream()
 
         self.socket.close()
-        self.__doNotify()
+        self.__do_notify()
 
-    def __doWait(self):
+    def __do_wait(self):
         self.condition.acquire()
         while not self.done:
             self.condition.wait(2)
         self.done = False
         self.condition.release()
 
-    def __doNotify(self):
+    def __do_notify(self):
         self.condition.acquire()
         self.done = True
         self.condition.notify()
@@ -164,7 +164,7 @@ class ThreadBuffer(threading.Thread):
             self.readLen -= len(recv)
 
         self.buffer = bytearray(''.join(data))
-        self.__doNotify()
+        self.__do_notify()
 
     def __skip_stream(self):
         total = self.READ_SIZE
@@ -179,7 +179,7 @@ class ThreadBuffer(threading.Thread):
 
     def recv(self, length):
         self.readLen = length
-        self.__doWait()
+        self.__do_wait()
         return self.buffer
 
     def sendall(self, data):

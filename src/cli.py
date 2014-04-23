@@ -23,6 +23,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import Queue
 import os
 import sys
 from threading import Thread
@@ -31,7 +32,7 @@ from urlparse import urlparse
 
 from constants import SAMPLE_RATE, File
 from devices import Device, get_devices
-from events import *
+from events import Event, post_event, EventThreadStatus
 from file import save_plot, export_plot, ScanInfo
 from misc import nearest, calc_real_dwell, next_2_to_pow
 from scan import ThreadScan, anaylse_data, update_spectrum
@@ -86,7 +87,7 @@ class Cli():
                 device.isDevice = False
                 url = urlparse('//' + remote)
                 if url.hostname is not None:
-                        device.server = url.hostname
+                    device.server = url.hostname
                 else:
                     error = "Invalid hostname"
                 if url.port is not None:

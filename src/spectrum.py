@@ -201,7 +201,7 @@ class Measure():
 def count_points(spectrum):
     points = 0
     for timeStamp in spectrum:
-            points += len(spectrum[timeStamp])
+        points += len(spectrum[timeStamp])
 
     return points
 

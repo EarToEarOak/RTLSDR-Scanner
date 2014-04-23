@@ -93,6 +93,7 @@ class PanelGraph(wx.Panel):
         self.isLimited = None
         self.limit = None
         self.extent = None
+        self.annotate = None
 
         self.mouseSelect = None
         self.mouseZoom = None
@@ -243,7 +244,7 @@ class PanelGraph(wx.Panel):
     def draw(self):
         self.doDraw = True
 
-    def show_measureTable(self, show):
+    def show_measure_table(self, show):
         self.measureTable.show(show)
         self.Layout()
 
@@ -528,12 +529,12 @@ class PanelMeasure(wx.Panel):
         for y in xrange(self.grid.GetNumberCols()):
             self.grid.SetColLabelValue(y, '')
 
-        self.locsDesc = {'Start': (0, 0),
-                         'End': (1, 0),
-                         u'\u0394': (2, 0),
+        self.locsDesc = {u'Start': (0, 0),
+                         u'End': (1, 0),
+                         u'F\u0394': (2, 0),
                          u'Min': (0, 4),
                          u'Max': (1, 4),
-                         u'\u0394': (2, 4),
+                         u'P\u0394': (2, 4),
                          u'Mean': (0, 9),
                          u'GMean': (1, 9),
                          u'Flatness': (2, 9),
@@ -732,7 +733,7 @@ class PanelMeasure(wx.Panel):
 
     def clear_measurement(self):
         for control in self.locsMeasure:
-                    self.__set_measure_value(control, "")
+            self.__set_measure_value(control, "")
         self.update_measure()
         self.measure = None
 
@@ -821,7 +822,7 @@ class PanelMeasure(wx.Panel):
 
     def set_type(self, display):
         for cell in self.locsCheck:
-                self.__set_check_read_only(cell, True)
+            self.__set_check_read_only(cell, True)
         if display == Display.PLOT:
             for cell in self.locsCheck:
                 self.__set_check_read_only(cell, False)

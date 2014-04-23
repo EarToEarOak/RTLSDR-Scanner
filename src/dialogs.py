@@ -29,6 +29,7 @@ from urlparse import urlparse
 
 import matplotlib
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
+import numpy
 import rtlsdr
 from wx import grid
 import wx
@@ -36,7 +37,8 @@ from wx.lib import masked
 from wx.lib.agw.cubecolourdialog import CubeColourDialog
 from wx.lib.masked.numctrl import NumCtrl
 
-from constants import *
+from constants import File, F_MIN, F_MAX, Cal, SAMPLE_RATE, BANDWIDTH, WINFUNC, \
+    TUNER
 from devices import Device
 from file import open_plot
 from misc import close_modeless, format_time, ValidatorCoord, get_colours, \
@@ -88,8 +90,8 @@ class DialogCompare(wx.Dialog):
             self.dirname = dlg.GetDirectory()
             self.filename = dlg.GetFilename()
             _scanInfo, spectrum = open_plot(self.dirname,
-                                                self.filename)
-            if(event.EventObject == self.buttonPlot1):
+                                            self.filename)
+            if event.EventObject == self.buttonPlot1:
                 self.textPlot1.SetLabel(self.filename)
                 self.graph.set_spectrum1(spectrum)
             else:
@@ -336,9 +338,9 @@ class DialogOffset(wx.Dialog):
         limit2 = limit1 + BANDWIDTH / 2
         limit1 /= 1e6
         limit2 /= 1e6
-        if(self.band1 is not None):
+        if self.band1 is not None:
             self.band1.remove()
-        if(self.band2 is not None):
+        if self.band2 is not None:
             self.band2.remove()
         self.band1 = self.axes.axvspan(limit1, limit2, color='g', alpha=0.25)
         self.band2 = self.axes.axvspan(-limit1, -limit2, color='g', alpha=0.25)
@@ -767,6 +769,7 @@ class DialogDevices(wx.Dialog):
     def __init__(self, parent, devices, settings):
         self.devices = copy.copy(devices)
         self.settings = settings
+        self.index = None
 
         wx.Dialog.__init__(self, parent=parent, title="Devices")
 

@@ -36,7 +36,8 @@ from matplotlib.dates import num2epoch
 import wx
 from wx.lib.masked import NumCtrl
 
-from constants import *
+from constants import F_MIN, F_MAX, MODE, DWELL, NFFT, DISPLAY, Warn, File, \
+    Display, Cal, Mode
 from devices import get_devices
 from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, \
     DialogDevices, DialogCompare, DialogAutoCal, DialogAbout, DialogSaveWarn
@@ -131,6 +132,7 @@ class FrameMain(wx.Frame):
         self.spinCtrlStop = None
         self.checkUpdate = None
         self.checkGrid = None
+        self.choiceDisplay = None
 
         self.spectrum = {}
         self.scanInfo = ScanInfo()
@@ -171,6 +173,9 @@ class FrameMain(wx.Frame):
         self.Connect(-1, -1, EVT_THREAD_STATUS, self.__on_event)
 
         self.SetDropTarget(DropTarget(self))
+
+        self.steps = 0
+        self.stepTotal = 0
 
     def __create_widgets(self):
         panel = wx.Panel(self)
@@ -386,9 +391,9 @@ class FrameMain(wx.Frame):
         self.popupMenuPointsLim.Check(self.settings.pointsLimit)
 
         self.popupMenu.AppendSeparator()
-        self.popupmenuClearSelect = self.popupMenu.Append(wx.ID_ANY, "Clear selection",
+        self.popupMenuClearSelect = self.popupMenu.Append(wx.ID_ANY, "Clear selection",
                                                           "Clear current selection")
-        self.graph.add_menu_clear_select(self.popupmenuClearSelect)
+        self.graph.add_menu_clear_select(self.popupMenuClearSelect)
         self.popupMenuShowMeasure = self.popupMenu.Append(wx.ID_ANY,
                                                           "Show &measurements",
                                                           "Show measurements window",
@@ -400,7 +405,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.__on_stop_end, self.popupMenuStopEnd)
         self.Bind(wx.EVT_MENU, self.__on_range_lim, self.popupMenuRangeLim)
         self.Bind(wx.EVT_MENU, self.__on_points_lim, self.popupMenuPointsLim)
-        self.Bind(wx.EVT_MENU, self.__on_clear_select, self.popupmenuClearSelect)
+        self.Bind(wx.EVT_MENU, self.__on_clear_select, self.popupMenuClearSelect)
         self.Bind(wx.EVT_MENU, self.__on_show_measure, self.popupMenuShowMeasure)
 
         self.Bind(wx.EVT_CONTEXT_MENU, self.__on_popup_menu)
@@ -559,7 +564,7 @@ class FrameMain(wx.Frame):
         self.menuShowMeasure.Check(show)
         self.popupMenuShowMeasure.Check(show)
         self.settings.showMeasure = show
-        self.graph.show_measureTable(show)
+        self.graph.show_measure_table(show)
         self.Layout()
 
     def __on_cal(self, _event):
@@ -652,7 +657,7 @@ class FrameMain(wx.Frame):
 
         if spectrum is not None and len(spectrum) > 0:
             x = min(spectrum.keys(), key=lambda freq: abs(freq - xpos))
-            if(xpos <= max(spectrum.keys(), key=float)):
+            if xpos <= max(spectrum.keys(), key=float):
                 y = spectrum[x]
                 text = u"f = {0:.6f}MHz, p = {1:.2f}dB/\u221AHz".format(x, y)
             else:
@@ -1021,9 +1026,9 @@ class FrameMain(wx.Frame):
 
     def open(self, dirname, filename):
         if not os.path.exists(os.path.join(dirname, filename)):
-                wx.MessageBox('File not found',
-                              'Error', wx.OK | wx.ICON_ERROR)
-                return
+            wx.MessageBox('File not found',
+                          'Error', wx.OK | wx.ICON_ERROR)
+            return
 
         self.filename = os.path.splitext(filename)[0]
         self.settings.dirScans = dirname
