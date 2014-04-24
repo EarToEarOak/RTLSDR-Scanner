@@ -529,21 +529,21 @@ class PanelMeasure(wx.Panel):
         for y in xrange(self.grid.GetNumberCols()):
             self.grid.SetColLabelValue(y, '')
 
-        self.locsDesc = {u'Start': (0, 0),
-                         u'End': (1, 0),
-                         u'F\u0394': (2, 0),
-                         u'Min': (0, 4),
-                         u'Max': (1, 4),
-                         u'P\u0394': (2, 4),
-                         u'Mean': (0, 9),
-                         u'GMean': (1, 9),
-                         u'Flatness': (2, 9),
-                         u'-3dB Start': (0, 13),
-                         u'-3dB End': (1, 13),
-                         u'-3dB \u0394': (2, 13),
-                         u'OBW Start': (0, 17),
-                         u'OBW End': (1, 17),
-                         u'OBW \u0394': (2, 17)}
+        self.locsDesc = {'F Start': (0, 0),
+                         'F End': (1, 0),
+                         'F Delta': (2, 0),
+                         'P Min': (0, 4),
+                         'P Max': (1, 4),
+                         'P Delta': (2, 4),
+                         'Mean': (0, 9),
+                         'GMean': (1, 9),
+                         'Flatness': (2, 9),
+                         '-3dB Start': (0, 13),
+                         '-3dB End': (1, 13),
+                         '-3dB Delta': (2, 13),
+                         'OBW Start': (0, 17),
+                         'OBW End': (1, 17),
+                         'OBW Delta': (2, 17)}
         self.__set_descs()
 
         self.locsCheck = {Measure.MIN: (0, 3), Measure.MAX: (1, 3),
