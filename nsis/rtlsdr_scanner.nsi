@@ -223,6 +223,7 @@ Section Uninstall
     Delete "$INSTDIR\res\icon.png"
     Delete "$INSTDIR\res\grid.png"
     Delete "$INSTDIR\res\fade.png"
+    Delete "$INSTDIR\res\colurmap.png"
     Delete "$INSTDIR\res\average.png"
     Delete "$INSTDIR\res\auto_refresh.png"
     Delete "$INSTDIR\res\auto_t.png"

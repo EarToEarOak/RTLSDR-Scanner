@@ -120,6 +120,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.minId = None
         self.avgId = None
         self.varId = None
+        self.colourId = None
 
     def home(self, event):
         self.callBackHideOverlay()
@@ -223,6 +224,13 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.plot.set_colourmap(colourMap)
         self.panel.redraw_plot()
 
+    def __on_colour_use(self, event):
+        check = event.Checked()
+        self.settings.colourMapUse = check
+        self.colourId.Enable(check)
+        self.plot.set_colourmap_use(check)
+        self.panel.redraw_plot()
+
     def __add_spacer(self):
         sepId = wx.NewId()
         self.AddCheckTool(sepId, load_bitmap('spacer'))
@@ -301,12 +309,22 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
 
             self.extraTools.append(self.__add_spacer())
 
+        if display == Display.PLOT:
+            colourUseId = wx.NewId()
+            self.AddCheckTool(colourUseId, load_bitmap('colourmap'),
+                              shortHelp='Use colour maps')
+            wx.EVT_TOOL(self, colourUseId, self.__on_colour_use)
+            self.ToggleTool(colourUseId, self.settings.colourMapUse)
+            self.extraTools.append(colourUseId)
+
         colours = get_colours()
         colourId = wx.NewId()
-        control = wx.Choice(self, id=colourId, choices=colours)
-        control.SetSelection(colours.index(self.settings.colourMap))
-        self.AddControl(control)
-        self.Bind(wx.EVT_CHOICE, self.__on_colour, control)
+        self.colourId = wx.Choice(self, id=colourId, choices=colours)
+        self.colourId.SetSelection(colours.index(self.settings.colourMap))
+        self.AddControl(self.colourId)
+        if display == Display.PLOT:
+            self.colourId.Enable(self.settings.colourMapUse)
+        self.Bind(wx.EVT_CHOICE, self.__on_colour, self.colourId)
         self.extraTools.append(colourId)
 
         if display == Display.SURFACE:

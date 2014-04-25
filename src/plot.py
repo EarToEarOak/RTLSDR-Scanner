@@ -48,6 +48,7 @@ class Plotter():
         self.notify = notify
         self.figure = figure
         self.settings = settings
+        self.colourMap = self.settings.colourMap
         self.axes = None
         self.bar = None
         self.barBase = None
@@ -82,8 +83,8 @@ class Plotter():
 
         self.bar = self.figure.add_subplot(gs[1])
         norm = Normalize(vmin=-50, vmax=0)
-        self.barBase = ColorbarBase(self.bar, norm=norm,
-                                    cmap=cm.get_cmap(self.settings.colourMap))
+        self.barBase = ColorbarBase(self.bar, norm=norm)
+        self.set_colourmap_use(self.settings.colourMapUse)
 
         self.__setup_measure()
         self.__setup_overflow()
@@ -342,7 +343,7 @@ class Plotter():
         self.extent = extent
         self.threadPlot = ThreadPlot(self, self.axes, spectrum,
                                      self.extent,
-                                     self.settings.colourMap,
+                                     self.colourMap,
                                      self.settings.autoL,
                                      self.settings.lineWidth,
                                      self.barBase,
@@ -361,9 +362,23 @@ class Plotter():
         self.axes.grid(on)
         self.redraw_plot()
 
+    def set_colourmap_use(self, use):
+        if use:
+            colourMap = self.settings.colourMap
+        else:
+            colourMap = ' Pure Blue'
+
+        self.set_colourmap(colourMap)
+
     def set_colourmap(self, colourMap):
+        self.colourMap = colourMap
         for collection in self.axes.collections:
             collection.set_cmap(colourMap)
+
+        if colourMap.startswith(' Pure'):
+            self.bar.set_visible(False)
+        else:
+            self.bar.set_visible(True)
         self.barBase.set_cmap(colourMap)
         try:
             self.barBase.draw_all()

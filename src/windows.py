@@ -218,7 +218,6 @@ class PanelGraph(wx.Panel):
         self.measureTable.set_type(self.settings.display)
 
         self.set_plot_title()
-        self.figure.tight_layout()
         self.figure.subplots_adjust(top=0.85)
         self.redraw_plot()
         self.plot.scale_plot(True)
