@@ -32,7 +32,7 @@
 !include "include\EnvVarUpdate.nsh"
 !include "include\fileassoc.nsh"
 
-!define INSTALLER_VERSION "8"
+!define INSTALLER_VERSION "9"
 
 !define PRODUCT_NAME "RTLSDR Scanner"
 !define PRODUCT_PUBLISHER "Ear to Ear Oak"
@@ -72,9 +72,7 @@ When asked it is recommended to use the default options for all software $\r$\n$
 It will add the new installation of Python to the path, potentially causing problems $\r$\n\
 to previous Python installs $\r$\n$\r$\n\
 You can update to the latest versions of RTLSDR-Scanner, $\r$\n\
-the rtlsdr driver and pyrtlsdr by running this installer again $\r$\n$\r$\n\
-Some systems will require the Microsoft Visual C++ 2010 Redistributable (32bit) available from: $\r$\n\
-http://www.microsoft.com/en-gb/download/details.aspx?id=5555"'
+the rtlsdr driver and pyrtlsdr by running this installer again"'
 
 !define FILE_CLASS "RTLSDRScanner.Scan"
 !define FILE_TYPE "rfs"
@@ -118,6 +116,10 @@ SectionGroup "/e" "Dependencies" SEC_DEP
     Section "RTLSDR Driver" SEC_RTLSDR
         Call get_rtlsdr
     SectionEnd
+    Section "MSVC 2010 Runtime" SEC_MSVC
+        File vcredist_x86.exe
+        ExecWait 'vcredist_x86.exe /quiet /norestart'
+    SectionEnd
     SectionGroup "/e" "Python" SEC_PYDEP
         Section "Python 2.7.6" SEC_PYTHON
            Call get_python
@@ -156,6 +158,7 @@ SectionGroupEnd
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
 !insertmacro MUI_DESCRIPTION_TEXT ${SEC_SCAN} "RTLSDR Scanner"
 !insertmacro MUI_DESCRIPTION_TEXT ${SEC_RTLSDR} "Latest rtlsdr driver"
+!insertmacro MUI_DESCRIPTION_TEXT ${SEC_MSVC} "Microsoft Visual C++ Redistributable"
 !insertmacro MUI_DESCRIPTION_TEXT ${SEC_DEP} "Dependencies"
 !insertmacro MUI_DESCRIPTION_TEXT ${SEC_PYDEP} "Python dependencies"
 !insertmacro MUI_DESCRIPTION_TEXT ${SEC_PYRTLSDR} "Latest Python wrapper for the rtlsdr driver"
@@ -329,6 +332,7 @@ Function page_type_end
     ${If} $0 == ${BST_CHECKED}
         StrCpy $Type ${TYPE_FULL}
         !insertmacro SelectSection ${SEC_DEP}
+        !insertmacro SelectSection ${SEC_MSVC}
     ${Else}
         StrCpy $Type ${TYPE_UPDATE}
         !insertmacro UnselectSection ${SEC_DEP}
