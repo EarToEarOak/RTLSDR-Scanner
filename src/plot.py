@@ -26,7 +26,7 @@
 from collections import OrderedDict
 import threading
 
-from matplotlib import patheffects, cm
+from matplotlib import patheffects
 import matplotlib
 from matplotlib.cm import ScalarMappable
 from matplotlib.collections import LineCollection, PolyCollection

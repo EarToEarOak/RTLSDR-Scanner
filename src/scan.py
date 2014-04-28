@@ -179,7 +179,10 @@ def update_spectrum(notify, lock, start, stop, freqCentre, data, offset,
     with lock:
         updated = False
         if average:
-            timeStamp = 0
+            if len(spectrum) > 0:
+                timeStamp = min(spectrum)
+            else:
+                timeStamp = data[0]
         else:
             timeStamp = data[0]
         scan = data[1]
