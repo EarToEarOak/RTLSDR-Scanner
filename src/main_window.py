@@ -40,7 +40,8 @@ from constants import F_MIN, F_MAX, MODE, DWELL, NFFT, DISPLAY, Warn, File, \
     Display, Cal, Mode
 from devices import get_devices_rtl
 from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, \
-    DialogDevicesRTL, DialogCompare, DialogAutoCal, DialogAbout, DialogSaveWarn
+    DialogDevicesRTL, DialogCompare, DialogAutoCal, DialogAbout, DialogSaveWarn, \
+    DialogDevicesGPS
 from events import EVT_THREAD_STATUS, Event, EventThreadStatus, post_event
 from file import save_plot, export_plot, open_plot, ScanInfo, export_image
 from misc import calc_samples, calc_real_dwell, \
@@ -98,7 +99,8 @@ class FrameMain(wx.Frame):
         self.menuProperties = None
         self.menuPref = None
         self.menuAdvPref = None
-        self.menuDevices = None
+        self.menuDevicesRtl = None
+        self.menuDevicesGps = None
         self.menuReset = None
         self.menuClearSelect = None
         self.menuShowMeasure = None
@@ -296,8 +298,10 @@ class FrameMain(wx.Frame):
                                         "Preferences")
         self.menuAdvPref = menuEdit.Append(wx.ID_ANY, "&Advanced preferences...",
                                            "Advanced preferences")
-        self.menuDevices = menuEdit.Append(wx.ID_ANY, "&Devices...",
-                                           "Device selection and configuration")
+        self.menuDevicesRtl = menuEdit.Append(wx.ID_ANY, "&Radio Devices...",
+                                              "Device selection and configuration")
+        self.menuDevicesGps = menuEdit.Append(wx.ID_ANY, "&GPS Devices...",
+                                              "GPS selection and configuration")
         menuEdit.AppendSeparator()
         self.menuReset = menuEdit.Append(wx.ID_ANY, "&Reset settings...",
                                          "Reset setting to the default")
@@ -357,7 +361,8 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.__on_exit, menuExit)
         self.Bind(wx.EVT_MENU, self.__on_pref, self.menuPref)
         self.Bind(wx.EVT_MENU, self.__on_adv_pref, self.menuAdvPref)
-        self.Bind(wx.EVT_MENU, self.__on_devices, self.menuDevices)
+        self.Bind(wx.EVT_MENU, self.__on_devices_rtl, self.menuDevicesRtl)
+        self.Bind(wx.EVT_MENU, self.__on_devices_gps, self.menuDevicesGps)
         self.Bind(wx.EVT_MENU, self.__on_reset, self.menuReset)
         self.Bind(wx.EVT_MENU, self.__on_clear_select, self.menuClearSelect)
         self.Bind(wx.EVT_MENU, self.__on_show_measure, self.menuShowMeasure)
@@ -387,8 +392,8 @@ class FrameMain(wx.Frame):
         self.popupMenu.AppendSeparator()
         self.popupMenuRangeLim = self.popupMenu.Append(wx.ID_ANY,
                                                        "Set range to current zoom",
-                                                      "Set scanning range to the "
-                                                      "current zoom")
+                                                       "Set scanning range to the "
+                                                       "current zoom")
         self.popupMenu.AppendSeparator()
         self.popupMenuPointsLim = self.popupMenu.Append(wx.ID_ANY,
                                                        "Limit points",
@@ -547,7 +552,7 @@ class FrameMain(wx.Frame):
             self.__set_control_state(True)
         dlg.Destroy()
 
-    def __on_devices(self, _event):
+    def __on_devices_rtl(self, _event):
         self.__get_controls()
         self.devicesRtl = self.__refresh_devices()
         dlg = DialogDevicesRTL(self, self.devicesRtl, self.settings)
@@ -557,6 +562,11 @@ class FrameMain(wx.Frame):
             self.__set_gain_control()
             self.__set_control_state(True)
             self.__set_controls()
+        dlg.Destroy()
+
+    def __on_devices_gps(self, _event):
+        dlg = DialogDevicesGPS(self, self.settings)
+        dlg.ShowModal()
         dlg.Destroy()
 
     def __on_reset(self, _event):
@@ -912,7 +922,8 @@ class FrameMain(wx.Frame):
         self.menuStop.Enable(not state)
         self.menuPref.Enable(state)
         self.menuAdvPref.Enable(state)
-        self.menuDevices.Enable(state)
+        self.menuDevicesRtl.Enable(state)
+        self.menuDevicesGps.Enable(state)
         self.menuReset.Enable(state)
         self.menuCal.Enable(state)
         self.popupMenuStop.Enable(not state)

@@ -39,7 +39,7 @@ from wx.lib.masked.numctrl import NumCtrl
 
 from constants import File, F_MIN, F_MAX, Cal, SAMPLE_RATE, BANDWIDTH, WINFUNC, \
     TUNER
-from devices import DeviceRTL
+from devices import DeviceRTL, DeviceGPS
 from file import open_plot
 from misc import close_modeless, format_time, ValidatorCoord, get_colours, \
     nearest, load_bitmap, get_version_timestamp
@@ -771,7 +771,7 @@ class DialogDevicesRTL(wx.Dialog):
         self.settings = settings
         self.index = None
 
-        wx.Dialog.__init__(self, parent=parent, title="Devices")
+        wx.Dialog.__init__(self, parent=parent, title="Radio Devices")
 
         self.gridDev = grid.Grid(self)
         self.gridDev.CreateGrid(len(self.devices), 9)
@@ -800,7 +800,7 @@ class DialogDevicesRTL(wx.Dialog):
         self.Bind(wx.EVT_BUTTON, self.__on_del, self.buttonDel)
         serverSizer.Add(buttonAdd, 0, wx.ALL)
         serverSizer.Add(self.buttonDel, 0, wx.ALL)
-        self.__button_state()
+        self.__set_button_state()
 
         buttonOk = wx.Button(self, wx.ID_OK)
         buttonCancel = wx.Button(self, wx.ID_CANCEL)
@@ -894,7 +894,7 @@ class DialogDevicesRTL(wx.Dialog):
             device.offset = float(self.gridDev.GetCellValue(i, self.COL_OFF)) * 1e3
             i += 1
 
-    def __button_state(self):
+    def __set_button_state(self):
         if len(self.devices) > 0:
             if self.devices[self.index].isDevice:
                 self.buttonDel.Disable()
@@ -938,14 +938,7 @@ class DialogDevicesRTL(wx.Dialog):
             self.gridDev.ForceRefresh()
             event.Skip()
 
-        self.__button_state()
-
-    def __on_ok(self, _event):
-        self.__get_dev_grid()
-        if self.__warn_duplicates():
-            return
-
-        self.EndModal(wx.ID_OK)
+        self.__set_button_state()
 
     def __on_add(self, _event):
         device = DeviceRTL()
@@ -960,7 +953,13 @@ class DialogDevicesRTL(wx.Dialog):
         self.gridDev.DeleteRows(self.index)
         self.__set_dev_grid()
         self.SetSizerAndFit(self.devbox)
-        self.__button_state()
+        self.__set_button_state()
+
+    def __on_ok(self, _event):
+        self.__get_dev_grid()
+        if self.__warn_duplicates():
+            return
+        self.EndModal(wx.ID_OK)
 
     def __select_row(self, index):
         self.gridDev.ClearSelection()
@@ -975,6 +974,150 @@ class DialogDevicesRTL(wx.Dialog):
 
     def get_devices(self):
         return self.devices
+
+
+class DialogDevicesGPS(wx.Dialog):
+    COL_SEL, COL_NAME, COL_DEV, COL_TYPE = range(4)
+
+    def __init__(self, parent, settings):
+        self.settings = settings
+        self.index = settings.indexGps
+        self.devices = copy.copy(settings.devicesGps)
+
+        wx.Dialog.__init__(self, parent=parent, title="GPS Devices")
+
+        self.gridDev = grid.Grid(self)
+        self.gridDev.CreateGrid(len(self.devices), 4)
+        self.gridDev.SetRowLabelSize(0)
+        self.gridDev.SetColLabelValue(self.COL_SEL, "Select")
+        self.gridDev.SetColLabelValue(self.COL_NAME, "Name")
+        self.gridDev.SetColLabelValue(self.COL_DEV, "Device")
+        self.gridDev.SetColLabelValue(self.COL_TYPE, "Type")
+
+        self.__set_dev_grid()
+        self.Bind(grid.EVT_GRID_CELL_LEFT_CLICK, self.__on_click)
+
+        sizerDevice = wx.BoxSizer(wx.HORIZONTAL)
+        buttonAdd = wx.Button(self, wx.ID_ADD)
+        self.buttonDel = wx.Button(self, wx.ID_DELETE)
+        self.Bind(wx.EVT_BUTTON, self.__on_add, buttonAdd)
+        self.Bind(wx.EVT_BUTTON, self.__on_del, self.buttonDel)
+        sizerDevice.Add(buttonAdd, 0, wx.ALL)
+        sizerDevice.Add(self.buttonDel, 0, wx.ALL)
+        self.__set_button_state()
+
+        buttonOk = wx.Button(self, wx.ID_OK)
+        buttonCancel = wx.Button(self, wx.ID_CANCEL)
+        sizerButtons = wx.StdDialogButtonSizer()
+        sizerButtons.AddButton(buttonOk)
+        sizerButtons.AddButton(buttonCancel)
+        sizerButtons.Realize()
+        self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
+
+        self.devbox = wx.BoxSizer(wx.VERTICAL)
+        self.devbox.Add(self.gridDev, 1, wx.ALL | wx.EXPAND, 10)
+        self.devbox.Add(sizerDevice, 0, wx.ALL | wx.EXPAND, 10)
+        self.devbox.Add(sizerButtons, 0, wx.ALL | wx.EXPAND, 10)
+
+        self.SetSizerAndFit(self.devbox)
+
+    def __set_dev_grid(self):
+        self.gridDev.ClearGrid()
+
+        i = 0
+        for device in self.devices:
+            self.gridDev.SetReadOnly(i, self.COL_SEL, True)
+            self.gridDev.SetCellRenderer(i, self.COL_SEL, CellRenderer())
+            self.gridDev.SetCellValue(i, self.COL_NAME, device.name)
+            self.gridDev.SetCellValue(i, self.COL_DEV, device.location)
+            cell = grid.GridCellChoiceEditor(DeviceGPS.TYPE, allowOthers=False)
+            self.gridDev.SetCellEditor(i, self.COL_TYPE, cell)
+            self.gridDev.SetCellValue(i, self.COL_TYPE, DeviceGPS.TYPE[device.type])
+            i += 1
+
+        if self.index >= len(self.devices):
+            self.index = len(self.devices) - 1
+        self.__select_row(self.index)
+        self.index = self.index
+
+        self.gridDev.AutoSize()
+
+    def __get_dev_grid(self):
+        i = 0
+        for device in self.devices:
+            device.name = self.gridDev.GetCellValue(i, self.COL_NAME)
+            device.location = self.gridDev.GetCellValue(i, self.COL_DEV)
+            device.type = DeviceGPS.TYPE.index(self.gridDev.GetCellValue(i, self.COL_TYPE))
+            i += 1
+
+    def __set_button_state(self):
+        if len(self.devices) > 0:
+            self.buttonDel.Enable()
+        else:
+            self.buttonDel.Disable()
+        if len(self.devices) == 1:
+            self.__select_row(0)
+
+    def __warn_duplicates(self):
+        devices = []
+        for device in self.devices:
+            devices.append(device.name)
+
+        dupes = set(devices)
+        if len(dupes) != len(devices):
+            message = "Duplicate device found:\n'{0}'".format(dupes.pop())
+            dlg = wx.MessageDialog(self, message, "Warning",
+                                   wx.OK | wx.ICON_WARNING)
+            dlg.ShowModal()
+            dlg.Destroy()
+            return True
+
+        return False
+
+    def __on_click(self, event):
+        col = event.GetCol()
+        index = event.GetRow()
+        if col == self.COL_SEL:
+            self.index = event.GetRow()
+            self.__select_row(index)
+        else:
+            self.gridDev.ForceRefresh()
+            event.Skip()
+
+    def __on_add(self, _event):
+        self.__get_dev_grid()
+        device = DeviceGPS()
+        self.devices.append(device)
+        self.gridDev.AppendRows(1)
+        self.__set_dev_grid()
+        self.SetSizerAndFit(self.devbox)
+        self.__set_button_state()
+
+    def __on_del(self, _event):
+        self.__get_dev_grid()
+        del self.devices[self.index]
+        self.gridDev.DeleteRows(self.index)
+        self.__set_dev_grid()
+        self.SetSizerAndFit(self.devbox)
+        self.__set_button_state()
+
+    def __on_ok(self, _event):
+        self.__get_dev_grid()
+        if self.__warn_duplicates():
+            return
+
+        self.settings.devicesGps = self.devices
+        self.settings.indexGps = self.index
+        self.EndModal(wx.ID_OK)
+
+    def __select_row(self, index):
+        self.index = index
+        self.gridDev.ClearSelection()
+        for i in range(0, len(self.devices)):
+            tick = "0"
+            if i == index:
+                tick = "1"
+            self.gridDev.SetCellValue(i, self.COL_SEL, tick)
 
 
 class DialogWinFunc(wx.Dialog):

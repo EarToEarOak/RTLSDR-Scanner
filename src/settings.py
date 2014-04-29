@@ -26,7 +26,7 @@
 import wx
 
 from constants import Display, Mode, PlotFunc
-from devices import DeviceRTL, format_device_rtl_name
+from devices import DeviceRTL, format_device_rtl_name, DeviceGPS
 
 
 class Settings():
@@ -79,6 +79,8 @@ class Settings():
 
         self.devicesRtl = []
         self.indexRtl = 0
+        self.devicesGps = []
+        self.indexGps = 0
 
         if load:
             self.__load()
@@ -114,6 +116,20 @@ class Settings():
             self.cfg.SetPath("/DevicesRTL")
             group = self.cfg.GetNextGroup(group[2])
 
+    def __load_devices_gps(self):
+        self.devicesGps = []
+        self.cfg.SetPath("/DevicesGPS")
+        group = self.cfg.GetFirstGroup()
+        while group[0]:
+            self.cfg.SetPath("/DevicesGPS/" + group[1])
+            device = DeviceGPS()
+            device.name = group[1]
+            device.type = self.cfg.ReadInt('type', device.type)
+            device.location = self.cfg.Read('location', device.location)
+            self.devicesGps.append(device)
+            self.cfg.SetPath("/DevicesGPS")
+            group = self.cfg.GetNextGroup(group[2])
+
     def __save_devices_rtl(self):
         self.__clear_servers()
 
@@ -133,6 +149,12 @@ class Settings():
                 self.cfg.WriteFloat('calibration', device.calibration)
                 self.cfg.WriteFloat('offset', device.offset)
                 self.cfg.WriteInt('tuner', device.tuner)
+
+    def __save_devices_gps(self):
+        for device in self.devicesGps:
+            self.cfg.SetPath("/DevicesGPS/" + device.name)
+            self.cfg.WriteInt('type', device.type)
+            self.cfg.Write('location', device.location)
 
     def __load(self):
         self.cfg = wx.Config('rtlsdr-scanner')
@@ -175,7 +197,9 @@ class Settings():
         self.exportDpi = self.cfg.ReadInt('exportDpi', self.exportDpi)
         self.indexRtl = self.cfg.ReadInt('index', self.indexRtl)
         self.indexRtl = self.cfg.ReadInt('indexRtl', self.indexRtl)
+        self.indexGps = self.cfg.ReadInt('indexGps', self.indexGps)
         self.__load_devices_rtl()
+        self.__load_devices_gps()
 
     def save(self):
         self.cfg.SetPath("/")
@@ -214,7 +238,9 @@ class Settings():
         self.cfg.WriteFloat('alertLevel', self.alertLevel)
         self.cfg.WriteInt('exportDpi', self.exportDpi)
         self.cfg.WriteInt('indexRtl', self.indexRtl)
+        self.cfg.WriteInt('indexGps', self.indexGps)
         self.__save_devices_rtl()
+        self.__save_devices_gps()
 
         self.cfg.DeleteEntry('autoScale')
         self.cfg.DeleteEntry('yMax')

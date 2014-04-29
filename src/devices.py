@@ -27,6 +27,16 @@ from ctypes import c_ubyte, string_at
 import rtlsdr
 
 
+class DeviceGPS():
+    NMEA, GPSD = range(2)
+    TYPE = ['NMEA', 'Gpsd']
+
+    def __init__(self):
+        self.name = 'GPS'
+        self.type = DeviceGPS.GPSD
+        self.location = 'localhost:2497'
+
+
 class DeviceRTL():
     def __init__(self):
         self.isDevice = True
