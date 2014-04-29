@@ -616,7 +616,7 @@ class ThreadPlot(threading.Thread):
             self.axes.plot(x, y, marker='x', markersize=10, color='r',
                            gid='peak')
         else:
-            effect = patheffects.withStroke(linewidth=3, foreground="w",
+            effect = patheffects.withStroke(linewidth=2, foreground="w",
                                             alpha=0.75)
             self.axes.annotate(text,
                                xy=(x, y), xytext=(textX, y),

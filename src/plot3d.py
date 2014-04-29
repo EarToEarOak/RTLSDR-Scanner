@@ -230,7 +230,7 @@ class ThreadPlot(threading.Thread):
             self.axes.plot([f], [tPos], [l], marker='x', markersize=10,
                            color='r', gid='peak')
         else:
-            effect = patheffects.withStroke(linewidth=3, foreground="w",
+            effect = patheffects.withStroke(linewidth=2, foreground="w",
                                             alpha=0.75)
             self.axes.text(f, tPos, l,
                            text,
