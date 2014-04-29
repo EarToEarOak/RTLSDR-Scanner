@@ -46,6 +46,7 @@ class Plotter3d():
         self.figure = figure
         self.settings = settings
         self.axes = None
+        self.bar = None
         self.plot = None
         self.extent = None
         self.threadPlot = None
@@ -63,9 +64,11 @@ class Plotter3d():
         self.axes.set_xlabel("Frequency (MHz)")
         self.axes.set_ylabel('Time')
         self.axes.set_zlabel('Level ($\mathsf{dB/\sqrt{Hz}}$)')
-        self.axes.w_xaxis.set_pane_color(hex2color(self.settings.background))
-        self.axes.w_yaxis.set_pane_color(hex2color(self.settings.background))
-        self.axes.w_zaxis.set_pane_color(hex2color(self.settings.background))
+        colour = hex2color(self.settings.background)
+        colour += (1,)
+        self.axes.w_xaxis.set_pane_color(colour)
+        self.axes.w_yaxis.set_pane_color(colour)
+        self.axes.w_zaxis.set_pane_color(colour)
         self.axes.xaxis.set_major_formatter(numformatter)
         self.axes.yaxis.set_major_formatter(timeFormatter)
         self.axes.zaxis.set_major_formatter(numformatter)
