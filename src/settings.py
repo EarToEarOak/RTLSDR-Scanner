@@ -210,6 +210,11 @@ class Settings():
         self.cfg.DeleteEntry('yMin')
         self.cfg.DeleteEntry('average')
 
+    def reset(self):
+        self.cfg.SetPath("/")
+        self.cfg.DeleteAll()
+        self.__init__()
+
 
 if __name__ == '__main__':
     print 'Please run rtlsdr_scan.py'

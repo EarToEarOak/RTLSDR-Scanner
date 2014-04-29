@@ -98,9 +98,10 @@ class FrameMain(wx.Frame):
         self.menuProperties = None
         self.menuPref = None
         self.menuAdvPref = None
+        self.menuDevices = None
+        self.menuReset = None
         self.menuClearSelect = None
         self.menuShowMeasure = None
-        self.menuDevices = None
         self.menuStart = None
         self.menuStop = None
         self.menuStopEnd = None
@@ -297,6 +298,9 @@ class FrameMain(wx.Frame):
                                            "Advanced preferences")
         self.menuDevices = menuEdit.Append(wx.ID_ANY, "&Devices...",
                                            "Device selection and configuration")
+        menuEdit.AppendSeparator()
+        self.menuReset = menuEdit.Append(wx.ID_ANY, "&Reset settings...",
+                                         "Reset setting to the default")
 
         menuView = wx.Menu()
         self.menuClearSelect = menuView.Append(wx.ID_ANY, "Clear selection",
@@ -352,6 +356,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.__on_pref, self.menuPref)
         self.Bind(wx.EVT_MENU, self.__on_adv_pref, self.menuAdvPref)
         self.Bind(wx.EVT_MENU, self.__on_devices, self.menuDevices)
+        self.Bind(wx.EVT_MENU, self.__on_reset, self.menuReset)
         self.Bind(wx.EVT_MENU, self.__on_clear_select, self.menuClearSelect)
         self.Bind(wx.EVT_MENU, self.__on_show_measure, self.menuShowMeasure)
         self.Bind(wx.EVT_MENU, self.__on_start, self.menuStart)
@@ -549,6 +554,18 @@ class FrameMain(wx.Frame):
             self.settings.index = dlg.get_index()
             self.__set_control_state(True)
             self.__set_controls()
+        dlg.Destroy()
+
+    def __on_reset(self, _event):
+        dlg = wx.MessageDialog(self,
+                               'Reset all settings to the default values\n'
+                               '(cannot be undone)?',
+                               'Reset Settings',
+                               wx.YES_NO | wx.ICON_QUESTION)
+        if dlg.ShowModal() == wx.ID_YES:
+            self.settings.reset()
+            self.__set_controls()
+            self.graph.create_plot()
         dlg.Destroy()
 
     def __on_compare(self, _event):
@@ -893,6 +910,7 @@ class FrameMain(wx.Frame):
         self.menuPref.Enable(state)
         self.menuAdvPref.Enable(state)
         self.menuDevices.Enable(state)
+        self.menuReset.Enable(state)
         self.menuCal.Enable(state)
         self.popupMenuStop.Enable(not state)
         self.popupMenuStart.Enable(state)
