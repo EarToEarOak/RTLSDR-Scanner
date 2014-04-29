@@ -26,7 +26,7 @@
 import wx
 
 from constants import Display, Mode, PlotFunc
-from devices import Device, format_device_name
+from devices import DeviceRTL, format_device_rtl_name
 
 
 class Settings():
@@ -77,25 +77,68 @@ class Settings():
 
         self.exportDpi = 600
 
-        self.devices = []
-        self.index = 0
+        self.devicesRtl = []
+        self.indexRtl = 0
 
         if load:
             self.__load()
 
     def __clear_servers(self):
-        self.cfg.SetPath("/Devices")
+        self.cfg.SetPath("/DevicesRTL")
         group = self.cfg.GetFirstGroup()
         while group[0]:
-            key = "/Devices/" + group[1]
+            key = "/DevicesRTL/" + group[1]
             self.cfg.SetPath(key)
             if not self.cfg.ReadBool('isDevice', True):
                 self.cfg.DeleteGroup(key)
-            self.cfg.SetPath("/Devices")
+            self.cfg.SetPath("/DevicesRTL")
             group = self.cfg.GetNextGroup(group[2])
+
+    def __load_devices_rtl(self):
+        self.cfg.SetPath("/DevicesRTL")
+        group = self.cfg.GetFirstGroup()
+        while group[0]:
+            self.cfg.SetPath("/DevicesRTL/" + group[1])
+            device = DeviceRTL()
+            device.name = group[1]
+            device.serial = self.cfg.Read('serial', '')
+            device.isDevice = self.cfg.ReadBool('isDevice', True)
+            device.server = self.cfg.Read('server', 'localhost')
+            device.port = self.cfg.ReadInt('port', 1234)
+            device.gain = self.cfg.ReadFloat('gain', 0)
+            device.calibration = self.cfg.ReadFloat('calibration', 0)
+            device.lo = self.cfg.ReadFloat('lo', 0)
+            device.offset = self.cfg.ReadFloat('offset', 250e3)
+            device.tuner = self.cfg.ReadInt('tuner', 0)
+            self.devicesRtl.append(device)
+            self.cfg.SetPath("/DevicesRTL")
+            group = self.cfg.GetNextGroup(group[2])
+
+    def __save_devices_rtl(self):
+        self.__clear_servers()
+
+        if self.devicesRtl:
+            for device in self.devicesRtl:
+                if device.isDevice:
+                    name = device.name
+                else:
+                    name = "{0}:{1}".format(device.server, device.port)
+                self.cfg.SetPath("/DevicesRTL/" + format_device_rtl_name(name))
+                self.cfg.Write('serial', device.serial)
+                self.cfg.WriteBool('isDevice', device.isDevice)
+                self.cfg.Write('server', device.server)
+                self.cfg.WriteInt('port', device.port)
+                self.cfg.WriteFloat('gain', device.gain)
+                self.cfg.WriteFloat('lo', device.lo)
+                self.cfg.WriteFloat('calibration', device.calibration)
+                self.cfg.WriteFloat('offset', device.offset)
+                self.cfg.WriteInt('tuner', device.tuner)
 
     def __load(self):
         self.cfg = wx.Config('rtlsdr-scanner')
+
+        self.cfg.RenameGroup('Devices', 'DevicesRTL')
+
         self.display = self.cfg.ReadInt('display', self.display)
         self.saveWarn = self.cfg.ReadBool('saveWarn', self.saveWarn)
         self.fileHistory.Load(self.cfg)
@@ -130,25 +173,9 @@ class Settings():
         self.alert = self.cfg.ReadBool('alert', self.alert)
         self.alertLevel = self.cfg.ReadFloat('alertLevel', self.alertLevel)
         self.exportDpi = self.cfg.ReadInt('exportDpi', self.exportDpi)
-        self.index = self.cfg.ReadInt('index', self.index)
-        self.cfg.SetPath("/Devices")
-        group = self.cfg.GetFirstGroup()
-        while group[0]:
-            self.cfg.SetPath("/Devices/" + group[1])
-            device = Device()
-            device.name = group[1]
-            device.serial = self.cfg.Read('serial', '')
-            device.isDevice = self.cfg.ReadBool('isDevice', True)
-            device.server = self.cfg.Read('server', 'localhost')
-            device.port = self.cfg.ReadInt('port', 1234)
-            device.gain = self.cfg.ReadFloat('gain', 0)
-            device.calibration = self.cfg.ReadFloat('calibration', 0)
-            device.lo = self.cfg.ReadFloat('lo', 0)
-            device.offset = self.cfg.ReadFloat('offset', 250e3)
-            device.tuner = self.cfg.ReadInt('tuner', 0)
-            self.devices.append(device)
-            self.cfg.SetPath("/Devices")
-            group = self.cfg.GetNextGroup(group[2])
+        self.indexRtl = self.cfg.ReadInt('index', self.indexRtl)
+        self.indexRtl = self.cfg.ReadInt('indexRtl', self.indexRtl)
+        self.__load_devices_rtl()
 
     def save(self):
         self.cfg.SetPath("/")
@@ -186,29 +213,14 @@ class Settings():
         self.cfg.WriteBool('alert', self.alert)
         self.cfg.WriteFloat('alertLevel', self.alertLevel)
         self.cfg.WriteInt('exportDpi', self.exportDpi)
-        self.cfg.WriteInt('index', self.index)
-        self.__clear_servers()
-        if self.devices:
-            for device in self.devices:
-                if device.isDevice:
-                    name = device.name
-                else:
-                    name = "{0}:{1}".format(device.server, device.port)
-                self.cfg.SetPath("/Devices/" + format_device_name(name))
-                self.cfg.Write('serial', device.serial)
-                self.cfg.WriteBool('isDevice', device.isDevice)
-                self.cfg.Write('server', device.server)
-                self.cfg.WriteInt('port', device.port)
-                self.cfg.WriteFloat('gain', device.gain)
-                self.cfg.WriteFloat('lo', device.lo)
-                self.cfg.WriteFloat('calibration', device.calibration)
-                self.cfg.WriteFloat('offset', device.offset)
-                self.cfg.WriteInt('tuner', device.tuner)
+        self.cfg.WriteInt('indexRtl', self.indexRtl)
+        self.__save_devices_rtl()
 
         self.cfg.DeleteEntry('autoScale')
         self.cfg.DeleteEntry('yMax')
         self.cfg.DeleteEntry('yMin')
         self.cfg.DeleteEntry('average')
+        self.cfg.DeleteEntry('index')
 
     def reset(self):
         self.cfg.SetPath("/")

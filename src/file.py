@@ -58,7 +58,7 @@ class ScanInfo():
         self.stop = settings.stop
         self.dwell = settings.dwell
         self.nfft = settings.nfft
-        device = settings.devices[settings.index]
+        device = settings.devicesRtl[settings.indexRtl]
         if device.isDevice:
             self.name = device.name
         else:

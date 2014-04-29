@@ -38,9 +38,9 @@ from wx.lib.masked import NumCtrl
 
 from constants import F_MIN, F_MAX, MODE, DWELL, NFFT, DISPLAY, Warn, File, \
     Display, Cal, Mode
-from devices import get_devices
+from devices import get_devices_rtl
 from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, \
-    DialogDevices, DialogCompare, DialogAutoCal, DialogAbout, DialogSaveWarn
+    DialogDevicesRTL, DialogCompare, DialogAutoCal, DialogAbout, DialogSaveWarn
 from events import EVT_THREAD_STATUS, Event, EventThreadStatus, post_event
 from file import save_plot, export_plot, open_plot, ScanInfo, export_image
 from misc import calc_samples, calc_real_dwell, \
@@ -140,7 +140,7 @@ class FrameMain(wx.Frame):
         self.isSaved = True
 
         self.settings = Settings()
-        self.devices = get_devices(self.settings.devices)
+        self.devicesRtl = get_devices_rtl(self.settings.devicesRtl)
         self.filename = ""
         self.oldCal = 0
 
@@ -528,7 +528,7 @@ class FrameMain(wx.Frame):
         self.graph.close()
         self.settings.dwell = DWELL[1::2][self.choiceDwell.GetSelection()]
         self.settings.nfft = NFFT[self.choiceNfft.GetSelection()]
-        self.settings.devices = self.devices
+        self.settings.devicesRtl = self.devicesRtl
         self.settings.save()
         self.Close(True)
 
@@ -549,11 +549,12 @@ class FrameMain(wx.Frame):
 
     def __on_devices(self, _event):
         self.__get_controls()
-        self.devices = self.__refresh_devices()
-        dlg = DialogDevices(self, self.devices, self.settings)
+        self.devicesRtl = self.__refresh_devices()
+        dlg = DialogDevicesRTL(self, self.devicesRtl, self.settings)
         if dlg.ShowModal() == wx.ID_OK:
-            self.devices = dlg.get_devices()
-            self.settings.index = dlg.get_index()
+            self.devicesRtl = dlg.get_devices()
+            self.settings.indexRtl = dlg.get_index()
+            self.__set_gain_control()
             self.__set_control_state(True)
             self.__set_controls()
         dlg.Destroy()
@@ -623,8 +624,8 @@ class FrameMain(wx.Frame):
         self.__get_controls()
         self.graph.clear_plots()
 
-        self.devices = self.__refresh_devices()
-        if len(self.devices) == 0:
+        self.devicesRtl = self.__refresh_devices()
+        if len(self.devicesRtl) == 0:
             wx.MessageBox('No devices found',
                           'Error', wx.OK | wx.ICON_ERROR)
         else:
@@ -701,11 +702,11 @@ class FrameMain(wx.Frame):
             if self.threadScan is not None:
                 self.sdr = self.threadScan.get_sdr()
                 if data is not None:
-                    self.devices[self.settings.index].tuner = data
+                    self.devicesRtl[self.settings.indexRtl].tuner = data
                     self.scanInfo.tuner = data
         elif status == Event.DATA:
             self.__saved(False)
-            cal = self.devices[self.settings.index].calibration
+            cal = self.devicesRtl[self.settings.indexRtl].calibration
             self.pool.apply_async(anaylse_data,
                                   (freq, data, cal,
                                    self.settings.nfft,
@@ -725,7 +726,7 @@ class FrameMain(wx.Frame):
                 self.dlgCal.Destroy()
                 self.dlgCal = None
         elif status == Event.PROCESSED:
-            offset = self.settings.devices[self.settings.index].offset
+            offset = self.settings.devicesRtl[self.settings.indexRtl].offset
             if self.settings.alert:
                 alert = self.settings.alertLevel
             else:
@@ -767,8 +768,8 @@ class FrameMain(wx.Frame):
             if status == Cal.START:
                 self.spinCtrlStart.SetValue(int(freq))
                 self.spinCtrlStop.SetValue(math.ceil(freq))
-                self.oldCal = self.devices[self.settings.index].calibration
-                self.devices[self.settings.index].calibration = 0
+                self.oldCal = self.devicesRtl[self.settings.indexRtl].calibration
+                self.devicesRtl[self.settings.indexRtl].calibration = 0
                 self.__get_controls()
                 self.spectrum.clear()
                 if not self.__start_scan(isCal=True):
@@ -778,13 +779,13 @@ class FrameMain(wx.Frame):
                 self.dlgCal.set_cal(ppm)
                 self.__set_control_state(True)
             elif status == Cal.OK:
-                self.devices[self.settings.index].calibration = self.dlgCal.get_cal()
+                self.devicesRtl[self.settings.indexRtl].calibration = self.dlgCal.get_cal()
                 self.settings.calFreq = freq
                 self.dlgCal = None
             elif status == Cal.CANCEL:
                 self.dlgCal = None
-                if len(self.devices) > 0:
-                    self.devices[self.settings.index].calibration = self.oldCal
+                if len(self.devicesRtl) > 0:
+                    self.devicesRtl[self.settings.indexRtl].calibration = self.oldCal
 
     def __calc_ppm(self, freq):
         with self.lock:
@@ -815,7 +816,7 @@ class FrameMain(wx.Frame):
             self.stopAtEnd = False
             self.stopScan = False
             self.threadScan = ThreadScan(self, self.sdr, self.settings,
-                                         self.settings.index, samples, isCal)
+                                         self.settings.indexRtl, samples, isCal)
             self.filename = "Scan {0:.1f}-{1:.1f}MHz".format(self.settings.start,
                                                             self.settings.stop)
             self.graph.set_plot_title()
@@ -891,7 +892,7 @@ class FrameMain(wx.Frame):
                                     extent, annotate)
 
     def __set_control_state(self, state):
-        hasDevices = len(self.devices) > 0
+        hasDevices = len(self.devicesRtl) > 0
         self.spinCtrlStart.Enable(state)
         self.spinCtrlStop.Enable(state)
         self.controlGain.Enable(state)
@@ -935,9 +936,9 @@ class FrameMain(wx.Frame):
 
     def __set_gain_control(self):
         grid = self.controlGain.GetContainingSizer()
-        if len(self.devices) > 0:
+        if len(self.devicesRtl) > 0:
             self.controlGain.Destroy()
-            device = self.devices[self.settings.index]
+            device = self.devicesRtl[self.settings.indexRtl]
             if device.isDevice:
                 gains = device.get_gains_str()
                 self.controlGain = wx.Choice(self.toolbar,
@@ -965,8 +966,8 @@ class FrameMain(wx.Frame):
         self.settings.nfft = NFFT[self.choiceNfft.GetSelection()]
         self.settings.display = DISPLAY[1::2][self.choiceDisplay.GetSelection()]
 
-        if len(self.devices) > 0:
-            device = self.devices[self.settings.index]
+        if len(self.devicesRtl) > 0:
+            device = self.devicesRtl[self.settings.indexRtl]
             try:
                 if device.isDevice:
                     device.gain = float(self.controlGain.GetStringSelection())
@@ -1029,11 +1030,11 @@ class FrameMain(wx.Frame):
         dlg.Destroy()
 
     def __refresh_devices(self):
-        self.settings.devices = get_devices(self.devices, self.status)
-        if self.settings.index > len(self.devices) - 1:
-            self.settings.index = 0
+        self.settings.devicesRtl = get_devices_rtl(self.devicesRtl, self.status)
+        if self.settings.indexRtl > len(self.devicesRtl) - 1:
+            self.settings.indexRtl = 0
         self.settings.save()
-        return self.settings.devices
+        return self.settings.devicesRtl
 
     def __wait_background(self):
         self.Disconnect(-1, -1, EVT_THREAD_STATUS, self.__on_event)

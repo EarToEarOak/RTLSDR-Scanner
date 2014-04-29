@@ -49,7 +49,6 @@ class Spectrogram:
         self.figure = figure
         self.settings = settings
         self.data = [[], [], []]
-        self.index = 0
         self.axes = None
         self.plot = None
         self.extent = None

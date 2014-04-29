@@ -27,10 +27,10 @@ from ctypes import c_ubyte, string_at
 import rtlsdr
 
 
-class Device():
+class DeviceRTL():
     def __init__(self):
         self.isDevice = True
-        self.index = None
+        self.indexRtl = None
         self.name = None
         self.serial = ''
         self.server = 'localhost'
@@ -62,7 +62,7 @@ class Device():
         return str(gain)
 
 
-def get_devices(currentDevices=[], statusBar=None):
+def get_devices_rtl(currentDevices=[], statusBar=None):
     if statusBar is not None:
         statusBar.set_general("Refreshing device list...")
 
@@ -70,9 +70,9 @@ def get_devices(currentDevices=[], statusBar=None):
     count = rtlsdr.librtlsdr.rtlsdr_get_device_count()
 
     for dev in range(0, count):
-        device = Device()
-        device.index = dev
-        device.name = format_device_name(rtlsdr.librtlsdr.rtlsdr_get_device_name(dev))
+        device = DeviceRTL()
+        device.indexRtl = dev
+        device.name = format_device_rtl_name(rtlsdr.librtlsdr.rtlsdr_get_device_name(dev))
         buffer1 = (c_ubyte * 256)()
         buffer2 = (c_ubyte * 256)()
         serial = (c_ubyte * 256)()
@@ -102,7 +102,7 @@ def get_devices(currentDevices=[], statusBar=None):
     return devices
 
 
-def format_device_name(name):
+def format_device_rtl_name(name):
     remove = ["/", "\\"]
     for char in remove:
         name = name.replace(char, " ")

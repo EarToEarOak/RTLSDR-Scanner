@@ -46,13 +46,13 @@ class ThreadScan(threading.Thread):
         self.fstop = settings.stop * 1e6
         self.samples = int(samples)
         self.isCal = isCal
-        self.index = settings.index
-        self.isDevice = settings.devices[device].isDevice
-        self.server = settings.devices[device].server
-        self.port = settings.devices[device].port
-        self.gain = settings.devices[device].gain
-        self.lo = settings.devices[device].lo * 1e6
-        self.offset = settings.devices[device].offset
+        self.indexRtl = settings.indexRtl
+        self.isDevice = settings.devicesRtl[device].isDevice
+        self.server = settings.devicesRtl[device].server
+        self.port = settings.devicesRtl[device].port
+        self.gain = settings.devicesRtl[device].gain
+        self.lo = settings.devicesRtl[device].lo * 1e6
+        self.offset = settings.devicesRtl[device].offset
         self.cancel = False
 
         post_event(self.notify, EventThreadStatus(Event.STARTING))
@@ -78,7 +78,7 @@ class ThreadScan(threading.Thread):
 
         if self.isDevice:
             try:
-                self.sdr = rtlsdr.RtlSdr(self.index)
+                self.sdr = rtlsdr.RtlSdr(self.indexRtl)
                 self.sdr.set_sample_rate(SAMPLE_RATE)
                 self.sdr.set_manual_gain_enabled(1)
                 self.sdr.set_gain(self.gain)

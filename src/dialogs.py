@@ -39,7 +39,7 @@ from wx.lib.masked.numctrl import NumCtrl
 
 from constants import File, F_MIN, F_MAX, Cal, SAMPLE_RATE, BANDWIDTH, WINFUNC, \
     TUNER
-from devices import Device
+from devices import DeviceRTL
 from file import open_plot
 from misc import close_modeless, format_time, ValidatorCoord, get_colours, \
     nearest, load_bitmap, get_version_timestamp
@@ -123,7 +123,7 @@ class DialogAutoCal(wx.Dialog):
                                         min=F_MIN, max=F_MAX)
 
         self.buttonCal = wx.Button(self, label="Calibrate")
-        if len(parent.devices) == 0:
+        if len(parent.devicesRtl) == 0:
             self.buttonCal.Disable()
         self.buttonCal.Bind(wx.EVT_BUTTON, self.__on_cal)
         self.textResult = wx.StaticText(self)
@@ -303,7 +303,7 @@ class DialogOffset(wx.Dialog):
 
         try:
             if self.device.isDevice:
-                sdr = rtlsdr.RtlSdr(self.device.index)
+                sdr = rtlsdr.RtlSdr(self.device.indexRtl)
             else:
                 sdr = RtlTcp(self.device.server, self.device.port)
             sdr.set_sample_rate(SAMPLE_RATE)
@@ -762,7 +762,7 @@ class DialogAdvPrefs(wx.Dialog):
         self.EndModal(wx.ID_OK)
 
 
-class DialogDevices(wx.Dialog):
+class DialogDevicesRTL(wx.Dialog):
     COL_SEL, COL_DEV, COL_TUN, COL_SER, COL_IND, \
     COL_GAIN, COL_CAL, COL_LO, COL_OFF = range(9)
 
@@ -866,10 +866,10 @@ class DialogDevices(wx.Dialog):
             self.gridDev.SetCellValue(i, self.COL_OFF, str(device.offset / 1e3))
             i += 1
 
-        if self.settings.index >= len(self.devices):
-            self.settings.index = len(self.devices) - 1
-        self.__select_row(self.settings.index)
-        self.index = self.settings.index
+        if self.settings.indexRtl >= len(self.devices):
+            self.settings.indexRtl = len(self.devices) - 1
+        self.__select_row(self.settings.indexRtl)
+        self.index = self.settings.indexRtl
 
         self.gridDev.AutoSize()
 
@@ -948,7 +948,7 @@ class DialogDevices(wx.Dialog):
         self.EndModal(wx.ID_OK)
 
     def __on_add(self, _event):
-        device = Device()
+        device = DeviceRTL()
         device.isDevice = False
         self.devices.append(device)
         self.gridDev.AppendRows(1)
