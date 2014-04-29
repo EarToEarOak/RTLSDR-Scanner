@@ -328,8 +328,10 @@ class FrameMain(wx.Frame):
         menuHelp = wx.Menu()
         menuHelpLink = menuHelp.Append(wx.ID_HELP, "&Help...",
                                        "Link to help")
+        menuHelp.AppendSeparator()
         menuUpdate = menuHelp.Append(wx.ID_ANY, "&Check for updates...",
                                      "Check for updates to the program")
+        menuHelp.AppendSeparator()
         menuAbout = menuHelp.Append(wx.ID_ABOUT, "&About...",
                                     "Information about this program")
 
