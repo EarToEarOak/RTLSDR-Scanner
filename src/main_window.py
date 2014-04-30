@@ -44,7 +44,7 @@ from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, \
     DialogDevicesGPS
 from events import EVT_THREAD_STATUS, Event, EventThreadStatus, post_event
 from file import save_plot, export_plot, open_plot, ScanInfo, export_image
-from location import Location
+from location import ThreadLocation
 from misc import calc_samples, calc_real_dwell, \
     get_version_timestamp, get_version_timestamp_repo, add_colours
 from printer import PrintOut
@@ -84,6 +84,7 @@ class FrameMain(wx.Frame):
         self.sdr = None
         self.threadScan = None
         self.threadUpdate = None
+        self.threadLocation = None
 
         self.stopAtEnd = False
         self.stopScan = False
@@ -146,8 +147,6 @@ class FrameMain(wx.Frame):
         self.devicesRtl = get_devices_rtl(self.settings.devicesRtl)
         self.filename = ""
         self.oldCal = 0
-
-        self.location = None
 
         self.pageConfig = wx.PageSetupDialogData()
         self.pageConfig.GetPrintData().SetOrientation(wx.LANDSCAPE)
@@ -755,9 +754,9 @@ class FrameMain(wx.Frame):
         elif status == Event.UPDATED:
             if data and self.settings.liveUpdate:
                 self.__set_plot(self.spectrum,
-                              self.settings.annotate and \
-                              self.settings.retainScans and \
-                              self.settings.mode == Mode.CONTIN)
+                                self.settings.annotate and \
+                                self.settings.retainScans and \
+                                self.settings.mode == Mode.CONTIN)
             self.__progress()
         elif status == Event.DRAW:
             self.graph.draw()
@@ -775,9 +774,6 @@ class FrameMain(wx.Frame):
                     self.scanInfo.lat = str(data[0])
                 if data[1]:
                     self.scanInfo.lon = str(data[1])
-                if self.location:
-                    self.location.stop()
-                    self.location = None
 
         wx.YieldIfNeeded()
 
@@ -846,10 +842,11 @@ class FrameMain(wx.Frame):
             self.graph.set_plot_title()
 
             if self.settings.gps:
-                if self.location:
-                    self.location.stop()
-                    self.location = None
-                self.location = Location(self, self.settings)
+                if self.threadLocation:
+                    self.threadLocation.stop()
+                    self.threadLocation.join()
+                    self.threadLocation = None
+                self.threadLocation = ThreadLocation(self, self.settings)
 
             return True
 
@@ -859,11 +856,12 @@ class FrameMain(wx.Frame):
             self.threadScan.abort()
             self.threadScan.join()
             self.threadScan = None
+        if self.threadLocation:
+            self.threadLocation.stop()
+            self.threadLocation.join()
+            self.threadLocation = None
         if self.sdr is not None:
             self.sdr.close()
-        if self.location is not None:
-            self.location.stop()
-            self.location = None
         self.__set_control_state(True)
 
     def __progress(self):
@@ -895,9 +893,10 @@ class FrameMain(wx.Frame):
         if self.sdr is not None:
             self.sdr.close()
             self.sdr = None
-        if self.location is not None:
-            self.location.stop()
-            self.location = None
+        if self.threadLocation:
+            self.threadLocation.stop()
+            self.threadLocation.join()
+            self.threadLocation = None
 
         self.status.hide_progress()
         self.steps = 0

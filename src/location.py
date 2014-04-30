@@ -35,33 +35,17 @@ from devices import DeviceGPS
 from events import post_event, EventThreadStatus, Event
 
 
-class Location():
-    def __init__(self, notify, settings):
-        self.thread = None
-        if settings.indexGps == -1:
-            post_event(notify, EventThreadStatus(Event.LOC_WARN,
-                                                 0, 'No devices specified'))
-            return
-        device = settings.devicesGps[settings.indexGps]
-        self.thread = ThreadLocation(notify, device)
-
-    def stop(self):
-        if self.thread:
-            self.thread.stop()
-            self.thread.join()
-
-
 class ThreadLocation(threading.Thread):
-    def __init__(self, notify, device):
+    def __init__(self, notify, settings):
         threading.Thread.__init__(self)
         self.name = 'Location'
         self.notify = notify
-        self.device = device
+        self.device = settings.devicesGps[settings.indexGps]
         self.cancel = False
         self.socket = None
         self.serial = None
 
-        if device.type == DeviceGPS.GPSD:
+        if self.device.type == DeviceGPS.GPSD:
             if self.__gpsd_open():
                 self.start()
         else:
