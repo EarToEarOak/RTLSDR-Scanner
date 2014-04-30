@@ -120,7 +120,7 @@ class Plotter3d():
         return self.threadPlot
 
     def set_title(self, title):
-        self.axes.set_title(title)
+        self.axes.set_title(title, fontsize='medium')
 
     def set_plot(self, data, extent, annotate=False):
         self.extent = extent

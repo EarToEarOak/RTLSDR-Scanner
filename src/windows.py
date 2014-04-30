@@ -272,9 +272,9 @@ class PanelGraph(wx.Panel):
             gain = self.settings.devices[self.settings.index].gain
         else:
             gain = 0
-        self.figure.suptitle("Frequency Spectrogram\n{0} - {1} MHz,"
-                             " gain = {2}dB".format(self.settings.start,
-                                                    self.settings.stop, gain))
+        self.plot.set_title("Frequency Spectrogram\n{0} - {1} MHz,"
+                            " gain = {2}dB".format(self.settings.start,
+                                                   self.settings.stop, gain))
 
     def redraw_plot(self):
         if self.spectrum is not None:
