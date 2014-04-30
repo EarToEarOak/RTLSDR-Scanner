@@ -109,12 +109,14 @@ class ThreadLocation(threading.Thread):
             data = json.loads(resp)
             if data['class'] == 'TPV':
                 if data['mode'] in [2, 3]:
-                    lat = data['lat']
-                    lon = data['lon']
-                    # TODO test properly
-#                     print lat, lon
-                    post_event(self.notify, EventThreadStatus(Event.LOC,
-                                                              0, (lat, lon)))
+                    try:
+                        lat = data['lat']
+                        lon = data['lon']
+                        alt = data['alt']
+                        post_event(self.notify,
+                                   EventThreadStatus(Event.LOC, 0, (lat, lon, alt)))
+                    except KeyError:
+                        pass
 
     def __gpsd_close(self):
         self.socket.sendall('?WATCH={"enable": false}')
@@ -150,9 +152,10 @@ class ThreadLocation(threading.Thread):
                         if data[6] in ['1', '2']:
                             lat = self.__nmea_coord(data[2], data[3])
                             lon = self.__nmea_coord(data[4], data[5])
+                            alt = data[9]
                             post_event(self.notify,
                                        EventThreadStatus(Event.LOC, 0,
-                                                         (lat, lon)))
+                                                         (lat, lon, alt)))
 
     def __nmea_checksum(self, data):
         checksum = 0
@@ -165,17 +168,23 @@ class ThreadLocation(threading.Thread):
 
         if '.' in coord:
             if coord.index('.') == 4:
-                degrees = int(coord[:2])
-                minutes = float(coord[2:])
-                pos = degrees + minutes / 60.
-                if orient == 'S':
-                    pos = -pos
+                try:
+                    degrees = int(coord[:2])
+                    minutes = float(coord[2:])
+                    pos = degrees + minutes / 60.
+                    if orient == 'S':
+                        pos = -pos
+                except ValueError:
+                    pass
             elif coord.index('.') == 5:
-                degrees = int(coord[:3])
-                minutes = float(coord[3:])
-                pos = degrees + minutes / 60.
-                if orient == 'W':
-                    pos = -pos
+                try:
+                    degrees = int(coord[:3])
+                    minutes = float(coord[3:])
+                    pos = degrees + minutes / 60.
+                    if orient == 'W':
+                        pos = -pos
+                except ValueError:
+                    pass
 
         return pos
 
