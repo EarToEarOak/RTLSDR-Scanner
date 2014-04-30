@@ -25,16 +25,33 @@
 from ctypes import c_ubyte, string_at
 
 import rtlsdr
+import serial
 
 
 class DeviceGPS():
     NMEA, GPSD = range(2)
     TYPE = ['NMEA', 'Gpsd']
+    BAUDS = [50, 75, 110, 134, 150, 200, 300, 600, 1200, 1800, 2400, 4800,
+             9600, 19200, 38400, 57600, 115200]
+    BYTES = [serial.FIVEBITS, serial.SIXBITS, serial.SEVENBITS,
+             serial.EIGHTBITS]
+    PARITIES = [serial.PARITY_NONE, serial.PARITY_EVEN, serial.PARITY_ODD,
+                serial.PARITY_MARK, serial.PARITY_SPACE]
+    STOPS = [serial.STOPBITS_ONE, serial.STOPBITS_ONE_POINT_FIVE,
+             serial.STOPBITS_TWO]
 
     def __init__(self):
         self.name = 'GPS'
         self.type = DeviceGPS.GPSD
         self.resource = 'localhost:2947'
+        self.baud = 115200
+        self.bytes = serial.EIGHTBITS
+        self.parity = serial.PARITY_NONE
+        self.stops = serial.STOPBITS_ONE
+        self.soft = False
+
+    def get_serial_desc(self):
+        return '{0}-{1}{2}{3}'.format(self.baud, self.bytes, self.parity, self.stops)
 
 
 class DeviceRTL():

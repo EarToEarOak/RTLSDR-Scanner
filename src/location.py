@@ -48,6 +48,7 @@ class Location():
     def stop(self):
         if self.thread:
             self.thread.stop()
+            self.thread.join()
 
 
 class ThreadLocation(threading.Thread):
@@ -110,7 +111,8 @@ class ThreadLocation(threading.Thread):
                 if data['mode'] in [2, 3]:
                     lat = data['lat']
                     lon = data['lon']
-                    print lat, lon
+                    # TODO test properly
+#                     print lat, lon
                     post_event(self.notify, EventThreadStatus(Event.LOC,
                                                               0, (lat, lon)))
 
@@ -120,7 +122,13 @@ class ThreadLocation(threading.Thread):
 
     def __nmea_open(self):
         try:
-            self.serial = serial.Serial(self.device.resource, 19200, timeout=5)
+            self.serial = serial.Serial(self.device.resource,
+                                        baudrate=self.device.baud,
+                                        bytesize=self.device.bytes,
+                                        parity=self.device.parity,
+                                        stopbits=self.device.stops,
+                                        xonxoff=self.device.soft,
+                                        timeout=1)
         except SerialException as error:
             post_event(self.notify, EventThreadStatus(Event.LOC_WARN,
                                                       0, error.message))

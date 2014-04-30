@@ -984,7 +984,7 @@ class DialogDevicesRTL(wx.Dialog):
 
 
 class DialogDevicesGPS(wx.Dialog):
-    COL_SEL, COL_NAME, COL_DEV, COL_TYPE = range(4)
+    COL_SEL, COL_NAME, COL_DEV, COL_SET, COL_TYPE = range(5)
 
     def __init__(self, parent, settings):
         self.settings = settings
@@ -996,11 +996,12 @@ class DialogDevicesGPS(wx.Dialog):
         self.comms = [port for port in serial.tools.list_ports.comports()]
 
         self.gridDev = grid.Grid(self)
-        self.gridDev.CreateGrid(len(self.devices), 4)
+        self.gridDev.CreateGrid(len(self.devices), 5)
         self.gridDev.SetRowLabelSize(0)
         self.gridDev.SetColLabelValue(self.COL_SEL, "Select")
         self.gridDev.SetColLabelValue(self.COL_NAME, "Name")
         self.gridDev.SetColLabelValue(self.COL_DEV, "Device")
+        self.gridDev.SetColLabelValue(self.COL_SET, "Settings")
         self.gridDev.SetColLabelValue(self.COL_TYPE, "Type")
 
         self.__set_dev_grid()
@@ -1051,7 +1052,17 @@ class DialogDevicesGPS(wx.Dialog):
             self.gridDev.SetCellValue(i, self.COL_DEV, device.resource)
             cell = grid.GridCellChoiceEditor(DeviceGPS.TYPE, allowOthers=False)
             self.gridDev.SetCellEditor(i, self.COL_TYPE, cell)
-            self.gridDev.SetCellValue(i, self.COL_TYPE, DeviceGPS.TYPE[device.type])
+            self.gridDev.SetReadOnly(i, self.COL_SET, True)
+            if device.type == DeviceGPS.NMEA:
+                self.gridDev.SetCellValue(i, self.COL_SET,
+                                          device.get_serial_desc())
+                self.gridDev.SetCellAlignment(i, self.COL_SET,
+                                              wx.ALIGN_CENTRE, wx.ALIGN_CENTRE)
+            else:
+                colour = self.gridDev.GetLabelBackgroundColour()
+                self.gridDev.SetCellBackgroundColour(i, self.COL_SET, colour)
+            self.gridDev.SetCellValue(i, self.COL_TYPE,
+                                      DeviceGPS.TYPE[device.type])
             i += 1
 
         if self.index >= len(self.devices):
@@ -1102,6 +1113,14 @@ class DialogDevicesGPS(wx.Dialog):
         if col == self.COL_SEL:
             self.index = event.GetRow()
             self.__select_row(index)
+        if col == self.COL_SET:
+            device = self.devices[index]
+            if device.type == DeviceGPS.NMEA:
+                dlg = DialogComm(self, device)
+                dlg.ShowModal()
+                dlg.Destroy()
+                self.gridDev.SetCellValue(index, self.COL_SET,
+                                          device.get_serial_desc())
         else:
             self.gridDev.ForceRefresh()
             event.Skip()
@@ -1226,6 +1245,67 @@ class DialogWinFunc(wx.Dialog):
 
     def get_win_func(self):
         return self.winFunc
+
+
+class DialogComm(wx.Dialog):
+    def __init__(self, parent, device):
+        self.device = device
+
+        wx.Dialog.__init__(self, parent=parent, title='Communication settings')
+
+        textBaud = wx.StaticText(self, label='Baud rate')
+        self.choiceBaud = wx.Choice(self,
+                                    choices=[str(baud) for baud in DeviceGPS.BAUDS])
+        self.choiceBaud.SetSelection(DeviceGPS.BAUDS.index(device.baud))
+        textByte = wx.StaticText(self, label='Byte size')
+        self.choiceBytes = wx.Choice(self,
+                                     choices=[str(byte) for byte in DeviceGPS.BYTES])
+        self.choiceBytes.SetSelection(DeviceGPS.BYTES.index(device.bytes))
+        textParity = wx.StaticText(self, label='Parity')
+        self.choiceParity = wx.Choice(self, choices=DeviceGPS.PARITIES)
+        self.choiceParity.SetSelection(DeviceGPS.PARITIES.index(device.parity))
+        textStop = wx.StaticText(self, label='Stop bits')
+        self.choiceStops = wx.Choice(self,
+                                     choices=[str(stop) for stop in DeviceGPS.STOPS])
+        self.choiceStops.SetSelection(DeviceGPS.STOPS.index(device.stops))
+        textSoft = wx.StaticText(self, label='Software flow control')
+        self.checkSoft = wx.CheckBox(self)
+        self.checkSoft.SetValue(device.soft)
+
+        buttonOk = wx.Button(self, wx.ID_OK)
+        buttonCancel = wx.Button(self, wx.ID_CANCEL)
+        sizerButtons = wx.StdDialogButtonSizer()
+        sizerButtons.AddButton(buttonOk)
+        sizerButtons.AddButton(buttonCancel)
+        sizerButtons.Realize()
+        self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
+
+        grid = wx.GridBagSizer(10, 10)
+        grid.Add(textBaud, pos=(0, 0), flag=wx.ALL)
+        grid.Add(self.choiceBaud, pos=(0, 1), flag=wx.ALL)
+        grid.Add(textByte, pos=(1, 0), flag=wx.ALL)
+        grid.Add(self.choiceBytes, pos=(1, 1), flag=wx.ALL)
+        grid.Add(textParity, pos=(2, 0), flag=wx.ALL)
+        grid.Add(self.choiceParity, pos=(2, 1), flag=wx.ALL)
+        grid.Add(textStop, pos=(3, 0), flag=wx.ALL)
+        grid.Add(self.choiceStops, pos=(3, 1), flag=wx.ALL)
+        grid.Add(textSoft, pos=(4, 0), flag=wx.ALL)
+        grid.Add(self.checkSoft, pos=(4, 1), flag=wx.ALL)
+
+        box = wx.BoxSizer(wx.VERTICAL)
+        box.Add(grid, flag=wx.ALL, border=10)
+        box.Add(sizerButtons, flag=wx.ALL | wx.ALIGN_RIGHT, border=10)
+
+        self.SetSizerAndFit(box)
+
+    def __on_ok(self, _event):
+        self.device.baud = DeviceGPS.BAUDS[self.choiceBaud.GetSelection()]
+        self.device.bytes = DeviceGPS.BYTES[self.choiceBytes.GetSelection()]
+        self.device.parity = DeviceGPS.PARITIES[self.choiceParity.GetSelection()]
+        self.device.stops = DeviceGPS.STOPS[self.choiceStops.GetSelection()]
+        self.device.soft = self.checkSoft.GetValue()
+
+        self.EndModal(wx.ID_OK)
 
 
 class DialogSaveWarn(wx.Dialog):

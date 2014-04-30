@@ -128,6 +128,11 @@ class Settings():
             device.name = group[1]
             device.type = self.cfg.ReadInt('type', device.type)
             device.resource = self.cfg.Read('resource', device.resource)
+            device.baud = self.cfg.ReadInt('baud', device.baud)
+            device.bytes = self.cfg.ReadInt('bytes', device.bytes)
+            device.parity = self.cfg.Read('parity', device.parity)
+            device.stops = self.cfg.ReadInt('stops', device.stops)
+            device.soft = self.cfg.ReadBool('soft', device.soft)
             self.devicesGps.append(device)
             self.cfg.SetPath("/DevicesGPS")
             group = self.cfg.GetNextGroup(group[2])
@@ -158,6 +163,11 @@ class Settings():
             self.cfg.SetPath("/DevicesGPS/" + device.name)
             self.cfg.WriteInt('type', device.type)
             self.cfg.Write('resource', device.resource)
+            self.cfg.WriteInt('baud', device.baud)
+            self.cfg.WriteInt('bytes', device.bytes)
+            self.cfg.Write('parity', device.parity)
+            self.cfg.WriteInt('stops', device.stops)
+            self.cfg.WriteBool('soft', device.soft)
 
     def __load(self):
         self.cfg = wx.Config('rtlsdr-scanner')
