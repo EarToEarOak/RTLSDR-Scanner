@@ -34,7 +34,7 @@ class DeviceGPS():
     def __init__(self):
         self.name = 'GPS'
         self.type = DeviceGPS.GPSD
-        self.location = 'localhost:2497'
+        self.resource = 'localhost:2947'
 
 
 class DeviceRTL():

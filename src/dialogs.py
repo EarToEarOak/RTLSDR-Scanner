@@ -31,6 +31,7 @@ import matplotlib
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 import numpy
 import rtlsdr
+import serial.tools.list_ports
 from wx import grid
 import wx
 from wx.lib import masked
@@ -580,6 +581,10 @@ class DialogPrefs(wx.Dialog):
         self.spinDpi = wx.SpinCtrl(self, wx.ID_ANY, min=72, max=6000)
         self.spinDpi.SetValue(settings.exportDpi)
         self.spinDpi.SetToolTip(wx.ToolTip('DPI of exported images'))
+        self.checkGps = wx.CheckBox(self, wx.ID_ANY,
+                                      "Use GPS")
+        self.checkGps.SetValue(settings.gps)
+        self.checkGps.SetToolTip(wx.ToolTip('Record GPS location'))
 
         self.radioAvg = wx.RadioButton(self, wx.ID_ANY, 'Average Scans',
                                        style=wx.RB_GROUP)
@@ -628,6 +633,7 @@ class DialogPrefs(wx.Dialog):
         gengrid.Add(self.spinPoints, pos=(4, 1))
         gengrid.Add(textDpi, pos=(5, 0))
         gengrid.Add(self.spinDpi, pos=(5, 1))
+        gengrid.Add(self.checkGps, pos=(6, 0))
         genbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "General"))
         genbox.Add(gengrid, 0, wx.ALL | wx.ALIGN_CENTRE_VERTICAL, 10)
 
@@ -695,6 +701,7 @@ class DialogPrefs(wx.Dialog):
         self.settings.saveWarn = self.checkSaved.GetValue()
         self.settings.alert = self.checkAlert.GetValue()
         self.settings.alertLevel = self.spinLevel.GetValue()
+        self.settings.gps = self.checkGps.GetValue()
         self.settings.pointsLimit = self.checkPoints.GetValue()
         self.settings.pointsMax = self.spinPoints.GetValue()
         self.settings.exportDpi = self.spinDpi.GetValue()
@@ -883,7 +890,7 @@ class DialogDevicesRTL(wx.Dialog):
                 if url.hostname is not None:
                     device.server = url.hostname
                 else:
-                    device.port = 'localhost'
+                    device.server = 'localhost'
                 if url.port is not None:
                     device.port = url.port
                 else:
@@ -986,6 +993,8 @@ class DialogDevicesGPS(wx.Dialog):
 
         wx.Dialog.__init__(self, parent=parent, title="GPS Devices")
 
+        self.comms = [port for port in serial.tools.list_ports.comports()]
+
         self.gridDev = grid.Grid(self)
         self.gridDev.CreateGrid(len(self.devices), 4)
         self.gridDev.SetRowLabelSize(0)
@@ -995,7 +1004,6 @@ class DialogDevicesGPS(wx.Dialog):
         self.gridDev.SetColLabelValue(self.COL_TYPE, "Type")
 
         self.__set_dev_grid()
-        self.Bind(grid.EVT_GRID_CELL_LEFT_CLICK, self.__on_click)
 
         sizerDevice = wx.BoxSizer(wx.HORIZONTAL)
         buttonAdd = wx.Button(self, wx.ID_ADD)
@@ -1022,6 +1030,8 @@ class DialogDevicesGPS(wx.Dialog):
         self.SetSizerAndFit(self.devbox)
 
     def __set_dev_grid(self):
+        self.Unbind(grid.EVT_GRID_CELL_LEFT_CLICK)
+        self.Unbind(grid.EVT_GRID_CELL_CHANGE)
         self.gridDev.ClearGrid()
 
         i = 0
@@ -1029,7 +1039,16 @@ class DialogDevicesGPS(wx.Dialog):
             self.gridDev.SetReadOnly(i, self.COL_SEL, True)
             self.gridDev.SetCellRenderer(i, self.COL_SEL, CellRenderer())
             self.gridDev.SetCellValue(i, self.COL_NAME, device.name)
-            self.gridDev.SetCellValue(i, self.COL_DEV, device.location)
+            if device.type == DeviceGPS.NMEA:
+                ports = [name[0] for name in self.comms]
+                if not device.resource in ports:
+                    ports.append(device.resource)
+                    ports.sort()
+                cell = grid.GridCellChoiceEditor(ports, allowOthers=True)
+            else:
+                cell = grid.GridCellTextEditor()
+            self.gridDev.SetCellEditor(i, self.COL_DEV, cell)
+            self.gridDev.SetCellValue(i, self.COL_DEV, device.resource)
             cell = grid.GridCellChoiceEditor(DeviceGPS.TYPE, allowOthers=False)
             self.gridDev.SetCellEditor(i, self.COL_TYPE, cell)
             self.gridDev.SetCellValue(i, self.COL_TYPE, DeviceGPS.TYPE[device.type])
@@ -1042,11 +1061,14 @@ class DialogDevicesGPS(wx.Dialog):
 
         self.gridDev.AutoSize()
 
+        self.Bind(grid.EVT_GRID_CELL_LEFT_CLICK, self.__on_click)
+        self.Bind(grid.EVT_GRID_CELL_CHANGE, self.__on_change)
+
     def __get_dev_grid(self):
         i = 0
         for device in self.devices:
             device.name = self.gridDev.GetCellValue(i, self.COL_NAME)
-            device.location = self.gridDev.GetCellValue(i, self.COL_DEV)
+            device.resource = self.gridDev.GetCellValue(i, self.COL_DEV)
             device.type = DeviceGPS.TYPE.index(self.gridDev.GetCellValue(i, self.COL_TYPE))
             i += 1
 
@@ -1065,7 +1087,7 @@ class DialogDevicesGPS(wx.Dialog):
 
         dupes = set(devices)
         if len(dupes) != len(devices):
-            message = "Duplicate device found:\n'{0}'".format(dupes.pop())
+            message = "Duplicate name found:\n'{0}'".format(dupes.pop())
             dlg = wx.MessageDialog(self, message, "Warning",
                                    wx.OK | wx.ICON_WARNING)
             dlg.ShowModal()
@@ -1082,6 +1104,13 @@ class DialogDevicesGPS(wx.Dialog):
             self.__select_row(index)
         else:
             self.gridDev.ForceRefresh()
+            event.Skip()
+
+    def __on_change(self, event):
+        col = event.GetCol()
+        if col == self.COL_TYPE:
+            self.__get_dev_grid()
+            self.__set_dev_grid()
             event.Skip()
 
     def __on_add(self, _event):
@@ -1107,6 +1136,8 @@ class DialogDevicesGPS(wx.Dialog):
             return
 
         self.settings.devicesGps = self.devices
+        if len(self.devices) == 0:
+            self.index = -1
         self.settings.indexGps = self.index
         self.EndModal(wx.ID_OK)
 

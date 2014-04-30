@@ -44,6 +44,7 @@ from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, \
     DialogDevicesGPS
 from events import EVT_THREAD_STATUS, Event, EventThreadStatus, post_event
 from file import save_plot, export_plot, open_plot, ScanInfo, export_image
+from location import Location
 from misc import calc_samples, calc_real_dwell, \
     get_version_timestamp, get_version_timestamp_repo, add_colours
 from printer import PrintOut
@@ -145,6 +146,8 @@ class FrameMain(wx.Frame):
         self.devicesRtl = get_devices_rtl(self.settings.devicesRtl)
         self.filename = ""
         self.oldCal = 0
+
+        self.location = None
 
         self.pageConfig = wx.PageSetupDialogData()
         self.pageConfig.GetPrintData().SetOrientation(wx.LANDSCAPE)
@@ -764,6 +767,17 @@ class FrameMain(wx.Frame):
             self.__update_checked(False)
         elif status == Event.VER_UPDFAIL:
             self.__update_checked(failed=True)
+        elif status == Event.LOC_WARN:
+            self.status.set_info("GPS: {0}".format(data))
+        elif status == Event.LOC:
+            if self.scanInfo is not None:
+                if data[0]:
+                    self.scanInfo.lat = str(data[0])
+                if data[1]:
+                    self.scanInfo.lon = str(data[1])
+                if self.location:
+                    self.location.stop()
+                    self.location = None
 
         wx.YieldIfNeeded()
 
@@ -830,6 +844,13 @@ class FrameMain(wx.Frame):
             self.filename = "Scan {0:.1f}-{1:.1f}MHz".format(self.settings.start,
                                                             self.settings.stop)
             self.graph.set_plot_title()
+
+            if self.settings.gps:
+                if self.location:
+                    self.location.stop()
+                    self.location = None
+                self.location = Location(self, self.settings)
+
             return True
 
     def __stop_scan(self):
@@ -837,8 +858,12 @@ class FrameMain(wx.Frame):
             self.status.set_general("Stopping")
             self.threadScan.abort()
             self.threadScan.join()
+            self.threadScan = None
         if self.sdr is not None:
             self.sdr.close()
+        if self.location is not None:
+            self.location.stop()
+            self.location = None
         self.__set_control_state(True)
 
     def __progress(self):
@@ -870,6 +895,10 @@ class FrameMain(wx.Frame):
         if self.sdr is not None:
             self.sdr.close()
             self.sdr = None
+        if self.location is not None:
+            self.location.stop()
+            self.location = None
+
         self.status.hide_progress()
         self.steps = 0
         self.threadScan = None

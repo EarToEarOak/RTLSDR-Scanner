@@ -75,6 +75,8 @@ class Settings():
         self.alert = False
         self.alertLevel = -20
 
+        self.gps = False
+
         self.exportDpi = 600
 
         self.devicesRtl = []
@@ -125,7 +127,7 @@ class Settings():
             device = DeviceGPS()
             device.name = group[1]
             device.type = self.cfg.ReadInt('type', device.type)
-            device.location = self.cfg.Read('location', device.location)
+            device.resource = self.cfg.Read('resource', device.resource)
             self.devicesGps.append(device)
             self.cfg.SetPath("/DevicesGPS")
             group = self.cfg.GetNextGroup(group[2])
@@ -151,10 +153,11 @@ class Settings():
                 self.cfg.WriteInt('tuner', device.tuner)
 
     def __save_devices_gps(self):
+        self.cfg.DeleteGroup('/DevicesGPS')
         for device in self.devicesGps:
             self.cfg.SetPath("/DevicesGPS/" + device.name)
             self.cfg.WriteInt('type', device.type)
-            self.cfg.Write('location', device.location)
+            self.cfg.Write('resource', device.resource)
 
     def __load(self):
         self.cfg = wx.Config('rtlsdr-scanner')
@@ -194,6 +197,7 @@ class Settings():
         self.showMeasure = self.cfg.ReadBool('showMeasure', self.showMeasure)
         self.alert = self.cfg.ReadBool('alert', self.alert)
         self.alertLevel = self.cfg.ReadFloat('alertLevel', self.alertLevel)
+        self.gps = self.cfg.ReadBool('gps', self.gps)
         self.exportDpi = self.cfg.ReadInt('exportDpi', self.exportDpi)
         self.indexRtl = self.cfg.ReadInt('index', self.indexRtl)
         self.indexRtl = self.cfg.ReadInt('indexRtl', self.indexRtl)
@@ -236,6 +240,7 @@ class Settings():
         self.cfg.WriteBool('showMeasure', self.showMeasure)
         self.cfg.WriteBool('alert', self.alert)
         self.cfg.WriteFloat('alertLevel', self.alertLevel)
+        self.cfg.WriteBool('gps', self.gps)
         self.cfg.WriteInt('exportDpi', self.exportDpi)
         self.cfg.WriteInt('indexRtl', self.indexRtl)
         self.cfg.WriteInt('indexGps', self.indexGps)
