@@ -32,7 +32,7 @@
 !include "include\EnvVarUpdate.nsh"
 !include "include\fileassoc.nsh"
 
-!define INSTALLER_VERSION "9"
+!define INSTALLER_VERSION "10"
 
 !define PRODUCT_NAME "RTLSDR Scanner"
 !define PRODUCT_PUBLISHER "Ear to Ear Oak"
@@ -148,6 +148,9 @@ SectionGroup "/e" "Dependencies" SEC_DEP
         SectionEnd
         Section "Pillow 2.4.0"
             Call get_pillow
+        SectionEnd
+        Section "PySerial 2.7"
+            Call get_pyserial
         SectionEnd
         Section "pyrtlsdr" SEC_PYRTLSDR
             Call get_pyrtlsdr
@@ -520,6 +523,22 @@ Function get_pillow
     exists:
     ExecWait "$TEMP\Pillow-2.4.0.win32-py2.7.exe"
     ;Delete "$TEMP\Pillow-2.4.0.win32-py2.7.exe"
+FunctionEnd
+
+Function get_pyserial
+    IfFileExists "$TEMP\pyserial-2.7.tar.gz" exists download
+    download:
+    inetc::get "http://downloads.sourceforge.net/project/pyserial/pyserial/2.7/pyserial-2.7.tar.gz" "$TEMP\pyserial-2.7.tar.gz" /end
+    Pop $R0
+    StrCmp $R0 "OK" exists
+    MessageBox MB_OK "PySerial download failed: $R0"
+    return
+    exists:
+    untgz::extract "-d" "$TEMP" "$TEMP\pyserial-2.7.tar.gz"
+    SetOutPath "$TEMP\pyserial-2.7"
+    ExecWait "python $TEMP\pyserial-2.7\setup.py install"
+    ;Delete "$TEMP\pyserial-2.7.tar.gz"
+    RmDir /r "$TEMP\pyserial-2.7"
 FunctionEnd
 
 Function set_installer_path
