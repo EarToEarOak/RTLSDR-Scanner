@@ -90,6 +90,7 @@ def open_plot(dirname, filename):
     lat = None
     lon = None
     desc = ''
+    location = {}
 
     path = os.path.join(dirname, filename)
     if not os.path.exists(path):
@@ -144,6 +145,8 @@ def open_plot(dirname, filename):
                         spectrum[float(t)][float(f)] = p
             if version > 7:
                 desc = data[1]['Description']
+            if version > 8:
+                location = data[1]['Location']
 
         except ValueError:
             error = True
@@ -172,10 +175,10 @@ def open_plot(dirname, filename):
     scanInfo.lon = lon
     scanInfo.desc = desc
 
-    return scanInfo, spectrum
+    return scanInfo, spectrum, location
 
 
-def save_plot(dirname, filename, scanInfo, spectrum):
+def save_plot(dirname, filename, scanInfo, spectrum, location):
     data = [File.HEADER, {'Version': File.VERSION,
                           'Start':scanInfo.start,
                           'Stop':scanInfo.stop,
@@ -190,7 +193,8 @@ def save_plot(dirname, filename, scanInfo, spectrum):
                           'Latitude':scanInfo.lat,
                           'Longitude':scanInfo.lon,
                           'Description':scanInfo.desc,
-                          'Spectrum': spectrum}]
+                          'Spectrum': spectrum,
+                          'Location': location}]
 
     handle = open(os.path.join(dirname, filename), 'wb')
     handle.write(json.dumps(data, indent=4))

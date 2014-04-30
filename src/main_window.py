@@ -141,6 +141,7 @@ class FrameMain(wx.Frame):
 
         self.spectrum = {}
         self.scanInfo = ScanInfo()
+        self.location = {}
         self.isSaved = True
 
         self.settings = Settings()
@@ -455,7 +456,7 @@ class FrameMain(wx.Frame):
             dirname = dlg.GetDirectory()
             self.settings.dirScans = dirname
             save_plot(dirname, dlg.GetFilename(), self.scanInfo,
-                      self.spectrum)
+                      self.spectrum, self.location)
             self.__saved(True)
             self.status.set_general("Finished")
             self.settings.fileHistory.AddFileToHistory(os.path.join(dirname,
@@ -529,7 +530,7 @@ class FrameMain(wx.Frame):
         if self.__save_warn(Warn.EXIT):
             self.Bind(wx.EVT_CLOSE, self.__on_exit)
             return
-        self.__stop_scan()
+        self.__scan_stop()
         self.__wait_background()
         self.__get_controls()
         self.graph.close()
@@ -642,12 +643,13 @@ class FrameMain(wx.Frame):
                           'Error', wx.OK | wx.ICON_ERROR)
         else:
             self.spectrum.clear()
-            self.__start_scan()
+            self.location.clear()
+            self.__scan_start()
 
     def __on_stop(self, _event):
         self.stopScan = True
         self.stopAtEnd = False
-        self.__stop_scan()
+        self.__scan_stop()
 
     def __on_stop_end(self, _event):
         self.stopAtEnd = True
@@ -770,10 +772,13 @@ class FrameMain(wx.Frame):
             self.status.set_info("GPS: {0}".format(data))
         elif status == Event.LOC:
             if self.scanInfo is not None:
-                if data[0]:
+                if data[0] and data[1]:
                     self.scanInfo.lat = str(data[0])
-                if data[1]:
                     self.scanInfo.lon = str(data[1])
+                    if len(self.spectrum) > 0:
+                        self.location[max(self.spectrum)] = (data[0],
+                                                             data[1],
+                                                             data[2])
 
         wx.YieldIfNeeded()
 
@@ -792,7 +797,8 @@ class FrameMain(wx.Frame):
                 self.devicesRtl[self.settings.indexRtl].calibration = 0
                 self.__get_controls()
                 self.spectrum.clear()
-                if not self.__start_scan(isCal=True):
+                self.location.clear()
+                if not self.__scan_start(isCal=True):
                     self.dlgCal.reset_cal()
             elif status == Cal.DONE:
                 ppm = self.__calc_ppm(freq)
@@ -818,7 +824,7 @@ class FrameMain(wx.Frame):
 
         return ((freq - peak) / freq) * 1e6
 
-    def __start_scan(self, isCal=False):
+    def __scan_start(self, isCal=False):
         if self.settings.mode == Mode.SINGLE:
             if self.__save_warn(Warn.SCAN):
                 return False
@@ -850,7 +856,7 @@ class FrameMain(wx.Frame):
 
             return True
 
-    def __stop_scan(self):
+    def __scan_stop(self):
         if self.threadScan:
             self.status.set_general("Stopping")
             self.threadScan.abort()
@@ -884,7 +890,7 @@ class FrameMain(wx.Frame):
                 if self.settings.mode == Mode.CONTIN:
                     if self.dlgCal is None and not self.stopAtEnd:
                         self.__limit_spectrum()
-                        self.__start_scan()
+                        self.__scan_start()
                     else:
                         self.status.set_general("Stopped")
                         self.__cleanup()
@@ -1094,12 +1100,12 @@ class FrameMain(wx.Frame):
         self.settings.dirScans = dirname
         self.status.set_general("Opening: {0}".format(filename))
 
-        self.scanInfo, spectrum = open_plot(dirname, filename)
+        self.scanInfo, spectrum, location = open_plot(dirname, filename)
 
         if len(spectrum) > 0:
-            self.spectrum.clear()
             self.scanInfo.setToSettings(self.settings)
             self.spectrum = spectrum
+            self.location = location
             self.__saved(True)
             self.__set_controls()
             self.__set_control_state(True)

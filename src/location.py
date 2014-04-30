@@ -96,11 +96,15 @@ class ThreadLocation(threading.Thread):
                     try:
                         lat = data['lat']
                         lon = data['lon']
-                        alt = data['alt']
-                        post_event(self.notify,
-                                   EventThreadStatus(Event.LOC, 0, (lat, lon, alt)))
                     except KeyError:
-                        pass
+                        return
+                    try:
+                        alt = data['alt']
+                    except KeyError:
+                        alt = None
+                    post_event(self.notify,
+                               EventThreadStatus(Event.LOC, 0,
+                                                 (lat, lon, alt)))
 
     def __gpsd_close(self):
         self.socket.sendall('?WATCH={"enable": false}')
@@ -136,7 +140,10 @@ class ThreadLocation(threading.Thread):
                         if data[6] in ['1', '2']:
                             lat = self.__nmea_coord(data[2], data[3])
                             lon = self.__nmea_coord(data[4], data[5])
-                            alt = data[9]
+                            try:
+                                alt = float(data[9])
+                            except ValueError:
+                                alt = None
                             post_event(self.notify,
                                        EventThreadStatus(Event.LOC, 0,
                                                          (lat, lon, alt)))

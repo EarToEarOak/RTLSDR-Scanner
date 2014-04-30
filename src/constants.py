@@ -132,7 +132,7 @@ class File:
     IMAGE[ImageType.TIFF] = 'Tagged Image File (*.tiff)|*.tiff'
 
     HEADER = "RTLSDR Scanner"
-    VERSION = 8
+    VERSION = 9
     RFS = "RTLSDR frequency scan (*.rfs)|*.rfs"
 
     @staticmethod

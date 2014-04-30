@@ -128,7 +128,7 @@ class Cli():
         if ext == ".rfs":
             scanInfo = ScanInfo()
             scanInfo.setFromSettings(self.settings)
-            save_plot(directory, filename, scanInfo, self.spectrum)
+            save_plot(directory, filename, scanInfo, self.spectrum, None)
         else:
             exportType = File.get_export_type(ext)
             export_plot(directory, filename, exportType, self.spectrum)
