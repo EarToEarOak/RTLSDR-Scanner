@@ -29,8 +29,8 @@ import serial
 
 
 class DeviceGPS():
-    NMEA, GPSD = range(2)
-    TYPE = ['NMEA', 'Gpsd']
+    NMEA, GPSD, GPSD_OLD = range(3)
+    TYPE = ['NMEA', 'GPSd', 'GPSd (<2.91)']
     BAUDS = [50, 75, 110, 134, 150, 200, 300, 600, 1200, 1800, 2400, 4800,
              9600, 19200, 38400, 57600, 115200]
     BYTES = [serial.FIVEBITS, serial.SIXBITS, serial.SEVENBITS,
