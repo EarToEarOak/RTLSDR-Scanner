@@ -26,6 +26,8 @@
 import cPickle
 import json
 import os
+import tempfile
+import zipfile
 
 from PIL import Image
 import matplotlib
@@ -234,6 +236,49 @@ def export_image(filename, format, figure, dpi):
 
     figure.set_size_inches(oldSize)
     figure.set_dpi(oldDpi)
+
+
+def export_kmz(filename, bounds, image):
+    tempPath = tempfile.mkdtemp()
+
+    name = os.path.splitext(os.path.basename(filename))[0]
+    filePng = name + '.png'
+    fileKml = name + '.kml'
+
+    image.save('{0}/{1}'.format(tempPath, filePng))
+
+    handle = open('{0}/{1}'.format(tempPath, fileKml), 'wb')
+    handle.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+    handle.write('<kml xmlns="http://www.opengis.net/kml/2.2" '
+                 'xmlns:gx="http://www.google.com/kml/ext/2.2" '
+                 'xmlns:kml="http://www.opengis.net/kml/2.2" '
+                 'xmlns:atom="http://www.w3.org/2005/Atom">\n')
+    handle.write('<GroundOverlay>\n')
+    handle.write('\t<name>RTLSDR Scanner - {0}</name>\n'.format(name))
+    handle.write('\t<Icon>\n')
+    handle.write('\t\t<href>files/{0}</href>\n'.format(filePng))
+    handle.write('\t\t<viewBoundScale>0.75</viewBoundScale>\n')
+    handle.write('\t</Icon>\n')
+    handle.write('\t<LatLonBox>\n')
+    handle.write('\t\t<north>{0}</north>\n'.format(bounds[3]))
+    handle.write('\t\t<south>{0}</south>\n'.format(bounds[1]))
+    handle.write('\t\t<east>{0}</east>\n'.format(bounds[2]))
+    handle.write('\t\t<west>{0}</west>\n'.format(bounds[0]))
+    handle.write('\t</LatLonBox>\n')
+    handle.write('</GroundOverlay>\n')
+    handle.write('</kml>\n')
+    handle.close()
+
+    kmz = zipfile.ZipFile(filename, 'w')
+    kmz.write('{0}/{1}'.format(tempPath, fileKml),
+              '/{0}'.format(fileKml))
+    kmz.write('{0}/{1}'.format(tempPath, filePng),
+              '/files/{0}'.format(filePng))
+    kmz.close()
+
+    os.remove('{0}/{1}'.format(tempPath, filePng))
+    os.remove('{0}/{1}'.format(tempPath, fileKml))
+    os.rmdir(tempPath)
 
 
 def export_csv(handle, spectrum):

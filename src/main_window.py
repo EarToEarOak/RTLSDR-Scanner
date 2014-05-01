@@ -36,14 +36,15 @@ from matplotlib.dates import num2epoch
 import wx
 from wx.lib.masked import NumCtrl
 
-from constants import F_MIN, F_MAX, MODE, DWELL, NFFT, DISPLAY, Warn, File, \
-    Display, Cal, Mode
+from constants import F_MIN, F_MAX, MODE, DWELL, NFFT, DISPLAY, Warn, \
+    Display, Cal, Mode, File
 from devices import get_devices_rtl
 from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, \
     DialogDevicesRTL, DialogCompare, DialogAutoCal, DialogAbout, DialogSaveWarn, \
-    DialogDevicesGPS
+    DialogDevicesGPS, DialogGeo
 from events import EVT_THREAD_STATUS, Event, EventThreadStatus, post_event
-from file import save_plot, export_plot, open_plot, ScanInfo, export_image
+from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
+    export_kmz
 from location import ThreadLocation
 from misc import calc_samples, calc_real_dwell, \
     get_version_timestamp, get_version_timestamp_repo, add_colours
@@ -95,6 +96,7 @@ class FrameMain(wx.Frame):
         self.menuSave = None
         self.menuExportScan = None
         self.menuExportImage = None
+        self.menuExportGeo = None
         self.menuPreview = None
         self.menuPage = None
         self.menuPrint = None
@@ -279,10 +281,12 @@ class FrameMain(wx.Frame):
         menuFile.AppendSeparator()
         self.menuSave = menuFile.Append(wx.ID_SAVE, "&Save As...",
                                         "Save plot")
-        self.menuExportScan = menuFile.Append(wx.ID_ANY, "&Export scan...",
+        self.menuExportScan = menuFile.Append(wx.ID_ANY, "Export scan...",
                                               "Export scan")
-        self.menuExportImage = menuFile.Append(wx.ID_ANY, "&Export image...",
+        self.menuExportImage = menuFile.Append(wx.ID_ANY, "Export image...",
                                               "Export image")
+        self.menuExportGeo = menuFile.Append(wx.ID_ANY, "Export map...",
+                                              "Export maps")
         menuFile.AppendSeparator()
         self.menuPage = menuFile.Append(wx.ID_ANY, "Page setup...",
                                         "Page setup")
@@ -357,6 +361,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.__on_save, self.menuSave)
         self.Bind(wx.EVT_MENU, self.__on_export_scan, self.menuExportScan)
         self.Bind(wx.EVT_MENU, self.__on_export_image, self.menuExportImage)
+        self.Bind(wx.EVT_MENU, self.__on_export_geo, self.menuExportGeo)
         self.Bind(wx.EVT_MENU, self.__on_page, self.menuPage)
         self.Bind(wx.EVT_MENU, self.__on_preview, self.menuPreview)
         self.Bind(wx.EVT_MENU, self.__on_print, self.menuPrint)
@@ -492,6 +497,26 @@ class FrameMain(wx.Frame):
                          self.graph.get_figure(), self.settings.exportDpi)
             self.status.set_general("Finished")
         dlg.Destroy()
+
+    def __on_export_geo(self, _event):
+        dlgGeo = DialogGeo(self, self.spectrum, self.location, self.settings)
+        if dlgGeo.ShowModal() == wx.ID_OK:
+            self.status.set_general("Exporting")
+            bounds = dlgGeo.get_bounds()
+            image = dlgGeo.get_image()
+            dlgFile = wx.FileDialog(self, "Export map to file",
+                                self.settings.dirExport,
+                                self.filename,
+                                File.get_export_filters(File.Exports.GEO),
+                                wx.SAVE | wx.OVERWRITE_PROMPT)
+            if dlgFile.ShowModal() == wx.ID_OK:
+                dirname = dlgFile.GetDirectory()
+                self.settings.dirExport = dirname
+                filename = os.path.join(dirname, dlgFile.GetFilename())
+                export_kmz(filename, bounds, image)
+            self.status.set_general("Finished")
+            dlgFile.Destroy()
+        dlgGeo.Destroy()
 
     def __on_page(self, _event):
         dlg = wx.PageSetupDialog(self, self.pageConfig)
@@ -776,9 +801,9 @@ class FrameMain(wx.Frame):
                     self.scanInfo.lat = str(data[0])
                     self.scanInfo.lon = str(data[1])
                     if len(self.spectrum) > 0:
-                        self.location[max(self.spectrum)] = (data[0],
-                                                             data[1],
-                                                             data[2])
+                        self.location[str(max(self.spectrum))] = (data[0],
+                                                                  data[1],
+                                                                  data[2])
 
         wx.YieldIfNeeded()
 
@@ -911,11 +936,15 @@ class FrameMain(wx.Frame):
         self.stopAtEnd = False
         self.stopScan = True
 
+    def __remove_last(self, data):
+        while len(data) >= self.settings.retainMax:
+                timeStamp = min(data)
+                del data[timeStamp]
+
     def __limit_spectrum(self):
         with self.lock:
-            while len(self.spectrum) >= self.settings.retainMax:
-                timeStamp = min(self.spectrum)
-                del self.spectrum[timeStamp]
+            self.__remove_last(self.spectrum)
+            self.__remove_last(self.location)
 
     def __saved(self, isSaved):
         self.isSaved = isSaved
@@ -949,6 +978,8 @@ class FrameMain(wx.Frame):
         self.menuSave.Enable(state and len(self.spectrum) > 0)
         self.menuExportScan.Enable(state and len(self.spectrum) > 0)
         self.menuExportImage.Enable(state)
+        self.menuExportGeo.Enable(state and len(self.spectrum) > 0 \
+                                  and len(self.location) > 0)
         self.menuPage.Enable(state)
         self.menuPreview.Enable(state)
         self.menuPrint.Enable(state)

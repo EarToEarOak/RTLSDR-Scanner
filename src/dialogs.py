@@ -27,7 +27,10 @@ import copy
 import itertools
 from urlparse import urlparse
 
+from PIL import Image
+from matplotlib import mlab, patheffects
 import matplotlib
+from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 import numpy
 import rtlsdr
@@ -189,6 +192,119 @@ class DialogAutoCal(wx.Dialog):
 
     def get_freq(self):
         return self.textFreq.GetValue()
+
+
+class DialogGeo(wx.Dialog):
+    def __init__(self, parent, spectrum, location, settings):
+        self.spectrum = spectrum
+        self.location = location
+        self.directory = settings.dirExport
+        self.colourMap = settings.colourMap
+        self.dpi = settings.exportDpi
+        self.bounds = None
+        self.image = None
+
+        wx.Dialog.__init__(self, parent=parent, title='Export Map')
+
+        self.figure = matplotlib.figure.Figure(facecolor='white')
+        self.figure.set_size_inches((6, 6))
+        self.axes = self.figure.add_subplot(111)
+        self.canvas = FigureCanvas(self, -1, self.figure)
+
+        sizerButtons = wx.StdDialogButtonSizer()
+        buttonOk = wx.Button(self, wx.ID_OK)
+        buttonCancel = wx.Button(self, wx.ID_CANCEL)
+        sizerButtons.AddButton(buttonOk)
+        sizerButtons.AddButton(buttonCancel)
+        sizerButtons.Realize()
+        self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
+
+        sizerGrid = wx.GridBagSizer(5, 5)
+        sizerGrid.Add(self.canvas, pos=(0, 0), span=(1, 2),
+                  flag=wx.ALIGN_CENTRE | wx.ALL, border=5)
+        sizerGrid.Add(sizerButtons, pos=(1, 1), span=(1, 1),
+                  flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
+
+        self.SetSizerAndFit(sizerGrid)
+
+        self.__setup_plot()
+        self.__draw_plot()
+
+    def __setup_plot(self):
+        self.axes.clear()
+        self.axes.set_xlabel('Longitude')
+        self.axes.set_ylabel('Latitude')
+        self.axes.set_xlim(auto=True)
+        self.axes.set_ylim(auto=True)
+        self.axes.grid(True)
+
+    def __draw_plot(self):
+        x = []
+        y = []
+        z = []
+        for timeStamp in self.spectrum:
+            spectrum = self.spectrum[timeStamp]
+            peak = max(spectrum.itervalues())
+            try:
+                location = self.location[str(timeStamp)]
+            except KeyError:
+                continue
+            x.append(location[1])
+            y.append(location[0])
+            z.append(peak)
+
+        xi = numpy.linspace(min(x), max(x), 500)
+        yi = numpy.linspace(min(y), max(y), 500)
+        try:
+            zi = mlab.griddata(x, y, z, xi, yi)
+            self.axes.pcolormesh(xi, yi, zi, cmap=self.colourMap)
+            contours = self.axes.contour(xi, yi, zi, linewidths=0.5, colors='k')
+            self.axes.clabel(contours, inline=1, fontsize='x-small', gid='clabel')
+            if matplotlib.__version__ >= '1.3':
+                effect = patheffects.withStroke(linewidth=2, foreground="w",
+                                                alpha=0.75)
+                for child in self.axes.get_children():
+                    child.set_path_effects([effect])
+        except:
+            self.axes.text(0.5, 0.5, 'Insufficient GPS data',
+                           horizontalalignment='center',
+                           verticalalignment='center',
+                           transform=self.axes.transAxes)
+
+    def __on_ok(self, _event):
+        boundsX = self.axes.get_xlim()
+        boundsY = self.axes.get_ylim()
+        self.bounds = (boundsX[0], boundsY[0], boundsX[1], boundsY[1])
+
+        self.figure.set_dpi(self.dpi)
+        self.figure.set_facecolor('black')
+        self.figure.patch.set_alpha(0)
+        self.axes.set_axis_off()
+        self.axes.set_axis_bgcolor('black')
+        canvas = FigureCanvasAgg(self.figure)
+        canvas.draw()
+
+        renderer = canvas.get_renderer()
+        if matplotlib.__version__ >= '1.2':
+            buf = renderer.buffer_rgba()
+        else:
+            buf = renderer.buffer_rgba(0, 0)
+        size = canvas.get_width_height()
+        self.image = Image.frombuffer('RGBA', size, buf, 'raw', 'RGBA', 0, 1)
+
+        self.EndModal(wx.ID_OK)
+
+    def get_filename(self):
+        return self.filename
+
+    def get_directory(self):
+        return self.directory
+
+    def get_bounds(self):
+        return self.bounds
+
+    def get_image(self):
+        return self.image
 
 
 class DialogOffset(wx.Dialog):

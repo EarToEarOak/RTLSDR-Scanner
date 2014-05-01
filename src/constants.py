@@ -108,13 +108,16 @@ class Markers:
 
 class File:
     class Exports:
-        PLOT, IMAGE = range(2)
+        PLOT, IMAGE, GEO = range(3)
 
     class PlotType:
         CSV, GNUPLOT, FREEMAT = range(3)
 
     class ImageType:
         BMP, EPS, GIF, JPEG, PDF, PNG, PPM, TIFF = range(8)
+
+    class GeoType:
+        KMZ = 0
 
     PLOT = [""] * 3
     PLOT[PlotType.CSV] = "CSV table (*.csv)|*.csv"
@@ -131,6 +134,9 @@ class File:
     IMAGE[ImageType.PPM] = 'Portable Pixmap image (*.ppm)|*.ppm'
     IMAGE[ImageType.TIFF] = 'Tagged Image File (*.tiff)|*.tiff'
 
+    GEO = [""] * 1
+    GEO[GeoType.KMZ] = 'Google Earth (*.kmz)|*.kmz'
+
     HEADER = "RTLSDR Scanner"
     VERSION = 9
     RFS = "RTLSDR frequency scan (*.rfs)|*.rfs"
@@ -139,8 +145,10 @@ class File:
     def __get_exports(export):
         if export == File.Exports.PLOT:
             exports = File.PLOT
-        else:
+        elif export == File.Exports.IMAGE:
             exports = File.IMAGE
+        else:
+            exports = File.GEO
 
         return exports
 
