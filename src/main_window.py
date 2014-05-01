@@ -502,7 +502,7 @@ class FrameMain(wx.Frame):
         dlgGeo = DialogGeo(self, self.spectrum, self.location, self.settings)
         if dlgGeo.ShowModal() == wx.ID_OK:
             self.status.set_general("Exporting")
-            bounds = dlgGeo.get_bounds()
+            extent = dlgGeo.get_extent()
             image = dlgGeo.get_image()
             dlgFile = wx.FileDialog(self, "Export map to file",
                                 self.settings.dirExport,
@@ -513,7 +513,7 @@ class FrameMain(wx.Frame):
                 dirname = dlgFile.GetDirectory()
                 self.settings.dirExport = dirname
                 filename = os.path.join(dirname, dlgFile.GetFilename())
-                export_kmz(filename, bounds, image)
+                export_kmz(filename, extent, image)
             self.status.set_general("Finished")
             dlgFile.Destroy()
         dlgGeo.Destroy()

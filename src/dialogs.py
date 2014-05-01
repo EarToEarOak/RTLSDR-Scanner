@@ -195,21 +195,31 @@ class DialogAutoCal(wx.Dialog):
 
 
 class DialogGeo(wx.Dialog):
+
+    TYPE_CONT, TYPE_HEAT = range(2)
+    TYPES = ['Contour', 'Heat']
+
     def __init__(self, parent, spectrum, location, settings):
         self.spectrum = spectrum
         self.location = location
         self.directory = settings.dirExport
         self.colourMap = settings.colourMap
         self.dpi = settings.exportDpi
-        self.bounds = None
+        self.figure = None
+        self.axes = None
+        self.canvas = None
+        self.extent = None
         self.image = None
+        self.type = self.TYPE_CONT
 
         wx.Dialog.__init__(self, parent=parent, title='Export Map')
 
-        self.figure = matplotlib.figure.Figure(facecolor='white')
-        self.figure.set_size_inches((6, 6))
-        self.axes = self.figure.add_subplot(111)
-        self.canvas = FigureCanvas(self, -1, self.figure)
+        self.__setup_plot()
+
+        textType = wx.StaticText(self, label='Map type')
+        self.choiceType = wx.Choice(self, choices=self.TYPES)
+        self.choiceType.SetSelection(self.type)
+        self.Bind(wx.wx.EVT_CHOICE, self.__on_choice, self.choiceType)
 
         sizerButtons = wx.StdDialogButtonSizer()
         buttonOk = wx.Button(self, wx.ID_OK)
@@ -220,20 +230,31 @@ class DialogGeo(wx.Dialog):
         self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
 
         sizerGrid = wx.GridBagSizer(5, 5)
-        sizerGrid.Add(self.canvas, pos=(0, 0), span=(1, 2),
+        sizerGrid.Add(self.canvas, pos=(0, 0), span=(1, 3),
                   flag=wx.ALIGN_CENTRE | wx.ALL, border=5)
-        sizerGrid.Add(sizerButtons, pos=(1, 1), span=(1, 1),
+        sizerGrid.Add(textType, pos=(1, 0), span=(1, 1),
+                  flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
+        sizerGrid.Add(self.choiceType, pos=(1, 1), span=(1, 1),
+                  flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+        sizerGrid.Add(sizerButtons, pos=(2, 2), span=(1, 1),
                   flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
 
         self.SetSizerAndFit(sizerGrid)
 
-        self.__setup_plot()
         self.__draw_plot()
 
     def __setup_plot(self):
-        self.axes.clear()
-        self.axes.set_xlabel('Longitude')
-        self.axes.set_ylabel('Latitude')
+        self.figure = matplotlib.figure.Figure(facecolor='white')
+        self.figure.set_size_inches((6, 6))
+        self.axes = self.figure.add_subplot(111)
+        self.canvas = FigureCanvas(self, -1, self.figure)
+
+        if self.type == self.TYPE_CONT:
+            self.axes.set_title('Contour Map')
+        else:
+            self.axes.set_title('Heat Map')
+        self.axes.set_xlabel('Longitude ($^\circ$)')
+        self.axes.set_ylabel('Latitude ($^\circ$)')
         self.axes.set_xlim(auto=True)
         self.axes.set_ylim(auto=True)
         self.axes.grid(True)
@@ -255,28 +276,35 @@ class DialogGeo(wx.Dialog):
 
         xi = numpy.linspace(min(x), max(x), 500)
         yi = numpy.linspace(min(y), max(y), 500)
+
         try:
             zi = mlab.griddata(x, y, z, xi, yi)
+        except:
+            self.axes.text(0.5, 0.5, 'Insufficient GPS data',
+                           ha='center', va='center',
+                           transform=self.axes.transAxes)
+            return
+
+        self.extent = (min(x), max(x), min(y), max(y))
+
+        if self.type == self.TYPE_CONT:
             self.axes.pcolormesh(xi, yi, zi, cmap=self.colourMap)
-            contours = self.axes.contour(xi, yi, zi, linewidths=0.5, colors='k')
-            self.axes.clabel(contours, inline=1, fontsize='x-small', gid='clabel')
+            contours = self.axes.contour(xi, yi, zi, linewidths=0.5,
+                                         colors='k')
+            self.axes.clabel(contours, inline=1, fontsize='x-small',
+                             gid='clabel')
             if matplotlib.__version__ >= '1.3':
                 effect = patheffects.withStroke(linewidth=2, foreground="w",
                                                 alpha=0.75)
                 for child in self.axes.get_children():
                     child.set_path_effects([effect])
-        except:
-            self.axes.text(0.5, 0.5, 'Insufficient GPS data',
-                           horizontalalignment='center',
-                           verticalalignment='center',
-                           transform=self.axes.transAxes)
+        else:
+
+            self.axes.pcolormesh(xi, yi, zi, cmap=self.colourMap)
 
     def __on_ok(self, _event):
-        boundsX = self.axes.get_xlim()
-        boundsY = self.axes.get_ylim()
-        self.bounds = (boundsX[0], boundsY[0], boundsX[1], boundsY[1])
-
         self.figure.set_dpi(self.dpi)
+        self.axes.set_title('')
         self.figure.set_facecolor('black')
         self.figure.patch.set_alpha(0)
         self.axes.set_axis_off()
@@ -294,14 +322,19 @@ class DialogGeo(wx.Dialog):
 
         self.EndModal(wx.ID_OK)
 
+    def __on_choice(self, _event):
+        self.type = self.choiceType.GetSelection()
+        self.__setup_plot()
+        self.__draw_plot()
+
     def get_filename(self):
         return self.filename
 
     def get_directory(self):
         return self.directory
 
-    def get_bounds(self):
-        return self.bounds
+    def get_extent(self):
+        return self.extent
 
     def get_image(self):
         return self.image
