@@ -32,6 +32,7 @@ from matplotlib import mlab, patheffects
 import matplotlib
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
+from matplotlib.ticker import ScalarFormatter
 import numpy
 import rtlsdr
 import serial.tools.list_ports
@@ -305,6 +306,9 @@ class DialogGeo(wx.Dialog):
         self.axes.set_ylabel('Latitude ($^\circ$)')
         self.axes.set_xlim(auto=True)
         self.axes.set_ylim(auto=True)
+        formatter = ScalarFormatter(useOffset=False)
+        self.axes.xaxis.set_major_formatter(formatter)
+        self.axes.yaxis.set_major_formatter(formatter)
         self.axes.grid(True)
 
     def __draw_plot(self):
