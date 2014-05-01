@@ -209,6 +209,8 @@ class DialogGeo(wx.Dialog):
         self.extent = None
         self.image = None
         self.type = self.TYPE_DUAL
+        self.plot = None
+        self.colourMap = settings.colourMap
 
         wx.Dialog.__init__(self, parent=parent, title='Export Map')
 
@@ -217,12 +219,16 @@ class DialogGeo(wx.Dialog):
         self.canvas = FigureCanvas(self, -1, self.figure)
         self.axes = self.figure.add_subplot(111)
 
-        self.__setup_plot()
-
         textType = wx.StaticText(self, label='Map type')
         self.choiceType = wx.Choice(self, choices=self.TYPES)
         self.choiceType.SetSelection(self.type)
         self.Bind(wx.wx.EVT_CHOICE, self.__on_choice, self.choiceType)
+
+        colours = get_colours()
+        self.choiceColour = wx.Choice(self, choices=colours)
+        self.choiceColour.SetSelection(colours.index(self.colourMap))
+        self.Bind(wx.EVT_CHOICE, self.__on_colour, self.choiceColour)
+        self.colourBar = PanelColourBar(self, settings.colourMap)
 
         freqMin = min(spectrum[min(spectrum)]) * 1000
         freqMax = max(spectrum[min(spectrum)]) * 1000
@@ -251,12 +257,18 @@ class DialogGeo(wx.Dialog):
         sizerButtons.Realize()
         self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
 
+        self.__setup_plot()
+
         sizerGrid = wx.GridBagSizer(5, 5)
         sizerGrid.Add(self.canvas, pos=(0, 0), span=(1, 5),
                   flag=wx.EXPAND | wx.ALL, border=5)
         sizerGrid.Add(textType, pos=(1, 0), span=(1, 1),
                   flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
         sizerGrid.Add(self.choiceType, pos=(1, 1), span=(1, 1),
+                  flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+        sizerGrid.Add(self.choiceColour, pos=(1, 2), span=(1, 1),
+                  flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+        sizerGrid.Add(self.colourBar, pos=(1, 3), span=(1, 1),
                   flag=wx.ALIGN_LEFT | wx.ALL, border=5)
         sizerGrid.Add(textCentre, pos=(2, 0), span=(1, 1),
                   flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
@@ -279,10 +291,16 @@ class DialogGeo(wx.Dialog):
         self.axes.clear()
         if self.type == self.TYPE_CONT:
             self.axes.set_title('Contours')
+            self.choiceColour.Hide()
+            self.colourBar.Hide()
         elif self.type == self.TYPE_HEAT:
             self.axes.set_title('Heat')
+            self.choiceColour.Show()
+            self.colourBar.Show()
         else:
             self.axes.set_title('Contours with Heat')
+            self.choiceColour.Show()
+            self.colourBar.Show()
         self.axes.set_xlabel('Longitude ($^\circ$)')
         self.axes.set_ylabel('Latitude ($^\circ$)')
         self.axes.set_xlim(auto=True)
@@ -290,6 +308,7 @@ class DialogGeo(wx.Dialog):
         self.axes.grid(True)
 
     def __draw_plot(self):
+        self.plot = None
         x = []
         y = []
         z = []
@@ -325,7 +344,7 @@ class DialogGeo(wx.Dialog):
         self.extent = (min(x), max(x), min(y), max(y))
 
         if self.type in [self.TYPE_HEAT, self.TYPE_DUAL]:
-            self.axes.pcolormesh(xi, yi, zi, cmap=self.colourMap)
+            self.plot = self.axes.pcolormesh(xi, yi, zi, cmap=self.colourMap)
 
         if self.type in [self.TYPE_CONT, self.TYPE_DUAL]:
             contours = self.axes.contour(xi, yi, zi, linewidths=0.5,
@@ -370,6 +389,13 @@ class DialogGeo(wx.Dialog):
         self.type = self.choiceType.GetSelection()
         self.__setup_plot()
         self.__draw_plot()
+
+    def __on_colour(self, _event):
+        self.colourMap = self.choiceColour.GetStringSelection()
+        self.colourBar.set_map(self.colourMap)
+        if self.plot:
+            self.plot.set_cmap(self.colourMap)
+            self.canvas.draw()
 
     def get_filename(self):
         return self.filename
