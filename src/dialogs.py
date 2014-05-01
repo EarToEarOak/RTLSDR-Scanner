@@ -205,8 +205,6 @@ class DialogGeo(wx.Dialog):
         self.directory = settings.dirExport
         self.colourMap = settings.colourMap
         self.dpi = settings.exportDpi
-        self.figure = None
-        self.axes = None
         self.canvas = None
         self.extent = None
         self.image = None
@@ -214,12 +212,36 @@ class DialogGeo(wx.Dialog):
 
         wx.Dialog.__init__(self, parent=parent, title='Export Map')
 
+        self.figure = matplotlib.figure.Figure(facecolor='white')
+        self.figure.set_size_inches((6, 6))
+        self.canvas = FigureCanvas(self, -1, self.figure)
+        self.axes = self.figure.add_subplot(111)
+
         self.__setup_plot()
 
         textType = wx.StaticText(self, label='Map type')
         self.choiceType = wx.Choice(self, choices=self.TYPES)
         self.choiceType.SetSelection(self.type)
         self.Bind(wx.wx.EVT_CHOICE, self.__on_choice, self.choiceType)
+
+        freqMin = min(spectrum[min(spectrum)]) * 1000
+        freqMax = max(spectrum[min(spectrum)]) * 1000
+        bw = freqMax - freqMin
+
+        textCentre = wx.StaticText(self, label='Centre')
+        self.spinCentre = wx.SpinCtrl(self)
+        self.spinCentre.SetToolTip(wx.ToolTip('Centre frequency (kHz)'))
+        self.spinCentre.SetRange(freqMin, freqMax)
+        self.spinCentre.SetValue(freqMin + bw / 2)
+
+        textBw = wx.StaticText(self, label='Bandwidth')
+        self.spinBw = wx.SpinCtrl(self)
+        self.spinBw.SetToolTip(wx.ToolTip('Bandwidth (kHz)'))
+        self.spinBw.SetRange(1, bw)
+        self.spinBw.SetValue(bw / 10)
+
+        buttonUpdate = wx.Button(self, label='Update')
+        self.Bind(wx.EVT_BUTTON, self.__on_update, buttonUpdate)
 
         sizerButtons = wx.StdDialogButtonSizer()
         buttonOk = wx.Button(self, wx.ID_OK)
@@ -230,13 +252,23 @@ class DialogGeo(wx.Dialog):
         self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
 
         sizerGrid = wx.GridBagSizer(5, 5)
-        sizerGrid.Add(self.canvas, pos=(0, 0), span=(1, 3),
-                  flag=wx.ALIGN_CENTRE | wx.ALL, border=5)
+        sizerGrid.Add(self.canvas, pos=(0, 0), span=(1, 5),
+                  flag=wx.EXPAND | wx.ALL, border=5)
         sizerGrid.Add(textType, pos=(1, 0), span=(1, 1),
                   flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
         sizerGrid.Add(self.choiceType, pos=(1, 1), span=(1, 1),
                   flag=wx.ALIGN_LEFT | wx.ALL, border=5)
-        sizerGrid.Add(sizerButtons, pos=(2, 2), span=(1, 1),
+        sizerGrid.Add(textCentre, pos=(2, 0), span=(1, 1),
+                  flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
+        sizerGrid.Add(self.spinCentre, pos=(2, 1), span=(1, 1),
+                  flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+        sizerGrid.Add(textBw, pos=(2, 2), span=(1, 1),
+                  flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
+        sizerGrid.Add(self.spinBw, pos=(2, 3), span=(1, 1),
+                  flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+        sizerGrid.Add(buttonUpdate, pos=(2, 4), span=(1, 1),
+                  flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+        sizerGrid.Add(sizerButtons, pos=(3, 4), span=(1, 1),
                   flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
 
         self.SetSizerAndFit(sizerGrid)
@@ -244,11 +276,7 @@ class DialogGeo(wx.Dialog):
         self.__draw_plot()
 
     def __setup_plot(self):
-        self.figure = matplotlib.figure.Figure(facecolor='white')
-        self.figure.set_size_inches((6, 6))
-        self.axes = self.figure.add_subplot(111)
-        self.canvas = FigureCanvas(self, -1, self.figure)
-
+        self.axes.clear()
         if self.type == self.TYPE_CONT:
             self.axes.set_title('Contour Map')
         else:
@@ -263,9 +291,16 @@ class DialogGeo(wx.Dialog):
         x = []
         y = []
         z = []
+
+        freqCentre = self.spinCentre.GetValue()
+        freqBw = self.spinBw.GetValue()
+        freqMin = (freqCentre - freqBw) / 1000.
+        freqMax = (freqCentre + freqBw) / 1000.
+
         for timeStamp in self.spectrum:
             spectrum = self.spectrum[timeStamp]
-            peak = max(spectrum.itervalues())
+            sweep = [yv for xv, yv in spectrum.items() if freqMin <= xv <= freqMax]
+            peak = max(sweep)
             try:
                 location = self.location[str(timeStamp)]
             except KeyError:
@@ -301,6 +336,12 @@ class DialogGeo(wx.Dialog):
         else:
 
             self.axes.pcolormesh(xi, yi, zi, cmap=self.colourMap)
+
+        self.canvas.draw()
+
+    def __on_update(self, _event):
+        self.__setup_plot()
+        self.__draw_plot()
 
     def __on_ok(self, _event):
         self.figure.set_dpi(self.dpi)
