@@ -196,8 +196,8 @@ class DialogAutoCal(wx.Dialog):
 
 class DialogGeo(wx.Dialog):
 
-    TYPE_CONT, TYPE_HEAT = range(2)
-    TYPES = ['Contour', 'Heat']
+    TYPE_CONT, TYPE_HEAT, TYPE_DUAL = range(3)
+    TYPES = ['Contour', 'Heat', 'Combined']
 
     def __init__(self, parent, spectrum, location, settings):
         self.spectrum = spectrum
@@ -208,7 +208,7 @@ class DialogGeo(wx.Dialog):
         self.canvas = None
         self.extent = None
         self.image = None
-        self.type = self.TYPE_CONT
+        self.type = self.TYPE_DUAL
 
         wx.Dialog.__init__(self, parent=parent, title='Export Map')
 
@@ -278,9 +278,11 @@ class DialogGeo(wx.Dialog):
     def __setup_plot(self):
         self.axes.clear()
         if self.type == self.TYPE_CONT:
-            self.axes.set_title('Contour Map')
+            self.axes.set_title('Contours')
+        elif self.type == self.TYPE_HEAT:
+            self.axes.set_title('Heat')
         else:
-            self.axes.set_title('Heat Map')
+            self.axes.set_title('Contours with Heat')
         self.axes.set_xlabel('Longitude ($^\circ$)')
         self.axes.set_ylabel('Latitude ($^\circ$)')
         self.axes.set_xlim(auto=True)
@@ -322,8 +324,10 @@ class DialogGeo(wx.Dialog):
 
         self.extent = (min(x), max(x), min(y), max(y))
 
-        if self.type == self.TYPE_CONT:
+        if self.type in [self.TYPE_HEAT, self.TYPE_DUAL]:
             self.axes.pcolormesh(xi, yi, zi, cmap=self.colourMap)
+
+        if self.type in [self.TYPE_CONT, self.TYPE_DUAL]:
             contours = self.axes.contour(xi, yi, zi, linewidths=0.5,
                                          colors='k')
             self.axes.clabel(contours, inline=1, fontsize='x-small',
@@ -334,7 +338,6 @@ class DialogGeo(wx.Dialog):
                 for child in self.axes.get_children():
                     child.set_path_effects([effect])
         else:
-
             self.axes.pcolormesh(xi, yi, zi, cmap=self.colourMap)
 
         self.canvas.draw()
