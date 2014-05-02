@@ -106,7 +106,7 @@ class ThreadScan(threading.Thread):
         post_event(self.notify, EventThread(Event.INFO, None, tuner))
 
         freq = self.__f_start()
-        timeStamp = time.time()
+        timeStamp = math.floor(time.time())
         while freq <= self.__f_stop():
             if self.cancel:
                 post_event(self.notify,

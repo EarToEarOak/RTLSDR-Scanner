@@ -148,7 +148,9 @@ def open_plot(dirname, filename):
             if version > 7:
                 desc = data[1]['Description']
             if version > 8:
-                location = data[1]['Location']
+                location = {}
+                for t, l in data[1]['Location'].iteritems():
+                    location[float(t)] = l
 
         except ValueError:
             error = True

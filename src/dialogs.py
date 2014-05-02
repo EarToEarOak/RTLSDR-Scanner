@@ -330,12 +330,16 @@ class DialogGeo(wx.Dialog):
             sweep = [yv for xv, yv in spectrum.items() if freqMin <= xv <= freqMax]
             peak = max(sweep)
             try:
-                location = self.location[str(timeStamp)]
+                location = self.location[timeStamp]
             except KeyError:
                 continue
             x.append(location[1])
             y.append(location[0])
             z.append(peak)
+
+        if len(x) == 0:
+            self.__draw_warning()
+            return
 
         xi = numpy.linspace(min(x), max(x), 500)
         yi = numpy.linspace(min(y), max(y), 500)
@@ -343,9 +347,7 @@ class DialogGeo(wx.Dialog):
         try:
             zi = mlab.griddata(x, y, z, xi, yi)
         except:
-            self.axes.text(0.5, 0.5, 'Insufficient GPS data',
-                           ha='center', va='center',
-                           transform=self.axes.transAxes)
+            self.__draw_warning()
             return
 
         self.extent = (min(x), max(x), min(y), max(y))
@@ -367,6 +369,11 @@ class DialogGeo(wx.Dialog):
             self.axes.pcolormesh(xi, yi, zi, cmap=self.colourMap)
 
         self.canvas.draw()
+
+    def __draw_warning(self):
+        self.axes.text(0.5, 0.5, 'Insufficient GPS data',
+                       ha='center', va='center',
+                       transform=self.axes.transAxes)
 
     def __on_update(self, _event):
         self.__setup_plot()

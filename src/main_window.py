@@ -801,9 +801,9 @@ class FrameMain(wx.Frame):
                     self.scanInfo.lat = str(data[0])
                     self.scanInfo.lon = str(data[1])
                     if len(self.spectrum) > 0:
-                        self.location[str(max(self.spectrum))] = (data[0],
-                                                                  data[1],
-                                                                  data[2])
+                        self.location[max(self.spectrum)] = (data[0],
+                                                             data[1],
+                                                             data[2])
 
         wx.YieldIfNeeded()
 
