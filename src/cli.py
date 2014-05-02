@@ -32,7 +32,7 @@ from urlparse import urlparse
 
 from constants import SAMPLE_RATE, File
 from devices import DeviceRTL, get_devices_rtl
-from events import Event, post_event, EventThreadStatus
+from events import Event, post_event, EventThread
 from file import save_plot, export_plot, ScanInfo
 from misc import nearest, calc_real_dwell, next_2_to_pow
 from scan import ThreadScan, anaylse_data, update_spectrum
@@ -148,8 +148,8 @@ class Cli():
     def __process_event(self, queue, pool):
         event = queue.get()
         status = event.data.get_status()
-        freq = event.data.get_freq()
-        data = event.data.get_data()
+        freq = event.data.get_arg1()
+        data = event.data.get_arg2()
 
         if status == Event.STARTING:
             print "Starting"
@@ -181,7 +181,7 @@ class Cli():
 
     def __on_process_done(self, data):
         timeStamp, freq, scan = data
-        post_event(self.queue, EventThreadStatus(Event.PROCESSED, freq,
+        post_event(self.queue, EventThread(Event.PROCESSED, freq,
                                                  (timeStamp, scan)))
 
     def __progress(self):

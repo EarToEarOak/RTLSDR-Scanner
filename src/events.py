@@ -28,36 +28,36 @@ import Queue
 import wx
 
 
-EVT_THREAD_STATUS = wx.NewId()
+EVENT_THREAD = wx.NewId()
 
 
 class Event:
     STARTING, STEPS, INFO, DATA, CAL, STOPPED, ERROR, FINISHED, PROCESSED, \
     LEVEL, UPDATED, DRAW, PLOTTED, PLOTTED_FULL, VER_UPD, VER_NOUPD, \
-    VER_UPDFAIL, LOC_WARN, LOC = range(19)
+    VER_UPDFAIL, LOC, LOC_RAW, LOC_WARN = range(20)
 
 
 class Status():
-    def __init__(self, status, freq, data):
+    def __init__(self, status, arg1, arg2):
         self.status = status
-        self.freq = freq
-        self.data = data
+        self.arg1 = arg1
+        self.arg2 = arg2
 
     def get_status(self):
         return self.status
 
-    def get_freq(self):
-        return self.freq
+    def get_arg1(self):
+        return self.arg1
 
-    def get_data(self):
-        return self.data
+    def get_arg2(self):
+        return self.arg2
 
 
-class EventThreadStatus(wx.PyEvent):
-    def __init__(self, status, freq=None, data=None):
+class EventThread(wx.PyEvent):
+    def __init__(self, status, arg1=None, arg2=None):
         wx.PyEvent.__init__(self)
-        self.SetEventType(EVT_THREAD_STATUS)
-        self.data = Status(status, freq, data)
+        self.SetEventType(EVENT_THREAD)
+        self.data = Status(status, arg1, arg2)
 
 
 def post_event(destination, status):

@@ -32,7 +32,7 @@ import matplotlib
 import rtlsdr
 
 from constants import SAMPLE_RATE, BANDWIDTH, WINFUNC
-from events import EventThreadStatus, Event, post_event
+from events import EventThread, Event, post_event
 import rtltcp
 
 
@@ -55,9 +55,9 @@ class ThreadScan(threading.Thread):
         self.offset = settings.devicesRtl[device].offset
         self.cancel = False
 
-        post_event(self.notify, EventThreadStatus(Event.STARTING))
+        post_event(self.notify, EventThread(Event.STARTING))
         steps = int((self.__f_stop() - self.__f_start()) / self.__f_step())
-        post_event(self.notify, EventThreadStatus(Event.STEPS, steps))
+        post_event(self.notify, EventThread(Event.STEPS, steps))
         self.start()
 
     def __f_start(self):
@@ -84,7 +84,7 @@ class ThreadScan(threading.Thread):
                 self.sdr.set_gain(self.gain)
                 tuner = self.sdr.get_tuner_type()
             except IOError as error:
-                post_event(self.notify, EventThreadStatus(Event.ERROR,
+                post_event(self.notify, EventThread(Event.ERROR,
                                                           0, error.message))
         else:
             try:
@@ -94,7 +94,7 @@ class ThreadScan(threading.Thread):
                 self.sdr.set_gain(self.gain)
                 tuner = self.sdr.get_tuner_type()
             except IOError as error:
-                post_event(self.notify, EventThreadStatus(Event.ERROR,
+                post_event(self.notify, EventThread(Event.ERROR,
                                                           0, error))
 
         return tuner
@@ -103,20 +103,20 @@ class ThreadScan(threading.Thread):
         tuner = self.__rtl_setup()
         if self.sdr is None:
             return
-        post_event(self.notify, EventThreadStatus(Event.INFO, None, tuner))
+        post_event(self.notify, EventThread(Event.INFO, None, tuner))
 
         freq = self.__f_start()
         timeStamp = time.time()
         while freq <= self.__f_stop():
             if self.cancel:
                 post_event(self.notify,
-                           EventThreadStatus(Event.STOPPED))
+                           EventThread(Event.STOPPED))
                 self.rtl_close()
                 return
             try:
                 scan = self.rtl_scan(freq)
                 post_event(self.notify,
-                           EventThreadStatus(Event.DATA, freq,
+                           EventThread(Event.DATA, freq,
                                             (timeStamp, scan)))
             except IOError:
                 if self.sdr is not None:
@@ -125,7 +125,7 @@ class ThreadScan(threading.Thread):
             except (TypeError, AttributeError) as error:
                 if self.notify:
                     post_event(self.notify,
-                               EventThreadStatus(Event.ERROR,
+                               EventThread(Event.ERROR,
                                                  0, error.message))
                 return
             except WindowsError:
@@ -134,10 +134,10 @@ class ThreadScan(threading.Thread):
 
             freq += self.__f_step()
 
-        post_event(self.notify, EventThreadStatus(Event.FINISHED, 0, None))
+        post_event(self.notify, EventThread(Event.FINISHED, 0, None))
 
         if self.isCal:
-            post_event(self.notify, EventThreadStatus(Event.CAL))
+            post_event(self.notify, EventThread(Event.CAL))
 
     def abort(self):
         self.cancel = True
@@ -205,13 +205,13 @@ def update_spectrum(notify, lock, start, stop, freqCentre, data, offset,
                             (spectrum[timeStamp][freq] + power) / 2
                         if alertLevel is not None and \
                         spectrum[timeStamp][freq] > alertLevel:
-                            post_event(notify, EventThreadStatus(Event.LEVEL))
+                            post_event(notify, EventThread(Event.LEVEL))
                         updated = True
                     else:
                         spectrum[timeStamp][freq] = power
                         updated = True
 
-    post_event(notify, EventThreadStatus(Event.UPDATED, None, updated))
+    post_event(notify, EventThread(Event.UPDATED, None, updated))
 
 
 if __name__ == '__main__':

@@ -42,7 +42,7 @@ from devices import get_devices_rtl
 from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, \
     DialogDevicesRTL, DialogCompare, DialogAutoCal, DialogAbout, DialogSaveWarn, \
     DialogDevicesGPS, DialogGeo
-from events import EVT_THREAD_STATUS, Event, EventThreadStatus, post_event
+from events import EVENT_THREAD, Event, EventThread, post_event
 from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
     export_kmz
 from location import ThreadLocation
@@ -178,7 +178,7 @@ class FrameMain(wx.Frame):
         self.SetClientSize((toolbarSize[0] + 10, displaySize[1] / 2))
         self.SetMinSize((displaySize[0] / 4, displaySize[1] / 4))
 
-        self.Connect(-1, -1, EVT_THREAD_STATUS, self.__on_event)
+        self.Connect(-1, -1, EVENT_THREAD, self.__on_event)
 
         self.SetDropTarget(DropTarget(self))
 
@@ -726,8 +726,8 @@ class FrameMain(wx.Frame):
 
     def __on_event(self, event):
         status = event.data.get_status()
-        freq = event.data.get_freq()
-        data = event.data.get_data()
+        freq = event.data.get_arg1()
+        data = event.data.get_arg2()
         if status == Event.STARTING:
             self.status.set_general("Starting")
         elif status == Event.STEPS:
@@ -809,11 +809,11 @@ class FrameMain(wx.Frame):
 
     def __on_process_done(self, data):
         timeStamp, freq, scan = data
-        post_event(self, EventThreadStatus(Event.PROCESSED, freq,
+        post_event(self, EventThread(Event.PROCESSED, freq,
                                              (timeStamp, scan)))
 
     def __auto_cal(self, status):
-        freq = self.dlgCal.get_freq()
+        freq = self.dlgCal.get_arg1()
         if self.dlgCal is not None:
             if status == Cal.START:
                 self.spinCtrlStart.SetValue(int(freq))
@@ -873,11 +873,11 @@ class FrameMain(wx.Frame):
             self.graph.set_plot_title()
 
             if self.settings.gps:
-                if self.threadLocation:
+                if self.threadLocation and self.threadLocation.isAlive():
                     self.threadLocation.stop()
                     self.threadLocation.join()
-                    self.threadLocation = None
-                self.threadLocation = ThreadLocation(self, self.settings)
+                device = self.settings.devicesGps[self.settings.indexGps]
+                self.threadLocation = ThreadLocation(self, device)
 
             return True
 
@@ -886,11 +886,11 @@ class FrameMain(wx.Frame):
             self.status.set_general("Stopping")
             self.threadScan.abort()
             self.threadScan.join()
-            self.threadScan = None
-        if self.threadLocation:
+        self.threadScan = None
+        if self.threadLocation and self.threadLocation.isAlive():
             self.threadLocation.stop()
             self.threadLocation.join()
-            self.threadLocation = None
+        self.threadLocation = None
         if self.sdr is not None:
             self.sdr.close()
         self.__set_control_state(True)
@@ -924,10 +924,10 @@ class FrameMain(wx.Frame):
         if self.sdr is not None:
             self.sdr.close()
             self.sdr = None
-        if self.threadLocation:
+        if self.threadLocation and self.threadLocation.isAlive():
             self.threadLocation.stop()
             self.threadLocation.join()
-            self.threadLocation = None
+        self.threadLocation = None
 
         self.status.hide_progress()
         self.steps = 0
@@ -1074,13 +1074,13 @@ class FrameMain(wx.Frame):
         try:
             remote = get_version_timestamp_repo()
         except IOError:
-            post_event(self, EventThreadStatus(Event.VER_UPDFAIL))
+            post_event(self, EventThread(Event.VER_UPDFAIL))
             return
 
         if remote > local:
-            post_event(self, EventThreadStatus(Event.VER_UPD, local, remote))
+            post_event(self, EventThread(Event.VER_UPD, local, remote))
         else:
-            post_event(self, EventThreadStatus(Event.VER_NOUPD))
+            post_event(self, EventThread(Event.VER_NOUPD))
 
     def __update_checked(self, updateFound=False, local=None, remote=None,
                        failed=False):
@@ -1113,7 +1113,7 @@ class FrameMain(wx.Frame):
         return self.settings.devicesRtl
 
     def __wait_background(self):
-        self.Disconnect(-1, -1, EVT_THREAD_STATUS, self.__on_event)
+        self.Disconnect(-1, -1, EVENT_THREAD, self.__on_event)
         if self.threadScan:
             self.threadScan.abort()
             self.threadScan.join()

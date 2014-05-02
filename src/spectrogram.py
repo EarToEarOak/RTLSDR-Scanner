@@ -38,7 +38,7 @@ from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 import numpy
 
 from constants import Markers
-from events import EventThreadStatus, Event, post_event
+from events import EventThread, Event, post_event
 from misc import format_time
 from spectrum import epoch_to_mpl, split_spectrum, Measure
 
@@ -234,7 +234,7 @@ class Spectrogram:
 
     def redraw_plot(self):
         if self.figure is not None:
-            post_event(self.notify, EventThreadStatus(Event.DRAW))
+            post_event(self.notify, EventThread(Event.DRAW))
 
     def get_axes(self):
         return self.axes

@@ -32,15 +32,16 @@ import serial
 from serial.serialutil import SerialException
 
 from devices import DeviceGPS
-from events import post_event, EventThreadStatus, Event
+from events import post_event, EventThread, Event
 
 
 class ThreadLocation(threading.Thread):
-    def __init__(self, notify, settings):
+    def __init__(self, notify, device, raw=False):
         threading.Thread.__init__(self)
         self.name = 'Location'
         self.notify = notify
-        self.device = settings.devicesGps[settings.indexGps]
+        self.device = device
+        self.raw = raw
         self.cancel = False
         self.socket = None
         self.serial = None
@@ -74,8 +75,8 @@ class ThreadLocation(threading.Thread):
                 self.socket.sendall('w')
 
         except IOError as error:
-            post_event(self.notify, EventThreadStatus(Event.LOC_WARN,
-                                                      0, error))
+            post_event(self.notify, EventThread(Event.LOC_WARN,
+                                                0, error))
             self.socket.close()
             return False
 
@@ -94,6 +95,9 @@ class ThreadLocation(threading.Thread):
 
     def __gpsd_parse(self):
         for resp in self.__gpsd_read():
+            if self.raw:
+                post_event(self.notify, EventThread(Event.LOC_RAW,
+                                                    0, resp))
             data = json.loads(resp)
             if data['class'] == 'TPV':
                 if data['mode'] in [2, 3]:
@@ -107,25 +111,28 @@ class ThreadLocation(threading.Thread):
                     except KeyError:
                         alt = None
                     post_event(self.notify,
-                               EventThreadStatus(Event.LOC, 0,
-                                                 (lat, lon, alt)))
+                               EventThread(Event.LOC, 0,
+                                           (lat, lon, alt)))
 
     def __gpsd_old_parse(self):
         for resp in self.__gpsd_read():
+            if self.raw:
+                post_event(self.notify, EventThread(Event.LOC_RAW,
+                                                    0, resp))
             data = resp.split(' ')
-            if len(data) == 15 and data[0] == 'GPSD,O=GLL':
+            if len(data) == 15 and data[0] == 'GPSD,O=GGA':
                 try:
                     lat = float(data[4])
                     lon = float(data[3])
                 except ValueError:
                         return
                 try:
-                    alt = float(data[6])
+                    alt = float(data[5])
                 except ValueError:
                     alt = None
                 post_event(self.notify,
-                           EventThreadStatus(Event.LOC, 0,
-                                             (lat, lon, alt)))
+                           EventThread(Event.LOC, 0,
+                                       (lat, lon, alt)))
 
     def __gpsd_close(self):
         if self.device.type == DeviceGPS.GPSD:
@@ -144,14 +151,17 @@ class ThreadLocation(threading.Thread):
                                         xonxoff=self.device.soft,
                                         timeout=1)
         except SerialException as error:
-            post_event(self.notify, EventThreadStatus(Event.LOC_WARN,
-                                                      0, error.message))
+            post_event(self.notify, EventThread(Event.LOC_WARN,
+                                                0, error.message))
             return False
         return True
 
     def __nmea_parse(self):
         while not self.cancel:
             resp = self.serial.readline()
+            if self.raw:
+                post_event(self.notify, EventThread(Event.LOC_RAW,
+                                                    0, resp))
             resp = resp.replace('\n', '')
             resp = resp.replace('\r', '')
             resp = resp[1::]
@@ -169,7 +179,7 @@ class ThreadLocation(threading.Thread):
                             except ValueError:
                                 alt = None
                             post_event(self.notify,
-                                       EventThreadStatus(Event.LOC, 0,
+                                       EventThread(Event.LOC, 0,
                                                          (lat, lon, alt)))
 
     def __nmea_checksum(self, data):

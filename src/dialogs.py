@@ -23,6 +23,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import Queue
 import copy
 import itertools
 from urlparse import urlparse
@@ -45,7 +46,9 @@ from wx.lib.masked.numctrl import NumCtrl
 from constants import File, F_MIN, F_MAX, Cal, SAMPLE_RATE, BANDWIDTH, WINFUNC, \
     TUNER
 from devices import DeviceRTL, DeviceGPS
+from events import Event
 from file import open_plot
+from location import ThreadLocation
 from misc import close_modeless, format_time, ValidatorCoord, get_colours, \
     nearest, load_bitmap, get_version_timestamp
 from rtltcp import RtlTcp
@@ -191,7 +194,7 @@ class DialogAutoCal(wx.Dialog):
     def reset_cal(self):
         self.set_cal(self.cal)
 
-    def get_freq(self):
+    def get_arg1(self):
         return self.textFreq.GetValue()
 
 
@@ -1207,7 +1210,7 @@ class DialogDevicesRTL(wx.Dialog):
 
 
 class DialogDevicesGPS(wx.Dialog):
-    COL_SEL, COL_NAME, COL_DEV, COL_SET, COL_TYPE = range(5)
+    COL_SEL, COL_NAME, COL_DEV, COL_SET, COL_TYPE, COL_TEST = range(6)
 
     def __init__(self, parent, settings):
         self.settings = settings
@@ -1219,13 +1222,14 @@ class DialogDevicesGPS(wx.Dialog):
         self.comms = [port for port in serial.tools.list_ports.comports()]
 
         self.gridDev = grid.Grid(self)
-        self.gridDev.CreateGrid(len(self.devices), 5)
+        self.gridDev.CreateGrid(len(self.devices), 6)
         self.gridDev.SetRowLabelSize(0)
         self.gridDev.SetColLabelValue(self.COL_SEL, "Select")
         self.gridDev.SetColLabelValue(self.COL_NAME, "Name")
         self.gridDev.SetColLabelValue(self.COL_DEV, "Device")
         self.gridDev.SetColLabelValue(self.COL_SET, "Settings")
         self.gridDev.SetColLabelValue(self.COL_TYPE, "Type")
+        self.gridDev.SetColLabelValue(self.COL_TEST, "Test")
 
         self.__set_dev_grid()
 
@@ -1286,6 +1290,9 @@ class DialogDevicesGPS(wx.Dialog):
                 self.gridDev.SetCellBackgroundColour(i, self.COL_SET, colour)
             self.gridDev.SetCellValue(i, self.COL_TYPE,
                                       DeviceGPS.TYPE[device.type])
+            self.gridDev.SetCellValue(i, self.COL_TEST, '...')
+            self.gridDev.SetCellAlignment(i, self.COL_TEST,
+                                          wx.ALIGN_CENTRE, wx.ALIGN_CENTRE)
             i += 1
 
         if self.index >= len(self.devices):
@@ -1333,17 +1340,21 @@ class DialogDevicesGPS(wx.Dialog):
     def __on_click(self, event):
         col = event.GetCol()
         index = event.GetRow()
+        device = self.devices[index]
         if col == self.COL_SEL:
             self.index = event.GetRow()
             self.__select_row(index)
-        if col == self.COL_SET:
-            device = self.devices[index]
+        elif col == self.COL_SET:
             if device.type == DeviceGPS.NMEA:
                 dlg = DialogComm(self, device)
                 dlg.ShowModal()
                 dlg.Destroy()
                 self.gridDev.SetCellValue(index, self.COL_SET,
                                           device.get_serial_desc())
+        elif col == self.COL_TEST:
+            dlg = DialogGPSTest(self, device)
+            dlg.ShowModal()
+            dlg.Destroy()
         else:
             self.gridDev.ForceRefresh()
             event.Skip()
@@ -1529,6 +1540,114 @@ class DialogComm(wx.Dialog):
         self.device.soft = self.checkSoft.GetValue()
 
         self.EndModal(wx.ID_OK)
+
+
+class DialogGPSTest(wx.Dialog):
+    def __init__(self, parent, device):
+        self.device = device
+        self.threadLocation = None
+        self.raw = ''
+
+        wx.Dialog.__init__(self, parent=parent, title='GPS Test')
+
+        textLat = wx.StaticText(self, label='Longitude')
+        self.textLat = wx.TextCtrl(self, style=wx.TE_READONLY)
+        textLon = wx.StaticText(self, label='Latitude')
+        self.textLon = wx.TextCtrl(self, style=wx.TE_READONLY)
+        textAlt = wx.StaticText(self, label='Altitude')
+        self.textAlt = wx.TextCtrl(self, style=wx.TE_READONLY)
+        textRaw = wx.StaticText(self, label='Raw output')
+        self.textRaw = wx.TextCtrl(self,
+                                   style=wx.TE_MULTILINE | wx.TE_READONLY)
+
+        self.buttonStart = wx.Button(self, label='Start')
+        self.Bind(wx.EVT_BUTTON, self.__on_start, self.buttonStart)
+        self.buttonStop = wx.Button(self, label='Stop')
+        self.Bind(wx.EVT_BUTTON, self.__on_stop, self.buttonStop)
+        self.buttonStop.Disable()
+
+        buttonOk = wx.Button(self, wx.ID_OK)
+        self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
+
+        grid = wx.GridBagSizer(10, 10)
+
+        grid.Add(textLat, pos=(0, 1), flag=wx.ALL, border=5)
+        grid.Add(self.textLat, pos=(0, 2), span=(1, 2), flag=wx.ALL, border=5)
+        grid.Add(textLon, pos=(1, 1), flag=wx.ALL, border=5)
+        grid.Add(self.textLon, pos=(1, 2), span=(1, 2), flag=wx.ALL, border=5)
+        grid.Add(textAlt, pos=(2, 1), flag=wx.ALL, border=5)
+        grid.Add(self.textAlt, pos=(2, 2), span=(1, 2), flag=wx.ALL, border=5)
+        grid.Add(textRaw, pos=(3, 0), flag=wx.ALL, border=5)
+        grid.Add(self.textRaw, pos=(4, 0), span=(5, 4),
+                 flag=wx.ALL | wx.EXPAND, border=5)
+        grid.Add(self.buttonStart, pos=(9, 1), flag=wx.ALL, border=5)
+        grid.Add(self.buttonStop, pos=(9, 2), flag=wx.ALL, border=5)
+        grid.Add(buttonOk, pos=(10, 3), flag=wx.ALL, border=5)
+
+        self.SetSizerAndFit(grid)
+
+        self.queue = Queue.Queue()
+        self.Bind(wx.EVT_IDLE, self.__on_idle)
+
+    def __on_start(self, _event):
+        if not self.threadLocation:
+            self.buttonStart.Disable()
+            self.buttonStop.Enable()
+            self.textRaw.SetValue('')
+            self.__add_raw('Starting...')
+            self.threadLocation = ThreadLocation(self.queue, self.device,
+                                                 raw=True)
+
+    def __on_stop(self, _event):
+        if self.threadLocation and self.threadLocation.isAlive():
+            self.__add_raw('Stopping...')
+            self.threadLocation.stop()
+            self.threadLocation.join()
+        self.threadLocation = None
+        self.buttonStart.Enable()
+        self.buttonStop.Disable()
+
+    def __on_ok(self, _event):
+        self.__on_stop(None)
+        self.EndModal(wx.ID_OK)
+
+    def __on_idle(self, event):
+        if not self.queue.empty():
+            event = self.queue.get()
+            status = event.data.get_status()
+            loc = event.data.get_arg2()
+
+            if status == Event.LOC:
+                if loc[0] is not None:
+                    text = str(loc[0])
+                else:
+                    text = ''
+                self.textLon.SetValue(text)
+                if loc[1] is not None:
+                    text = str(loc[1])
+                else:
+                    text = ''
+                self.textLat.SetValue(text)
+                if loc[2] is not None:
+                    text = str(loc[2])
+                else:
+                    text = ''
+                self.textAlt.SetValue(text)
+            elif status == Event.LOC_WARN:
+                self.__on_stop(None)
+                self.__add_raw('{0}'.format(loc))
+            elif status == Event.LOC_RAW:
+                self.__add_raw(loc)
+
+    def __add_raw(self, text):
+        text = text.replace('\n', '')
+        text = text.replace('\r', '')
+        terminal = self.textRaw.GetValue().split('\n')
+        terminal.append(text)
+        while len(terminal) > 100:
+            terminal.pop(0)
+        self.textRaw.SetValue('\n'.join(terminal))
+        self.textRaw.ScrollPages(9999)
 
 
 class DialogSaveWarn(wx.Dialog):
