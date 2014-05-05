@@ -37,14 +37,14 @@ import wx
 from wx.lib.masked import NumCtrl
 
 from constants import F_MIN, F_MAX, MODE, DWELL, NFFT, DISPLAY, Warn, \
-    Display, Cal, Mode, File
+    Display, Cal, Mode
 from devices import get_devices_rtl
 from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, \
     DialogDevicesRTL, DialogCompare, DialogAutoCal, DialogAbout, DialogSaveWarn, \
     DialogDevicesGPS, DialogGeo
 from events import EVENT_THREAD, Event, EventThread, post_event
 from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
-    export_map, extension_add
+    export_map, extension_add, File
 from location import ThreadLocation
 from misc import calc_samples, calc_real_dwell, \
     get_version_timestamp, get_version_timestamp_repo, add_colours
@@ -481,7 +481,6 @@ class FrameMain(wx.Frame):
             self.settings.dirExport = dirName
             fileName = extension_add(fileName, dlg.GetFilterIndex(),
                                      File.Types.PLOT)
-            print fileName
             fullName = os.path.join(dirName, fileName)
             export_plot(fullName, dlg.GetFilterIndex(), self.spectrum)
             self.status.set_general("Finished")

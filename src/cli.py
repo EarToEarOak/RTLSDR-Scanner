@@ -30,10 +30,10 @@ from threading import Thread
 import threading
 from urlparse import urlparse
 
-from constants import SAMPLE_RATE, File
+from constants import SAMPLE_RATE
 from devices import DeviceRTL, get_devices_rtl
 from events import Event, post_event, EventThread
-from file import save_plot, export_plot, ScanInfo
+from file import save_plot, export_plot, ScanInfo, File
 from misc import nearest, calc_real_dwell, next_2_to_pow
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings

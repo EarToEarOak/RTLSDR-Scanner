@@ -45,7 +45,7 @@ import multiprocessing
 import os.path
 
 from cli import Cli
-from constants import File
+from file import File
 from main_window import FrameMain, RtlSdrScanner
 from misc import set_version_timestamp
 

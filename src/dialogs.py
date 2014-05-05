@@ -43,11 +43,11 @@ from wx.lib import masked
 from wx.lib.agw.cubecolourdialog import CubeColourDialog
 from wx.lib.masked.numctrl import NumCtrl
 
-from constants import File, F_MIN, F_MAX, Cal, SAMPLE_RATE, BANDWIDTH, WINFUNC, \
+from constants import F_MIN, F_MAX, Cal, SAMPLE_RATE, BANDWIDTH, WINFUNC, \
     TUNER
 from devices import DeviceRTL, DeviceGPS
 from events import Event
-from file import open_plot
+from file import open_plot, File
 from location import ThreadLocation
 from misc import close_modeless, format_time, ValidatorCoord, get_colours, \
     nearest, load_bitmap, get_version_timestamp
