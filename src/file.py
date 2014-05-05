@@ -182,7 +182,7 @@ def open_plot(dirname, filename):
     return scanInfo, spectrum, location
 
 
-def save_plot(dirname, filename, scanInfo, spectrum, location):
+def save_plot(filename, scanInfo, spectrum, location):
     data = [File.HEADER, {'Version': File.VERSION,
                           'Start':scanInfo.start,
                           'Stop':scanInfo.stop,
@@ -200,14 +200,14 @@ def save_plot(dirname, filename, scanInfo, spectrum, location):
                           'Spectrum': spectrum,
                           'Location': location}]
 
-    handle = open(os.path.join(dirname, filename), 'wb')
+    handle = open(os.path.join(filename), 'wb')
     handle.write(json.dumps(data, indent=4))
     handle.close()
 
 
-def export_plot(dirname, filename, exportType, spectrum):
+def export_plot(filename, exportType, spectrum):
     spectrum = sort_spectrum(spectrum)
-    handle = open(os.path.join(dirname, filename), 'wb')
+    handle = open(filename, 'wb')
     if exportType == File.PlotType.CSV:
         export_csv(handle, spectrum)
     elif exportType == File.PlotType.GNUPLOT:
@@ -233,7 +233,7 @@ def export_image(filename, format, figure, dpi):
     size = canvas.get_width_height()
     image = Image.frombuffer('RGBA', size, buf, 'raw', 'RGBA', 0, 1)
     image = image.convert('RGB')
-    ext = File.get_export_ext(format, File.Exports.IMAGE)
+    ext = File.get_type_ext(format, File.Types.IMAGE)
     image.save(filename, format=ext[1::], dpi=(dpi, dpi))
 
     figure.set_size_inches(oldSize)
@@ -335,7 +335,7 @@ def export_xyz(filename, xyz):
     handle = open(filename, 'wb')
     handle.write('x, y, Level (dB/Hz)\n')
     for i in range(len(xyz[0])):
-        handle.write('{0}, {1}, {2}\n'.format(xyz[0][i],xyz[1][i],xyz[2][i]))
+        handle.write('{0}, {1}, {2}\n'.format(xyz[0][i], xyz[1][i], xyz[2][i]))
     handle.close()
 
 
@@ -346,6 +346,15 @@ def write_numpy(handle, array, name):
             handle.write('{0} '.format(j))
         handle.write(';\n')
     handle.write(']\n')
+
+
+def extension_add(fileName, index, fileType):
+    _name, extCurrent = os.path.splitext(fileName)
+    ext = File.get_type_ext(index, fileType)
+    if extCurrent != ext:
+        return fileName + ext
+
+    return fileName
 
 
 if __name__ == '__main__':

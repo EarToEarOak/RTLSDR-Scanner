@@ -70,9 +70,9 @@ class Cli():
             error = "Dwell should be positive"
         elif nfft <= 0:
             error = "FFT bins should be positive"
-        elif ext != ".rfs" and File.get_export_type(ext) == -1:
+        elif ext != ".rfs" and File.get_type_index(ext) == -1:
             error = "File extension should be .rfs, "
-            error += File.get_export_pretty()
+            error += File.get_type_pretty()
         else:
             device = DeviceRTL()
             if remote is None:
@@ -130,7 +130,7 @@ class Cli():
             scanInfo.setFromSettings(self.settings)
             save_plot(directory, filename, scanInfo, self.spectrum, None)
         else:
-            exportType = File.get_export_type(ext)
+            exportType = File.get_type_index(ext)
             export_plot(directory, filename, exportType, self.spectrum)
 
         print "Done"

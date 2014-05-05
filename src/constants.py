@@ -107,8 +107,11 @@ class Markers:
 
 
 class File:
-    class Exports:
-        PLOT, IMAGE, GEO = range(3)
+    class Types:
+        SAVE, PLOT, IMAGE, GEO = range(4)
+
+    class SaveType:
+        RFS = 0
 
     class PlotType:
         CSV, GNUPLOT, FREEMAT = range(3)
@@ -119,12 +122,15 @@ class File:
     class GeoType:
         KMZ, CSV = range(2)
 
-    PLOT = [""] * 3
+    SAVE = [''] * 1
+    SAVE[SaveType.RFS] = 'RTLSDR frequency scan (*.rfs)|*.rfs'
+
+    PLOT = [''] * 3
     PLOT[PlotType.CSV] = "CSV table (*.csv)|*.csv"
     PLOT[PlotType.GNUPLOT] = "gnuplot script (*.plt)|*.plt"
     PLOT[PlotType.FREEMAT] = "FreeMat script (*.m)|*.m"
 
-    IMAGE = [""] * 8
+    IMAGE = [''] * 8
     IMAGE[ImageType.BMP] = 'Bitmap image (*.bmp)|*.bmp'
     IMAGE[ImageType.EPS] = 'Encapsulated PostScript (*.eps)|*.eps'
     IMAGE[ImageType.GIF] = 'GIF image (*.gif)|*.gif'
@@ -134,53 +140,45 @@ class File:
     IMAGE[ImageType.PPM] = 'Portable Pixmap image (*.ppm)|*.ppm'
     IMAGE[ImageType.TIFF] = 'Tagged Image File (*.tiff)|*.tiff'
 
-    GEO = [""] * 2
+    GEO = [''] * 2
     GEO[GeoType.KMZ] = 'Google Earth (*.kmz)|*.kmz'
     GEO[GeoType.CSV] = 'CSV Table (*.csv)|*.csv'
 
     HEADER = "RTLSDR Scanner"
     VERSION = 9
-    RFS = "RTLSDR frequency scan (*.rfs)|*.rfs"
 
     @staticmethod
-    def __get_exports(export):
-        if export == File.Exports.PLOT:
-            exports = File.PLOT
-        elif export == File.Exports.IMAGE:
-            exports = File.IMAGE
-        else:
-            exports = File.GEO
-
-        return exports
+    def __get_types(type):
+        return [File.SAVE, File.PLOT, File.IMAGE, File.GEO][type]
 
     @staticmethod
-    def get_export_ext(index, export=Exports.PLOT):
-        exports = File.__get_exports(export)
-        filter = exports[index]
+    def get_type_ext(index, type=Types.PLOT):
+        types = File.__get_types(type)
+        filter = types[index]
         delim = filter.index('|*')
         return filter[delim + 2:]
 
     @staticmethod
-    def get_export_filters(export=Exports.PLOT):
-        exports = File.__get_exports(export)
+    def get_type_filters(type=Types.PLOT):
+        types = File.__get_types(type)
 
         filters = ''
-        length = len(exports)
+        length = len(types)
         for i in xrange(length):
-            filters += exports[i]
+            filters += types[i]
             if i < length - 1:
                 filters += '|'
 
         return filters
 
     @staticmethod
-    def get_export_pretty(export=Exports.PLOT):
-        exports = File.__get_exports(export)
+    def get_type_pretty(type=Types.PLOT):
+        types = File.__get_types(type)
 
         pretty = ''
-        length = len(exports)
+        length = len(types)
         for i in xrange(length):
-            pretty += File.get_export_ext(i, export)
+            pretty += File.get_type_ext(i, type)
             if i < length - 2:
                 pretty += ', '
             elif i < length - 1:
@@ -189,10 +187,10 @@ class File:
         return pretty
 
     @staticmethod
-    def get_export_type(extension, export=Exports.PLOT):
-        exports = File.__get_exports(export)
+    def get_type_index(extension, type=Types.PLOT):
+        exports = File.__get_types(type)
         for i in xrange(len(exports)):
-            if extension == File.get_export_ext(i, export):
+            if extension == File.get_type_ext(i, type):
                 return i
 
         return -1

@@ -44,7 +44,7 @@ from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, \
     DialogDevicesGPS, DialogGeo
 from events import EVENT_THREAD, Event, EventThread, post_event
 from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
-    export_map
+    export_map, extension_add
 from location import ThreadLocation
 from misc import calc_samples, calc_real_dwell, \
     get_version_timestamp, get_version_timestamp_repo, add_colours
@@ -439,7 +439,7 @@ class FrameMain(wx.Frame):
         if self.__save_warn(Warn.OPEN):
             return
         dlg = wx.FileDialog(self, "Open a scan", self.settings.dirScans,
-                            self.filename, File.RFS, wx.OPEN)
+                            self.filename, File.SAVE, wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             self.open(dlg.GetDirectory(), dlg.GetFilename())
         dlg.Destroy()
@@ -453,31 +453,37 @@ class FrameMain(wx.Frame):
 
     def __on_save(self, _event):
         dlg = wx.FileDialog(self, "Save a scan", self.settings.dirScans,
-                            self.filename, File.RFS,
+                            self.filename, File.get_type_filters(File.Types.SAVE),
                             wx.SAVE | wx.OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
             self.status.set_general("Saving")
-            self.filename = os.path.splitext(dlg.GetFilename())[0]
-            dirname = dlg.GetDirectory()
-            self.settings.dirScans = dirname
-            save_plot(dirname, dlg.GetFilename(), self.scanInfo,
-                      self.spectrum, self.location)
+            fileName = dlg.GetFilename()
+            dirName = dlg.GetDirectory()
+            self.filename = os.path.splitext(fileName)[0]
+            self.settings.dirScans = dirName
+            fileName = extension_add(fileName, dlg.GetFilterIndex(),
+                                     File.Types.SAVE)
+            fullName = os.path.join(dirName, fileName)
+            save_plot(fullName, self.scanInfo, self.spectrum, self.location)
             self.__saved(True)
             self.status.set_general("Finished")
-            self.settings.fileHistory.AddFileToHistory(os.path.join(dirname,
-                                                                    dlg.GetFilename()))
+            self.settings.fileHistory.AddFileToHistory(fullName)
         dlg.Destroy()
 
     def __on_export_scan(self, _event):
         dlg = wx.FileDialog(self, "Export a scan", self.settings.dirExport,
-                            self.filename, File.get_export_filters(),
+                            self.filename, File.get_type_filters(),
                             wx.SAVE | wx.OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
             self.status.set_general("Exporting")
-            dirname = dlg.GetDirectory()
-            self.settings.dirExport = dirname
-            export_plot(dirname, dlg.GetFilename(),
-                        dlg.GetFilterIndex(), self.spectrum)
+            fileName = dlg.GetFilename()
+            dirName = dlg.GetDirectory()
+            self.settings.dirExport = dirName
+            fileName = extension_add(fileName, dlg.GetFilterIndex(),
+                                     File.Types.PLOT)
+            print fileName
+            fullName = os.path.join(dirName, fileName)
+            export_plot(fullName, dlg.GetFilterIndex(), self.spectrum)
             self.status.set_general("Finished")
         dlg.Destroy()
 
@@ -485,15 +491,19 @@ class FrameMain(wx.Frame):
         dlg = wx.FileDialog(self, "Export image to file",
                             self.settings.dirExport,
                             self.filename,
-                            File.get_export_filters(File.Exports.IMAGE),
+                            File.get_type_filters(File.Types.IMAGE),
                             wx.SAVE | wx.OVERWRITE_PROMPT)
         dlg.SetFilterIndex(File.ImageType.PNG)
         if dlg.ShowModal() == wx.ID_OK:
             self.status.set_general("Exporting")
-            dirname = dlg.GetDirectory()
-            self.settings.dirExport = dirname
-            filename = os.path.join(dirname, dlg.GetFilename())
-            export_image(filename, dlg.GetFilterIndex(),
+            fileName = dlg.GetFilename()
+            dirName = dlg.GetDirectory()
+            self.settings.dirExport = dirName
+            fileName = extension_add(fileName, dlg.GetFilterIndex(),
+                                     File.Types.IMAGE)
+            fullName = os.path.join(dirName, fileName)
+            exportType = dlg.GetFilterIndex()
+            export_image(fullName, exportType,
                          self.graph.get_figure(), self.settings.exportDpi)
             self.status.set_general("Finished")
         dlg.Destroy()
@@ -508,15 +518,17 @@ class FrameMain(wx.Frame):
             dlgFile = wx.FileDialog(self, "Export map to file",
                                 self.settings.dirExport,
                                 self.filename,
-                                File.get_export_filters(File.Exports.GEO),
+                                File.get_type_filters(File.Types.GEO),
                                 wx.SAVE | wx.OVERWRITE_PROMPT)
             dlgFile.SetFilterIndex(File.GeoType.KMZ)
             if dlgFile.ShowModal() == wx.ID_OK:
-                dirname = dlgFile.GetDirectory()
-                self.settings.dirExport = dirname
-                filename = os.path.join(dirname, dlgFile.GetFilename())
+                fileName = dlgFile.GetFilename()
+                dirName = dlgFile.GetDirectory()
+                self.settings.dirExport = dirName
+                fileName = extension_add(fileName, dlgFile.GetFilterIndex(), File.Types.PLOT)
+                fullName = os.path.join(dirName, fileName)
                 exportType = dlgFile.GetFilterIndex()
-                export_map(filename, exportType, extent, image, xyz)
+                export_map(fullName, exportType, extent, image, xyz)
             self.status.set_general("Finished")
             dlgFile.Destroy()
         dlgGeo.Destroy()
