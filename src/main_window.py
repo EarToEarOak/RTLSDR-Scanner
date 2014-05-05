@@ -531,6 +531,10 @@ class FrameMain(wx.Frame):
                                          File.Types.GEO)
                 fullName = os.path.join(dirName, fileName)
                 exportType = dlgFile.GetFilterIndex()
+                if exportType == File.GeoType.KMZ:
+                    image = dlgGeo.get_image()
+                else:
+                    xyz = dlgGeo.get_xyz()
                 export_map(fullName, exportType, extent, image, xyz)
             self.status.set_general("Finished")
             dlgFile.Destroy()

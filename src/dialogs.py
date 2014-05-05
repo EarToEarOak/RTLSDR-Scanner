@@ -213,7 +213,6 @@ class DialogGeo(wx.Dialog):
         self.dpi = settings.exportDpi
         self.canvas = None
         self.extent = None
-        self.image = None
         self.xyz = None
         self.type = self.TYPE_DUAL
         self.plot = None
@@ -384,23 +383,6 @@ class DialogGeo(wx.Dialog):
         self.__draw_plot()
 
     def __on_ok(self, _event):
-        self.figure.set_dpi(self.dpi)
-        self.axes.set_title('')
-        self.figure.set_facecolor('black')
-        self.figure.patch.set_alpha(0)
-        self.axes.set_axis_off()
-        self.axes.set_axis_bgcolor('black')
-        canvas = FigureCanvasAgg(self.figure)
-        canvas.draw()
-
-        renderer = canvas.get_renderer()
-        if matplotlib.__version__ >= '1.2':
-            buf = renderer.buffer_rgba()
-        else:
-            buf = renderer.buffer_rgba(0, 0)
-        size = canvas.get_width_height()
-        self.image = Image.frombuffer('RGBA', size, buf, 'raw', 'RGBA', 0, 1)
-
         self.EndModal(wx.ID_OK)
 
     def __on_choice(self, _event):
@@ -425,7 +407,24 @@ class DialogGeo(wx.Dialog):
         return self.extent
 
     def get_image(self):
-        return self.image
+        self.figure.set_dpi(self.dpi)
+        self.axes.set_title('')
+        self.figure.set_facecolor('black')
+        self.figure.patch.set_alpha(0)
+        self.axes.set_axis_off()
+        self.axes.set_axis_bgcolor('black')
+        canvas = FigureCanvasAgg(self.figure)
+        canvas.draw()
+
+        renderer = canvas.get_renderer()
+        if matplotlib.__version__ >= '1.2':
+            buf = renderer.buffer_rgba()
+        else:
+            buf = renderer.buffer_rgba(0, 0)
+        size = canvas.get_width_height()
+        image = Image.frombuffer('RGBA', size, buf, 'raw', 'RGBA', 0, 1)
+
+        return image
 
     def get_xyz(self):
         return self.xyz
