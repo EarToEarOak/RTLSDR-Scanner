@@ -172,7 +172,7 @@ class File:
         return filters
 
     @staticmethod
-    def get_type_pretty(type=Types.PLOT):
+    def get_type_pretty(type):
         types = File.__get_types(type)
 
         pretty = ''

@@ -71,8 +71,9 @@ class Cli():
         elif nfft <= 0:
             error = "FFT bins should be positive"
         elif ext != ".rfs" and File.get_type_index(ext) == -1:
-            error = "File extension should be .rfs, "
-            error += File.get_type_pretty()
+            error = "File extension should be "
+            error += File.get_type_pretty(File.Types.SAVE)
+            error += File.get_type_pretty(File.Types.PLOT)
         else:
             device = DeviceRTL()
             if remote is None:
@@ -125,13 +126,15 @@ class Cli():
 
         self.__scan(self.settings, index, pool)
 
+        fullName = os.path.join(directory, filename)
         if ext == ".rfs":
             scanInfo = ScanInfo()
             scanInfo.setFromSettings(self.settings)
-            save_plot(directory, filename, scanInfo, self.spectrum, None)
+
+            save_plot(fullName, scanInfo, self.spectrum, None)
         else:
             exportType = File.get_type_index(ext)
-            export_plot(directory, filename, exportType, self.spectrum)
+            export_plot(fullName, exportType, self.spectrum)
 
         print "Done"
 
