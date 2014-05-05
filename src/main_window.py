@@ -44,7 +44,7 @@ from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, \
     DialogDevicesGPS, DialogGeo
 from events import EVENT_THREAD, Event, EventThread, post_event
 from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
-    export_kmz
+    export_map
 from location import ThreadLocation
 from misc import calc_samples, calc_real_dwell, \
     get_version_timestamp, get_version_timestamp_repo, add_colours
@@ -504,16 +504,19 @@ class FrameMain(wx.Frame):
             self.status.set_general("Exporting")
             extent = dlgGeo.get_extent()
             image = dlgGeo.get_image()
+            xyz = dlgGeo.get_xyz()
             dlgFile = wx.FileDialog(self, "Export map to file",
                                 self.settings.dirExport,
                                 self.filename,
                                 File.get_export_filters(File.Exports.GEO),
                                 wx.SAVE | wx.OVERWRITE_PROMPT)
+            dlgFile.SetFilterIndex(File.GeoType.KMZ)
             if dlgFile.ShowModal() == wx.ID_OK:
                 dirname = dlgFile.GetDirectory()
                 self.settings.dirExport = dirname
                 filename = os.path.join(dirname, dlgFile.GetFilename())
-                export_kmz(filename, extent, image)
+                exportType = dlgFile.GetFilterIndex()
+                export_map(filename, exportType, extent, image, xyz)
             self.status.set_general("Finished")
             dlgFile.Destroy()
         dlgGeo.Destroy()

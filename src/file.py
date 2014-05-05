@@ -240,6 +240,54 @@ def export_image(filename, format, figure, dpi):
     figure.set_dpi(oldDpi)
 
 
+def export_map(filename, exportType, bounds, image, xyz):
+    if exportType == File.GeoType.KMZ:
+        export_kmz(filename, bounds, image)
+    elif exportType == File.GeoType.CSV:
+        export_xyz(filename, xyz)
+
+
+def export_csv(handle, spectrum):
+    handle.write(u"Time (UTC), Frequency (MHz),Level (dB/Hz)\n")
+    for plot in spectrum.iteritems():
+        for freq, pwr in plot[1].iteritems():
+            handle.write("{0}, {1}, {2}\n".format(plot[0], freq, pwr))
+
+
+def export_plt(handle, spectrum):
+    handle.write('set title "RTLSDR Scan"\n')
+    handle.write('set xlabel "Frequency (MHz)"\n')
+    handle.write('set ylabel "Time"\n')
+    handle.write('set zlabel "Level (dB/Hz)"\n')
+    handle.write('set ydata time\n')
+    handle.write('set timefmt "%s"\n')
+    handle.write('set format y "%H:%M:%S"\n')
+    handle.write('set pm3d\n')
+    handle.write('set hidden3d\n')
+    handle.write('set palette rgb 33,13,10\n')
+    handle.write('splot "-" using 1:2:3 notitle with lines \n')
+    for plot in spectrum.iteritems():
+        handle.write('\n')
+        for freq, pwr in plot[1].iteritems():
+            handle.write("{0} {1} {2}\n".format(freq, plot[0], pwr))
+
+
+def export_freemat(handle, spectrum):
+    x, y, z = create_mesh(spectrum, False)
+    write_numpy(handle, x, 'x')
+    write_numpy(handle, y, 'y')
+    write_numpy(handle, z, 'z')
+    handle.write('\n')
+    handle.write('surf(x,y,z)\n')
+    handle.write('view(3)\n')
+    handle.write("set(gca, 'plotboxaspectratio', [3, 2, 1])\n")
+    handle.write("title('RTLSDR Scan')\n")
+    handle.write("xlabel('Frequency (MHz)')\n")
+    handle.write("ylabel('Time')\n")
+    handle.write("zlabel('Level (dB/Hz)')\n")
+    handle.write("grid('on')\n")
+
+
 def export_kmz(filename, bounds, image):
     tempPath = tempfile.mkdtemp()
 
@@ -283,45 +331,12 @@ def export_kmz(filename, bounds, image):
     os.rmdir(tempPath)
 
 
-def export_csv(handle, spectrum):
-    handle.write(u"Time (UTC), Frequency (MHz),Level (dB/Hz)\n")
-    for plot in spectrum.iteritems():
-        for freq, pwr in plot[1].iteritems():
-            handle.write("{0}, {1}, {2}\n".format(plot[0], freq, pwr))
-
-
-def export_plt(handle, spectrum):
-    handle.write('set title "RTLSDR Scan"\n')
-    handle.write('set xlabel "Frequency (MHz)"\n')
-    handle.write('set ylabel "Time"\n')
-    handle.write('set zlabel "Level (dB/Hz)"\n')
-    handle.write('set ydata time\n')
-    handle.write('set timefmt "%s"\n')
-    handle.write('set format y "%H:%M:%S"\n')
-    handle.write('set pm3d\n')
-    handle.write('set hidden3d\n')
-    handle.write('set palette rgb 33,13,10\n')
-    handle.write('splot "-" using 1:2:3 notitle with lines \n')
-    for plot in spectrum.iteritems():
-        handle.write('\n')
-        for freq, pwr in plot[1].iteritems():
-            handle.write("{0} {1} {2}\n".format(freq, plot[0], pwr))
-
-
-def export_freemat(handle, spectrum):
-    x, y, z = create_mesh(spectrum, False)
-    write_numpy(handle, x, 'x')
-    write_numpy(handle, y, 'y')
-    write_numpy(handle, z, 'z')
-    handle.write('\n')
-    handle.write('surf(x,y,z)\n')
-    handle.write('view(3)\n')
-    handle.write("set(gca, 'plotboxaspectratio', [3, 2, 1])\n")
-    handle.write("title('RTLSDR Scan')\n")
-    handle.write("xlabel('Frequency (MHz)')\n")
-    handle.write("ylabel('Time')\n")
-    handle.write("zlabel('Level (dB/Hz)')\n")
-    handle.write("grid('on')\n")
+def export_xyz(filename, xyz):
+    handle = open(filename, 'wb')
+    handle.write('x, y, Level (dB/Hz)\n')
+    for i in range(len(xyz[0])):
+        handle.write('{0}, {1}, {2}\n'.format(xyz[0][i],xyz[1][i],xyz[2][i]))
+    handle.close()
 
 
 def write_numpy(handle, array, name):

@@ -117,7 +117,7 @@ class File:
         BMP, EPS, GIF, JPEG, PDF, PNG, PPM, TIFF = range(8)
 
     class GeoType:
-        KMZ = 0
+        KMZ, CSV = range(2)
 
     PLOT = [""] * 3
     PLOT[PlotType.CSV] = "CSV table (*.csv)|*.csv"
@@ -134,8 +134,9 @@ class File:
     IMAGE[ImageType.PPM] = 'Portable Pixmap image (*.ppm)|*.ppm'
     IMAGE[ImageType.TIFF] = 'Tagged Image File (*.tiff)|*.tiff'
 
-    GEO = [""] * 1
+    GEO = [""] * 2
     GEO[GeoType.KMZ] = 'Google Earth (*.kmz)|*.kmz'
+    GEO[GeoType.CSV] = 'CSV Table (*.csv)|*.csv'
 
     HEADER = "RTLSDR Scanner"
     VERSION = 9

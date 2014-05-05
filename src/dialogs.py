@@ -212,6 +212,7 @@ class DialogGeo(wx.Dialog):
         self.canvas = None
         self.extent = None
         self.image = None
+        self.xyz = None
         self.type = self.TYPE_DUAL
         self.plot = None
         self.colourMap = settings.colourMap
@@ -351,6 +352,7 @@ class DialogGeo(wx.Dialog):
             return
 
         self.extent = (min(x), max(x), min(y), max(y))
+        self.xyz = (x, y, z)
 
         if self.type in [self.TYPE_HEAT, self.TYPE_DUAL]:
             self.plot = self.axes.pcolormesh(xi, yi, zi, cmap=self.colourMap)
@@ -422,6 +424,9 @@ class DialogGeo(wx.Dialog):
 
     def get_image(self):
         return self.image
+
+    def get_xyz(self):
+        return self.xyz
 
 
 class DialogOffset(wx.Dialog):
