@@ -202,9 +202,6 @@ class DialogAutoCal(wx.Dialog):
 
 class DialogGeo(wx.Dialog):
 
-    TYPE_CONT, TYPE_HEAT, TYPE_DUAL = range(3)
-    TYPES = ['Contour', 'Heat', 'Combined']
-
     def __init__(self, parent, spectrum, location, settings):
         self.spectrum = spectrum
         self.location = location
@@ -214,7 +211,9 @@ class DialogGeo(wx.Dialog):
         self.canvas = None
         self.extent = None
         self.xyz = None
-        self.type = self.TYPE_DUAL
+        self.plotHeat = True
+        self.plotCont = True
+        self.plotPoint = False
         self.plot = None
         self.colourMap = settings.colourMap
 
@@ -225,10 +224,15 @@ class DialogGeo(wx.Dialog):
         self.canvas = FigureCanvas(self, -1, self.figure)
         self.axes = self.figure.add_subplot(111)
 
-        textType = wx.StaticText(self, label='Map type')
-        self.choiceType = wx.Choice(self, choices=self.TYPES)
-        self.choiceType.SetSelection(self.type)
-        self.Bind(wx.wx.EVT_CHOICE, self.__on_choice, self.choiceType)
+        self.checkHeat = wx.CheckBox(self, label='Heat Map')
+        self.checkHeat.SetValue(self.plotHeat)
+        self.Bind(wx.EVT_CHECKBOX, self.__on_heat, self.checkHeat)
+        self.checkCont = wx.CheckBox(self, label='Contour Lines')
+        self.checkCont.SetValue(self.plotCont)
+        self.Bind(wx.EVT_CHECKBOX, self.__on_cont, self.checkCont)
+        self.checkPoint = wx.CheckBox(self, label='Locations')
+        self.checkPoint.SetValue(self.plotPoint)
+        self.Bind(wx.EVT_CHECKBOX, self.__on_point, self.checkPoint)
 
         colours = get_colours()
         self.choiceColour = wx.Choice(self, choices=colours)
@@ -268,25 +272,27 @@ class DialogGeo(wx.Dialog):
         sizerGrid = wx.GridBagSizer(5, 5)
         sizerGrid.Add(self.canvas, pos=(0, 0), span=(1, 5),
                   flag=wx.EXPAND | wx.ALL, border=5)
-        sizerGrid.Add(textType, pos=(1, 0), span=(1, 1),
-                  flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
-        sizerGrid.Add(self.choiceType, pos=(1, 1), span=(1, 1),
+        sizerGrid.Add(self.colourBar, pos=(1, 0), span=(1, 2),
                   flag=wx.ALIGN_LEFT | wx.ALL, border=5)
         sizerGrid.Add(self.choiceColour, pos=(1, 2), span=(1, 1),
                   flag=wx.ALIGN_LEFT | wx.ALL, border=5)
-        sizerGrid.Add(self.colourBar, pos=(1, 3), span=(1, 1),
+        sizerGrid.Add(self.checkHeat, pos=(2, 0), span=(1, 1),
                   flag=wx.ALIGN_LEFT | wx.ALL, border=5)
-        sizerGrid.Add(textCentre, pos=(2, 0), span=(1, 1),
+        sizerGrid.Add(self.checkCont, pos=(2, 1), span=(1, 1),
+                  flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+        sizerGrid.Add(self.checkPoint, pos=(2, 2), span=(1, 1),
+                  flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+        sizerGrid.Add(textCentre, pos=(3, 0), span=(1, 1),
                   flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
-        sizerGrid.Add(self.spinCentre, pos=(2, 1), span=(1, 1),
+        sizerGrid.Add(self.spinCentre, pos=(3, 1), span=(1, 1),
                   flag=wx.ALIGN_LEFT | wx.ALL, border=5)
-        sizerGrid.Add(textBw, pos=(2, 2), span=(1, 1),
+        sizerGrid.Add(textBw, pos=(3, 2), span=(1, 1),
                   flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
-        sizerGrid.Add(self.spinBw, pos=(2, 3), span=(1, 1),
+        sizerGrid.Add(self.spinBw, pos=(3, 3), span=(1, 1),
                   flag=wx.ALIGN_LEFT | wx.ALL, border=5)
-        sizerGrid.Add(buttonUpdate, pos=(2, 4), span=(1, 1),
+        sizerGrid.Add(buttonUpdate, pos=(3, 4), span=(1, 1),
                   flag=wx.ALIGN_LEFT | wx.ALL, border=5)
-        sizerGrid.Add(sizerButtons, pos=(3, 4), span=(1, 1),
+        sizerGrid.Add(sizerButtons, pos=(4, 4), span=(1, 1),
                   flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
 
         self.SetSizerAndFit(sizerGrid)
@@ -295,18 +301,15 @@ class DialogGeo(wx.Dialog):
 
     def __setup_plot(self):
         self.axes.clear()
-        if self.type == self.TYPE_CONT:
-            self.axes.set_title('Contours')
-            self.choiceColour.Hide()
-            self.colourBar.Hide()
-        elif self.type == self.TYPE_HEAT:
-            self.axes.set_title('Heat')
+
+        if self.plotHeat:
             self.choiceColour.Show()
             self.colourBar.Show()
         else:
-            self.axes.set_title('Contours with Heat')
-            self.choiceColour.Show()
-            self.colourBar.Show()
+            self.choiceColour.Hide()
+            self.colourBar.Hide()
+
+        self.axes.set_title('Map')
         self.axes.set_xlabel('Longitude ($^\circ$)')
         self.axes.set_ylabel('Latitude ($^\circ$)')
         self.axes.set_xlim(auto=True)
@@ -355,21 +358,27 @@ class DialogGeo(wx.Dialog):
         self.extent = (min(x), max(x), min(y), max(y))
         self.xyz = (x, y, z)
 
-        if self.type in [self.TYPE_HEAT, self.TYPE_DUAL]:
+        if self.plotHeat:
             self.plot = self.axes.pcolormesh(xi, yi, zi, cmap=self.colourMap)
 
-        if self.type in [self.TYPE_CONT, self.TYPE_DUAL]:
+        if self.plotCont:
             contours = self.axes.contour(xi, yi, zi, linewidths=0.5,
                                          colors='k')
             self.axes.clabel(contours, inline=1, fontsize='x-small',
                              gid='clabel')
-            if matplotlib.__version__ >= '1.3':
+
+        if self.plotPoint:
+            self.axes.plot(x, y, 'wo')
+            for posX, posY, posZ in zip(x, y, z):
+                self.axes.annotate('{0:.2f}dB'.format(posZ), xy=(posX, posY),
+                                   xytext=(-5, 5), ha='right',
+                                   textcoords='offset points')
+
+        if matplotlib.__version__ >= '1.3':
                 effect = patheffects.withStroke(linewidth=2, foreground="w",
                                                 alpha=0.75)
                 for child in self.axes.get_children():
                     child.set_path_effects([effect])
-        else:
-            self.axes.pcolormesh(xi, yi, zi, cmap=self.colourMap)
 
         self.canvas.draw()
 
@@ -385,8 +394,18 @@ class DialogGeo(wx.Dialog):
     def __on_ok(self, _event):
         self.EndModal(wx.ID_OK)
 
-    def __on_choice(self, _event):
-        self.type = self.choiceType.GetSelection()
+    def __on_heat(self, _event):
+        self.plotHeat = self.checkHeat.GetValue()
+        self.__setup_plot()
+        self.__draw_plot()
+
+    def __on_cont(self, _event):
+        self.plotCont = self.checkCont.GetValue()
+        self.__setup_plot()
+        self.__draw_plot()
+
+    def __on_point(self, _event):
+        self.plotPoint = self.checkPoint.GetValue()
         self.__setup_plot()
         self.__draw_plot()
 
