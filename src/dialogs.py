@@ -26,6 +26,7 @@
 import Queue
 import copy
 import itertools
+import os
 from urlparse import urlparse
 
 from PIL import Image
@@ -93,12 +94,13 @@ class DialogCompare(wx.Dialog):
 
     def __on_load_plot(self, event):
         dlg = wx.FileDialog(self, "Open a scan", self.dirname, self.filename,
-                            File.RFS, wx.OPEN)
+                            File.get_type_filters(File.Types.SAVE),
+                             wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             self.dirname = dlg.GetDirectory()
             self.filename = dlg.GetFilename()
-            _scanInfo, spectrum = open_plot(self.dirname,
-                                            self.filename)
+            _scanInfo, spectrum, _location = open_plot(self.dirname,
+                                                       self.filename)
             if event.EventObject == self.buttonPlot1:
                 self.textPlot1.SetLabel(self.filename)
                 self.graph.set_spectrum1(spectrum)

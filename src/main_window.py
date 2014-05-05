@@ -439,7 +439,9 @@ class FrameMain(wx.Frame):
         if self.__save_warn(Warn.OPEN):
             return
         dlg = wx.FileDialog(self, "Open a scan", self.settings.dirScans,
-                            self.filename, File.SAVE, wx.OPEN)
+                            self.filename,
+                            File.get_type_filters(File.Types.SAVE),
+                            wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             self.open(dlg.GetDirectory(), dlg.GetFilename())
         dlg.Destroy()
@@ -453,7 +455,8 @@ class FrameMain(wx.Frame):
 
     def __on_save(self, _event):
         dlg = wx.FileDialog(self, "Save a scan", self.settings.dirScans,
-                            self.filename, File.get_type_filters(File.Types.SAVE),
+                            self.filename,
+                            File.get_type_filters(File.Types.SAVE),
                             wx.SAVE | wx.OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
             self.status.set_general("Saving")
