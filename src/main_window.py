@@ -527,7 +527,8 @@ class FrameMain(wx.Frame):
                 fileName = dlgFile.GetFilename()
                 dirName = dlgFile.GetDirectory()
                 self.settings.dirExport = dirName
-                fileName = extension_add(fileName, dlgFile.GetFilterIndex(), File.Types.PLOT)
+                fileName = extension_add(fileName, dlgFile.GetFilterIndex(),
+                                         File.Types.GEO)
                 fullName = os.path.join(dirName, fileName)
                 exportType = dlgFile.GetFilterIndex()
                 export_map(fullName, exportType, extent, image, xyz)
