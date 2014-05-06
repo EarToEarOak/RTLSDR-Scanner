@@ -211,6 +211,7 @@ class DialogGeo(wx.Dialog):
         self.canvas = None
         self.extent = None
         self.xyz = None
+        self.plotAxes = True
         self.plotHeat = True
         self.plotCont = True
         self.plotPoint = False
@@ -224,6 +225,9 @@ class DialogGeo(wx.Dialog):
         self.canvas = FigureCanvas(self, -1, self.figure)
         self.axes = self.figure.add_subplot(111)
 
+        self.checkAxes = wx.CheckBox(self, label='Axes')
+        self.checkAxes.SetValue(self.plotAxes)
+        self.Bind(wx.EVT_CHECKBOX, self.__on_axes, self.checkAxes)
         self.checkHeat = wx.CheckBox(self, label='Heat Map')
         self.checkHeat.SetValue(self.plotHeat)
         self.Bind(wx.EVT_CHECKBOX, self.__on_heat, self.checkHeat)
@@ -276,11 +280,13 @@ class DialogGeo(wx.Dialog):
                   flag=wx.ALIGN_LEFT | wx.ALL, border=5)
         sizerGrid.Add(self.choiceColour, pos=(1, 2), span=(1, 1),
                   flag=wx.ALIGN_LEFT | wx.ALL, border=5)
-        sizerGrid.Add(self.checkHeat, pos=(2, 0), span=(1, 1),
+        sizerGrid.Add(self.checkAxes, pos=(2, 0), span=(1, 1),
                   flag=wx.ALIGN_LEFT | wx.ALL, border=5)
-        sizerGrid.Add(self.checkCont, pos=(2, 1), span=(1, 1),
+        sizerGrid.Add(self.checkHeat, pos=(2, 1), span=(1, 1),
                   flag=wx.ALIGN_LEFT | wx.ALL, border=5)
-        sizerGrid.Add(self.checkPoint, pos=(2, 2), span=(1, 1),
+        sizerGrid.Add(self.checkCont, pos=(2, 2), span=(1, 1),
+                  flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+        sizerGrid.Add(self.checkPoint, pos=(2, 3), span=(1, 1),
                   flag=wx.ALIGN_LEFT | wx.ALL, border=5)
         sizerGrid.Add(textCentre, pos=(3, 0), span=(1, 1),
                   flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
@@ -309,7 +315,6 @@ class DialogGeo(wx.Dialog):
             self.choiceColour.Hide()
             self.colourBar.Hide()
 
-        self.axes.set_title('Map')
         self.axes.set_xlabel('Longitude ($^\circ$)')
         self.axes.set_ylabel('Latitude ($^\circ$)')
         self.axes.set_xlim(auto=True)
@@ -317,7 +322,6 @@ class DialogGeo(wx.Dialog):
         formatter = ScalarFormatter(useOffset=False)
         self.axes.xaxis.set_major_formatter(formatter)
         self.axes.yaxis.set_major_formatter(formatter)
-        self.axes.grid(True)
 
     def __draw_plot(self):
         self.plot = None
@@ -394,20 +398,25 @@ class DialogGeo(wx.Dialog):
     def __on_ok(self, _event):
         self.EndModal(wx.ID_OK)
 
+    def __on_axes(self, _event):
+        self.plotAxes = self.checkAxes.GetValue()
+        if self.plotAxes:
+            self.axes.set_axis_on()
+        else:
+            self.axes.set_axis_off()
+        self.canvas.draw()
+
     def __on_heat(self, _event):
         self.plotHeat = self.checkHeat.GetValue()
-        self.__setup_plot()
-        self.__draw_plot()
+        self.__on_update(None)
 
     def __on_cont(self, _event):
         self.plotCont = self.checkCont.GetValue()
-        self.__setup_plot()
-        self.__draw_plot()
+        self.__on_update(None)
 
     def __on_point(self, _event):
         self.plotPoint = self.checkPoint.GetValue()
-        self.__setup_plot()
-        self.__draw_plot()
+        self.__on_update(None)
 
     def __on_colour(self, _event):
         self.colourMap = self.choiceColour.GetStringSelection()
@@ -433,7 +442,6 @@ class DialogGeo(wx.Dialog):
         self.axes.set_title('')
         self.figure.set_facecolor('black')
         self.figure.patch.set_alpha(0)
-        self.axes.set_axis_off()
         self.axes.set_axis_bgcolor('black')
         canvas = FigureCanvasAgg(self.figure)
         canvas.draw()
