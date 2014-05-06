@@ -426,6 +426,9 @@ class DialogGeo(wx.Dialog):
         return self.extent
 
     def get_image(self):
+        width = self.extent[1] - self.extent[0]
+        height = self.extent[3] - self.extent[2]
+        self.figure.set_size_inches((6, 6. * width / height))
         self.figure.set_dpi(self.dpi)
         self.axes.set_title('')
         self.figure.set_facecolor('black')
