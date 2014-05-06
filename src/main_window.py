@@ -513,10 +513,8 @@ class FrameMain(wx.Frame):
     def __on_export_geo(self, _event):
         dlgGeo = DialogGeo(self, self.spectrum, self.location, self.settings)
         if dlgGeo.ShowModal() == wx.ID_OK:
-            self.status.set_general("Exporting")
+            self.status.set_general("Exporting...")
             extent = dlgGeo.get_extent()
-            image = dlgGeo.get_image()
-            xyz = dlgGeo.get_xyz()
             dlgFile = wx.FileDialog(self, "Export map to file",
                                 self.settings.dirExport,
                                 self.filename,
@@ -531,10 +529,12 @@ class FrameMain(wx.Frame):
                                          File.Types.GEO)
                 fullName = os.path.join(dirName, fileName)
                 exportType = dlgFile.GetFilterIndex()
-                if exportType == File.GeoType.KMZ:
-                    image = dlgGeo.get_image()
-                else:
+                image = None
+                xyz = None
+                if exportType == File.GeoType.CSV:
                     xyz = dlgGeo.get_xyz()
+                else:
+                    image = dlgGeo.get_image()
                 export_map(fullName, exportType, extent, image, xyz)
             self.status.set_general("Finished")
             dlgFile.Destroy()

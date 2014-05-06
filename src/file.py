@@ -51,7 +51,7 @@ class File:
         BMP, EPS, GIF, JPEG, PDF, PNG, PPM, TIFF = range(8)
 
     class GeoType:
-        KMZ, CSV = range(2)
+        KMZ, CSV, BMP, EPS, GIF, JPEG, PDF, PNG, PPM, TIFF = range(10)
 
     SAVE = [''] * 1
     SAVE[SaveType.RFS] = 'RTLSDR frequency scan (*.rfs)|*.rfs'
@@ -71,9 +71,18 @@ class File:
     IMAGE[ImageType.PPM] = 'Portable Pixmap image (*.ppm)|*.ppm'
     IMAGE[ImageType.TIFF] = 'Tagged Image File (*.tiff)|*.tiff'
 
-    GEO = [''] * 2
-    GEO[GeoType.KMZ] = 'Google Earth (*.kmz)|*.kmz'
+    GEO = [''] * 10
+
+    GEO[GeoType.BMP] = 'Bitmap image (*.bmp)|*.bmp'
     GEO[GeoType.CSV] = 'CSV Table (*.csv)|*.csv'
+    GEO[GeoType.EPS] = 'Encapsulated PostScript (*.eps)|*.eps'
+    GEO[GeoType.GIF] = 'GIF image (*.gif)|*.gif'
+    GEO[GeoType.JPEG] = 'JPEG image (*.jpeg)|*.jpeg'
+    GEO[GeoType.KMZ] = 'Google Earth (*.kmz)|*.kmz'
+    GEO[GeoType.PDF] = 'Portable Document (*.pdf)|*.pdf'
+    GEO[GeoType.PNG] = 'Portable Network Graphics Image (*.png)|*.png'
+    GEO[GeoType.PPM] = 'Portable Pixmap image (*.ppm)|*.ppm'
+    GEO[GeoType.TIFF] = 'Tagged Image File (*.tiff)|*.tiff'
 
     HEADER = "RTLSDR Scanner"
     VERSION = 9
@@ -334,6 +343,8 @@ def export_map(filename, exportType, bounds, image, xyz):
         export_kmz(filename, bounds, image)
     elif exportType == File.GeoType.CSV:
         export_xyz(filename, xyz)
+    else:
+        export_map_image(filename, exportType, image)
 
 
 def export_csv(handle, spectrum):
@@ -426,6 +437,11 @@ def export_xyz(filename, xyz):
     for i in range(len(xyz[0])):
         handle.write('{0}, {1}, {2}\n'.format(xyz[0][i], xyz[1][i], xyz[2][i]))
     handle.close()
+
+
+def export_map_image(filename, exportType, image):
+    ext = File.get_type_ext(exportType, File.Types.IMAGE)
+    image.save(filename, format=ext[1::])
 
 
 def write_numpy(handle, array, name):

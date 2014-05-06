@@ -26,7 +26,6 @@
 import Queue
 import copy
 import itertools
-import os
 from urlparse import urlparse
 
 from PIL import Image
@@ -211,7 +210,7 @@ class DialogGeo(wx.Dialog):
         self.canvas = None
         self.extent = None
         self.xyz = None
-        self.plotAxes = True
+        self.plotAxes = False
         self.plotHeat = True
         self.plotCont = True
         self.plotPoint = False
@@ -276,9 +275,9 @@ class DialogGeo(wx.Dialog):
         sizerGrid = wx.GridBagSizer(5, 5)
         sizerGrid.Add(self.canvas, pos=(0, 0), span=(1, 5),
                   flag=wx.EXPAND | wx.ALL, border=5)
-        sizerGrid.Add(self.colourBar, pos=(1, 0), span=(1, 2),
+        sizerGrid.Add(self.choiceColour, pos=(1, 0), span=(1, 2),
                   flag=wx.ALIGN_LEFT | wx.ALL, border=5)
-        sizerGrid.Add(self.choiceColour, pos=(1, 2), span=(1, 1),
+        sizerGrid.Add(self.colourBar, pos=(1, 2), span=(1, 1),
                   flag=wx.ALIGN_LEFT | wx.ALL, border=5)
         sizerGrid.Add(self.checkAxes, pos=(2, 0), span=(1, 1),
                   flag=wx.ALIGN_LEFT | wx.ALL, border=5)
@@ -315,6 +314,7 @@ class DialogGeo(wx.Dialog):
             self.choiceColour.Hide()
             self.colourBar.Hide()
 
+        self.axes.set_title('Preview')
         self.axes.set_xlabel('Longitude ($^\circ$)')
         self.axes.set_ylabel('Latitude ($^\circ$)')
         self.axes.set_xlim(auto=True)
@@ -384,6 +384,10 @@ class DialogGeo(wx.Dialog):
                 for child in self.axes.get_children():
                     child.set_path_effects([effect])
 
+        if self.plotAxes:
+            self.axes.set_axis_on()
+        else:
+            self.axes.set_axis_off()
         self.canvas.draw()
 
     def __draw_warning(self):
@@ -440,9 +444,8 @@ class DialogGeo(wx.Dialog):
         self.figure.set_size_inches((6, 6. * width / height))
         self.figure.set_dpi(self.dpi)
         self.axes.set_title('')
-        self.figure.set_facecolor('black')
         self.figure.patch.set_alpha(0)
-        self.axes.set_axis_bgcolor('black')
+        self.axes.axesPatch.set_alpha(0)
         canvas = FigureCanvasAgg(self.figure)
         canvas.draw()
 
