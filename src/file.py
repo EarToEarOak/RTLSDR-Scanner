@@ -26,14 +26,114 @@
 import cPickle
 import json
 import os
+import tempfile
+import zipfile
 
 from PIL import Image
 import matplotlib
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 import wx
 
-from constants import File
 from spectrum import sort_spectrum, create_mesh
+
+
+class File:
+    class Types:
+        SAVE, PLOT, IMAGE, GEO = range(4)
+
+    class SaveType:
+        RFS = 0
+
+    class PlotType:
+        CSV, GNUPLOT, FREEMAT = range(3)
+
+    class ImageType:
+        BMP, EPS, GIF, JPEG, PDF, PNG, PPM, TIFF = range(8)
+
+    class GeoType:
+        KMZ, CSV, BMP, EPS, GIF, JPEG, PDF, PNG, PPM, TIFF = range(10)
+
+    SAVE = [''] * 1
+    SAVE[SaveType.RFS] = 'RTLSDR frequency scan (*.rfs)|*.rfs'
+
+    PLOT = [''] * 3
+    PLOT[PlotType.CSV] = "CSV table (*.csv)|*.csv"
+    PLOT[PlotType.GNUPLOT] = "gnuplot script (*.plt)|*.plt"
+    PLOT[PlotType.FREEMAT] = "FreeMat script (*.m)|*.m"
+
+    IMAGE = [''] * 8
+    IMAGE[ImageType.BMP] = 'Bitmap image (*.bmp)|*.bmp'
+    IMAGE[ImageType.EPS] = 'Encapsulated PostScript (*.eps)|*.eps'
+    IMAGE[ImageType.GIF] = 'GIF image (*.gif)|*.gif'
+    IMAGE[ImageType.JPEG] = 'JPEG image (*.jpeg)|*.jpeg'
+    IMAGE[ImageType.PDF] = 'Portable Document (*.pdf)|*.pdf'
+    IMAGE[ImageType.PNG] = 'Portable Network Graphics Image (*.png)|*.png'
+    IMAGE[ImageType.PPM] = 'Portable Pixmap image (*.ppm)|*.ppm'
+    IMAGE[ImageType.TIFF] = 'Tagged Image File (*.tiff)|*.tiff'
+
+    GEO = [''] * 10
+
+    GEO[GeoType.BMP] = 'Bitmap image (*.bmp)|*.bmp'
+    GEO[GeoType.CSV] = 'CSV Table (*.csv)|*.csv'
+    GEO[GeoType.EPS] = 'Encapsulated PostScript (*.eps)|*.eps'
+    GEO[GeoType.GIF] = 'GIF image (*.gif)|*.gif'
+    GEO[GeoType.JPEG] = 'JPEG image (*.jpeg)|*.jpeg'
+    GEO[GeoType.KMZ] = 'Google Earth (*.kmz)|*.kmz'
+    GEO[GeoType.PDF] = 'Portable Document (*.pdf)|*.pdf'
+    GEO[GeoType.PNG] = 'Portable Network Graphics Image (*.png)|*.png'
+    GEO[GeoType.PPM] = 'Portable Pixmap image (*.ppm)|*.ppm'
+    GEO[GeoType.TIFF] = 'Tagged Image File (*.tiff)|*.tiff'
+
+    HEADER = "RTLSDR Scanner"
+    VERSION = 9
+
+    @staticmethod
+    def __get_types(type):
+        return [File.SAVE, File.PLOT, File.IMAGE, File.GEO][type]
+
+    @staticmethod
+    def get_type_ext(index, type=Types.PLOT):
+        types = File.__get_types(type)
+        filter = types[index]
+        delim = filter.index('|*')
+        return filter[delim + 2:]
+
+    @staticmethod
+    def get_type_filters(type=Types.PLOT):
+        types = File.__get_types(type)
+
+        filters = ''
+        length = len(types)
+        for i in xrange(length):
+            filters += types[i]
+            if i < length - 1:
+                filters += '|'
+
+        return filters
+
+    @staticmethod
+    def get_type_pretty(type):
+        types = File.__get_types(type)
+
+        pretty = ''
+        length = len(types)
+        for i in xrange(length):
+            pretty += File.get_type_ext(i, type)
+            if i < length - 2:
+                pretty += ', '
+            elif i < length - 1:
+                pretty += ' or '
+
+        return pretty
+
+    @staticmethod
+    def get_type_index(extension, type=Types.PLOT):
+        exports = File.__get_types(type)
+        for i in xrange(len(exports)):
+            if extension == File.get_type_ext(i, type):
+                return i
+
+        return -1
 
 
 class ScanInfo():
@@ -58,7 +158,7 @@ class ScanInfo():
         self.stop = settings.stop
         self.dwell = settings.dwell
         self.nfft = settings.nfft
-        device = settings.devices[settings.index]
+        device = settings.devicesRtl[settings.indexRtl]
         if device.isDevice:
             self.name = device.name
         else:
@@ -90,10 +190,11 @@ def open_plot(dirname, filename):
     lat = None
     lon = None
     desc = ''
+    location = {}
 
     path = os.path.join(dirname, filename)
     if not os.path.exists(path):
-        return 0, 0, 0, 0, []
+        return None, None, None
     handle = open(path, 'rb')
     try:
         header = cPickle.load(handle)
@@ -144,6 +245,10 @@ def open_plot(dirname, filename):
                         spectrum[float(t)][float(f)] = p
             if version > 7:
                 desc = data[1]['Description']
+            if version > 8:
+                location = {}
+                for t, l in data[1]['Location'].iteritems():
+                    location[float(t)] = l
 
         except ValueError:
             error = True
@@ -155,7 +260,7 @@ def open_plot(dirname, filename):
     if error or header != File.HEADER:
         wx.MessageBox('Invalid or corrupted file', 'Warning',
                   wx.OK | wx.ICON_WARNING)
-        return 0, 0, 0, 0, []
+        return None, None, None
 
     scanInfo = ScanInfo()
     scanInfo.start = start
@@ -172,10 +277,10 @@ def open_plot(dirname, filename):
     scanInfo.lon = lon
     scanInfo.desc = desc
 
-    return scanInfo, spectrum
+    return scanInfo, spectrum, location
 
 
-def save_plot(dirname, filename, scanInfo, spectrum):
+def save_plot(filename, scanInfo, spectrum, location):
     data = [File.HEADER, {'Version': File.VERSION,
                           'Start':scanInfo.start,
                           'Stop':scanInfo.stop,
@@ -190,16 +295,17 @@ def save_plot(dirname, filename, scanInfo, spectrum):
                           'Latitude':scanInfo.lat,
                           'Longitude':scanInfo.lon,
                           'Description':scanInfo.desc,
-                          'Spectrum': spectrum}]
+                          'Spectrum': spectrum,
+                          'Location': location}]
 
-    handle = open(os.path.join(dirname, filename), 'wb')
+    handle = open(os.path.join(filename), 'wb')
     handle.write(json.dumps(data, indent=4))
     handle.close()
 
 
-def export_plot(dirname, filename, exportType, spectrum):
+def export_plot(filename, exportType, spectrum):
     spectrum = sort_spectrum(spectrum)
-    handle = open(os.path.join(dirname, filename), 'wb')
+    handle = open(filename, 'wb')
     if exportType == File.PlotType.CSV:
         export_csv(handle, spectrum)
     elif exportType == File.PlotType.GNUPLOT:
@@ -225,11 +331,20 @@ def export_image(filename, format, figure, dpi):
     size = canvas.get_width_height()
     image = Image.frombuffer('RGBA', size, buf, 'raw', 'RGBA', 0, 1)
     image = image.convert('RGB')
-    ext = File.get_export_ext(format, File.Exports.IMAGE)
+    ext = File.get_type_ext(format, File.Types.IMAGE)
     image.save(filename, format=ext[1::], dpi=(dpi, dpi))
 
     figure.set_size_inches(oldSize)
     figure.set_dpi(oldDpi)
+
+
+def export_map(filename, exportType, bounds, image, xyz):
+    if exportType == File.GeoType.KMZ:
+        export_kmz(filename, bounds, image)
+    elif exportType == File.GeoType.CSV:
+        export_xyz(filename, xyz)
+    else:
+        export_map_image(filename, exportType, image)
 
 
 def export_csv(handle, spectrum):
@@ -273,6 +388,62 @@ def export_freemat(handle, spectrum):
     handle.write("grid('on')\n")
 
 
+def export_kmz(filename, bounds, image):
+    tempPath = tempfile.mkdtemp()
+
+    name = os.path.splitext(os.path.basename(filename))[0]
+    filePng = name + '.png'
+    fileKml = name + '.kml'
+
+    image.save('{0}/{1}'.format(tempPath, filePng))
+
+    handle = open('{0}/{1}'.format(tempPath, fileKml), 'wb')
+    handle.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+    handle.write('<kml xmlns="http://www.opengis.net/kml/2.2" '
+                 'xmlns:gx="http://www.google.com/kml/ext/2.2" '
+                 'xmlns:kml="http://www.opengis.net/kml/2.2" '
+                 'xmlns:atom="http://www.w3.org/2005/Atom">\n')
+    handle.write('<GroundOverlay>\n')
+    handle.write('\t<name>RTLSDR Scanner - {0}</name>\n'.format(name))
+    handle.write('\t<Icon>\n')
+    handle.write('\t\t<href>files/{0}</href>\n'.format(filePng))
+    handle.write('\t\t<viewBoundScale>0.75</viewBoundScale>\n')
+    handle.write('\t</Icon>\n')
+    handle.write('\t<LatLonBox>\n')
+    handle.write('\t\t<north>{0}</north>\n'.format(bounds[3]))
+    handle.write('\t\t<south>{0}</south>\n'.format(bounds[2]))
+    handle.write('\t\t<east>{0}</east>\n'.format(bounds[1]))
+    handle.write('\t\t<west>{0}</west>\n'.format(bounds[0]))
+    handle.write('\t</LatLonBox>\n')
+    handle.write('</GroundOverlay>\n')
+    handle.write('</kml>\n')
+    handle.close()
+
+    kmz = zipfile.ZipFile(filename, 'w')
+    kmz.write('{0}/{1}'.format(tempPath, fileKml),
+              '/{0}'.format(fileKml))
+    kmz.write('{0}/{1}'.format(tempPath, filePng),
+              '/files/{0}'.format(filePng))
+    kmz.close()
+
+    os.remove('{0}/{1}'.format(tempPath, filePng))
+    os.remove('{0}/{1}'.format(tempPath, fileKml))
+    os.rmdir(tempPath)
+
+
+def export_xyz(filename, xyz):
+    handle = open(filename, 'wb')
+    handle.write('x, y, Level (dB/Hz)\n')
+    for i in range(len(xyz[0])):
+        handle.write('{0}, {1}, {2}\n'.format(xyz[0][i], xyz[1][i], xyz[2][i]))
+    handle.close()
+
+
+def export_map_image(filename, exportType, image):
+    ext = File.get_type_ext(exportType, File.Types.IMAGE)
+    image.save(filename, format=ext[1::])
+
+
 def write_numpy(handle, array, name):
     handle.write('{0}=[\n'.format(name))
     for i in array:
@@ -280,6 +451,15 @@ def write_numpy(handle, array, name):
             handle.write('{0} '.format(j))
         handle.write(';\n')
     handle.write(']\n')
+
+
+def extension_add(fileName, index, fileType):
+    _name, extCurrent = os.path.splitext(fileName)
+    ext = File.get_type_ext(index, fileType)
+    if extCurrent != ext:
+        return fileName + ext
+
+    return fileName
 
 
 if __name__ == '__main__':

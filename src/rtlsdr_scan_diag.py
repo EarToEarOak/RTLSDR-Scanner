@@ -29,8 +29,9 @@ from ctypes.util import find_library
 import sys
 
 LIBS = [('wx', 'wxPython', 'http://www.wxpython.org/download.php#stable', True, True),
-        ('numpy', 'Numpy', 'http://sourceforge.net/projects/numpy/files/NumPy/', True, False),
-        ('matplotlib', 'matplotlib', 'http://matplotlib.org/downloads.html', True, False),
+        ('numpy', 'Numpy', 'http://sourceforge.net/projects/numpy/files/NumPy/', True, True),
+        ('matplotlib', 'matplotlib', 'http://matplotlib.org/downloads.html', True, True),
+        ('serial', 'pySerial', 'https://pypi.python.org/pypi/pyserial', True, True),
         ('rtlsdr', 'pyrtlsdr', 'https://github.com/roger-/pyrtlsdr', False, False)]
 
 
@@ -64,7 +65,7 @@ if __name__ == '__main__':
         print('')
     else:
         platform = sys.platform
-        for lib, name, url, package, homebrew in LIBS:
+        for lib, name, url, package, ports in LIBS:
             if not try_import(lib):
                 problem = True
                 print('{0} not found'.format(name))
@@ -74,8 +75,8 @@ if __name__ == '__main__':
                     else:
                         print("\tDownload from '{0}'".format(url))
                 elif platform == 'darwin':
-                    if homebrew:
-                        print("\tInstall using Homebrew or download from '{0}'".format(url))
+                    if ports:
+                        print("\tInstall using MacPorts or download from '{0}'".format(url))
                     else:
                         print("\tDownload from '{0}'".format(url))
                 else:

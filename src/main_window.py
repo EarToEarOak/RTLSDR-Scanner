@@ -36,13 +36,16 @@ from matplotlib.dates import num2epoch
 import wx
 from wx.lib.masked import NumCtrl
 
-from constants import F_MIN, F_MAX, MODE, DWELL, NFFT, DISPLAY, Warn, File, \
+from constants import F_MIN, F_MAX, MODE, DWELL, NFFT, DISPLAY, Warn, \
     Display, Cal, Mode
-from devices import get_devices
+from devices import get_devices_rtl
 from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, \
-    DialogDevices, DialogCompare, DialogAutoCal, DialogAbout, DialogSaveWarn
-from events import EVT_THREAD_STATUS, Event, EventThreadStatus, post_event
-from file import save_plot, export_plot, open_plot, ScanInfo, export_image
+    DialogDevicesRTL, DialogCompare, DialogAutoCal, DialogAbout, DialogSaveWarn, \
+    DialogDevicesGPS, DialogGeo
+from events import EVENT_THREAD, Event, EventThread, post_event
+from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
+    export_map, extension_add, File
+from location import ThreadLocation
 from misc import calc_samples, calc_real_dwell, \
     get_version_timestamp, get_version_timestamp_repo, add_colours
 from printer import PrintOut
@@ -82,6 +85,7 @@ class FrameMain(wx.Frame):
         self.sdr = None
         self.threadScan = None
         self.threadUpdate = None
+        self.threadLocation = None
 
         self.stopAtEnd = False
         self.stopScan = False
@@ -92,13 +96,15 @@ class FrameMain(wx.Frame):
         self.menuSave = None
         self.menuExportScan = None
         self.menuExportImage = None
+        self.menuExportGeo = None
         self.menuPreview = None
         self.menuPage = None
         self.menuPrint = None
         self.menuProperties = None
         self.menuPref = None
         self.menuAdvPref = None
-        self.menuDevices = None
+        self.menuDevicesRtl = None
+        self.menuDevicesGps = None
         self.menuReset = None
         self.menuClearSelect = None
         self.menuShowMeasure = None
@@ -137,10 +143,11 @@ class FrameMain(wx.Frame):
 
         self.spectrum = {}
         self.scanInfo = ScanInfo()
+        self.location = {}
         self.isSaved = True
 
         self.settings = Settings()
-        self.devices = get_devices(self.settings.devices)
+        self.devicesRtl = get_devices_rtl(self.settings.devicesRtl)
         self.filename = ""
         self.oldCal = 0
 
@@ -171,12 +178,12 @@ class FrameMain(wx.Frame):
         self.SetClientSize((toolbarSize[0] + 10, displaySize[1] / 2))
         self.SetMinSize((displaySize[0] / 4, displaySize[1] / 4))
 
-        self.Connect(-1, -1, EVT_THREAD_STATUS, self.__on_event)
+        self.Connect(-1, -1, EVENT_THREAD, self.__on_event)
 
         self.SetDropTarget(DropTarget(self))
 
         self.steps = 0
-        self.stepTotal = 0
+        self.stepsTotal = 0
 
     def __create_widgets(self):
         panel = wx.Panel(self)
@@ -274,10 +281,12 @@ class FrameMain(wx.Frame):
         menuFile.AppendSeparator()
         self.menuSave = menuFile.Append(wx.ID_SAVE, "&Save As...",
                                         "Save plot")
-        self.menuExportScan = menuFile.Append(wx.ID_ANY, "&Export scan...",
+        self.menuExportScan = menuFile.Append(wx.ID_ANY, "Export scan...",
                                               "Export scan")
-        self.menuExportImage = menuFile.Append(wx.ID_ANY, "&Export image...",
+        self.menuExportImage = menuFile.Append(wx.ID_ANY, "Export image...",
                                               "Export image")
+        self.menuExportGeo = menuFile.Append(wx.ID_ANY, "Export map...",
+                                              "Export maps")
         menuFile.AppendSeparator()
         self.menuPage = menuFile.Append(wx.ID_ANY, "Page setup...",
                                         "Page setup")
@@ -296,8 +305,10 @@ class FrameMain(wx.Frame):
                                         "Preferences")
         self.menuAdvPref = menuEdit.Append(wx.ID_ANY, "&Advanced preferences...",
                                            "Advanced preferences")
-        self.menuDevices = menuEdit.Append(wx.ID_ANY, "&Devices...",
-                                           "Device selection and configuration")
+        self.menuDevicesRtl = menuEdit.Append(wx.ID_ANY, "&Radio Devices...",
+                                              "Device selection and configuration")
+        self.menuDevicesGps = menuEdit.Append(wx.ID_ANY, "&GPS Devices...",
+                                              "GPS selection and configuration")
         menuEdit.AppendSeparator()
         self.menuReset = menuEdit.Append(wx.ID_ANY, "&Reset settings...",
                                          "Reset setting to the default")
@@ -350,6 +361,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.__on_save, self.menuSave)
         self.Bind(wx.EVT_MENU, self.__on_export_scan, self.menuExportScan)
         self.Bind(wx.EVT_MENU, self.__on_export_image, self.menuExportImage)
+        self.Bind(wx.EVT_MENU, self.__on_export_geo, self.menuExportGeo)
         self.Bind(wx.EVT_MENU, self.__on_page, self.menuPage)
         self.Bind(wx.EVT_MENU, self.__on_preview, self.menuPreview)
         self.Bind(wx.EVT_MENU, self.__on_print, self.menuPrint)
@@ -357,7 +369,8 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.__on_exit, menuExit)
         self.Bind(wx.EVT_MENU, self.__on_pref, self.menuPref)
         self.Bind(wx.EVT_MENU, self.__on_adv_pref, self.menuAdvPref)
-        self.Bind(wx.EVT_MENU, self.__on_devices, self.menuDevices)
+        self.Bind(wx.EVT_MENU, self.__on_devices_rtl, self.menuDevicesRtl)
+        self.Bind(wx.EVT_MENU, self.__on_devices_gps, self.menuDevicesGps)
         self.Bind(wx.EVT_MENU, self.__on_reset, self.menuReset)
         self.Bind(wx.EVT_MENU, self.__on_clear_select, self.menuClearSelect)
         self.Bind(wx.EVT_MENU, self.__on_show_measure, self.menuShowMeasure)
@@ -387,8 +400,8 @@ class FrameMain(wx.Frame):
         self.popupMenu.AppendSeparator()
         self.popupMenuRangeLim = self.popupMenu.Append(wx.ID_ANY,
                                                        "Set range to current zoom",
-                                                      "Set scanning range to the "
-                                                      "current zoom")
+                                                       "Set scanning range to the "
+                                                       "current zoom")
         self.popupMenu.AppendSeparator()
         self.popupMenuPointsLim = self.popupMenu.Append(wx.ID_ANY,
                                                        "Limit points",
@@ -426,7 +439,9 @@ class FrameMain(wx.Frame):
         if self.__save_warn(Warn.OPEN):
             return
         dlg = wx.FileDialog(self, "Open a scan", self.settings.dirScans,
-                            self.filename, File.RFS, wx.OPEN)
+                            self.filename,
+                            File.get_type_filters(File.Types.SAVE),
+                            wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             self.open(dlg.GetDirectory(), dlg.GetFilename())
         dlg.Destroy()
@@ -440,31 +455,37 @@ class FrameMain(wx.Frame):
 
     def __on_save(self, _event):
         dlg = wx.FileDialog(self, "Save a scan", self.settings.dirScans,
-                            self.filename, File.RFS,
+                            self.filename,
+                            File.get_type_filters(File.Types.SAVE),
                             wx.SAVE | wx.OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
             self.status.set_general("Saving")
-            self.filename = os.path.splitext(dlg.GetFilename())[0]
-            dirname = dlg.GetDirectory()
-            self.settings.dirScans = dirname
-            save_plot(dirname, dlg.GetFilename(), self.scanInfo,
-                      self.spectrum)
+            fileName = dlg.GetFilename()
+            dirName = dlg.GetDirectory()
+            self.filename = os.path.splitext(fileName)[0]
+            self.settings.dirScans = dirName
+            fileName = extension_add(fileName, dlg.GetFilterIndex(),
+                                     File.Types.SAVE)
+            fullName = os.path.join(dirName, fileName)
+            save_plot(fullName, self.scanInfo, self.spectrum, self.location)
             self.__saved(True)
             self.status.set_general("Finished")
-            self.settings.fileHistory.AddFileToHistory(os.path.join(dirname,
-                                                                    dlg.GetFilename()))
+            self.settings.fileHistory.AddFileToHistory(fullName)
         dlg.Destroy()
 
     def __on_export_scan(self, _event):
         dlg = wx.FileDialog(self, "Export a scan", self.settings.dirExport,
-                            self.filename, File.get_export_filters(),
+                            self.filename, File.get_type_filters(),
                             wx.SAVE | wx.OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
             self.status.set_general("Exporting")
-            dirname = dlg.GetDirectory()
-            self.settings.dirExport = dirname
-            export_plot(dirname, dlg.GetFilename(),
-                        dlg.GetFilterIndex(), self.spectrum)
+            fileName = dlg.GetFilename()
+            dirName = dlg.GetDirectory()
+            self.settings.dirExport = dirName
+            fileName = extension_add(fileName, dlg.GetFilterIndex(),
+                                     File.Types.PLOT)
+            fullName = os.path.join(dirName, fileName)
+            export_plot(fullName, dlg.GetFilterIndex(), self.spectrum)
             self.status.set_general("Finished")
         dlg.Destroy()
 
@@ -472,18 +493,52 @@ class FrameMain(wx.Frame):
         dlg = wx.FileDialog(self, "Export image to file",
                             self.settings.dirExport,
                             self.filename,
-                            File.get_export_filters(File.Exports.IMAGE),
+                            File.get_type_filters(File.Types.IMAGE),
                             wx.SAVE | wx.OVERWRITE_PROMPT)
         dlg.SetFilterIndex(File.ImageType.PNG)
         if dlg.ShowModal() == wx.ID_OK:
             self.status.set_general("Exporting")
-            dirname = dlg.GetDirectory()
-            self.settings.dirExport = dirname
-            filename = os.path.join(dirname, dlg.GetFilename())
-            export_image(filename, dlg.GetFilterIndex(),
+            fileName = dlg.GetFilename()
+            dirName = dlg.GetDirectory()
+            self.settings.dirExport = dirName
+            fileName = extension_add(fileName, dlg.GetFilterIndex(),
+                                     File.Types.IMAGE)
+            fullName = os.path.join(dirName, fileName)
+            exportType = dlg.GetFilterIndex()
+            export_image(fullName, exportType,
                          self.graph.get_figure(), self.settings.exportDpi)
             self.status.set_general("Finished")
         dlg.Destroy()
+
+    def __on_export_geo(self, _event):
+        dlgGeo = DialogGeo(self, self.spectrum, self.location, self.settings)
+        if dlgGeo.ShowModal() == wx.ID_OK:
+            self.status.set_general("Exporting...")
+            extent = dlgGeo.get_extent()
+            dlgFile = wx.FileDialog(self, "Export map to file",
+                                self.settings.dirExport,
+                                self.filename,
+                                File.get_type_filters(File.Types.GEO),
+                                wx.SAVE | wx.OVERWRITE_PROMPT)
+            dlgFile.SetFilterIndex(File.GeoType.KMZ)
+            if dlgFile.ShowModal() == wx.ID_OK:
+                fileName = dlgFile.GetFilename()
+                dirName = dlgFile.GetDirectory()
+                self.settings.dirExport = dirName
+                fileName = extension_add(fileName, dlgFile.GetFilterIndex(),
+                                         File.Types.GEO)
+                fullName = os.path.join(dirName, fileName)
+                exportType = dlgFile.GetFilterIndex()
+                image = None
+                xyz = None
+                if exportType == File.GeoType.CSV:
+                    xyz = dlgGeo.get_xyz()
+                else:
+                    image = dlgGeo.get_image()
+                export_map(fullName, exportType, extent, image, xyz)
+            self.status.set_general("Finished")
+            dlgFile.Destroy()
+        dlgGeo.Destroy()
 
     def __on_page(self, _event):
         dlg = wx.PageSetupDialog(self, self.pageConfig)
@@ -522,13 +577,13 @@ class FrameMain(wx.Frame):
         if self.__save_warn(Warn.EXIT):
             self.Bind(wx.EVT_CLOSE, self.__on_exit)
             return
-        self.__stop_scan()
+        self.__scan_stop()
         self.__wait_background()
         self.__get_controls()
         self.graph.close()
         self.settings.dwell = DWELL[1::2][self.choiceDwell.GetSelection()]
         self.settings.nfft = NFFT[self.choiceNfft.GetSelection()]
-        self.settings.devices = self.devices
+        self.settings.devicesRtl = self.devicesRtl
         self.settings.save()
         self.Close(True)
 
@@ -547,15 +602,21 @@ class FrameMain(wx.Frame):
             self.__set_control_state(True)
         dlg.Destroy()
 
-    def __on_devices(self, _event):
+    def __on_devices_rtl(self, _event):
         self.__get_controls()
-        self.devices = self.__refresh_devices()
-        dlg = DialogDevices(self, self.devices, self.settings)
+        self.devicesRtl = self.__refresh_devices()
+        dlg = DialogDevicesRTL(self, self.devicesRtl, self.settings)
         if dlg.ShowModal() == wx.ID_OK:
-            self.devices = dlg.get_devices()
-            self.settings.index = dlg.get_index()
+            self.devicesRtl = dlg.get_devices()
+            self.settings.indexRtl = dlg.get_index()
+            self.__set_gain_control()
             self.__set_control_state(True)
             self.__set_controls()
+        dlg.Destroy()
+
+    def __on_devices_gps(self, _event):
+        dlg = DialogDevicesGPS(self, self.settings)
+        dlg.ShowModal()
         dlg.Destroy()
 
     def __on_reset(self, _event):
@@ -623,18 +684,19 @@ class FrameMain(wx.Frame):
         self.__get_controls()
         self.graph.clear_plots()
 
-        self.devices = self.__refresh_devices()
-        if len(self.devices) == 0:
+        self.devicesRtl = self.__refresh_devices()
+        if len(self.devicesRtl) == 0:
             wx.MessageBox('No devices found',
                           'Error', wx.OK | wx.ICON_ERROR)
         else:
             self.spectrum.clear()
-            self.__start_scan()
+            self.location.clear()
+            self.__scan_start()
 
     def __on_stop(self, _event):
         self.stopScan = True
         self.stopAtEnd = False
-        self.__stop_scan()
+        self.__scan_stop()
 
     def __on_stop_end(self, _event):
         self.stopAtEnd = True
@@ -686,8 +748,8 @@ class FrameMain(wx.Frame):
 
     def __on_event(self, event):
         status = event.data.get_status()
-        freq = event.data.get_freq()
-        data = event.data.get_data()
+        freq = event.data.get_arg1()
+        data = event.data.get_arg2()
         if status == Event.STARTING:
             self.status.set_general("Starting")
         elif status == Event.STEPS:
@@ -701,11 +763,11 @@ class FrameMain(wx.Frame):
             if self.threadScan is not None:
                 self.sdr = self.threadScan.get_sdr()
                 if data is not None:
-                    self.devices[self.settings.index].tuner = data
+                    self.devicesRtl[self.settings.indexRtl].tuner = data
                     self.scanInfo.tuner = data
         elif status == Event.DATA:
             self.__saved(False)
-            cal = self.devices[self.settings.index].calibration
+            cal = self.devicesRtl[self.settings.indexRtl].calibration
             self.pool.apply_async(anaylse_data,
                                   (freq, data, cal,
                                    self.settings.nfft,
@@ -725,7 +787,7 @@ class FrameMain(wx.Frame):
                 self.dlgCal.Destroy()
                 self.dlgCal = None
         elif status == Event.PROCESSED:
-            offset = self.settings.devices[self.settings.index].offset
+            offset = self.settings.devicesRtl[self.settings.indexRtl].offset
             if self.settings.alert:
                 alert = self.settings.alertLevel
             else:
@@ -741,9 +803,9 @@ class FrameMain(wx.Frame):
         elif status == Event.UPDATED:
             if data and self.settings.liveUpdate:
                 self.__set_plot(self.spectrum,
-                              self.settings.annotate and \
-                              self.settings.retainScans and \
-                              self.settings.mode == Mode.CONTIN)
+                                self.settings.annotate and \
+                                self.settings.retainScans and \
+                                self.settings.mode == Mode.CONTIN)
             self.__progress()
         elif status == Event.DRAW:
             self.graph.draw()
@@ -753,38 +815,50 @@ class FrameMain(wx.Frame):
             self.__update_checked(False)
         elif status == Event.VER_UPDFAIL:
             self.__update_checked(failed=True)
+        elif status == Event.LOC_WARN:
+            self.status.set_info("GPS: {0}".format(data))
+        elif status == Event.LOC:
+            if self.scanInfo is not None:
+                if data[0] and data[1]:
+                    self.scanInfo.lat = str(data[0])
+                    self.scanInfo.lon = str(data[1])
+                    if len(self.spectrum) > 0:
+                        self.location[max(self.spectrum)] = (data[0],
+                                                             data[1],
+                                                             data[2])
 
         wx.YieldIfNeeded()
 
     def __on_process_done(self, data):
         timeStamp, freq, scan = data
-        post_event(self, EventThreadStatus(Event.PROCESSED, freq,
+        post_event(self, EventThread(Event.PROCESSED, freq,
                                              (timeStamp, scan)))
 
     def __auto_cal(self, status):
-        freq = self.dlgCal.get_freq()
+        freq = self.dlgCal.get_arg1()
         if self.dlgCal is not None:
             if status == Cal.START:
                 self.spinCtrlStart.SetValue(int(freq))
                 self.spinCtrlStop.SetValue(math.ceil(freq))
-                self.oldCal = self.devices[self.settings.index].calibration
-                self.devices[self.settings.index].calibration = 0
+                self.oldCal = self.devicesRtl[self.settings.indexRtl].calibration
+                self.devicesRtl[self.settings.indexRtl].calibration = 0
                 self.__get_controls()
                 self.spectrum.clear()
-                if not self.__start_scan(isCal=True):
+                self.location.clear()
+                if not self.__scan_start(isCal=True):
                     self.dlgCal.reset_cal()
             elif status == Cal.DONE:
                 ppm = self.__calc_ppm(freq)
                 self.dlgCal.set_cal(ppm)
                 self.__set_control_state(True)
             elif status == Cal.OK:
-                self.devices[self.settings.index].calibration = self.dlgCal.get_cal()
+                self.devicesRtl[self.settings.indexRtl].calibration = self.dlgCal.get_cal()
                 self.settings.calFreq = freq
                 self.dlgCal = None
             elif status == Cal.CANCEL:
                 self.dlgCal = None
-                if len(self.devices) > 0:
-                    self.devices[self.settings.index].calibration = self.oldCal
+                if len(self.devicesRtl) > 0:
+                    self.devicesRtl[self.settings.indexRtl].calibration = self.oldCal
 
     def __calc_ppm(self, freq):
         with self.lock:
@@ -797,7 +871,7 @@ class FrameMain(wx.Frame):
 
         return ((freq - peak) / freq) * 1e6
 
-    def __start_scan(self, isCal=False):
+    def __scan_start(self, isCal=False):
         if self.settings.mode == Mode.SINGLE:
             if self.__save_warn(Warn.SCAN):
                 return False
@@ -815,17 +889,30 @@ class FrameMain(wx.Frame):
             self.stopAtEnd = False
             self.stopScan = False
             self.threadScan = ThreadScan(self, self.sdr, self.settings,
-                                         self.settings.index, samples, isCal)
+                                         self.settings.indexRtl, samples, isCal)
             self.filename = "Scan {0:.1f}-{1:.1f}MHz".format(self.settings.start,
                                                             self.settings.stop)
             self.graph.set_plot_title()
+
+            if self.settings.gps:
+                if self.threadLocation and self.threadLocation.isAlive():
+                    self.threadLocation.stop()
+                    self.threadLocation.join()
+                device = self.settings.devicesGps[self.settings.indexGps]
+                self.threadLocation = ThreadLocation(self, device)
+
             return True
 
-    def __stop_scan(self):
+    def __scan_stop(self):
         if self.threadScan:
             self.status.set_general("Stopping")
             self.threadScan.abort()
             self.threadScan.join()
+        self.threadScan = None
+        if self.threadLocation and self.threadLocation.isAlive():
+            self.threadLocation.stop()
+            self.threadLocation.join()
+        self.threadLocation = None
         if self.sdr is not None:
             self.sdr.close()
         self.__set_control_state(True)
@@ -850,7 +937,7 @@ class FrameMain(wx.Frame):
                 if self.settings.mode == Mode.CONTIN:
                     if self.dlgCal is None and not self.stopAtEnd:
                         self.__limit_spectrum()
-                        self.__start_scan()
+                        self.__scan_start()
                     else:
                         self.status.set_general("Stopped")
                         self.__cleanup()
@@ -859,6 +946,11 @@ class FrameMain(wx.Frame):
         if self.sdr is not None:
             self.sdr.close()
             self.sdr = None
+        if self.threadLocation and self.threadLocation.isAlive():
+            self.threadLocation.stop()
+            self.threadLocation.join()
+        self.threadLocation = None
+
         self.status.hide_progress()
         self.steps = 0
         self.threadScan = None
@@ -866,11 +958,15 @@ class FrameMain(wx.Frame):
         self.stopAtEnd = False
         self.stopScan = True
 
+    def __remove_last(self, data):
+        while len(data) >= self.settings.retainMax:
+            timeStamp = min(data)
+            del data[timeStamp]
+
     def __limit_spectrum(self):
         with self.lock:
-            while len(self.spectrum) >= self.settings.retainMax:
-                timeStamp = min(self.spectrum)
-                del self.spectrum[timeStamp]
+            self.__remove_last(self.spectrum)
+            self.__remove_last(self.location)
 
     def __saved(self, isSaved):
         self.isSaved = isSaved
@@ -891,7 +987,7 @@ class FrameMain(wx.Frame):
                                     extent, annotate)
 
     def __set_control_state(self, state):
-        hasDevices = len(self.devices) > 0
+        hasDevices = len(self.devicesRtl) > 0
         self.spinCtrlStart.Enable(state)
         self.spinCtrlStop.Enable(state)
         self.controlGain.Enable(state)
@@ -904,6 +1000,8 @@ class FrameMain(wx.Frame):
         self.menuSave.Enable(state and len(self.spectrum) > 0)
         self.menuExportScan.Enable(state and len(self.spectrum) > 0)
         self.menuExportImage.Enable(state)
+        self.menuExportGeo.Enable(state and len(self.spectrum) > 0 \
+                                  and len(self.location) > 0)
         self.menuPage.Enable(state)
         self.menuPreview.Enable(state)
         self.menuPrint.Enable(state)
@@ -911,7 +1009,8 @@ class FrameMain(wx.Frame):
         self.menuStop.Enable(not state)
         self.menuPref.Enable(state)
         self.menuAdvPref.Enable(state)
-        self.menuDevices.Enable(state)
+        self.menuDevicesRtl.Enable(state)
+        self.menuDevicesGps.Enable(state)
         self.menuReset.Enable(state)
         self.menuCal.Enable(state)
         self.popupMenuStop.Enable(not state)
@@ -935,9 +1034,9 @@ class FrameMain(wx.Frame):
 
     def __set_gain_control(self):
         grid = self.controlGain.GetContainingSizer()
-        if len(self.devices) > 0:
+        if len(self.devicesRtl) > 0:
             self.controlGain.Destroy()
-            device = self.devices[self.settings.index]
+            device = self.devicesRtl[self.settings.indexRtl]
             if device.isDevice:
                 gains = device.get_gains_str()
                 self.controlGain = wx.Choice(self.toolbar,
@@ -965,8 +1064,8 @@ class FrameMain(wx.Frame):
         self.settings.nfft = NFFT[self.choiceNfft.GetSelection()]
         self.settings.display = DISPLAY[1::2][self.choiceDisplay.GetSelection()]
 
-        if len(self.devices) > 0:
-            device = self.devices[self.settings.index]
+        if len(self.devicesRtl) > 0:
+            device = self.devicesRtl[self.settings.indexRtl]
             try:
                 if device.isDevice:
                     device.gain = float(self.controlGain.GetStringSelection())
@@ -997,13 +1096,13 @@ class FrameMain(wx.Frame):
         try:
             remote = get_version_timestamp_repo()
         except IOError:
-            post_event(self, EventThreadStatus(Event.VER_UPDFAIL))
+            post_event(self, EventThread(Event.VER_UPDFAIL))
             return
 
         if remote > local:
-            post_event(self, EventThreadStatus(Event.VER_UPD, local, remote))
+            post_event(self, EventThread(Event.VER_UPD, local, remote))
         else:
-            post_event(self, EventThreadStatus(Event.VER_NOUPD))
+            post_event(self, EventThread(Event.VER_NOUPD))
 
     def __update_checked(self, updateFound=False, local=None, remote=None,
                        failed=False):
@@ -1029,14 +1128,14 @@ class FrameMain(wx.Frame):
         dlg.Destroy()
 
     def __refresh_devices(self):
-        self.settings.devices = get_devices(self.devices, self.status)
-        if self.settings.index > len(self.devices) - 1:
-            self.settings.index = 0
+        self.settings.devicesRtl = get_devices_rtl(self.devicesRtl, self.status)
+        if self.settings.indexRtl > len(self.devicesRtl) - 1:
+            self.settings.indexRtl = 0
         self.settings.save()
-        return self.settings.devices
+        return self.settings.devicesRtl
 
     def __wait_background(self):
-        self.Disconnect(-1, -1, EVT_THREAD_STATUS, self.__on_event)
+        self.Disconnect(-1, -1, EVENT_THREAD, self.__on_event)
         if self.threadScan:
             self.threadScan.abort()
             self.threadScan.join()
@@ -1054,12 +1153,12 @@ class FrameMain(wx.Frame):
         self.settings.dirScans = dirname
         self.status.set_general("Opening: {0}".format(filename))
 
-        self.scanInfo, spectrum = open_plot(dirname, filename)
+        self.scanInfo, spectrum, location = open_plot(dirname, filename)
 
         if len(spectrum) > 0:
-            self.spectrum.clear()
             self.scanInfo.setToSettings(self.settings)
             self.spectrum = spectrum
+            self.location = location
             self.__saved(True)
             self.__set_controls()
             self.__set_control_state(True)

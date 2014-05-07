@@ -268,8 +268,8 @@ class PanelGraph(wx.Panel):
             self.timer.Start(200, oneShot=True)
 
     def set_plot_title(self):
-        if len(self.settings.devices) > 0:
-            gain = self.settings.devices[self.settings.index].gain
+        if len(self.settings.devicesRtl) > 0:
+            gain = self.settings.devicesRtl[self.settings.indexRtl].gain
         else:
             gain = 0
         self.plot.set_title("Frequency Spectrogram\n{0} - {1} MHz,"

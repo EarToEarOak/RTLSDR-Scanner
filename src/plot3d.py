@@ -34,7 +34,7 @@ from matplotlib.dates import DateFormatter
 from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 
-from events import post_event, EventThreadStatus, Event
+from events import post_event, EventThread, Event
 from misc import format_time
 from mpl_toolkits.mplot3d import Axes3D  # @UnresolvedImport @UnusedImport
 from spectrum import epoch_to_mpl, create_mesh
@@ -47,6 +47,7 @@ class Plotter3d():
         self.settings = settings
         self.axes = None
         self.bar = None
+        self.barBase = None
         self.plot = None
         self.extent = None
         self.threadPlot = None
@@ -108,7 +109,7 @@ class Plotter3d():
 
     def redraw_plot(self):
         if self.figure is not None:
-            post_event(self.notify, EventThreadStatus(Event.DRAW))
+            post_event(self.notify, EventThread(Event.DRAW))
 
     def get_axes(self):
         return self.axes
@@ -245,9 +246,9 @@ class ThreadPlot(threading.Thread):
     def __clear_markers(self):
         children = self.axes.get_children()
         for child in children:
-                if child.get_gid() is not None:
-                    if child.get_gid() == 'peak':
-                        child.remove()
+            if child.get_gid() is not None:
+                if child.get_gid() == 'peak':
+                    child.remove()
 
 
 if __name__ == '__main__':

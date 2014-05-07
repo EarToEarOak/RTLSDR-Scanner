@@ -25,12 +25,39 @@
 from ctypes import c_ubyte, string_at
 
 import rtlsdr
+import serial
 
 
-class Device():
+class DeviceGPS():
+    NMEA, GPSD, GPSD_OLD = range(3)
+    TYPE = ['NMEA', 'GPSd', 'GPSd (<2.91)']
+    BAUDS = [50, 75, 110, 134, 150, 200, 300, 600, 1200, 1800, 2400, 4800,
+             9600, 19200, 38400, 57600, 115200]
+    BYTES = [serial.FIVEBITS, serial.SIXBITS, serial.SEVENBITS,
+             serial.EIGHTBITS]
+    PARITIES = [serial.PARITY_NONE, serial.PARITY_EVEN, serial.PARITY_ODD,
+                serial.PARITY_MARK, serial.PARITY_SPACE]
+    STOPS = [serial.STOPBITS_ONE, serial.STOPBITS_ONE_POINT_FIVE,
+             serial.STOPBITS_TWO]
+
+    def __init__(self):
+        self.name = 'GPS'
+        self.type = DeviceGPS.GPSD
+        self.resource = 'localhost:2947'
+        self.baud = 115200
+        self.bytes = serial.EIGHTBITS
+        self.parity = serial.PARITY_NONE
+        self.stops = serial.STOPBITS_ONE
+        self.soft = False
+
+    def get_serial_desc(self):
+        return '{0}-{1}{2}{3}'.format(self.baud, self.bytes, self.parity, self.stops)
+
+
+class DeviceRTL():
     def __init__(self):
         self.isDevice = True
-        self.index = None
+        self.indexRtl = None
         self.name = None
         self.serial = ''
         self.server = 'localhost'
@@ -62,7 +89,7 @@ class Device():
         return str(gain)
 
 
-def get_devices(currentDevices=[], statusBar=None):
+def get_devices_rtl(currentDevices=[], statusBar=None):
     if statusBar is not None:
         statusBar.set_general("Refreshing device list...")
 
@@ -70,9 +97,9 @@ def get_devices(currentDevices=[], statusBar=None):
     count = rtlsdr.librtlsdr.rtlsdr_get_device_count()
 
     for dev in range(0, count):
-        device = Device()
-        device.index = dev
-        device.name = format_device_name(rtlsdr.librtlsdr.rtlsdr_get_device_name(dev))
+        device = DeviceRTL()
+        device.indexRtl = dev
+        device.name = format_device_rtl_name(rtlsdr.librtlsdr.rtlsdr_get_device_name(dev))
         buffer1 = (c_ubyte * 256)()
         buffer2 = (c_ubyte * 256)()
         serial = (c_ubyte * 256)()
@@ -102,7 +129,7 @@ def get_devices(currentDevices=[], statusBar=None):
     return devices
 
 
-def format_device_name(name):
+def format_device_rtl_name(name):
     remove = ["/", "\\"]
     for char in remove:
         name = name.replace(char, " ")

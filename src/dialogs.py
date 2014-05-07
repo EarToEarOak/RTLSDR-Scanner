@@ -23,24 +23,32 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import Queue
 import copy
 import itertools
 from urlparse import urlparse
 
+from PIL import Image
+from matplotlib import mlab, patheffects
 import matplotlib
+from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
+from matplotlib.ticker import ScalarFormatter
 import numpy
 import rtlsdr
+import serial.tools.list_ports
 from wx import grid
 import wx
 from wx.lib import masked
 from wx.lib.agw.cubecolourdialog import CubeColourDialog
 from wx.lib.masked.numctrl import NumCtrl
 
-from constants import File, F_MIN, F_MAX, Cal, SAMPLE_RATE, BANDWIDTH, WINFUNC, \
+from constants import F_MIN, F_MAX, Cal, SAMPLE_RATE, BANDWIDTH, WINFUNC, \
     TUNER
-from devices import Device
-from file import open_plot
+from devices import DeviceRTL, DeviceGPS
+from events import Event
+from file import open_plot, File
+from location import ThreadLocation
 from misc import close_modeless, format_time, ValidatorCoord, get_colours, \
     nearest, load_bitmap, get_version_timestamp
 from rtltcp import RtlTcp
@@ -85,12 +93,13 @@ class DialogCompare(wx.Dialog):
 
     def __on_load_plot(self, event):
         dlg = wx.FileDialog(self, "Open a scan", self.dirname, self.filename,
-                            File.RFS, wx.OPEN)
+                            File.get_type_filters(File.Types.SAVE),
+                             wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             self.dirname = dlg.GetDirectory()
             self.filename = dlg.GetFilename()
-            _scanInfo, spectrum = open_plot(self.dirname,
-                                            self.filename)
+            _scanInfo, spectrum, _location = open_plot(self.dirname,
+                                                       self.filename)
             if event.EventObject == self.buttonPlot1:
                 self.textPlot1.SetLabel(self.filename)
                 self.graph.set_spectrum1(spectrum)
@@ -123,7 +132,7 @@ class DialogAutoCal(wx.Dialog):
                                         min=F_MIN, max=F_MAX)
 
         self.buttonCal = wx.Button(self, label="Calibrate")
-        if len(parent.devices) == 0:
+        if len(parent.devicesRtl) == 0:
             self.buttonCal.Disable()
         self.buttonCal.Bind(wx.EVT_BUTTON, self.__on_cal)
         self.textResult = wx.StaticText(self)
@@ -186,8 +195,272 @@ class DialogAutoCal(wx.Dialog):
     def reset_cal(self):
         self.set_cal(self.cal)
 
-    def get_freq(self):
+    def get_arg1(self):
         return self.textFreq.GetValue()
+
+
+class DialogGeo(wx.Dialog):
+
+    def __init__(self, parent, spectrum, location, settings):
+        self.spectrum = spectrum
+        self.location = location
+        self.directory = settings.dirExport
+        self.colourMap = settings.colourMap
+        self.dpi = settings.exportDpi
+        self.canvas = None
+        self.extent = None
+        self.xyz = None
+        self.plotAxes = False
+        self.plotHeat = True
+        self.plotCont = True
+        self.plotPoint = False
+        self.plot = None
+        self.colourMap = settings.colourMap
+
+        wx.Dialog.__init__(self, parent=parent, title='Export Map')
+
+        self.figure = matplotlib.figure.Figure(facecolor='white')
+        self.figure.set_size_inches((6, 6))
+        self.canvas = FigureCanvas(self, -1, self.figure)
+        self.axes = self.figure.add_subplot(111)
+
+        self.checkAxes = wx.CheckBox(self, label='Axes')
+        self.checkAxes.SetValue(self.plotAxes)
+        self.Bind(wx.EVT_CHECKBOX, self.__on_axes, self.checkAxes)
+        self.checkHeat = wx.CheckBox(self, label='Heat Map')
+        self.checkHeat.SetValue(self.plotHeat)
+        self.Bind(wx.EVT_CHECKBOX, self.__on_heat, self.checkHeat)
+        self.checkCont = wx.CheckBox(self, label='Contour Lines')
+        self.checkCont.SetValue(self.plotCont)
+        self.Bind(wx.EVT_CHECKBOX, self.__on_cont, self.checkCont)
+        self.checkPoint = wx.CheckBox(self, label='Locations')
+        self.checkPoint.SetValue(self.plotPoint)
+        self.Bind(wx.EVT_CHECKBOX, self.__on_point, self.checkPoint)
+
+        colours = get_colours()
+        self.choiceColour = wx.Choice(self, choices=colours)
+        self.choiceColour.SetSelection(colours.index(self.colourMap))
+        self.Bind(wx.EVT_CHOICE, self.__on_colour, self.choiceColour)
+        self.colourBar = PanelColourBar(self, settings.colourMap)
+
+        freqMin = min(spectrum[min(spectrum)]) * 1000
+        freqMax = max(spectrum[min(spectrum)]) * 1000
+        bw = freqMax - freqMin
+
+        textCentre = wx.StaticText(self, label='Centre')
+        self.spinCentre = wx.SpinCtrl(self)
+        self.spinCentre.SetToolTip(wx.ToolTip('Centre frequency (kHz)'))
+        self.spinCentre.SetRange(freqMin, freqMax)
+        self.spinCentre.SetValue(freqMin + bw / 2)
+
+        textBw = wx.StaticText(self, label='Bandwidth')
+        self.spinBw = wx.SpinCtrl(self)
+        self.spinBw.SetToolTip(wx.ToolTip('Bandwidth (kHz)'))
+        self.spinBw.SetRange(1, bw)
+        self.spinBw.SetValue(bw / 10)
+
+        buttonUpdate = wx.Button(self, label='Update')
+        self.Bind(wx.EVT_BUTTON, self.__on_update, buttonUpdate)
+
+        sizerButtons = wx.StdDialogButtonSizer()
+        buttonOk = wx.Button(self, wx.ID_OK)
+        buttonCancel = wx.Button(self, wx.ID_CANCEL)
+        sizerButtons.AddButton(buttonOk)
+        sizerButtons.AddButton(buttonCancel)
+        sizerButtons.Realize()
+        self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
+
+        self.__setup_plot()
+
+        sizerGrid = wx.GridBagSizer(5, 5)
+        sizerGrid.Add(self.canvas, pos=(0, 0), span=(1, 5),
+                  flag=wx.EXPAND | wx.ALL, border=5)
+        sizerGrid.Add(self.choiceColour, pos=(1, 0), span=(1, 2),
+                  flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+        sizerGrid.Add(self.colourBar, pos=(1, 2), span=(1, 1),
+                  flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+        sizerGrid.Add(self.checkAxes, pos=(2, 0), span=(1, 1),
+                  flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+        sizerGrid.Add(self.checkHeat, pos=(2, 1), span=(1, 1),
+                  flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+        sizerGrid.Add(self.checkCont, pos=(2, 2), span=(1, 1),
+                  flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+        sizerGrid.Add(self.checkPoint, pos=(2, 3), span=(1, 1),
+                  flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+        sizerGrid.Add(textCentre, pos=(3, 0), span=(1, 1),
+                  flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
+        sizerGrid.Add(self.spinCentre, pos=(3, 1), span=(1, 1),
+                  flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+        sizerGrid.Add(textBw, pos=(3, 2), span=(1, 1),
+                  flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
+        sizerGrid.Add(self.spinBw, pos=(3, 3), span=(1, 1),
+                  flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+        sizerGrid.Add(buttonUpdate, pos=(3, 4), span=(1, 1),
+                  flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+        sizerGrid.Add(sizerButtons, pos=(4, 4), span=(1, 1),
+                  flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
+
+        self.SetSizerAndFit(sizerGrid)
+
+        self.__draw_plot()
+
+    def __setup_plot(self):
+        self.axes.clear()
+
+        if self.plotHeat:
+            self.choiceColour.Show()
+            self.colourBar.Show()
+        else:
+            self.choiceColour.Hide()
+            self.colourBar.Hide()
+
+        self.axes.set_title('Preview')
+        self.axes.set_xlabel('Longitude ($^\circ$)')
+        self.axes.set_ylabel('Latitude ($^\circ$)')
+        self.axes.set_xlim(auto=True)
+        self.axes.set_ylim(auto=True)
+        formatter = ScalarFormatter(useOffset=False)
+        self.axes.xaxis.set_major_formatter(formatter)
+        self.axes.yaxis.set_major_formatter(formatter)
+
+    def __draw_plot(self):
+        self.plot = None
+        x = []
+        y = []
+        z = []
+
+        freqCentre = self.spinCentre.GetValue()
+        freqBw = self.spinBw.GetValue()
+        freqMin = (freqCentre - freqBw) / 1000.
+        freqMax = (freqCentre + freqBw) / 1000.
+
+        for timeStamp in self.spectrum:
+            spectrum = self.spectrum[timeStamp]
+            sweep = [yv for xv, yv in spectrum.items() if freqMin <= xv <= freqMax]
+            peak = max(sweep)
+            try:
+                location = self.location[timeStamp]
+            except KeyError:
+                continue
+            x.append(location[1])
+            y.append(location[0])
+            z.append(peak)
+
+        if len(x) == 0:
+            self.__draw_warning()
+            return
+
+        xi = numpy.linspace(min(x), max(x), 500)
+        yi = numpy.linspace(min(y), max(y), 500)
+
+        try:
+            zi = mlab.griddata(x, y, z, xi, yi)
+        except:
+            self.__draw_warning()
+            return
+
+        self.extent = (min(x), max(x), min(y), max(y))
+        self.xyz = (x, y, z)
+
+        if self.plotHeat:
+            self.plot = self.axes.pcolormesh(xi, yi, zi, cmap=self.colourMap)
+
+        if self.plotCont:
+            contours = self.axes.contour(xi, yi, zi, linewidths=0.5,
+                                         colors='k')
+            self.axes.clabel(contours, inline=1, fontsize='x-small',
+                             gid='clabel')
+
+        if self.plotPoint:
+            self.axes.plot(x, y, 'wo')
+            for posX, posY, posZ in zip(x, y, z):
+                self.axes.annotate('{0:.2f}dB'.format(posZ), xy=(posX, posY),
+                                   xytext=(-5, 5), ha='right',
+                                   textcoords='offset points')
+
+        if matplotlib.__version__ >= '1.3':
+            effect = patheffects.withStroke(linewidth=2, foreground="w",
+                                            alpha=0.75)
+            for child in self.axes.get_children():
+                child.set_path_effects([effect])
+
+        if self.plotAxes:
+            self.axes.set_axis_on()
+        else:
+            self.axes.set_axis_off()
+        self.canvas.draw()
+
+    def __draw_warning(self):
+        self.axes.text(0.5, 0.5, 'Insufficient GPS data',
+                       ha='center', va='center',
+                       transform=self.axes.transAxes)
+
+    def __on_update(self, _event):
+        self.__setup_plot()
+        self.__draw_plot()
+
+    def __on_ok(self, _event):
+        self.EndModal(wx.ID_OK)
+
+    def __on_axes(self, _event):
+        self.plotAxes = self.checkAxes.GetValue()
+        if self.plotAxes:
+            self.axes.set_axis_on()
+        else:
+            self.axes.set_axis_off()
+        self.canvas.draw()
+
+    def __on_heat(self, _event):
+        self.plotHeat = self.checkHeat.GetValue()
+        self.__on_update(None)
+
+    def __on_cont(self, _event):
+        self.plotCont = self.checkCont.GetValue()
+        self.__on_update(None)
+
+    def __on_point(self, _event):
+        self.plotPoint = self.checkPoint.GetValue()
+        self.__on_update(None)
+
+    def __on_colour(self, _event):
+        self.colourMap = self.choiceColour.GetStringSelection()
+        self.colourBar.set_map(self.colourMap)
+        if self.plot:
+            self.plot.set_cmap(self.colourMap)
+            self.canvas.draw()
+
+    def get_filename(self):
+        return self.filename
+
+    def get_directory(self):
+        return self.directory
+
+    def get_extent(self):
+        return self.extent
+
+    def get_image(self):
+        width = self.extent[1] - self.extent[0]
+        height = self.extent[3] - self.extent[2]
+        self.figure.set_size_inches((6, 6. * width / height))
+        self.figure.set_dpi(self.dpi)
+        self.axes.set_title('')
+        self.figure.patch.set_alpha(0)
+        self.axes.axesPatch.set_alpha(0)
+        canvas = FigureCanvasAgg(self.figure)
+        canvas.draw()
+
+        renderer = canvas.get_renderer()
+        if matplotlib.__version__ >= '1.2':
+            buf = renderer.buffer_rgba()
+        else:
+            buf = renderer.buffer_rgba(0, 0)
+        size = canvas.get_width_height()
+        image = Image.frombuffer('RGBA', size, buf, 'raw', 'RGBA', 0, 1)
+
+        return image
+
+    def get_xyz(self):
+        return self.xyz
 
 
 class DialogOffset(wx.Dialog):
@@ -303,7 +576,7 @@ class DialogOffset(wx.Dialog):
 
         try:
             if self.device.isDevice:
-                sdr = rtlsdr.RtlSdr(self.device.index)
+                sdr = rtlsdr.RtlSdr(self.device.indexRtl)
             else:
                 sdr = RtlTcp(self.device.server, self.device.port)
             sdr.set_sample_rate(SAMPLE_RATE)
@@ -580,6 +853,10 @@ class DialogPrefs(wx.Dialog):
         self.spinDpi = wx.SpinCtrl(self, wx.ID_ANY, min=72, max=6000)
         self.spinDpi.SetValue(settings.exportDpi)
         self.spinDpi.SetToolTip(wx.ToolTip('DPI of exported images'))
+        self.checkGps = wx.CheckBox(self, wx.ID_ANY,
+                                      "Use GPS")
+        self.checkGps.SetValue(settings.gps)
+        self.checkGps.SetToolTip(wx.ToolTip('Record GPS location'))
 
         self.radioAvg = wx.RadioButton(self, wx.ID_ANY, 'Average Scans',
                                        style=wx.RB_GROUP)
@@ -628,6 +905,7 @@ class DialogPrefs(wx.Dialog):
         gengrid.Add(self.spinPoints, pos=(4, 1))
         gengrid.Add(textDpi, pos=(5, 0))
         gengrid.Add(self.spinDpi, pos=(5, 1))
+        gengrid.Add(self.checkGps, pos=(6, 0))
         genbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "General"))
         genbox.Add(gengrid, 0, wx.ALL | wx.ALIGN_CENTRE_VERTICAL, 10)
 
@@ -695,6 +973,7 @@ class DialogPrefs(wx.Dialog):
         self.settings.saveWarn = self.checkSaved.GetValue()
         self.settings.alert = self.checkAlert.GetValue()
         self.settings.alertLevel = self.spinLevel.GetValue()
+        self.settings.gps = self.checkGps.GetValue()
         self.settings.pointsLimit = self.checkPoints.GetValue()
         self.settings.pointsMax = self.spinPoints.GetValue()
         self.settings.exportDpi = self.spinDpi.GetValue()
@@ -762,7 +1041,7 @@ class DialogAdvPrefs(wx.Dialog):
         self.EndModal(wx.ID_OK)
 
 
-class DialogDevices(wx.Dialog):
+class DialogDevicesRTL(wx.Dialog):
     COL_SEL, COL_DEV, COL_TUN, COL_SER, COL_IND, \
     COL_GAIN, COL_CAL, COL_LO, COL_OFF = range(9)
 
@@ -771,7 +1050,7 @@ class DialogDevices(wx.Dialog):
         self.settings = settings
         self.index = None
 
-        wx.Dialog.__init__(self, parent=parent, title="Devices")
+        wx.Dialog.__init__(self, parent=parent, title="Radio Devices")
 
         self.gridDev = grid.Grid(self)
         self.gridDev.CreateGrid(len(self.devices), 9)
@@ -800,7 +1079,7 @@ class DialogDevices(wx.Dialog):
         self.Bind(wx.EVT_BUTTON, self.__on_del, self.buttonDel)
         serverSizer.Add(buttonAdd, 0, wx.ALL)
         serverSizer.Add(self.buttonDel, 0, wx.ALL)
-        self.__button_state()
+        self.__set_button_state()
 
         buttonOk = wx.Button(self, wx.ID_OK)
         buttonCancel = wx.Button(self, wx.ID_CANCEL)
@@ -866,10 +1145,10 @@ class DialogDevices(wx.Dialog):
             self.gridDev.SetCellValue(i, self.COL_OFF, str(device.offset / 1e3))
             i += 1
 
-        if self.settings.index >= len(self.devices):
-            self.settings.index = len(self.devices) - 1
-        self.__select_row(self.settings.index)
-        self.index = self.settings.index
+        if self.settings.indexRtl >= len(self.devices):
+            self.settings.indexRtl = len(self.devices) - 1
+        self.__select_row(self.settings.indexRtl)
+        self.index = self.settings.indexRtl
 
         self.gridDev.AutoSize()
 
@@ -883,7 +1162,7 @@ class DialogDevices(wx.Dialog):
                 if url.hostname is not None:
                     device.server = url.hostname
                 else:
-                    device.port = 'localhost'
+                    device.server = 'localhost'
                 if url.port is not None:
                     device.port = url.port
                 else:
@@ -894,7 +1173,7 @@ class DialogDevices(wx.Dialog):
             device.offset = float(self.gridDev.GetCellValue(i, self.COL_OFF)) * 1e3
             i += 1
 
-    def __button_state(self):
+    def __set_button_state(self):
         if len(self.devices) > 0:
             if self.devices[self.index].isDevice:
                 self.buttonDel.Disable()
@@ -938,17 +1217,10 @@ class DialogDevices(wx.Dialog):
             self.gridDev.ForceRefresh()
             event.Skip()
 
-        self.__button_state()
-
-    def __on_ok(self, _event):
-        self.__get_dev_grid()
-        if self.__warn_duplicates():
-            return
-
-        self.EndModal(wx.ID_OK)
+        self.__set_button_state()
 
     def __on_add(self, _event):
-        device = Device()
+        device = DeviceRTL()
         device.isDevice = False
         self.devices.append(device)
         self.gridDev.AppendRows(1)
@@ -960,7 +1232,13 @@ class DialogDevices(wx.Dialog):
         self.gridDev.DeleteRows(self.index)
         self.__set_dev_grid()
         self.SetSizerAndFit(self.devbox)
-        self.__button_state()
+        self.__set_button_state()
+
+    def __on_ok(self, _event):
+        self.__get_dev_grid()
+        if self.__warn_duplicates():
+            return
+        self.EndModal(wx.ID_OK)
 
     def __select_row(self, index):
         self.gridDev.ClearSelection()
@@ -975,6 +1253,201 @@ class DialogDevices(wx.Dialog):
 
     def get_devices(self):
         return self.devices
+
+
+class DialogDevicesGPS(wx.Dialog):
+    COL_SEL, COL_NAME, COL_DEV, COL_SET, COL_TYPE, COL_TEST = range(6)
+
+    def __init__(self, parent, settings):
+        self.settings = settings
+        self.index = settings.indexGps
+        self.devices = copy.copy(settings.devicesGps)
+
+        wx.Dialog.__init__(self, parent=parent, title="GPS Devices")
+
+        self.comms = [port for port in serial.tools.list_ports.comports()]
+
+        self.gridDev = grid.Grid(self)
+        self.gridDev.CreateGrid(len(self.devices), 6)
+        self.gridDev.SetRowLabelSize(0)
+        self.gridDev.SetColLabelValue(self.COL_SEL, "Select")
+        self.gridDev.SetColLabelValue(self.COL_NAME, "Name")
+        self.gridDev.SetColLabelValue(self.COL_DEV, "Device")
+        self.gridDev.SetColLabelValue(self.COL_SET, "Settings")
+        self.gridDev.SetColLabelValue(self.COL_TYPE, "Type")
+        self.gridDev.SetColLabelValue(self.COL_TEST, "Test")
+
+        self.__set_dev_grid()
+
+        sizerDevice = wx.BoxSizer(wx.HORIZONTAL)
+        buttonAdd = wx.Button(self, wx.ID_ADD)
+        self.buttonDel = wx.Button(self, wx.ID_DELETE)
+        self.Bind(wx.EVT_BUTTON, self.__on_add, buttonAdd)
+        self.Bind(wx.EVT_BUTTON, self.__on_del, self.buttonDel)
+        sizerDevice.Add(buttonAdd, 0, wx.ALL)
+        sizerDevice.Add(self.buttonDel, 0, wx.ALL)
+        self.__set_button_state()
+
+        buttonOk = wx.Button(self, wx.ID_OK)
+        buttonCancel = wx.Button(self, wx.ID_CANCEL)
+        sizerButtons = wx.StdDialogButtonSizer()
+        sizerButtons.AddButton(buttonOk)
+        sizerButtons.AddButton(buttonCancel)
+        sizerButtons.Realize()
+        self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
+
+        self.devbox = wx.BoxSizer(wx.VERTICAL)
+        self.devbox.Add(self.gridDev, 1, wx.ALL | wx.EXPAND, 10)
+        self.devbox.Add(sizerDevice, 0, wx.ALL | wx.EXPAND, 10)
+        self.devbox.Add(sizerButtons, 0, wx.ALL | wx.EXPAND, 10)
+
+        self.SetSizerAndFit(self.devbox)
+
+    def __set_dev_grid(self):
+        self.Unbind(grid.EVT_GRID_CELL_LEFT_CLICK)
+        self.Unbind(grid.EVT_GRID_CELL_CHANGE)
+        self.gridDev.ClearGrid()
+
+        i = 0
+        for device in self.devices:
+            self.gridDev.SetReadOnly(i, self.COL_SEL, True)
+            self.gridDev.SetCellRenderer(i, self.COL_SEL, CellRenderer())
+            self.gridDev.SetCellValue(i, self.COL_NAME, device.name)
+            if device.type == DeviceGPS.NMEA:
+                ports = [name[0] for name in self.comms]
+                if not device.resource in ports:
+                    ports.append(device.resource)
+                    ports.sort()
+                cell = grid.GridCellChoiceEditor(ports, allowOthers=True)
+            else:
+                cell = grid.GridCellTextEditor()
+            self.gridDev.SetCellEditor(i, self.COL_DEV, cell)
+            self.gridDev.SetCellValue(i, self.COL_DEV, device.resource)
+            cell = grid.GridCellChoiceEditor(DeviceGPS.TYPE, allowOthers=False)
+            self.gridDev.SetCellEditor(i, self.COL_TYPE, cell)
+            self.gridDev.SetReadOnly(i, self.COL_SET, True)
+            if device.type == DeviceGPS.NMEA:
+                self.gridDev.SetCellValue(i, self.COL_SET,
+                                          device.get_serial_desc())
+                self.gridDev.SetCellAlignment(i, self.COL_SET,
+                                              wx.ALIGN_CENTRE, wx.ALIGN_CENTRE)
+            else:
+                colour = self.gridDev.GetLabelBackgroundColour()
+                self.gridDev.SetCellBackgroundColour(i, self.COL_SET, colour)
+            self.gridDev.SetCellValue(i, self.COL_TYPE,
+                                      DeviceGPS.TYPE[device.type])
+            self.gridDev.SetCellValue(i, self.COL_TEST, '...')
+            self.gridDev.SetCellAlignment(i, self.COL_TEST,
+                                          wx.ALIGN_CENTRE, wx.ALIGN_CENTRE)
+            i += 1
+
+        if self.index >= len(self.devices):
+            self.index = len(self.devices) - 1
+        self.__select_row(self.index)
+        self.index = self.index
+
+        self.gridDev.AutoSize()
+
+        self.Bind(grid.EVT_GRID_CELL_LEFT_CLICK, self.__on_click)
+        self.Bind(grid.EVT_GRID_CELL_CHANGE, self.__on_change)
+
+    def __get_dev_grid(self):
+        i = 0
+        for device in self.devices:
+            device.name = self.gridDev.GetCellValue(i, self.COL_NAME)
+            device.resource = self.gridDev.GetCellValue(i, self.COL_DEV)
+            device.type = DeviceGPS.TYPE.index(self.gridDev.GetCellValue(i, self.COL_TYPE))
+            i += 1
+
+    def __set_button_state(self):
+        if len(self.devices) > 0:
+            self.buttonDel.Enable()
+        else:
+            self.buttonDel.Disable()
+        if len(self.devices) == 1:
+            self.__select_row(0)
+
+    def __warn_duplicates(self):
+        devices = []
+        for device in self.devices:
+            devices.append(device.name)
+
+        dupes = set(devices)
+        if len(dupes) != len(devices):
+            message = "Duplicate name found:\n'{0}'".format(dupes.pop())
+            dlg = wx.MessageDialog(self, message, "Warning",
+                                   wx.OK | wx.ICON_WARNING)
+            dlg.ShowModal()
+            dlg.Destroy()
+            return True
+
+        return False
+
+    def __on_click(self, event):
+        col = event.GetCol()
+        index = event.GetRow()
+        device = self.devices[index]
+        if col == self.COL_SEL:
+            self.index = event.GetRow()
+            self.__select_row(index)
+        elif col == self.COL_SET:
+            if device.type == DeviceGPS.NMEA:
+                dlg = DialogComm(self, device)
+                dlg.ShowModal()
+                dlg.Destroy()
+                self.gridDev.SetCellValue(index, self.COL_SET,
+                                          device.get_serial_desc())
+        elif col == self.COL_TEST:
+            dlg = DialogGPSTest(self, device)
+            dlg.ShowModal()
+            dlg.Destroy()
+        else:
+            self.gridDev.ForceRefresh()
+            event.Skip()
+
+    def __on_change(self, event):
+        col = event.GetCol()
+        if col == self.COL_TYPE:
+            self.__get_dev_grid()
+            self.__set_dev_grid()
+            event.Skip()
+
+    def __on_add(self, _event):
+        self.__get_dev_grid()
+        device = DeviceGPS()
+        self.devices.append(device)
+        self.gridDev.AppendRows(1)
+        self.__set_dev_grid()
+        self.SetSizerAndFit(self.devbox)
+        self.__set_button_state()
+
+    def __on_del(self, _event):
+        self.__get_dev_grid()
+        del self.devices[self.index]
+        self.gridDev.DeleteRows(self.index)
+        self.__set_dev_grid()
+        self.SetSizerAndFit(self.devbox)
+        self.__set_button_state()
+
+    def __on_ok(self, _event):
+        self.__get_dev_grid()
+        if self.__warn_duplicates():
+            return
+
+        self.settings.devicesGps = self.devices
+        if len(self.devices) == 0:
+            self.index = -1
+        self.settings.indexGps = self.index
+        self.EndModal(wx.ID_OK)
+
+    def __select_row(self, index):
+        self.index = index
+        self.gridDev.ClearSelection()
+        for i in range(0, len(self.devices)):
+            tick = "0"
+            if i == index:
+                tick = "1"
+            self.gridDev.SetCellValue(i, self.COL_SEL, tick)
 
 
 class DialogWinFunc(wx.Dialog):
@@ -1052,6 +1525,175 @@ class DialogWinFunc(wx.Dialog):
 
     def get_win_func(self):
         return self.winFunc
+
+
+class DialogComm(wx.Dialog):
+    def __init__(self, parent, device):
+        self.device = device
+
+        wx.Dialog.__init__(self, parent=parent, title='Communication settings')
+
+        textBaud = wx.StaticText(self, label='Baud rate')
+        self.choiceBaud = wx.Choice(self,
+                                    choices=[str(baud) for baud in DeviceGPS.BAUDS])
+        self.choiceBaud.SetSelection(DeviceGPS.BAUDS.index(device.baud))
+        textByte = wx.StaticText(self, label='Byte size')
+        self.choiceBytes = wx.Choice(self,
+                                     choices=[str(byte) for byte in DeviceGPS.BYTES])
+        self.choiceBytes.SetSelection(DeviceGPS.BYTES.index(device.bytes))
+        textParity = wx.StaticText(self, label='Parity')
+        self.choiceParity = wx.Choice(self, choices=DeviceGPS.PARITIES)
+        self.choiceParity.SetSelection(DeviceGPS.PARITIES.index(device.parity))
+        textStop = wx.StaticText(self, label='Stop bits')
+        self.choiceStops = wx.Choice(self,
+                                     choices=[str(stop) for stop in DeviceGPS.STOPS])
+        self.choiceStops.SetSelection(DeviceGPS.STOPS.index(device.stops))
+        textSoft = wx.StaticText(self, label='Software flow control')
+        self.checkSoft = wx.CheckBox(self)
+        self.checkSoft.SetValue(device.soft)
+
+        buttonOk = wx.Button(self, wx.ID_OK)
+        buttonCancel = wx.Button(self, wx.ID_CANCEL)
+        sizerButtons = wx.StdDialogButtonSizer()
+        sizerButtons.AddButton(buttonOk)
+        sizerButtons.AddButton(buttonCancel)
+        sizerButtons.Realize()
+        self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
+
+        grid = wx.GridBagSizer(10, 10)
+        grid.Add(textBaud, pos=(0, 0), flag=wx.ALL)
+        grid.Add(self.choiceBaud, pos=(0, 1), flag=wx.ALL)
+        grid.Add(textByte, pos=(1, 0), flag=wx.ALL)
+        grid.Add(self.choiceBytes, pos=(1, 1), flag=wx.ALL)
+        grid.Add(textParity, pos=(2, 0), flag=wx.ALL)
+        grid.Add(self.choiceParity, pos=(2, 1), flag=wx.ALL)
+        grid.Add(textStop, pos=(3, 0), flag=wx.ALL)
+        grid.Add(self.choiceStops, pos=(3, 1), flag=wx.ALL)
+        grid.Add(textSoft, pos=(4, 0), flag=wx.ALL)
+        grid.Add(self.checkSoft, pos=(4, 1), flag=wx.ALL)
+
+        box = wx.BoxSizer(wx.VERTICAL)
+        box.Add(grid, flag=wx.ALL, border=10)
+        box.Add(sizerButtons, flag=wx.ALL | wx.ALIGN_RIGHT, border=10)
+
+        self.SetSizerAndFit(box)
+
+    def __on_ok(self, _event):
+        self.device.baud = DeviceGPS.BAUDS[self.choiceBaud.GetSelection()]
+        self.device.bytes = DeviceGPS.BYTES[self.choiceBytes.GetSelection()]
+        self.device.parity = DeviceGPS.PARITIES[self.choiceParity.GetSelection()]
+        self.device.stops = DeviceGPS.STOPS[self.choiceStops.GetSelection()]
+        self.device.soft = self.checkSoft.GetValue()
+
+        self.EndModal(wx.ID_OK)
+
+
+class DialogGPSTest(wx.Dialog):
+    def __init__(self, parent, device):
+        self.device = device
+        self.threadLocation = None
+        self.raw = ''
+
+        wx.Dialog.__init__(self, parent=parent, title='GPS Test')
+
+        textLat = wx.StaticText(self, label='Longitude')
+        self.textLat = wx.TextCtrl(self, style=wx.TE_READONLY)
+        textLon = wx.StaticText(self, label='Latitude')
+        self.textLon = wx.TextCtrl(self, style=wx.TE_READONLY)
+        textAlt = wx.StaticText(self, label='Altitude')
+        self.textAlt = wx.TextCtrl(self, style=wx.TE_READONLY)
+        textRaw = wx.StaticText(self, label='Raw output')
+        self.textRaw = wx.TextCtrl(self,
+                                   style=wx.TE_MULTILINE | wx.TE_READONLY)
+
+        self.buttonStart = wx.Button(self, label='Start')
+        self.Bind(wx.EVT_BUTTON, self.__on_start, self.buttonStart)
+        self.buttonStop = wx.Button(self, label='Stop')
+        self.Bind(wx.EVT_BUTTON, self.__on_stop, self.buttonStop)
+        self.buttonStop.Disable()
+
+        buttonOk = wx.Button(self, wx.ID_OK)
+        self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
+
+        grid = wx.GridBagSizer(10, 10)
+
+        grid.Add(textLat, pos=(0, 1), flag=wx.ALL, border=5)
+        grid.Add(self.textLat, pos=(0, 2), span=(1, 2), flag=wx.ALL, border=5)
+        grid.Add(textLon, pos=(1, 1), flag=wx.ALL, border=5)
+        grid.Add(self.textLon, pos=(1, 2), span=(1, 2), flag=wx.ALL, border=5)
+        grid.Add(textAlt, pos=(2, 1), flag=wx.ALL, border=5)
+        grid.Add(self.textAlt, pos=(2, 2), span=(1, 2), flag=wx.ALL, border=5)
+        grid.Add(textRaw, pos=(3, 0), flag=wx.ALL, border=5)
+        grid.Add(self.textRaw, pos=(4, 0), span=(5, 4),
+                 flag=wx.ALL | wx.EXPAND, border=5)
+        grid.Add(self.buttonStart, pos=(9, 1), flag=wx.ALL, border=5)
+        grid.Add(self.buttonStop, pos=(9, 2), flag=wx.ALL, border=5)
+        grid.Add(buttonOk, pos=(10, 3), flag=wx.ALL, border=5)
+
+        self.SetSizerAndFit(grid)
+
+        self.queue = Queue.Queue()
+        self.Bind(wx.EVT_IDLE, self.__on_idle)
+
+    def __on_start(self, _event):
+        if not self.threadLocation:
+            self.buttonStart.Disable()
+            self.buttonStop.Enable()
+            self.textRaw.SetValue('')
+            self.__add_raw('Starting...')
+            self.threadLocation = ThreadLocation(self.queue, self.device,
+                                                 raw=True)
+
+    def __on_stop(self, _event):
+        if self.threadLocation and self.threadLocation.isAlive():
+            self.__add_raw('Stopping...')
+            self.threadLocation.stop()
+            self.threadLocation.join()
+        self.threadLocation = None
+        self.buttonStart.Enable()
+        self.buttonStop.Disable()
+
+    def __on_ok(self, _event):
+        self.__on_stop(None)
+        self.EndModal(wx.ID_OK)
+
+    def __on_idle(self, event):
+        if not self.queue.empty():
+            event = self.queue.get()
+            status = event.data.get_status()
+            loc = event.data.get_arg2()
+
+            if status == Event.LOC:
+                if loc[0] is not None:
+                    text = str(loc[0])
+                else:
+                    text = ''
+                self.textLon.SetValue(text)
+                if loc[1] is not None:
+                    text = str(loc[1])
+                else:
+                    text = ''
+                self.textLat.SetValue(text)
+                if loc[2] is not None:
+                    text = str(loc[2])
+                else:
+                    text = ''
+                self.textAlt.SetValue(text)
+            elif status == Event.LOC_WARN:
+                self.__on_stop(None)
+                self.__add_raw('{0}'.format(loc))
+            elif status == Event.LOC_RAW:
+                self.__add_raw(loc)
+
+    def __add_raw(self, text):
+        text = text.replace('\n', '')
+        text = text.replace('\r', '')
+        terminal = self.textRaw.GetValue().split('\n')
+        terminal.append(text)
+        while len(terminal) > 100:
+            terminal.pop(0)
+        self.textRaw.SetValue('\n'.join(terminal))
+        self.textRaw.ScrollPages(9999)
 
 
 class DialogSaveWarn(wx.Dialog):

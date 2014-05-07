@@ -45,7 +45,7 @@ import multiprocessing
 import os.path
 
 from cli import Cli
-from constants import File
+from file import File
 from main_window import FrameMain, RtlSdrScanner
 from misc import set_version_timestamp
 
@@ -68,7 +68,9 @@ def __arguments():
     group.add_argument("-i", "--index", help="Device index (from 0)", type=int,
                        default=0)
     group.add_argument("-r", "--remote", help="Server IP and port", type=str)
-    help = 'Output file (.rfs, ' + File.get_export_pretty() + ')'
+    types = File.get_type_pretty(File.Types.SAVE)
+    types += File.get_type_pretty(File.Types.PLOT)
+    help = 'Output file (' + types + ')'
     parser.add_argument("file", help=help, nargs='?')
     args = parser.parse_args()
 

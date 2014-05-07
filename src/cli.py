@@ -30,10 +30,10 @@ from threading import Thread
 import threading
 from urlparse import urlparse
 
-from constants import SAMPLE_RATE, File
-from devices import Device, get_devices
-from events import Event, post_event, EventThreadStatus
-from file import save_plot, export_plot, ScanInfo
+from constants import SAMPLE_RATE
+from devices import DeviceRTL, get_devices_rtl
+from events import Event, post_event, EventThread
+from file import save_plot, export_plot, ScanInfo, File
 from misc import nearest, calc_real_dwell, next_2_to_pow
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
@@ -70,18 +70,19 @@ class Cli():
             error = "Dwell should be positive"
         elif nfft <= 0:
             error = "FFT bins should be positive"
-        elif ext != ".rfs" and File.get_export_type(ext) == -1:
-            error = "File extension should be .rfs, "
-            error += File.get_export_pretty()
+        elif ext != ".rfs" and File.get_type_index(ext) == -1:
+            error = "File extension should be "
+            error += File.get_type_pretty(File.Types.SAVE)
+            error += File.get_type_pretty(File.Types.PLOT)
         else:
-            device = Device()
+            device = DeviceRTL()
             if remote is None:
-                self.settings.devices = get_devices()
-                count = len(self.settings.devices)
+                self.settings.devicesRtl = get_devices_rtl()
+                count = len(self.settings.devicesRtl)
                 if index > count - 1:
                     error = "Device not found ({0} devices in total):\n".format(count)
-                    for device in self.settings.devices:
-                        error += "\t{0}: {1}\n".format(device.index,
+                    for device in self.settings.devicesRtl:
+                        error += "\t{0}: {1}\n".format(device.indexRtl,
                                                        device.name)
             else:
                 device.isDevice = False
@@ -94,8 +95,8 @@ class Cli():
                     device.port = url.port
                 else:
                     device.port = 1234
-                self.settings.devices.append(device)
-                index = len(self.settings.devices) - 1
+                self.settings.devicesRtl.append(device)
+                index = len(self.settings.devicesRtl) - 1
 
         if error is not None:
             print "Error: {0}".format(error)
@@ -104,14 +105,14 @@ class Cli():
         if end - 1 < start:
             end = start + 1
         if remote is None:
-            gain = nearest(gain, self.settings.devices[index].gains)
+            gain = nearest(gain, self.settings.devicesRtl[index].gains)
 
         self.settings.start = start
         self.settings.stop = end
         self.settings.dwell = calc_real_dwell(dwell)
         self.settings.nfft = nfft
-        self.settings.devices[index].gain = gain
-        self.settings.devices[index].lo = lo
+        self.settings.devicesRtl[index].gain = gain
+        self.settings.devicesRtl[index].lo = lo
 
         print "{0} - {1}MHz".format(start, end)
         print "{0}dB Gain".format(gain)
@@ -121,17 +122,19 @@ class Cli():
         if remote is not None:
             print remote
         else:
-            print self.settings.devices[index].name
+            print self.settings.devicesRtl[index].name
 
         self.__scan(self.settings, index, pool)
 
+        fullName = os.path.join(directory, filename)
         if ext == ".rfs":
             scanInfo = ScanInfo()
             scanInfo.setFromSettings(self.settings)
-            save_plot(directory, filename, scanInfo, self.spectrum)
+
+            save_plot(fullName, scanInfo, self.spectrum, None)
         else:
-            exportType = File.get_export_type(ext)
-            export_plot(directory, filename, exportType, self.spectrum)
+            exportType = File.get_type_index(ext)
+            export_plot(fullName, exportType, self.spectrum)
 
         print "Done"
 
@@ -148,8 +151,8 @@ class Cli():
     def __process_event(self, queue, pool):
         event = queue.get()
         status = event.data.get_status()
-        freq = event.data.get_freq()
-        data = event.data.get_data()
+        freq = event.data.get_arg1()
+        data = event.data.get_arg2()
 
         if status == Event.STARTING:
             print "Starting"
@@ -158,9 +161,9 @@ class Cli():
             self.steps = self.stepsTotal
         elif status == Event.INFO:
             if data != -1:
-                self.settings.devices[self.settings.index].tuner = data
+                self.settings.devicesRtl[self.settings.indexRtl].tuner = data
         elif status == Event.DATA:
-            cal = self.settings.devices[self.settings.index].calibration
+            cal = self.settings.devicesRtl[self.settings.indexRtl].calibration
             pool.apply_async(anaylse_data, (freq, data, cal,
                                             self.settings.nfft,
                                             self.settings.overlap,
@@ -171,7 +174,7 @@ class Cli():
             print "Error: {0}".format(data)
             exit(1)
         elif status == Event.PROCESSED:
-            offset = self.settings.devices[self.settings.index].offset
+            offset = self.settings.devicesRtl[self.settings.indexRtl].offset
             Thread(target=update_spectrum, name='Update',
                    args=(queue, self.lock, self.settings.start,
                          self.settings.stop, freq,
@@ -181,7 +184,7 @@ class Cli():
 
     def __on_process_done(self, data):
         timeStamp, freq, scan = data
-        post_event(self.queue, EventThreadStatus(Event.PROCESSED, freq,
+        post_event(self.queue, EventThread(Event.PROCESSED, freq,
                                                  (timeStamp, scan)))
 
     def __progress(self):
