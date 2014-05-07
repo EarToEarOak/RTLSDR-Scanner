@@ -183,7 +183,7 @@ class FrameMain(wx.Frame):
         self.SetDropTarget(DropTarget(self))
 
         self.steps = 0
-        self.stepTotal = 0
+        self.stepsTotal = 0
 
     def __create_widgets(self):
         panel = wx.Panel(self)
@@ -960,8 +960,8 @@ class FrameMain(wx.Frame):
 
     def __remove_last(self, data):
         while len(data) >= self.settings.retainMax:
-                timeStamp = min(data)
-                del data[timeStamp]
+            timeStamp = min(data)
+            del data[timeStamp]
 
     def __limit_spectrum(self):
         with self.lock:

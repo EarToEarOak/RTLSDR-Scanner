@@ -259,7 +259,7 @@ class Plotter():
                 self.axes.draw_artist(label)
 
     def draw_measure(self, measure, show):
-        if self.axes._cachedRenderer is None:
+        if self.axes.get_renderer_cache() is None:
             return
 
         self.hide_measure()

@@ -194,7 +194,7 @@ def open_plot(dirname, filename):
 
     path = os.path.join(dirname, filename)
     if not os.path.exists(path):
-        return 0, 0, 0, 0, []
+        return None, None, None
     handle = open(path, 'rb')
     try:
         header = cPickle.load(handle)
@@ -260,7 +260,7 @@ def open_plot(dirname, filename):
     if error or header != File.HEADER:
         wx.MessageBox('Invalid or corrupted file', 'Warning',
                   wx.OK | wx.ICON_WARNING)
-        return 0, 0, 0, 0, []
+        return None, None, None
 
     scanInfo = ScanInfo()
     scanInfo.start = start

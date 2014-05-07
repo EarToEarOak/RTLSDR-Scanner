@@ -60,9 +60,9 @@ class ThreadLocation(threading.Thread):
             self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
             url = urlparse('//' + self.device.resource)
             if url.hostname is not None:
-                    host = url.hostname
+                host = url.hostname
             else:
-                    host = 'localhost'
+                host = 'localhost'
             if url.port is not None:
                 port = url.port
             else:
@@ -125,7 +125,7 @@ class ThreadLocation(threading.Thread):
                     lat = float(data[4])
                     lon = float(data[3])
                 except ValueError:
-                        return
+                    return
                 try:
                     alt = float(data[5])
                 except ValueError:

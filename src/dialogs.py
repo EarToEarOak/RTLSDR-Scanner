@@ -379,10 +379,10 @@ class DialogGeo(wx.Dialog):
                                    textcoords='offset points')
 
         if matplotlib.__version__ >= '1.3':
-                effect = patheffects.withStroke(linewidth=2, foreground="w",
-                                                alpha=0.75)
-                for child in self.axes.get_children():
-                    child.set_path_effects([effect])
+            effect = patheffects.withStroke(linewidth=2, foreground="w",
+                                            alpha=0.75)
+            for child in self.axes.get_children():
+                child.set_path_effects([effect])
 
         if self.plotAxes:
             self.axes.set_axis_on()
