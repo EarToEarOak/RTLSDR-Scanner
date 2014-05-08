@@ -71,6 +71,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.callBackHideOverlay = callBackHideOverlay
         self.plot = None
         self.extraTools = []
+        self.panPos = None
 
         NavigationToolbar2WxAgg.__init__(self, canvas)
         if matplotlib.__version__ >= '1.2':
@@ -137,11 +138,19 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         NavigationToolbar2.forward(self, event)
         self.clear_auto()
 
+    def drag_pan(self, event):
+        if not self.panPos:
+            self.panPos = (event.x, event.y)
+        NavigationToolbar2.drag_pan(self, event)
+
     def release_pan(self, event):
+        pos = (event.x, event.y)
         self.callBackHideOverlay()
         NavigationToolbar2.release_pan(self, event)
         if event.button != 2:
-            self.clear_auto()
+            if self.panPos and self.panPos != pos:
+                self.clear_auto()
+        self.panPos = None
 
     def release_zoom(self, event):
         self.callBackHideOverlay()
