@@ -76,7 +76,7 @@ WINFUNC = ["Bartlett", numpy.bartlett,
 
 
 class Warn:
-    SCAN, OPEN, EXIT = range(3)
+    SCAN, OPEN, EXIT, NEW = range(4)
 
 
 class Cal:

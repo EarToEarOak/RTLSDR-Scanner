@@ -92,6 +92,7 @@ class FrameMain(wx.Frame):
 
         self.dlgCal = None
 
+        self.menuNew = None
         self.menuOpen = None
         self.menuSave = None
         self.menuExportScan = None
@@ -272,6 +273,8 @@ class FrameMain(wx.Frame):
 
     def __create_menu(self):
         menuFile = wx.Menu()
+        self.menuNew = menuFile.Append(wx.ID_NEW, "&New",
+                                        "New plot")
         self.menuOpen = menuFile.Append(wx.ID_OPEN, "&Open...",
                                         "Open plot")
         recent = wx.Menu()
@@ -355,6 +358,7 @@ class FrameMain(wx.Frame):
         menuBar.Append(menuHelp, "&Help")
         self.SetMenuBar(menuBar)
 
+        self.Bind(wx.EVT_MENU, self.__on_new, self.menuNew)
         self.Bind(wx.EVT_MENU, self.__on_open, self.menuOpen)
         self.Bind(wx.EVT_MENU_RANGE, self.__on_file_history, id=wx.ID_FILE1,
                   id2=wx.ID_FILE9)
@@ -434,6 +438,14 @@ class FrameMain(wx.Frame):
         pos = event.GetPosition()
         pos = self.ScreenToClient(pos)
         self.PopupMenu(self.popupMenu, pos)
+
+    def __on_new(self, _event):
+        if self.__save_warn(Warn.NEW):
+            return
+        self.spectrum.clear()
+        self.location.clear()
+        self.__saved(True)
+        self.__set_plot(self.spectrum, False)
 
     def __on_open(self, _event):
         if self.__save_warn(Warn.OPEN):
@@ -985,6 +997,8 @@ class FrameMain(wx.Frame):
                                     self.settings.pointsLimit,
                                     self.settings.pointsMax,
                                     extent, annotate)
+        else:
+            self.graph.clear_plots()
 
     def __set_control_state(self, state):
         hasDevices = len(self.devicesRtl) > 0
@@ -996,6 +1010,7 @@ class FrameMain(wx.Frame):
         self.choiceNfft.Enable(state)
         self.buttonStart.Enable(state and hasDevices)
         self.buttonStop.Enable(not state and hasDevices)
+        self.menuNew.Enable(state)
         self.menuOpen.Enable(state)
         self.menuSave.Enable(state and len(self.spectrum) > 0)
         self.menuExportScan.Enable(state and len(self.spectrum) > 0)

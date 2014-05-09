@@ -316,6 +316,8 @@ class PanelGraph(wx.Panel):
 
     def clear_plots(self):
         self.plot.clear_plots()
+        self.spectrum = None
+        self.doDraw = True
 
     def clear_selection(self):
         self.measure = None
