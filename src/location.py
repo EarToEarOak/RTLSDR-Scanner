@@ -186,7 +186,7 @@ class ThreadLocation(threading.Thread):
         checksum = 0
         for char in data:
             checksum ^= ord(char)
-        return "{0:X}".format(checksum)
+        return "{0:02X}".format(checksum)
 
     def __nmea_coord(self, coord, orient):
         pos = None
