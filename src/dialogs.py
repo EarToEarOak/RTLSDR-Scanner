@@ -1313,7 +1313,7 @@ class DialogDevicesGPS(wx.Dialog):
             self.gridDev.SetReadOnly(i, self.COL_SEL, True)
             self.gridDev.SetCellRenderer(i, self.COL_SEL, CellRenderer())
             self.gridDev.SetCellValue(i, self.COL_NAME, device.name)
-            if device.type == DeviceGPS.NMEA:
+            if device.type == DeviceGPS.NMEA_SERIAL:
                 ports = [name[0] for name in self.comms]
                 if not device.resource in ports:
                     ports.append(device.resource)
@@ -1326,7 +1326,7 @@ class DialogDevicesGPS(wx.Dialog):
             cell = grid.GridCellChoiceEditor(DeviceGPS.TYPE, allowOthers=False)
             self.gridDev.SetCellEditor(i, self.COL_TYPE, cell)
             self.gridDev.SetReadOnly(i, self.COL_SET, True)
-            if device.type == DeviceGPS.NMEA:
+            if device.type == DeviceGPS.NMEA_SERIAL:
                 self.gridDev.SetCellValue(i, self.COL_SET,
                                           device.get_serial_desc())
                 self.gridDev.SetCellAlignment(i, self.COL_SET,
@@ -1391,7 +1391,7 @@ class DialogDevicesGPS(wx.Dialog):
             self.index = event.GetRow()
             self.__select_row(index)
         elif col == self.COL_SET:
-            if device.type == DeviceGPS.NMEA:
+            if device.type == DeviceGPS.NMEA_SERIAL:
                 dlg = DialogComm(self, device)
                 dlg.ShowModal()
                 dlg.Destroy()

@@ -43,58 +43,82 @@ class ThreadLocation(threading.Thread):
         self.device = device
         self.raw = raw
         self.cancel = False
-        self.socket = None
-        self.serial = None
+        self.comm = None
 
-        if self.device.type == DeviceGPS.NMEA:
+        if self.device.type in [DeviceGPS.NMEA_SERIAL, DeviceGPS.NMEA_TCP]:
             if self.__nmea_open():
                 self.start()
         else:
             if self.__gpsd_open():
                 self.start()
 
-    def __gpsd_open(self):
-        try:
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.socket.settimeout(5)
-            self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-            url = urlparse('//' + self.device.resource)
-            if url.hostname is not None:
-                host = url.hostname
-            else:
-                host = 'localhost'
-            if url.port is not None:
-                port = url.port
-            else:
-                port = 2947
-            self.socket.connect((host, port))
+    def __tcp_connect(self, defaultPort):
+        self.comm = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.comm.settimeout(5)
+        self.comm.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        url = urlparse('//' + self.device.resource)
+        if url.hostname is not None:
+            host = url.hostname
+        else:
+            host = 'localhost'
+        if url.port is not None:
+            port = url.port
+        else:
+            port = defaultPort
+        self.comm.connect((host, port))
 
-            if self.device.type == DeviceGPS.GPSD:
-                self.socket.sendall('?WATCH={"enable": true,"json": true}')
-            else:
-                self.socket.sendall('w')
-
-        except IOError as error:
-            post_event(self.notify, EventThread(Event.LOC_WARN,
-                                                0, error))
-            self.socket.close()
-            return False
-
-        return True
-
-    def __gpsd_read(self):
+    def __tcp_read(self):
         buf = ''
         data = True
         while data and not self.cancel:
-            data = self.socket.recv(64)
+            data = self.comm.recv(1024)
             buf += data
             while buf.find('\n') != -1:
                 line, buf = buf.split('\n', 1)
                 yield line
         return
 
-    def __gpsd_parse(self):
-        for resp in self.__gpsd_read():
+    def __serial_connect(self):
+        try:
+            self.comm = serial.Serial(self.device.resource,
+                                      baudrate=self.device.baud,
+                                      bytesize=self.device.bytes,
+                                      parity=self.device.parity,
+                                      stopbits=self.device.stops,
+                                      xonxoff=self.device.soft,
+                                      timeout=1)
+        except SerialException as error:
+            post_event(self.notify, EventThread(Event.LOC_WARN,
+                                                0, error.message))
+            return False
+        return True
+
+    def __serial_read(self):
+        data = True
+        while data and not self.cancel:
+            data = self.comm.readline()
+            yield data
+        return
+
+    def __gpsd_open(self):
+        self.__tcp_connect(2947)
+
+        try:
+            if self.device.type == DeviceGPS.GPSD:
+                self.comm.sendall('?WATCH={"enable": true,"json": true}')
+            else:
+                self.comm.sendall('w')
+
+        except IOError as error:
+            post_event(self.notify, EventThread(Event.LOC_WARN,
+                                                0, error))
+            self.comm.close()
+            return False
+
+        return True
+
+    def __gpsd_read(self):
+        for resp in self.__tcp_read():
             if self.raw:
                 post_event(self.notify, EventThread(Event.LOC_RAW,
                                                     0, resp))
@@ -114,8 +138,8 @@ class ThreadLocation(threading.Thread):
                                EventThread(Event.LOC, 0,
                                            (lat, lon, alt)))
 
-    def __gpsd_old_parse(self):
-        for resp in self.__gpsd_read():
+    def __gpsd_old_read(self):
+        for resp in self.__tcp_read():
             if self.raw:
                 post_event(self.notify, EventThread(Event.LOC_RAW,
                                                     0, resp))
@@ -136,29 +160,25 @@ class ThreadLocation(threading.Thread):
 
     def __gpsd_close(self):
         if self.device.type == DeviceGPS.GPSD:
-            self.socket.sendall('?WATCH={"enable": false}')
+            self.comm.sendall('?WATCH={"enable": false}')
         else:
-            self.socket.sendall('W')
-        self.socket.close()
+            self.comm.sendall('W')
+        self.comm.close()
 
     def __nmea_open(self):
-        try:
-            self.serial = serial.Serial(self.device.resource,
-                                        baudrate=self.device.baud,
-                                        bytesize=self.device.bytes,
-                                        parity=self.device.parity,
-                                        stopbits=self.device.stops,
-                                        xonxoff=self.device.soft,
-                                        timeout=1)
-        except SerialException as error:
-            post_event(self.notify, EventThread(Event.LOC_WARN,
-                                                0, error.message))
-            return False
-        return True
+        if self.device.type == DeviceGPS.NMEA_SERIAL:
+            return self.__serial_connect()
+        else:
+            self.__tcp_connect(10110)
+            return True
 
-    def __nmea_parse(self):
-        while not self.cancel:
-            resp = self.serial.readline()
+    def __nmea_read(self):
+        if self.device.type == DeviceGPS.NMEA_SERIAL:
+            comm = self.__serial_read()
+        else:
+            comm = self.__tcp_read()
+
+        for resp in comm:
             if self.raw:
                 post_event(self.notify, EventThread(Event.LOC_RAW,
                                                     0, resp))
@@ -214,17 +234,17 @@ class ThreadLocation(threading.Thread):
         return pos
 
     def ___nmea_close(self):
-        self.serial.close()
+        self.comm.close()
 
     def run(self):
-        if self.device.type == DeviceGPS.NMEA:
-            self.__nmea_parse()
+        if self.device.type in [DeviceGPS.NMEA_SERIAL, DeviceGPS.NMEA_TCP]:
+            self.__nmea_read()
         elif self.device.type == DeviceGPS.GPSD:
-            self.__gpsd_parse()
+            self.__gpsd_read()
         elif self.device.type == DeviceGPS.GPSD_OLD:
-            self.__gpsd_old_parse()
+            self.__gpsd_old_read()
 
-        if self.device.type == DeviceGPS.NMEA:
+        if self.device.type in [DeviceGPS.NMEA_SERIAL, DeviceGPS.NMEA_TCP]:
             self.___nmea_close()
         else:
             self.__gpsd_close()
