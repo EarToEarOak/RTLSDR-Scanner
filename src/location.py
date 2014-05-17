@@ -198,6 +198,11 @@ class ThreadLocation(threading.Thread):
                             post_event(self.notify,
                                        EventThread(Event.LOC, 0,
                                                          (lat, lon, alt)))
+                else:
+                    error = 'Invalid checksum {0}, should be {1}'.format(resp[1],
+                                                                         checksum)
+                    post_event(self.notify, EventThread(Event.LOC_WARN,
+                                                        0, error))
 
     def __nmea_checksum(self, data):
         checksum = 0
