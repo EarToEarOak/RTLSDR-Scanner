@@ -65,13 +65,22 @@ class ThreadLocation(threading.Thread):
             port = url.port
         else:
             port = defaultPort
-        self.comm.connect((host, port))
+        try:
+            self.comm.connect((host, port))
+        except socket.error as error:
+            post_event(self.notify, EventThread(Event.LOC_WARN,
+                                                0, error))
 
     def __tcp_read(self):
         buf = ''
         data = True
         while data and not self.cancel:
-            data = self.comm.recv(1024)
+            try:
+                data = self.comm.recv(1024)
+            except socket.timeout as error:
+                post_event(self.notify, EventThread(Event.LOC_WARN,
+                                                    0, error))
+                return
             buf += data
             while buf.find('\n') != -1:
                 line, buf = buf.split('\n', 1)
