@@ -1399,7 +1399,10 @@ class DialogDevicesGPS(wx.Dialog):
                 self.gridDev.SetCellValue(index, self.COL_SET,
                                           device.get_serial_desc())
         elif col == self.COL_TEST:
-            dlg = DialogGPSTest(self, device)
+            deviceCurrent = DeviceGPS()
+            deviceCurrent.type = device.type
+            deviceCurrent.resource = self.gridDev.GetCellValue(index, self.COL_DEV)
+            dlg = DialogGPSTest(self, deviceCurrent)
             dlg.ShowModal()
             dlg.Destroy()
         else:
