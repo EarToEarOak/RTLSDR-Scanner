@@ -76,6 +76,9 @@ class ThreadLocation(threading.Thread):
             while buf.find('\n') != -1:
                 line, buf = buf.split('\n', 1)
                 yield line
+                if self.raw:
+                    post_event(self.notify, EventThread(Event.LOC_RAW,
+                                                        0, line))
         return
 
     def __serial_connect(self):
@@ -98,6 +101,9 @@ class ThreadLocation(threading.Thread):
         while data and not self.cancel:
             data = self.comm.readline()
             yield data
+            if self.raw:
+                post_event(self.notify, EventThread(Event.LOC_RAW,
+                                                    0, data))
         return
 
     def __gpsd_open(self):
@@ -119,9 +125,6 @@ class ThreadLocation(threading.Thread):
 
     def __gpsd_read(self):
         for resp in self.__tcp_read():
-            if self.raw:
-                post_event(self.notify, EventThread(Event.LOC_RAW,
-                                                    0, resp))
             data = json.loads(resp)
             if data['class'] == 'TPV':
                 if data['mode'] in [2, 3]:
@@ -140,9 +143,6 @@ class ThreadLocation(threading.Thread):
 
     def __gpsd_old_read(self):
         for resp in self.__tcp_read():
-            if self.raw:
-                post_event(self.notify, EventThread(Event.LOC_RAW,
-                                                    0, resp))
             data = resp.split(' ')
             if len(data) == 15 and data[0] == 'GPSD,O=GGA':
                 try:
@@ -179,9 +179,6 @@ class ThreadLocation(threading.Thread):
             comm = self.__tcp_read()
 
         for resp in comm:
-            if self.raw:
-                post_event(self.notify, EventThread(Event.LOC_RAW,
-                                                    0, resp))
             resp = resp.replace('\n', '')
             resp = resp.replace('\r', '')
             resp = resp[1::]
@@ -250,6 +247,7 @@ class ThreadLocation(threading.Thread):
             self.__gpsd_close()
 
     def stop(self):
+        self.notify.queue.clear()
         self.cancel = True
 
 
