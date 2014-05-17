@@ -1323,7 +1323,10 @@ class DialogDevicesGPS(wx.Dialog):
                 cell = grid.GridCellTextEditor()
             self.gridDev.SetCellEditor(i, self.COL_DEV, cell)
             self.gridDev.SetCellValue(i, self.COL_DEV, device.resource)
-            cell = grid.GridCellChoiceEditor(DeviceGPS.TYPE, allowOthers=False)
+            cell = grid.GridCellChoiceEditor(sorted(DeviceGPS.TYPE),
+                                             allowOthers=False)
+            self.gridDev.SetCellValue(i, self.COL_TYPE,
+                                      DeviceGPS.TYPE[device.type])
             self.gridDev.SetCellEditor(i, self.COL_TYPE, cell)
             self.gridDev.SetReadOnly(i, self.COL_SET, True)
             if device.type == DeviceGPS.NMEA_SERIAL:
@@ -1334,8 +1337,6 @@ class DialogDevicesGPS(wx.Dialog):
             else:
                 colour = self.gridDev.GetLabelBackgroundColour()
                 self.gridDev.SetCellBackgroundColour(i, self.COL_SET, colour)
-            self.gridDev.SetCellValue(i, self.COL_TYPE,
-                                      DeviceGPS.TYPE[device.type])
             self.gridDev.SetCellValue(i, self.COL_TEST, '...')
             self.gridDev.SetCellAlignment(i, self.COL_TEST,
                                           wx.ALIGN_CENTRE, wx.ALIGN_CENTRE)
