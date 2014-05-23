@@ -58,36 +58,72 @@ from windows import PanelGraphCompare, PanelColourBar, CellRenderer
 class DialogCompare(wx.Dialog):
     def __init__(self, parent, settings, filename):
 
+        self.settings = settings
         self.dirname = settings.dirScans
         self.filename = filename
 
         wx.Dialog.__init__(self, parent=parent, title="Compare plots",
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.MAXIMIZE_BOX)
 
-        self.graph = PanelGraphCompare(self, settings)
+        self.graph = PanelGraphCompare(self)
+        self.graph.show_plot1(settings.compareOne)
+        self.graph.show_plot2(settings.compareTwo)
+        self.graph.show_plotdiff(settings.compareDiff)
 
-        self.buttonPlot1 = wx.Button(self, wx.ID_ANY, 'Load plot #1')
-        self.buttonPlot2 = wx.Button(self, wx.ID_ANY, 'Load plot #2')
-        self.Bind(wx.EVT_BUTTON, self.__on_load_plot, self.buttonPlot1)
-        self.Bind(wx.EVT_BUTTON, self.__on_load_plot, self.buttonPlot2)
+        textPlot1 = wx.StaticText(self, label='Plot 1')
+        self.checkOne = wx.CheckBox(self, wx.ID_ANY)
+        self.checkOne.SetValue(settings.compareOne)
+        textPlot2 = wx.StaticText(self, label='Plot 2')
+        self.checkTwo = wx.CheckBox(self, wx.ID_ANY)
+        self.checkTwo.SetValue(settings.compareTwo)
+        textPlotDiff = wx.StaticText(self, label='Difference')
+        self.checkDiff = wx.CheckBox(self, wx.ID_ANY)
+        self.checkDiff.SetValue(settings.compareDiff)
+
+        font = textPlot1.GetFont()
+        font.SetPointSize(font.GetPointSize() + 4)
+        textPlot1.SetFont(font)
+        textPlot2.SetFont(font)
+        textPlotDiff.SetFont(font)
+
+        self.buttonPlot1 = wx.Button(self, wx.ID_ANY, 'Load...')
         self.textPlot1 = wx.StaticText(self, label="<None>")
+        self.Bind(wx.EVT_BUTTON, self.__on_load_plot, self.buttonPlot1)
+        self.buttonPlot2 = wx.Button(self, wx.ID_ANY, 'Load...')
         self.textPlot2 = wx.StaticText(self, label="<None>")
+        self.Bind(wx.EVT_BUTTON, self.__on_load_plot, self.buttonPlot2)
 
         buttonClose = wx.Button(self, wx.ID_CLOSE, 'Close')
+
+        self.Bind(wx.EVT_CHECKBOX, self.__on_check1, self.checkOne)
+        self.Bind(wx.EVT_CHECKBOX, self.__on_check2, self.checkTwo)
+        self.Bind(wx.EVT_CHECKBOX, self.__on_check_diff, self.checkDiff)
         self.Bind(wx.EVT_BUTTON, self.__on_close, buttonClose)
 
         grid = wx.GridBagSizer(5, 5)
-        grid.AddGrowableCol(2, 0)
-        grid.Add(self.buttonPlot1, pos=(0, 0), flag=wx.ALIGN_CENTRE)
-        grid.Add(self.textPlot1, pos=(0, 1), span=(1, 2))
-        grid.Add(self.buttonPlot2, pos=(1, 0), flag=wx.ALIGN_CENTRE)
-        grid.Add(self.textPlot2, pos=(1, 1), span=(1, 2))
-        grid.Add(buttonClose, pos=(2, 3), flag=wx.ALIGN_RIGHT)
 
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.graph, 1, wx.EXPAND)
-        sizer.Add(grid, 0, wx.EXPAND | wx.ALL, border=5)
-        self.SetSizerAndFit(sizer)
+        grid.Add(textPlot1, pos=(0, 0))
+        grid.Add(self.checkOne, pos=(0, 1), flag=wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(self.textPlot1, pos=(1, 0))
+        grid.Add(self.buttonPlot1, pos=(2, 0))
+
+        grid.Add(textPlot2, pos=(4, 0))
+        grid.Add(self.checkTwo, pos=(4, 1), flag=wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(self.textPlot2, pos=(5, 0))
+        grid.Add(self.buttonPlot2, pos=(6, 0))
+
+        grid.Add(textPlotDiff, pos=(8, 0))
+        grid.Add(self.checkDiff, pos=(8, 1), flag=wx.ALIGN_CENTER_VERTICAL)
+
+        sizerV = wx.BoxSizer(wx.HORIZONTAL)
+        sizerV.Add(self.graph, 1, wx.EXPAND)
+        sizerV.Add(grid, 0, wx.ALL, border=5)
+
+        sizerH = wx.BoxSizer(wx.VERTICAL)
+        sizerH.Add(sizerV, 1, wx.EXPAND, border=5)
+        sizerH.Add(buttonClose, 0, wx.ALL | wx.ALIGN_RIGHT, border=5)
+
+        self.SetSizerAndFit(sizerH)
 
         close_modeless()
 
@@ -108,6 +144,21 @@ class DialogCompare(wx.Dialog):
                 self.graph.set_spectrum2(spectrum)
 
         dlg.Destroy()
+
+    def __on_check1(self, _event):
+        checked = self.checkOne.GetValue()
+        self.settings.compareOne = checked
+        self.graph.show_plot1(checked)
+
+    def __on_check2(self, _event):
+        checked = self.checkTwo.GetValue()
+        self.settings.compareTwo = checked
+        self.graph.show_plot2(checked)
+
+    def __on_check_diff(self, _event):
+        checked = self.checkDiff.GetValue()
+        self.settings.compareDiff = checked
+        self.graph.show_plotdiff(checked)
 
     def __on_close(self, _event):
         close_modeless()

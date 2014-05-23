@@ -332,8 +332,7 @@ class PanelGraph(wx.Panel):
 
 
 class PanelGraphCompare(wx.Panel):
-    def __init__(self, parent, settings):
-        self.settings = settings
+    def __init__(self, parent):
 
         self.spectrum1 = None
         self.spectrum2 = None
@@ -368,56 +367,20 @@ class PanelGraphCompare(wx.Panel):
 
         self.canvas = FigureCanvas(self, -1, figure)
 
-        self.checkOne = wx.CheckBox(self, wx.ID_ANY, "Scan 1")
-        self.checkTwo = wx.CheckBox(self, wx.ID_ANY, "Scan 2")
-        self.checkDiff = wx.CheckBox(self, wx.ID_ANY, "Difference")
-        self.checkOne.SetValue(settings.compareOne)
-        self.checkTwo.SetValue(settings.compareTwo)
-        self.checkDiff.SetValue(settings.compareDiff)
         self.set_grid(True)
-        self.Bind(wx.EVT_CHECKBOX, self.__on_check1, self.checkOne)
-        self.Bind(wx.EVT_CHECKBOX, self.__on_check2, self.checkTwo)
-        self.Bind(wx.EVT_CHECKBOX, self.__on_check_diff, self.checkDiff)
 
         self.textIntersect = wx.StaticText(self, label="Intersections: ")
-
-        grid = wx.GridBagSizer(5, 5)
-        grid.Add(self.checkOne, pos=(0, 0), flag=wx.ALIGN_CENTRE)
-        grid.Add(self.checkTwo, pos=(0, 1), flag=wx.ALIGN_CENTRE)
-        grid.Add((20, 1), pos=(0, 2))
-        grid.Add(self.checkDiff, pos=(0, 3), flag=wx.ALIGN_CENTRE)
-        grid.Add((20, 1), pos=(0, 4))
-        grid.Add((20, 1), pos=(0, 5))
-        grid.Add(self.textIntersect, pos=(0, 6), span=(1, 1))
 
         toolbar = NavigationToolbarCompare(self)
         toolbar.Realize()
 
         vbox = wx.BoxSizer(wx.VERTICAL)
         vbox.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
-        vbox.Add(grid, 0, wx.EXPAND | wx.ALL, border=5)
+        vbox.Add(self.textIntersect, 0, wx.EXPAND | wx.ALL, border=5)
         vbox.Add(toolbar, 0, wx.EXPAND)
 
         self.SetSizer(vbox)
         vbox.Fit(self)
-
-    def __on_check1(self, _event):
-        checked = self.checkOne.GetValue()
-        self.settings.compareOne = checked
-        self.plotScan1.set_visible(checked)
-        self.canvas.draw()
-
-    def __on_check2(self, _event):
-        checked = self.checkTwo.GetValue()
-        self.settings.compareTwo = checked
-        self.plotScan2.set_visible(checked)
-        self.canvas.draw()
-
-    def __on_check_diff(self, _event):
-        checked = self.checkDiff.GetValue()
-        self.settings.compareDiff = checked
-        self.plotDiff.set_visible(checked)
-        self.canvas.draw()
 
     def __plot_diff(self):
         diff = {}
@@ -450,6 +413,18 @@ class PanelGraphCompare(wx.Panel):
 
     def get_canvas(self):
         return self.canvas
+
+    def show_plot1(self, enable):
+        self.plotScan1.set_visible(enable)
+        self.canvas.draw()
+
+    def show_plot2(self, enable):
+        self.plotScan2.set_visible(enable)
+        self.canvas.draw()
+
+    def show_plotdiff(self, enable):
+        self.plotDiff.set_visible(enable)
+        self.canvas.draw()
 
     def set_spectrum1(self, spectrum):
         timeStamp = max(spectrum)
