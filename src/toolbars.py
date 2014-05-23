@@ -68,7 +68,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
     def __init__(self, canvas, panel, settings, callBackHideOverlay):
         self.panel = panel
         self.settings = settings
-        self.callBackHideOverlay = callBackHideOverlay
+        self.callbackHide = callBackHideOverlay
         self.plot = None
         self.extraTools = []
         self.panPos = None
@@ -124,17 +124,17 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.colourId = None
 
     def home(self, event):
-        self.callBackHideOverlay()
+        self.callbackHide()
         NavigationToolbar2.home(self, event)
         self.clear_auto()
 
     def back(self, event):
-        self.callBackHideOverlay()
+        self.callbackHide()
         NavigationToolbar2.back(self, event)
         self.clear_auto()
 
     def forward(self, event):
-        self.callBackHideOverlay()
+        self.callbackHide()
         NavigationToolbar2.forward(self, event)
         self.clear_auto()
 
@@ -145,7 +145,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
 
     def release_pan(self, event):
         pos = (event.x, event.y)
-        self.callBackHideOverlay()
+        self.callbackHide()
         NavigationToolbar2.release_pan(self, event)
         if event.button != 2:
             if self.panPos and self.panPos != pos:
@@ -153,7 +153,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.panPos = None
 
     def release_zoom(self, event):
-        self.callBackHideOverlay()
+        self.callbackHide()
         NavigationToolbar2.release_zoom(self, event)
         self.clear_auto()
 
@@ -365,6 +365,9 @@ class NavigationToolbarCompare(NavigationToolbar2WxAgg):
     def __on_check_grid(self, event):
         grid = event.Checked()
         self.panel.set_grid(grid)
+
+    def clear_auto(self):
+        pass
 
 
 if __name__ == '__main__':

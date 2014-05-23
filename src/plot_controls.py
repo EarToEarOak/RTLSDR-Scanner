@@ -31,16 +31,20 @@ from plot3d import Plotter3d
 class MouseZoom():
     SCALE_STEP = 1.3
 
-    def __init__(self, plot, toolbar, callBackHideOverlay):
-        if isinstance(plot, Plotter3d):
-            return
+    def __init__(self, toolbar, figure=None, plot=None, callbackHide=None):
+        if figure is None:
+            if isinstance(plot, Plotter3d):
+                return
 
-        self.callBackHideOverlay = callBackHideOverlay
+            self.axes = plot.get_axes()
+            self.figure = self.axes.get_figure()
+        else:
+            self.axes = figure.get_axes()[0]
+            self.figure = figure
 
-        self.axes = plot.get_axes()
+        self.callbackHide = callbackHide
         self.toolbar = toolbar
-        figure = self.axes.get_figure()
-        figure.canvas.mpl_connect('scroll_event', self.__zoom)
+        self.figure.canvas.mpl_connect('scroll_event', self.__zoom)
 
     def __zoom(self, event):
         if event.button == 'up':
@@ -50,7 +54,8 @@ class MouseZoom():
         else:
             return
 
-        self.callBackHideOverlay()
+        if self.callbackHide is not None:
+            self.callbackHide()
         self.toolbar.clear_auto()
 
         if self.toolbar._views.empty():
@@ -60,6 +65,9 @@ class MouseZoom():
         yLim = self.axes.get_ylim()
         xPos = event.xdata
         yPos = event.ydata
+        if not yLim[0] <= yPos <= yLim[1]:
+            yPos = yLim[0] + (yLim[1] - yLim[0]) / 2
+
         xPosRel = (xLim[1] - xPos) / (xLim[1] - xLim[0])
         yPosRel = (yLim[1] - yPos) / (yLim[1] - yLim[0])
 
@@ -72,9 +80,9 @@ class MouseZoom():
 
         self.axes.set_xlim([xStart, xStop])
         self.axes.set_ylim([yStart, yStop])
-        self.toolbar.push_current()
 
-        self.axes.figure.canvas.draw()
+        self.toolbar.push_current()
+        self.figure.canvas.draw()
 
 
 class MouseSelect():

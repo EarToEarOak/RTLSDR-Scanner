@@ -221,7 +221,8 @@ class PanelGraph(wx.Panel):
         self.figure.subplots_adjust(top=0.85)
         self.redraw_plot()
         self.plot.scale_plot(True)
-        self.mouseZoom = MouseZoom(self.plot, self.toolbar, self.__hide_overlay)
+        self.mouseZoom = MouseZoom(self.toolbar, plot=self.plot,
+                                   callbackHide=self.__hide_overlay)
         self.mouseSelect = MouseSelect(self.plot, self.on_select,
                                        self.on_selected)
         self.measureTable.show(self.settings.showMeasure)
@@ -339,6 +340,8 @@ class PanelGraphCompare(wx.Panel):
         self.spectrum2 = None
         self.spectrumDiff = None
 
+        self.mouseZoom = None
+
         formatter = ScalarFormatter(useOffset=False)
 
         wx.Panel.__init__(self, parent)
@@ -375,6 +378,7 @@ class PanelGraphCompare(wx.Panel):
 
         toolbar = NavigationToolbarCompare(self)
         toolbar.Realize()
+        self.mouseZoom = MouseZoom(toolbar, figure=figure)
 
         vbox = wx.BoxSizer(wx.VERTICAL)
         vbox.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
@@ -411,6 +415,10 @@ class PanelGraphCompare(wx.Panel):
 
         self.callback(locs)
 
+    def __relim(self):
+        self.axesScan.relim()
+        self.axesDiff.relim()
+
     def __plot_diff(self):
         diff = {}
         intersections = 0
@@ -436,11 +444,9 @@ class PanelGraphCompare(wx.Panel):
             self.plotDiff.set_xdata(freqs)
             self.plotDiff.set_ydata([0] * intersections)
 
-        if intersections > 0:
-            self.axesDiff.relim()
-        self.textIntersect.SetLabel('Intersections: {0}'.format(intersections))
-
         self.spectrumDiff = diff
+
+        self.textIntersect.SetLabel('Intersections: {0}'.format(intersections))
 
     def get_canvas(self):
         return self.canvas
@@ -463,8 +469,8 @@ class PanelGraphCompare(wx.Panel):
         freqs, powers = split_spectrum_sort(self.spectrum1)
         self.plotScan1.set_xdata(freqs)
         self.plotScan1.set_ydata(powers)
-        self.axesScan.relim()
         self.__plot_diff()
+        self.__relim()
         self.autoscale()
 
     def set_spectrum2(self, spectrum):
@@ -473,8 +479,8 @@ class PanelGraphCompare(wx.Panel):
         freqs, powers = split_spectrum_sort(self.spectrum2)
         self.plotScan2.set_xdata(freqs)
         self.plotScan2.set_ydata(powers)
-        self.axesScan.relim()
         self.__plot_diff()
+        self.__relim()
         self.autoscale()
 
     def set_grid(self, grid):
