@@ -25,7 +25,7 @@
 
 import copy
 
-from matplotlib import cm
+from matplotlib import cm, colors
 import matplotlib
 from matplotlib.backends.backend_wxagg import \
     FigureCanvasWxAgg as FigureCanvas
@@ -475,6 +475,29 @@ class PanelColourBar(wx.Panel):
         self.bar.changed()
         self.bar.draw_all()
         self.canvas.draw()
+
+
+class PanelLine(wx.Panel):
+    def __init__(self, parent, colour):
+        self.colour = colour
+
+        wx.Panel.__init__(self, parent)
+        self.Bind(wx.EVT_PAINT, self.__on_paint)
+
+    def __on_paint(self, _event):
+        dc = wx.BufferedPaintDC(self)
+        width, height = self.GetClientSize()
+        if not width or not height:
+            return
+
+        pen = wx.Pen(self.colour, 2)
+        dc.SetPen(pen)
+        colourBack = self.GetBackgroundColour()
+        brush = wx.Brush(colourBack, wx.SOLID)
+        dc.SetBackground(brush)
+
+        dc.Clear()
+        dc.DrawLine(0, height / 2., width, height / 2.)
 
 
 class PanelMeasure(wx.Panel):

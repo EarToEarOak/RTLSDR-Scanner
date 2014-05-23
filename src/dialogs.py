@@ -52,7 +52,7 @@ from location import ThreadLocation
 from misc import close_modeless, format_time, ValidatorCoord, get_colours, \
     nearest, load_bitmap, get_version_timestamp
 from rtltcp import RtlTcp
-from windows import PanelGraphCompare, PanelColourBar, CellRenderer
+from windows import PanelGraphCompare, PanelColourBar, CellRenderer, PanelLine
 
 
 class DialogCompare(wx.Dialog):
@@ -71,12 +71,15 @@ class DialogCompare(wx.Dialog):
         self.graph.show_plotdiff(settings.compareDiff)
 
         textPlot1 = wx.StaticText(self, label='Plot 1')
+        linePlot1 = PanelLine(self, wx.BLUE)
         self.checkOne = wx.CheckBox(self, wx.ID_ANY)
         self.checkOne.SetValue(settings.compareOne)
         textPlot2 = wx.StaticText(self, label='Plot 2')
+        linePlot2 = PanelLine(self, wx.GREEN)
         self.checkTwo = wx.CheckBox(self, wx.ID_ANY)
         self.checkTwo.SetValue(settings.compareTwo)
         textPlotDiff = wx.StaticText(self, label='Difference')
+        linePlotDiff = PanelLine(self, wx.RED)
         self.checkDiff = wx.CheckBox(self, wx.ID_ANY)
         self.checkDiff.SetValue(settings.compareDiff)
 
@@ -103,17 +106,20 @@ class DialogCompare(wx.Dialog):
         grid = wx.GridBagSizer(5, 5)
 
         grid.Add(textPlot1, pos=(0, 0))
-        grid.Add(self.checkOne, pos=(0, 1), flag=wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(linePlot1, pos=(0, 1), flag=wx.EXPAND)
+        grid.Add(self.checkOne, pos=(0, 2), flag=wx.ALIGN_CENTER_VERTICAL)
         grid.Add(self.textPlot1, pos=(1, 0))
         grid.Add(self.buttonPlot1, pos=(2, 0))
 
         grid.Add(textPlot2, pos=(4, 0))
-        grid.Add(self.checkTwo, pos=(4, 1), flag=wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(linePlot2, pos=(4, 1), flag=wx.EXPAND)
+        grid.Add(self.checkTwo, pos=(4, 2), flag=wx.ALIGN_CENTER_VERTICAL)
         grid.Add(self.textPlot2, pos=(5, 0))
         grid.Add(self.buttonPlot2, pos=(6, 0))
 
         grid.Add(textPlotDiff, pos=(8, 0))
-        grid.Add(self.checkDiff, pos=(8, 1), flag=wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(linePlotDiff, pos=(8, 1), flag=wx.EXPAND)
+        grid.Add(self.checkDiff, pos=(8, 2), flag=wx.ALIGN_CENTER_VERTICAL)
 
         sizerV = wx.BoxSizer(wx.HORIZONTAL)
         sizerV.Add(self.graph, 1, wx.EXPAND)
