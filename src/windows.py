@@ -332,7 +332,8 @@ class PanelGraph(wx.Panel):
 
 
 class PanelGraphCompare(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent, settings):
+        self.settings = settings
 
         self.spectrum1 = None
         self.spectrum2 = None
@@ -365,22 +366,22 @@ class PanelGraphCompare(wx.Panel):
 
         self.canvas = FigureCanvas(self, -1, figure)
 
-        self.check1 = wx.CheckBox(self, wx.ID_ANY, "Scan 1")
-        self.check2 = wx.CheckBox(self, wx.ID_ANY, "Scan 2")
+        self.checkOne = wx.CheckBox(self, wx.ID_ANY, "Scan 1")
+        self.checkTwo = wx.CheckBox(self, wx.ID_ANY, "Scan 2")
         self.checkDiff = wx.CheckBox(self, wx.ID_ANY, "Difference")
-        self.check1.SetValue(True)
-        self.check2.SetValue(True)
-        self.checkDiff.SetValue(True)
+        self.checkOne.SetValue(settings.compareOne)
+        self.checkTwo.SetValue(settings.compareTwo)
+        self.checkDiff.SetValue(settings.compareDiff)
         self.set_grid(True)
-        self.Bind(wx.EVT_CHECKBOX, self.__on_check1, self.check1)
-        self.Bind(wx.EVT_CHECKBOX, self.__on_check2, self.check2)
+        self.Bind(wx.EVT_CHECKBOX, self.__on_check1, self.checkOne)
+        self.Bind(wx.EVT_CHECKBOX, self.__on_check2, self.checkTwo)
         self.Bind(wx.EVT_CHECKBOX, self.__on_check_diff, self.checkDiff)
 
         self.textIntersect = wx.StaticText(self, label="Intersections: ")
 
         grid = wx.GridBagSizer(5, 5)
-        grid.Add(self.check1, pos=(0, 0), flag=wx.ALIGN_CENTRE)
-        grid.Add(self.check2, pos=(0, 1), flag=wx.ALIGN_CENTRE)
+        grid.Add(self.checkOne, pos=(0, 0), flag=wx.ALIGN_CENTRE)
+        grid.Add(self.checkTwo, pos=(0, 1), flag=wx.ALIGN_CENTRE)
         grid.Add((20, 1), pos=(0, 2))
         grid.Add(self.checkDiff, pos=(0, 3), flag=wx.ALIGN_CENTRE)
         grid.Add((20, 1), pos=(0, 4))
@@ -399,15 +400,21 @@ class PanelGraphCompare(wx.Panel):
         vbox.Fit(self)
 
     def __on_check1(self, _event):
-        self.plotScan1.set_visible(self.check1.GetValue())
+        checked = self.checkOne.GetValue()
+        self.settings.compareOne = checked
+        self.plotScan1.set_visible(checked)
         self.canvas.draw()
 
     def __on_check2(self, _event):
-        self.plotScan2.set_visible(self.check2.GetValue())
+        checked = self.checkTwo.GetValue()
+        self.settings.compareTwo = checked
+        self.plotScan2.set_visible(checked)
         self.canvas.draw()
 
     def __on_check_diff(self, _event):
-        self.plotDiff.set_visible(self.checkDiff.GetValue())
+        checked = self.checkDiff.GetValue()
+        self.settings.compareDiff = checked
+        self.plotDiff.set_visible(checked)
         self.canvas.draw()
 
     def __plot_diff(self):

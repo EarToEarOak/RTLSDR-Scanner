@@ -56,15 +56,15 @@ from windows import PanelGraphCompare, PanelColourBar, CellRenderer
 
 
 class DialogCompare(wx.Dialog):
-    def __init__(self, parent, dirname, filename):
+    def __init__(self, parent, settings, filename):
 
-        self.dirname = dirname
+        self.dirname = settings.dirScans
         self.filename = filename
 
         wx.Dialog.__init__(self, parent=parent, title="Compare plots",
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.MAXIMIZE_BOX)
 
-        self.graph = PanelGraphCompare(self)
+        self.graph = PanelGraphCompare(self, settings)
 
         self.buttonPlot1 = wx.Button(self, wx.ID_ANY, 'Load plot #1')
         self.buttonPlot2 = wx.Button(self, wx.ID_ANY, 'Load plot #2')

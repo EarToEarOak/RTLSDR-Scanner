@@ -644,7 +644,7 @@ class FrameMain(wx.Frame):
         dlg.Destroy()
 
     def __on_compare(self, _event):
-        dlg = DialogCompare(self, self.settings.dirScans, self.filename)
+        dlg = DialogCompare(self, self.settings, self.filename)
         dlg.Show()
 
     def __on_clear_select(self, _event):

@@ -56,6 +56,10 @@ class Settings():
         self.grid = True
         self.plotFunc = PlotFunc.NONE
 
+        self.compareOne = True
+        self.compareTwo = True
+        self.compareDiff = True
+
         self.start = 87
         self.stop = 108
         self.mode = Mode.SINGLE
@@ -192,6 +196,9 @@ class Settings():
         self.pointsMax = self.cfg.ReadInt('pointsMax', self.pointsMax)
         self.grid = self.cfg.ReadBool('grid', self.grid)
         self.plotFunc = self.cfg.ReadInt('plotFunc', self.plotFunc)
+        self.compareOne = self.cfg.ReadBool('compareOne', self.compareOne)
+        self.compareTwo = self.cfg.ReadBool('compareTwo', self.compareTwo)
+        self.compareDiff = self.cfg.ReadBool('compareDiff', self.compareDiff)
         self.start = self.cfg.ReadInt('start', self.start)
         self.stop = self.cfg.ReadInt('stop', self.stop)
         self.mode = self.cfg.ReadInt('mode', self.mode)
@@ -235,6 +242,9 @@ class Settings():
         self.cfg.WriteInt('pointsMax', self.pointsMax)
         self.cfg.WriteBool('grid', self.grid)
         self.cfg.WriteInt('plotFunc', self.plotFunc)
+        self.cfg.WriteBool('compareOne', self.compareOne)
+        self.cfg.WriteBool('compareTwo', self.compareTwo)
+        self.cfg.WriteBool('compareDiff', self.compareDiff)
         self.cfg.WriteInt('start', self.start)
         self.cfg.WriteInt('stop', self.stop)
         self.cfg.WriteInt('mode', self.mode)
