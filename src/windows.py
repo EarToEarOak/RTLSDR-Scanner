@@ -343,6 +343,8 @@ class PanelGraphCompare(wx.Panel):
         wx.Panel.__init__(self, parent)
 
         figure = matplotlib.figure.Figure(facecolor='white')
+        figure.set_size_inches(8, 4.5)
+        figure.set_tight_layout(True)
 
         self.axesScan = figure.add_subplot(111)
         self.axesScan.xaxis.set_minor_locator(AutoMinorLocator(10))
