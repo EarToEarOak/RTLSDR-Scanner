@@ -371,7 +371,7 @@ class PanelGraphCompare(wx.Panel):
         self.check1.SetValue(True)
         self.check2.SetValue(True)
         self.checkDiff.SetValue(True)
-        self.__set_grid(True)
+        self.set_grid(True)
         self.Bind(wx.EVT_CHECKBOX, self.__on_check1, self.check1)
         self.Bind(wx.EVT_CHECKBOX, self.__on_check2, self.check2)
         self.Bind(wx.EVT_CHECKBOX, self.__on_check_diff, self.checkDiff)
@@ -408,10 +408,6 @@ class PanelGraphCompare(wx.Panel):
 
     def __on_check_diff(self, _event):
         self.plotDiff.set_visible(self.checkDiff.GetValue())
-        self.canvas.draw()
-
-    def __set_grid(self, grid):
-        self.axesDiff.grid(grid)
         self.canvas.draw()
 
     def __plot_diff(self):
@@ -465,6 +461,10 @@ class PanelGraphCompare(wx.Panel):
         self.axesScan.relim()
         self.__plot_diff()
         self.autoscale()
+
+    def set_grid(self, grid):
+        self.axesDiff.grid(grid)
+        self.canvas.draw()
 
     def autoscale(self):
         self.axesScan.autoscale_view()

@@ -111,7 +111,7 @@ class DialogCompare(wx.Dialog):
 
     def __on_close(self, _event):
         close_modeless()
-        self.EndModal(wx.ID_CLOSE)
+        self.Destroy()
 
 
 class DialogAutoCal(wx.Dialog):
