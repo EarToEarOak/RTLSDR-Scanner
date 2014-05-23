@@ -751,9 +751,9 @@ class FrameMain(wx.Frame):
             x = min(spectrum.keys(), key=lambda freq: abs(freq - xpos))
             if xpos <= max(spectrum.keys(), key=float):
                 y = spectrum[x]
-                text = "f = {0:.6f}MHz, p = {1:.2f}dB/Hz".format(x, y)
+                text = "{0:.6f} MHz, {1: .2f} dB/Hz".format(x, y)
             else:
-                text = "f = {0:.6f}MHz".format(xpos)
+                text = "{0:.6f} MHz".format(xpos)
 
         self.status.SetStatusText(text, 1)
 

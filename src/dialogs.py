@@ -65,7 +65,7 @@ class DialogCompare(wx.Dialog):
         wx.Dialog.__init__(self, parent=parent, title="Compare plots",
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.MAXIMIZE_BOX)
 
-        self.graph = PanelGraphCompare(self)
+        self.graph = PanelGraphCompare(self, self.__on_cursor)
         self.graph.show_plot1(settings.compareOne)
         self.graph.show_plot2(settings.compareTwo)
         self.graph.show_plotdiff(settings.compareDiff)
@@ -74,27 +74,40 @@ class DialogCompare(wx.Dialog):
         linePlot1 = PanelLine(self, wx.BLUE)
         self.checkOne = wx.CheckBox(self, wx.ID_ANY)
         self.checkOne.SetValue(settings.compareOne)
+        self.buttonPlot1 = wx.Button(self, wx.ID_ANY, 'Load...')
+        self.textPlot1 = wx.StaticText(self, label="<None>")
+        self.textLoc1 = wx.StaticText(self, label='\n')
+        self.Bind(wx.EVT_BUTTON, self.__on_load_plot, self.buttonPlot1)
+
         textPlot2 = wx.StaticText(self, label='Plot 2')
         linePlot2 = PanelLine(self, wx.GREEN)
         self.checkTwo = wx.CheckBox(self, wx.ID_ANY)
         self.checkTwo.SetValue(settings.compareTwo)
+        self.buttonPlot2 = wx.Button(self, wx.ID_ANY, 'Load...')
+        self.textPlot2 = wx.StaticText(self, label="<None>")
+        self.textLoc2 = wx.StaticText(self, label='\n')
+        self.Bind(wx.EVT_BUTTON, self.__on_load_plot, self.buttonPlot2)
+
         textPlotDiff = wx.StaticText(self, label='Difference')
         linePlotDiff = PanelLine(self, wx.RED)
         self.checkDiff = wx.CheckBox(self, wx.ID_ANY)
         self.checkDiff.SetValue(settings.compareDiff)
+        self.textLocDiff = wx.StaticText(self, label='\n')
 
         font = textPlot1.GetFont()
-        font.SetPointSize(font.GetPointSize() + 4)
+        fontSize = font.GetPointSize()
+        font.SetPointSize(fontSize + 4)
         textPlot1.SetFont(font)
         textPlot2.SetFont(font)
         textPlotDiff.SetFont(font)
 
-        self.buttonPlot1 = wx.Button(self, wx.ID_ANY, 'Load...')
-        self.textPlot1 = wx.StaticText(self, label="<None>")
-        self.Bind(wx.EVT_BUTTON, self.__on_load_plot, self.buttonPlot1)
-        self.buttonPlot2 = wx.Button(self, wx.ID_ANY, 'Load...')
-        self.textPlot2 = wx.StaticText(self, label="<None>")
-        self.Bind(wx.EVT_BUTTON, self.__on_load_plot, self.buttonPlot2)
+        fontStyle = font.GetStyle()
+        fontWeight = font.GetWeight()
+        font = wx.Font(fontSize, wx.FONTFAMILY_MODERN, fontStyle,
+                       fontWeight)
+        self.textLoc1.SetFont(font)
+        self.textLoc2.SetFont(font)
+        self.textLocDiff.SetFont(font)
 
         buttonClose = wx.Button(self, wx.ID_CLOSE, 'Close')
 
@@ -108,18 +121,23 @@ class DialogCompare(wx.Dialog):
         grid.Add(textPlot1, pos=(0, 0))
         grid.Add(linePlot1, pos=(0, 1), flag=wx.EXPAND)
         grid.Add(self.checkOne, pos=(0, 2), flag=wx.ALIGN_CENTER_VERTICAL)
-        grid.Add(self.textPlot1, pos=(1, 0))
-        grid.Add(self.buttonPlot1, pos=(2, 0))
+        grid.Add(self.buttonPlot1, pos=(1, 0))
+        grid.Add(self.textPlot1, pos=(2, 0))
+        grid.Add(self.textLoc1, pos=(3, 0))
 
-        grid.Add(textPlot2, pos=(4, 0))
-        grid.Add(linePlot2, pos=(4, 1), flag=wx.EXPAND)
-        grid.Add(self.checkTwo, pos=(4, 2), flag=wx.ALIGN_CENTER_VERTICAL)
-        grid.Add(self.textPlot2, pos=(5, 0))
-        grid.Add(self.buttonPlot2, pos=(6, 0))
+        grid.Add(wx.StaticLine(self), pos=(5, 0), span=(1, 3), flag=wx.EXPAND)
+        grid.Add(textPlot2, pos=(6, 0))
+        grid.Add(linePlot2, pos=(6, 1), flag=wx.EXPAND)
+        grid.Add(self.checkTwo, pos=(6, 2), flag=wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(self.buttonPlot2, pos=(7, 0))
+        grid.Add(self.textPlot2, pos=(8, 0))
+        grid.Add(self.textLoc2, pos=(9, 0))
 
-        grid.Add(textPlotDiff, pos=(8, 0))
-        grid.Add(linePlotDiff, pos=(8, 1), flag=wx.EXPAND)
-        grid.Add(self.checkDiff, pos=(8, 2), flag=wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(wx.StaticLine(self), pos=(11, 0), span=(1, 3), flag=wx.EXPAND)
+        grid.Add(textPlotDiff, pos=(12, 0))
+        grid.Add(linePlotDiff, pos=(12, 1), flag=wx.EXPAND)
+        grid.Add(self.checkDiff, pos=(12, 2), flag=wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(self.textLocDiff, pos=(13, 0))
 
         sizerV = wx.BoxSizer(wx.HORIZONTAL)
         sizerV.Add(self.graph, 1, wx.EXPAND)
@@ -132,6 +150,11 @@ class DialogCompare(wx.Dialog):
         self.SetSizerAndFit(sizerH)
 
         close_modeless()
+
+    def __on_cursor(self, locs):
+        self.textLoc1.SetLabel(self.__format_loc(locs['x1'], locs['y1']))
+        self.textLoc2.SetLabel(self.__format_loc(locs['x2'], locs['y2']))
+        self.textLocDiff.SetLabel(self.__format_loc(locs['x3'], locs['y3']))
 
     def __on_load_plot(self, event):
         dlg = wx.FileDialog(self, "Open a scan", self.dirname, self.filename,
@@ -169,6 +192,12 @@ class DialogCompare(wx.Dialog):
     def __on_close(self, _event):
         close_modeless()
         self.Destroy()
+
+    def __format_loc(self, x, y):
+        if None in [x, y]:
+            return ""
+
+        return '{0:.6f} MHz\n{1: .2f}    dB/Hz'.format(x, y)
 
 
 class DialogAutoCal(wx.Dialog):

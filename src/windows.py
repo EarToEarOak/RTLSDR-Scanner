@@ -332,10 +332,12 @@ class PanelGraph(wx.Panel):
 
 
 class PanelGraphCompare(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent, callback):
+        self.callback = callback
 
         self.spectrum1 = None
         self.spectrum2 = None
+        self.spectrumDiff = None
 
         formatter = ScalarFormatter(useOffset=False)
 
@@ -382,6 +384,33 @@ class PanelGraphCompare(wx.Panel):
         self.SetSizer(vbox)
         vbox.Fit(self)
 
+        self.canvas.mpl_connect('motion_notify_event', self.__on_motion)
+
+    def __on_motion(self, event):
+        xpos = event.xdata
+        ypos = event.ydata
+        if xpos is None or ypos is  None:
+            return
+
+        locs = dict.fromkeys(['x1', 'y1', 'x2', 'y2', 'x3', 'y3'], None)
+
+        if self.spectrum1 is not None and len(self.spectrum1) > 0:
+            locs['x1'] = min(self.spectrum1.keys(),
+                             key=lambda freq: abs(freq - xpos))
+            locs['y1'] = self.spectrum1[locs['x1']]
+
+        if self.spectrum2 is not None and len(self.spectrum2) > 0:
+            locs['x2'] = min(self.spectrum2.keys(),
+                             key=lambda freq: abs(freq - xpos))
+            locs['y2'] = self.spectrum2[locs['x2']]
+
+        if self.spectrumDiff is not None and len(self.spectrumDiff) > 0:
+            locs['x3'] = min(self.spectrumDiff.keys(),
+                             key=lambda freq: abs(freq - xpos))
+            locs['y3'] = self.spectrumDiff[locs['x3']]
+
+        self.callback(locs)
+
     def __plot_diff(self):
         diff = {}
         intersections = 0
@@ -410,6 +439,8 @@ class PanelGraphCompare(wx.Panel):
         if intersections > 0:
             self.axesDiff.relim()
         self.textIntersect.SetLabel('Intersections: {0}'.format(intersections))
+
+        self.spectrumDiff = diff
 
     def get_canvas(self):
         return self.canvas
