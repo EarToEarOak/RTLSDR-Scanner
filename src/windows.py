@@ -470,7 +470,7 @@ class PanelGraphCompare(wx.Panel):
         self.autoscale()
 
     def set_grid(self, grid):
-        self.axesDiff.grid(grid)
+        self.axesScan.grid(grid)
         self.canvas.draw()
 
     def autoscale(self):
