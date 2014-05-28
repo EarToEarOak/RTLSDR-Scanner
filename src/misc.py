@@ -31,6 +31,7 @@ import urllib
 
 from matplotlib import cm
 from matplotlib.colors import LinearSegmentedColormap
+import serial.tools.list_ports
 import wx
 
 from constants import SAMPLE_RATE, TIMESTAMP_FILE
@@ -199,6 +200,17 @@ def close_modeless():
     for child in wx.GetTopLevelWindows():
         if child.Title == 'Configure subplots':
             child.Close()
+
+
+def get_serial_ports():
+    ports = [port[0] for port in serial.tools.list_ports.comports()]
+    if len(ports) == 0:
+        if os.name == 'nt':
+            ports.append('COM1')
+        else:
+            ports.append('/dev/ttyS0')
+
+    return ports
 
 
 if __name__ == '__main__':

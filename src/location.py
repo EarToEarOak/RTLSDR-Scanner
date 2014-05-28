@@ -65,6 +65,9 @@ class ThreadLocation(threading.Thread):
             port = url.port
         else:
             port = defaultPort
+        if self.raw:
+            text = 'Opening "{0}"'.format(self.device.resource)
+            post_event(self.notify, EventThread(Event.LOC_RAW, 0, text))
         try:
             self.comm.connect((host, port))
         except socket.error as error:
@@ -91,6 +94,9 @@ class ThreadLocation(threading.Thread):
         return
 
     def __serial_connect(self):
+        if self.raw:
+            text = 'Opening "{0}"'.format(self.device.resource)
+            post_event(self.notify, EventThread(Event.LOC_RAW, 0, text))
         try:
             self.comm = serial.Serial(self.device.resource,
                                       baudrate=self.device.baud,
