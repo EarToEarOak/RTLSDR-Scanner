@@ -71,7 +71,7 @@ class ThreadLocation(threading.Thread):
         try:
             self.comm.connect((host, port))
         except socket.error as error:
-            post_event(self.notify, EventThread(Event.LOC_WARN,
+            post_event(self.notify, EventThread(Event.LOC_ERR,
                                                 0, error))
 
     def __tcp_read(self):
@@ -81,7 +81,7 @@ class ThreadLocation(threading.Thread):
             try:
                 data = self.comm.recv(1024)
             except socket.timeout as error:
-                post_event(self.notify, EventThread(Event.LOC_WARN,
+                post_event(self.notify, EventThread(Event.LOC_ERR,
                                                     0, error))
                 return
             buf += data
@@ -106,7 +106,7 @@ class ThreadLocation(threading.Thread):
                                       xonxoff=self.device.soft,
                                       timeout=1)
         except SerialException as error:
-            post_event(self.notify, EventThread(Event.LOC_WARN,
+            post_event(self.notify, EventThread(Event.LOC_ERR,
                                                 0, error.message))
             return False
         return True
@@ -131,7 +131,7 @@ class ThreadLocation(threading.Thread):
                 self.comm.sendall('w')
 
         except IOError as error:
-            post_event(self.notify, EventThread(Event.LOC_WARN,
+            post_event(self.notify, EventThread(Event.LOC_ERR,
                                                 0, error))
             self.comm.close()
             return False
