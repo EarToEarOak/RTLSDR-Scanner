@@ -267,8 +267,9 @@ class ThreadLocation(threading.Thread):
             self.__gpsd_close()
 
     def stop(self):
-        self.notify.queue.clear()
         self.cancel = True
+        if self.raw:
+            self.notify.queue.clear()
 
 
 if __name__ == '__main__':
