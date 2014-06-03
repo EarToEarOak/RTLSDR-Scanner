@@ -36,7 +36,6 @@ from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.ticker import ScalarFormatter
 import numpy
 import rtlsdr
-import serial.tools.list_ports
 from wx import grid
 import wx
 from wx.lib import masked
