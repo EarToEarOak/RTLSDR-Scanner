@@ -1740,7 +1740,9 @@ class DialogGPSTest(wx.Dialog):
         self.SetSizerAndFit(grid)
 
         self.queue = Queue.Queue()
-        self.Bind(wx.EVT_IDLE, self.__on_idle)
+        self.timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.__on_timer, self.timer)
+        self.timer.Start(500)
 
     def __on_start(self, _event):
         if not self.threadLocation:
@@ -1764,7 +1766,7 @@ class DialogGPSTest(wx.Dialog):
         self.__on_stop(None)
         self.EndModal(wx.ID_OK)
 
-    def __on_idle(self, event):
+    def __on_timer(self, _event):
         if not self.queue.empty():
             event = self.queue.get()
             status = event.data.get_status()
