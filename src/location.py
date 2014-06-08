@@ -109,6 +109,10 @@ class ThreadLocation(threading.Thread):
             post_event(self.notify, EventThread(Event.LOC_ERR,
                                                 0, error.message))
             return False
+        except OSError as error:
+            post_event(self.notify, EventThread(Event.LOC_ERR,
+                                                0, error))
+            return False
         return True
 
     def __serial_read(self):

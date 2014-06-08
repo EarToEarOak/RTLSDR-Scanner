@@ -1787,8 +1787,6 @@ class DialogGPSTest(wx.Dialog):
                     text = ''
                 self.textAlt.SetValue(text)
             elif status == Event.LOC_ERR:
-                self.__add_raw('{0}'.format(loc))
-            elif status == Event.LOC_ERR:
                 self.__on_stop(None)
                 self.__add_raw('{0}'.format(loc))
             elif status == Event.LOC_RAW:
