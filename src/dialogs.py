@@ -1013,8 +1013,6 @@ class DialogPrefs(wx.Dialog):
         plotbox.Add(plotgrid, 0, wx.ALL | wx.EXPAND, 10)
 
         grid = wx.GridBagSizer(10, 10)
-        grid.AddGrowableCol(0, 1)
-        grid.AddGrowableCol(1, 0)
         grid.Add(genbox, pos=(0, 0), span=(1, 2), flag=wx.EXPAND)
         grid.Add(conbox, pos=(1, 0), span=(1, 2), flag=wx.EXPAND)
         grid.Add(plotbox, pos=(2, 0), span=(1, 2), flag=wx.EXPAND)
