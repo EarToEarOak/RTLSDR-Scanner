@@ -1765,7 +1765,8 @@ class DialogGPSTest(wx.Dialog):
         self.EndModal(wx.ID_OK)
 
     def __on_timer(self, _event):
-        if not self.queue.empty():
+        self.timer.Stop()
+        while not self.queue.empty():
             event = self.queue.get()
             status = event.data.get_status()
             loc = event.data.get_arg2()
@@ -1791,6 +1792,7 @@ class DialogGPSTest(wx.Dialog):
                 self.__add_raw('{0}'.format(loc))
             elif status == Event.LOC_RAW:
                 self.__add_raw(loc)
+        self.timer.Start(500)
 
     def __add_raw(self, text):
         text = text.replace('\n', '')
