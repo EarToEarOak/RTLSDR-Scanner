@@ -1707,6 +1707,8 @@ class DialogGPSTest(wx.Dialog):
         self.textLon = wx.TextCtrl(self, style=wx.TE_READONLY)
         textAlt = wx.StaticText(self, label='Altitude')
         self.textAlt = wx.TextCtrl(self, style=wx.TE_READONLY)
+        textSats = wx.StaticText(self, label='Satellites')
+        self.textSats = wx.TextCtrl(self, style=wx.TE_READONLY)
         textRaw = wx.StaticText(self, label='Raw output')
         self.textRaw = wx.TextCtrl(self,
                                    style=wx.TE_MULTILINE | wx.TE_READONLY)
@@ -1728,12 +1730,14 @@ class DialogGPSTest(wx.Dialog):
         grid.Add(self.textLon, pos=(1, 2), span=(1, 2), flag=wx.ALL, border=5)
         grid.Add(textAlt, pos=(2, 1), flag=wx.ALL, border=5)
         grid.Add(self.textAlt, pos=(2, 2), span=(1, 2), flag=wx.ALL, border=5)
-        grid.Add(textRaw, pos=(3, 0), flag=wx.ALL, border=5)
-        grid.Add(self.textRaw, pos=(4, 0), span=(5, 4),
+        grid.Add(textSats, pos=(3, 1), flag=wx.ALL, border=5)
+        grid.Add(self.textSats, pos=(3, 2), span=(1, 2), flag=wx.ALL, border=5)
+        grid.Add(textRaw, pos=(4, 0), flag=wx.ALL, border=5)
+        grid.Add(self.textRaw, pos=(5, 0), span=(5, 4),
                  flag=wx.ALL | wx.EXPAND, border=5)
-        grid.Add(self.buttonStart, pos=(9, 1), flag=wx.ALL, border=5)
-        grid.Add(self.buttonStop, pos=(9, 2), flag=wx.ALL, border=5)
-        grid.Add(buttonOk, pos=(10, 3), flag=wx.ALL, border=5)
+        grid.Add(self.buttonStart, pos=(10, 1), flag=wx.ALL, border=5)
+        grid.Add(self.buttonStop, pos=(10, 2), flag=wx.ALL, border=5)
+        grid.Add(buttonOk, pos=(11, 3), flag=wx.ALL, border=5)
 
         self.SetSizerAndFit(grid)
 
@@ -1787,6 +1791,9 @@ class DialogGPSTest(wx.Dialog):
                 else:
                     text = ''
                 self.textAlt.SetValue(text)
+            elif status == Event.LOC_SAT:
+                text = '{0}/{1}'.format(event.data.get_arg1(), loc)
+                self.textSats.SetValue(text)
             elif status == Event.LOC_ERR:
                 self.__on_stop(None)
                 self.__add_raw('{0}'.format(loc))

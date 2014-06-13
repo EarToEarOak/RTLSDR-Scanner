@@ -44,6 +44,7 @@ class ThreadLocation(threading.Thread):
         self.raw = raw
         self.cancel = False
         self.comm = None
+        self.sats = {}
 
         if self.device.type in [DeviceGPS.NMEA_SERIAL, DeviceGPS.NMEA_TCP]:
             if self.__nmea_open():
@@ -207,16 +208,9 @@ class ThreadLocation(threading.Thread):
                 if checksum == resp[1]:
                     data = resp[0].split(',')
                     if data[0] == 'GPGGA':
-                        if data[6] in ['1', '2']:
-                            lat = self.__nmea_coord(data[2], data[3])
-                            lon = self.__nmea_coord(data[4], data[5])
-                            try:
-                                alt = float(data[9])
-                            except ValueError:
-                                alt = None
-                            post_event(self.notify,
-                                       EventThread(Event.LOC, 0,
-                                                         (lat, lon, alt)))
+                        self.__nmea_global_fix(data)
+                    elif data[0] == 'GPGSV':
+                        self.__nmea_sats(data)
                 else:
                     error = 'Invalid checksum {0}, should be {1}'.format(resp[1],
                                                                          checksum)
@@ -228,6 +222,36 @@ class ThreadLocation(threading.Thread):
         for char in data:
             checksum ^= ord(char)
         return "{0:02X}".format(checksum)
+
+    def __nmea_global_fix(self, data):
+        if data[6] in ['1', '2']:
+            lat = self.__nmea_coord(data[2], data[3])
+            lon = self.__nmea_coord(data[4], data[5])
+            try:
+                alt = float(data[9])
+            except ValueError:
+                alt = None
+            post_event(self.notify,
+                       EventThread(Event.LOC, 0, (lat, lon, alt)))
+
+    def __nmea_sats(self, data):
+        message = int(data[1])
+        messages = int(data[1])
+        viewed = int(data[3])
+
+        if message == 1:
+            self.sats.clear()
+
+        blocks = (len(data) - 4) / 4
+        for i in range(0, blocks):
+            sat = int(data[4 + i * 4])
+            used = False if data[5 + i * 4] == '' else True
+            self.sats[sat] = used
+
+        if message == messages and len(self.sats) == viewed:
+            post_event(self.notify,
+                       EventThread(Event.LOC_SAT,
+                                   sum(self.sats.values()), viewed))
 
     def __nmea_coord(self, coord, orient):
         pos = None
