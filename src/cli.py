@@ -131,7 +131,7 @@ class Cli():
             scanInfo = ScanInfo()
             scanInfo.setFromSettings(self.settings)
 
-            save_plot(fullName, scanInfo, self.spectrum, None)
+            save_plot(fullName, scanInfo, self.spectrum, {})
         else:
             exportType = File.get_type_index(ext)
             export_plot(fullName, exportType, self.spectrum)
