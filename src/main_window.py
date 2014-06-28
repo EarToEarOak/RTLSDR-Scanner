@@ -47,7 +47,8 @@ from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
     export_map, extension_add, File
 from location import ThreadLocation
 from misc import calc_samples, calc_real_dwell, \
-    get_version_timestamp, get_version_timestamp_repo, add_colours
+    get_version_timestamp, get_version_timestamp_repo, add_colours,\
+    RemoteControl
 from printer import PrintOut
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
@@ -152,6 +153,8 @@ class FrameMain(wx.Frame):
         self.filename = ""
         self.oldCal = 0
 
+        self.remoteControl = None
+
         self.pageConfig = wx.PageSetupDialogData()
         self.pageConfig.GetPrintData().SetOrientation(wx.LANDSCAPE)
         self.pageConfig.SetMarginTopLeft((20, 20))
@@ -189,7 +192,10 @@ class FrameMain(wx.Frame):
     def __create_widgets(self):
         panel = wx.Panel(self)
 
-        self.graph = PanelGraph(panel, self, self.settings, self.__on_motion)
+        self.remoteControl = RemoteControl()
+
+        self.graph = PanelGraph(panel, self, self.settings, self.__on_motion,
+                                self.remoteControl)
         self.toolbar = wx.Panel(panel)
 
         self.buttonStart = wx.Button(self.toolbar, wx.ID_ANY, 'Start')

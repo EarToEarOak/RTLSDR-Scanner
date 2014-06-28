@@ -941,6 +941,13 @@ class DialogPrefs(wx.Dialog):
                                       "Use GPS")
         self.checkGps.SetValue(settings.gps)
         self.checkGps.SetToolTip(wx.ToolTip('Record GPS location'))
+        self.checkTune = wx.CheckBox(self, wx.ID_ANY,
+                                     "Tune SDR#")
+        self.checkTune.SetValue(settings.clickTune)
+        self.checkTune.SetToolTip(wx.ToolTip('Double click plot to tune SDR#'))
+        textPlugin = wx.HyperlinkCtrl(self, wx.ID_ANY,
+                                      label="(Requires plugin)",
+                                      url="http://eartoearoak.com/software/sdrsharp-net-remote")
 
         self.radioAvg = wx.RadioButton(self, wx.ID_ANY, 'Average Scans',
                                        style=wx.RB_GROUP)
@@ -990,6 +997,8 @@ class DialogPrefs(wx.Dialog):
         gengrid.Add(textDpi, pos=(5, 0))
         gengrid.Add(self.spinDpi, pos=(5, 1))
         gengrid.Add(self.checkGps, pos=(6, 0))
+        gengrid.Add(self.checkTune, pos=(7, 0))
+        gengrid.Add(textPlugin, pos=(7, 1))
         genbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "General"))
         genbox.Add(gengrid, 0, wx.ALL | wx.ALIGN_CENTRE_VERTICAL, 10)
 
@@ -1056,6 +1065,7 @@ class DialogPrefs(wx.Dialog):
         self.settings.alert = self.checkAlert.GetValue()
         self.settings.alertLevel = self.spinLevel.GetValue()
         self.settings.gps = self.checkGps.GetValue()
+        self.settings.clickTune = self.checkTune.GetValue()
         self.settings.pointsLimit = self.checkPoints.GetValue()
         self.settings.pointsMax = self.spinPoints.GetValue()
         self.settings.exportDpi = self.spinDpi.GetValue()

@@ -56,6 +56,8 @@ class Settings():
         self.grid = True
         self.plotFunc = PlotFunc.NONE
 
+        self.clickTune = True
+
         self.compareOne = True
         self.compareTwo = True
         self.compareDiff = True
@@ -196,6 +198,7 @@ class Settings():
         self.pointsMax = self.cfg.ReadInt('pointsMax', self.pointsMax)
         self.grid = self.cfg.ReadBool('grid', self.grid)
         self.plotFunc = self.cfg.ReadInt('plotFunc', self.plotFunc)
+        self.clickTune = self.cfg.ReadBool('clickTune', self.clickTune)
         self.compareOne = self.cfg.ReadBool('compareOne', self.compareOne)
         self.compareTwo = self.cfg.ReadBool('compareTwo', self.compareTwo)
         self.compareDiff = self.cfg.ReadBool('compareDiff', self.compareDiff)
@@ -242,6 +245,7 @@ class Settings():
         self.cfg.WriteInt('pointsMax', self.pointsMax)
         self.cfg.WriteBool('grid', self.grid)
         self.cfg.WriteInt('plotFunc', self.plotFunc)
+        self.cfg.WriteBool('clickTune', self.clickTune)
         self.cfg.WriteBool('compareOne', self.compareOne)
         self.cfg.WriteBool('compareTwo', self.compareTwo)
         self.cfg.WriteBool('compareDiff', self.compareDiff)

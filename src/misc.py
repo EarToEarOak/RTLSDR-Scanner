@@ -23,9 +23,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import json
 import math
 import os
+import socket
 import sys
+from threading import Thread
 import time
 import urllib
 
@@ -75,6 +78,44 @@ class ValidatorCoord(wx.PyValidator):
 
     def Clone(self):
         return ValidatorCoord(self.isLat)
+
+
+class RemoteControl():
+    def __init__(self):
+        self.connected = False
+
+    def __connect(self):
+        if not self.connected:
+            try:
+                self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.socket.settimeout(1)
+                self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                self.socket.connect(('localhost', 3382))
+                self.connected = True
+            except socket.error:
+                self.connected = False
+
+    def __thread(self, command):
+        self.__connect()
+        if self.connected:
+            try:
+                self.socket.send(json.dumps(command))
+                self.socket.send('\r\n')
+            except socket.error:
+                self.socket.close()
+                self.connected = False
+
+    def __send(self, command):
+        thread = Thread(target=self.__thread, args=(command,))
+        thread.daemon = True
+        thread.start()
+
+    def tune(self, frequency):
+        command = {'Command': 'Set',
+                   'Method': 'Frequency',
+                   'Value': frequency}
+        self.__send(command)
+
 
 
 def level_to_db(level):

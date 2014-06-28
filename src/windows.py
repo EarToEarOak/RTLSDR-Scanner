@@ -25,7 +25,7 @@
 
 import copy
 
-from matplotlib import cm, colors
+from matplotlib import cm
 import matplotlib
 from matplotlib.backends.backend_wxagg import \
     FigureCanvasWxAgg as FigureCanvas
@@ -35,7 +35,7 @@ from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
 import wx
 
 from constants import Display
-from misc import  close_modeless
+from misc import close_modeless
 from plot import Plotter
 from plot3d import Plotter3d
 from plot_controls import MouseZoom, MouseSelect
@@ -84,11 +84,12 @@ class GridToolTips():
 
 
 class PanelGraph(wx.Panel):
-    def __init__(self, panel, notify, settings, callbackMotion):
+    def __init__(self, panel, notify, settings, callbackMotion, remoteControl):
         self.panel = panel
         self.notify = notify
         self.plot = None
         self.settings = settings
+        self.remoteControl = remoteControl
         self.spectrum = None
         self.isLimited = None
         self.limit = None
@@ -131,6 +132,7 @@ class PanelGraph(wx.Panel):
 
         self.create_plot()
 
+        self.canvas.mpl_connect('button_press_event', self.__on_press)
         self.canvas.mpl_connect('motion_notify_event', callbackMotion)
         self.canvas.mpl_connect('draw_event', self.__on_draw)
         self.canvas.mpl_connect('idle_event', self.__on_idle)
@@ -152,6 +154,11 @@ class PanelGraph(wx.Panel):
     def __enable_menu(self, state):
         for menu in self.menuClearSelect:
             menu.Enable(state)
+
+    def __on_press(self, event):
+        if self.settings.clickTune and event.dblclick:
+            frequency = int(event.xdata*1e6)
+            self.remoteControl.tune(frequency)
 
     def __on_size(self, event):
         ppi = wx.ScreenDC().GetPPI()

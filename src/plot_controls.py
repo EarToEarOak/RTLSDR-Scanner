@@ -160,6 +160,9 @@ class RangeSelector():
         return
 
     def __skip_event(self, event):
+        if event.dblclick:
+            return True
+
         if event.button != 2:
             return True
 
