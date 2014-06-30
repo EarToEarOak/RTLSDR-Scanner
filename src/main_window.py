@@ -1048,7 +1048,11 @@ class FrameMain(wx.Frame):
         self.spinCtrlStop.SetValue(self.settings.stop)
         self.choiceMode.SetSelection(MODE[1::2].index(self.settings.mode))
         dwell = calc_real_dwell(self.settings.dwell)
-        self.choiceDwell.SetSelection(DWELL[1::2].index(dwell))
+        try:
+            sel = DWELL[1::2].index(dwell)
+        except ValueError:
+            sel = DWELL[1::2][len(DWELL)/4]
+        self.choiceDwell.SetSelection(sel)
         self.choiceNfft.SetSelection(NFFT.index(self.settings.nfft))
         self.choiceDisplay.SetSelection(DISPLAY[1::2].index(self.settings.display))
 
