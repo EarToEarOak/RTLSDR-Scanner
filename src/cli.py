@@ -143,7 +143,7 @@ class Cli():
     def __scan(self, sweeps, settings, index, pool):
         samples = settings.dwell * SAMPLE_RATE
         samples = next_2_to_pow(int(samples))
-        for i in range(0, sweeps):
+        for _i in range(0, sweeps):
             threadScan = ThreadScan(self.queue, None, settings, index, samples,
                                     False)
             while threadScan.isAlive() or self.steps > 0:
