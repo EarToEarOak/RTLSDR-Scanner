@@ -26,6 +26,7 @@
 import Queue
 import copy
 import itertools
+import os
 from urlparse import urlparse
 
 from PIL import Image
@@ -46,11 +47,13 @@ from constants import F_MIN, F_MAX, Cal, SAMPLE_RATE, BANDWIDTH, WINFUNC, \
     TUNER
 from devices import DeviceRTL, DeviceGPS
 from events import Event
-from file import open_plot, File
+from file import open_plot, File, export_image
 from location import ThreadLocation
 from misc import close_modeless, format_time, ValidatorCoord, get_colours, \
     nearest, load_bitmap, get_version_timestamp, get_serial_ports
+from plot import Plotter
 from rtltcp import RtlTcp
+from spectrum import count_points, sort_spectrum, Extent
 from windows import PanelGraphCompare, PanelColourBar, CellRenderer, PanelLine
 
 
@@ -284,8 +287,177 @@ class DialogAutoCal(wx.Dialog):
         return self.textFreq.GetValue()
 
 
-class DialogGeo(wx.Dialog):
+class DialogSeq(wx.Dialog):
+    POLL = 250
 
+    def __init__(self, parent, spectrum, settings):
+        self.spectrum = spectrum
+        self.dpi = settings.exportDpi
+        self.sweeps = None
+        self.isExporting = False
+
+        wx.Dialog.__init__(self, parent=parent, title='Export Plot Sequence')
+
+        self.queue = Queue.Queue()
+        self.timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.__on_timer, self.timer)
+        self.timer.Start(DialogSeq.POLL)
+
+        self.figure = matplotlib.figure.Figure(facecolor='white')
+        self.canvas = FigureCanvas(self, -1, self.figure)
+        self.plot = Plotter(self.queue, self.figure, settings)
+
+        self.sweepTimeStamps = [timeStamp for timeStamp in spectrum.keys()]
+        sweepChoices = [format_time(timeStamp, True) for timeStamp in self.sweepTimeStamps]
+
+        textStart = wx.StaticText(self, label="Start")
+        self.choiceStart = wx.Choice(self, choices=sweepChoices)
+        self.choiceStart.SetSelection(0)
+        self.Bind(wx.EVT_CHOICE, self.__on_choice, self.choiceStart)
+
+        textEnd = wx.StaticText(self, label="End")
+        self.choiceEnd = wx.Choice(self, choices=sweepChoices)
+        self.choiceEnd.SetSelection(len(self.sweepTimeStamps) - 1)
+        self.Bind(wx.EVT_CHOICE, self.__on_choice, self.choiceEnd)
+
+        textSweeps = wx.StaticText(self, label="Sweeps")
+        self.textSweeps = wx.StaticText(self, label="")
+
+        textDir = wx.StaticText(self, label="Output directory")
+        self.editDir = wx.TextCtrl(self)
+        self.editDir.SetValue(settings.dirExport)
+
+        buttonBrowse = wx.Button(self, label='Browse')
+        self.Bind(wx.EVT_BUTTON, self.__on_browse, buttonBrowse)
+
+        sizerButtons = wx.StdDialogButtonSizer()
+        buttonOk = wx.Button(self, wx.ID_OK)
+        buttonCancel = wx.Button(self, wx.ID_CANCEL)
+        sizerButtons.AddButton(buttonOk)
+        sizerButtons.AddButton(buttonCancel)
+        sizerButtons.Realize()
+        self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
+
+        sizerGrid = wx.GridBagSizer(5, 5)
+        sizerGrid.Add(self.canvas, pos=(0, 0), span=(1, 6),
+                      flag=wx.EXPAND | wx.ALL, border=5)
+        sizerGrid.Add(textStart, pos=(1, 0),
+                      flag=wx.ALIGN_CENTRE_VERTICAL | wx.ALL, border=5)
+        sizerGrid.Add(self.choiceStart, pos=(1, 1),
+                      flag=wx.ALL, border=5)
+        sizerGrid.Add(textEnd, pos=(1, 2),
+                      flag=wx.ALIGN_CENTRE_VERTICAL | wx.ALL, border=5)
+        sizerGrid.Add(self.choiceEnd, pos=(1, 3),
+                      flag=wx.ALL, border=5)
+        sizerGrid.Add(textSweeps, pos=(1, 4),
+                      flag=wx.ALIGN_CENTRE_VERTICAL | wx.ALL, border=5)
+        sizerGrid.Add(self.textSweeps, pos=(1, 5),
+                      flag=wx.ALIGN_CENTRE_VERTICAL | wx.ALL, border=5)
+        sizerGrid.Add(textDir, pos=(2, 0), span=(1, 6),
+                      flag=wx.ALL, border=5)
+        sizerGrid.Add(self.editDir, pos=(3, 0), span=(1, 5),
+                      flag=wx.ALL | wx.EXPAND, border=5)
+        sizerGrid.Add(buttonBrowse, pos=(3, 5),
+                      flag=wx.ALL, border=5)
+        sizerGrid.Add(sizerButtons, pos=(4, 5),
+                      flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
+
+        self.SetSizerAndFit(sizerGrid)
+
+        self.__draw_plot()
+
+    def __on_choice(self, event):
+        start = self.choiceStart.GetSelection()
+        end = self.choiceEnd.GetSelection()
+        control = event.GetEventObject()
+
+        if start > end:
+            if control == self.choiceStart:
+                self.choiceStart.SetSelection(end)
+            else:
+                self.choiceEnd.SetSelection(start)
+
+        self.__draw_plot()
+
+    def __on_browse(self, _event):
+        directory = self.editDir.GetValue()
+        dlg = wx.DirDialog(self, 'Output directory', directory)
+        if dlg.ShowModal() == wx.ID_OK:
+            directory = dlg.GetPath()
+            self.editDir.SetValue(directory)
+
+    def __on_timer(self, _event):
+        self.timer.Stop()
+        if not self.isExporting:
+            while not self.queue.empty():
+                event = self.queue.get()
+                status = event.data.get_status()
+
+                if status == Event.DRAW:
+                    self.canvas.draw()
+
+        self.timer.Start(DialogSeq.POLL)
+
+    def __on_ok(self, _event):
+        self.isExporting = True
+        extent = Extent(self.spectrum)
+        dlgProgress = wx.ProgressDialog('Exporting', '', len(self.sweeps)-1,
+                                        style=wx.PD_AUTO_HIDE |
+                                        wx.PD_CAN_ABORT |
+                                        wx.PD_REMAINING_TIME)
+
+        try:
+            count = 1
+            for timeStamp, sweep in self.sweeps.items():
+                name = '{0:.0f}.png'.format(timeStamp)
+                directory = self.editDir.GetValue()
+                filename = os.path.join(directory, name)
+
+                thread = self.plot.set_plot({timeStamp: sweep}, extent, False)
+                thread.join()
+                filename = os.path.join(directory, '{0}.png'.format(timeStamp))
+                export_image(filename, File.ImageType.PNG, self.figure, self.dpi)
+
+                cont, _skip = dlgProgress.Update(count, name)
+                if not cont:
+                    break
+                count += 1
+        except IOError as e:
+            wx.MessageBox(e.strerror, 'Error', wx.OK | wx.ICON_WARNING)
+        finally:
+            dlgProgress.Destroy()
+            self.EndModal(wx.ID_OK)
+
+    def __spectrum_range(self, start, end):
+        sweeps = {}
+        for timeStamp, sweep in self.spectrum.items():
+            if start <= timeStamp <= end:
+                sweeps[timeStamp] = sweep
+
+        self.sweeps = sort_spectrum(sweeps)
+
+    def __draw_plot(self):
+        start, end = self.__get_range()
+        self.__spectrum_range(start, end)
+
+        self.textSweeps.SetLabel('{0}'.format(len(self.sweeps)))
+
+        if len(self.sweeps) > 0:
+            total = count_points(self.sweeps)
+            if total > 0:
+                extent = Extent(self.spectrum)
+                self.plot.set_plot(self.sweeps, extent, False)
+        else:
+            self.plot.clear_plots()
+
+    def __get_range(self):
+        start = self.sweepTimeStamps[self.choiceStart.GetSelection()]
+        end = self.sweepTimeStamps[self.choiceEnd.GetSelection()]
+
+        return start, end
+
+
+class DialogGeo(wx.Dialog):
     def __init__(self, parent, spectrum, location, settings):
         self.spectrum = spectrum
         self.location = location
@@ -1704,6 +1876,8 @@ class DialogGPSSerial(wx.Dialog):
 
 
 class DialogGPSTest(wx.Dialog):
+    POLL = 500
+
     def __init__(self, parent, device):
         self.device = device
         self.threadLocation = None
@@ -1754,7 +1928,7 @@ class DialogGPSTest(wx.Dialog):
         self.queue = Queue.Queue()
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.__on_timer, self.timer)
-        self.timer.Start(500)
+        self.timer.Start(DialogGPSTest.POLL)
 
     def __on_start(self, _event):
         if not self.threadLocation:
@@ -1809,7 +1983,7 @@ class DialogGPSTest(wx.Dialog):
                 self.__add_raw('{0}'.format(loc))
             elif status == Event.LOC_RAW:
                 self.__add_raw(loc)
-        self.timer.Start(500)
+        self.timer.Start(DialogGPSTest.POLL)
 
     def __add_raw(self, text):
         text = text.replace('\n', '')

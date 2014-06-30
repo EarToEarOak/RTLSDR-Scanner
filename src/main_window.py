@@ -41,13 +41,13 @@ from constants import F_MIN, F_MAX, MODE, DWELL, NFFT, DISPLAY, Warn, \
 from devices import get_devices_rtl
 from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, \
     DialogDevicesRTL, DialogCompare, DialogAutoCal, DialogAbout, DialogSaveWarn, \
-    DialogDevicesGPS, DialogGeo
+    DialogDevicesGPS, DialogGeo, DialogSeq
 from events import EVENT_THREAD, Event, EventThread, post_event
 from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
     export_map, extension_add, File
 from location import ThreadLocation
 from misc import calc_samples, calc_real_dwell, \
-    get_version_timestamp, get_version_timestamp_repo, add_colours,\
+    get_version_timestamp, get_version_timestamp_repo, add_colours, \
     RemoteControl
 from printer import PrintOut
 from scan import ThreadScan, anaylse_data, update_spectrum
@@ -98,6 +98,7 @@ class FrameMain(wx.Frame):
         self.menuSave = None
         self.menuExportScan = None
         self.menuExportImage = None
+        self.menuExportSeq = None
         self.menuExportGeo = None
         self.menuPreview = None
         self.menuPage = None
@@ -294,6 +295,8 @@ class FrameMain(wx.Frame):
                                               "Export scan")
         self.menuExportImage = menuFile.Append(wx.ID_ANY, "Export image...",
                                               "Export image")
+        self.menuExportSeq = menuFile.Append(wx.ID_ANY, "Export image sequence...",
+                                              "Export sweep plots in sequence")
         self.menuExportGeo = menuFile.Append(wx.ID_ANY, "Export map...",
                                               "Export maps")
         menuFile.AppendSeparator()
@@ -371,6 +374,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.__on_save, self.menuSave)
         self.Bind(wx.EVT_MENU, self.__on_export_scan, self.menuExportScan)
         self.Bind(wx.EVT_MENU, self.__on_export_image, self.menuExportImage)
+        self.Bind(wx.EVT_MENU, self.__on_export_image_seq, self.menuExportSeq)
         self.Bind(wx.EVT_MENU, self.__on_export_geo, self.menuExportGeo)
         self.Bind(wx.EVT_MENU, self.__on_page, self.menuPage)
         self.Bind(wx.EVT_MENU, self.__on_preview, self.menuPreview)
@@ -527,6 +531,11 @@ class FrameMain(wx.Frame):
                          self.graph.get_figure(), self.settings.exportDpi)
             self.status.set_general("Finished")
         dlg.Destroy()
+
+    def __on_export_image_seq(self, _event):
+        dlgSeq = DialogSeq(self, self.spectrum, self.settings)
+        dlgSeq.ShowModal()
+        dlgSeq.Destroy()
 
     def __on_export_geo(self, _event):
         dlgGeo = DialogGeo(self, self.spectrum, self.location, self.settings)
@@ -1020,6 +1029,7 @@ class FrameMain(wx.Frame):
         self.menuSave.Enable(state and len(self.spectrum) > 0)
         self.menuExportScan.Enable(state and len(self.spectrum) > 0)
         self.menuExportImage.Enable(state)
+        self.menuExportSeq.Enable(state and len(self.spectrum) > 0)
         self.menuExportGeo.Enable(state and len(self.spectrum) > 0 \
                                   and len(self.location) > 0)
         self.menuPage.Enable(state)

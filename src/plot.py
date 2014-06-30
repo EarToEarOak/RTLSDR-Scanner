@@ -351,6 +351,8 @@ class Plotter():
                                      annotate, self.settings.plotFunc)
         self.threadPlot.start()
 
+        return self.threadPlot
+
     def clear_plots(self):
         children = self.axes.get_children()
         for child in children:
