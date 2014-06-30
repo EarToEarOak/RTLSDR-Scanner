@@ -23,6 +23,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import signal
 
 try:
     input = raw_input
@@ -48,6 +49,10 @@ from cli import Cli
 from file import File
 from main_window import FrameMain, RtlSdrScanner
 from misc import set_version_timestamp
+
+
+def __init_worker():
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
 
 
 def __arguments():
@@ -100,10 +105,11 @@ def __arguments():
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
-    pool = multiprocessing.Pool()
+    pool = multiprocessing.Pool(initializer=__init_worker)
     print "RTLSDR Scanner\n"
     if 'rtlsdr_update_timestamp'in os.environ:
         set_version_timestamp()
+
     isGui, args = __arguments()
     if isGui:
         app = RtlSdrScanner(pool)
@@ -112,4 +118,8 @@ if __name__ == '__main__':
             frame.open(os.path.abspath(args.dirname), args.filename)
         app.MainLoop()
     else:
-        Cli(pool, args)
+        try:
+            Cli(pool, args)
+        except KeyboardInterrupt:
+            print '\nAborted'
+            exit(1)
