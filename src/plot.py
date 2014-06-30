@@ -43,7 +43,7 @@ from events import EventThread, Event, post_event
 from spectrum import Measure
 
 
-class Plotter():
+class Plotter(object):
     def __init__(self, notify, figure, settings):
         self.notify = notify
         self.figure = figure

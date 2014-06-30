@@ -80,7 +80,7 @@ class ValidatorCoord(wx.PyValidator):
         return ValidatorCoord(self.isLat)
 
 
-class RemoteControl():
+class RemoteControl(object):
     def __init__(self):
         self.connected = False
 
@@ -115,7 +115,6 @@ class RemoteControl():
                    'Method': 'Frequency',
                    'Value': frequency}
         self.__send(command)
-
 
 
 def level_to_db(level):
@@ -165,7 +164,7 @@ def format_time(timeStamp, withDate=False):
 
 def load_bitmap(name):
     scriptDir = os.path.dirname(os.path.realpath(sys.argv[0]))
-    if(os.path.isdir(scriptDir + '/res')):
+    if os.path.isdir(scriptDir + '/res'):
         resDir = os.path.normpath(scriptDir + '/res')
     else:
         resDir = os.path.normpath(scriptDir + '/../res')
@@ -179,22 +178,19 @@ def add_colours():
          'green':   ((0.0, 0.0, 0.0),
                      (1.0, 0.0, 0.0)),
          'blue':   ((0.0, 0.0, 0.0),
-                         (1.0, 0.0, 0.0))
-        }
+                    (1.0, 0.0, 0.0))}
     g = {'red':     ((0.0, 0.0, 0.0),
                      (1.0, 0.0, 0.0)),
          'green':   ((0.0, 1.0, 1.0),
                      (1.0, 1.0, 1.0)),
          'blue':    ((0.0, 0.0, 0.0),
-                     (1.0, 0.0, 0.0))
-        }
+                     (1.0, 0.0, 0.0))}
     b = {'red':     ((0.0, 0.0, 0.0),
                      (1.0, 0.0, 0.0)),
          'green':   ((0.0, 0.0, 0.0),
                      (1.0, 0.0, 0.0)),
          'blue':    ((0.0, 1.0, 1.0),
-                     (1.0, 1.0, 1.0))
-        }
+                     (1.0, 1.0, 1.0))}
 
     rMap = LinearSegmentedColormap('red_map', r)
     gMap = LinearSegmentedColormap('red_map', g)

@@ -29,7 +29,7 @@ from constants import Display, Mode, PlotFunc
 from devices import DeviceRTL, format_device_rtl_name, DeviceGPS
 
 
-class Settings():
+class Settings(object):
     def __init__(self, load=True):
         self.cfg = None
 

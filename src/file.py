@@ -37,20 +37,20 @@ import wx
 from spectrum import sort_spectrum, create_mesh
 
 
-class File:
-    class Types:
+class File(object):
+    class Types(object):
         SAVE, PLOT, IMAGE, GEO = range(4)
 
-    class SaveType:
+    class SaveType(object):
         RFS = 0
 
-    class PlotType:
+    class PlotType(object):
         CSV, GNUPLOT, FREEMAT = range(3)
 
-    class ImageType:
+    class ImageType(object):
         BMP, EPS, GIF, JPEG, PDF, PNG, PPM, TIFF = range(8)
 
-    class GeoType:
+    class GeoType(object):
         KMZ, CSV, BMP, EPS, GIF, JPEG, PDF, PNG, PPM, TIFF = range(10)
 
     SAVE = [''] * 1
@@ -136,7 +136,7 @@ class File:
         return -1
 
 
-class ScanInfo():
+class ScanInfo(object):
     start = None
     stop = None
     dwell = None
@@ -259,7 +259,7 @@ def open_plot(dirname, filename):
 
     if error or header != File.HEADER:
         wx.MessageBox('Invalid or corrupted file', 'Warning',
-                  wx.OK | wx.ICON_WARNING)
+                      wx.OK | wx.ICON_WARNING)
         return None, None, None
 
     scanInfo = ScanInfo()
@@ -282,19 +282,19 @@ def open_plot(dirname, filename):
 
 def save_plot(filename, scanInfo, spectrum, location):
     data = [File.HEADER, {'Version': File.VERSION,
-                          'Start':scanInfo.start,
-                          'Stop':scanInfo.stop,
-                          'Dwell':scanInfo.dwell,
-                          'Nfft':scanInfo.nfft,
-                          'Device':scanInfo.name,
-                          'Gain':scanInfo.gain,
-                          'LO':scanInfo.lo,
-                          'Calibration':scanInfo.calibration,
-                          'Tuner':scanInfo.tuner,
-                          'Time':scanInfo.time,
-                          'Latitude':scanInfo.lat,
-                          'Longitude':scanInfo.lon,
-                          'Description':scanInfo.desc,
+                          'Start': scanInfo.start,
+                          'Stop': scanInfo.stop,
+                          'Dwell': scanInfo.dwell,
+                          'Nfft': scanInfo.nfft,
+                          'Device': scanInfo.name,
+                          'Gain': scanInfo.gain,
+                          'LO': scanInfo.lo,
+                          'Calibration': scanInfo.calibration,
+                          'Tuner': scanInfo.tuner,
+                          'Time': scanInfo.time,
+                          'Latitude': scanInfo.lat,
+                          'Longitude': scanInfo.lon,
+                          'Description': scanInfo.desc,
                           'Spectrum': spectrum,
                           'Location': location}]
 

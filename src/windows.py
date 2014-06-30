@@ -60,7 +60,7 @@ class CellRenderer(wxGrid.PyGridCellRenderer):
 
 
 # Based on http://wiki.wxpython.org/wxGrid%20ToolTips
-class GridToolTips():
+class GridToolTips(object):
     def __init__(self, grid, toolTips):
         self.lastPos = (None, None)
         self.grid = grid
@@ -400,7 +400,7 @@ class PanelGraphCompare(wx.Panel):
     def __on_motion(self, event):
         xpos = event.xdata
         ypos = event.ydata
-        if xpos is None or ypos is  None:
+        if xpos is None or ypos is None:
             return
 
         locs = dict.fromkeys(['x1', 'y1', 'x2', 'y2', 'x3', 'y3'], None)
@@ -805,31 +805,31 @@ class PanelMeasure(wx.Panel):
         obw = self.measure.get_obw()
 
         self.__set_measure_value('start',
-                               "{0:10.6f}".format(minF))
+                                 "{0:10.6f}".format(minF))
         self.__set_measure_value('end',
-                               "{0:10.6f}".format(maxF))
+                                 "{0:10.6f}".format(maxF))
         self.__set_measure_value('deltaF',
-                               "{0:10.6f}".format(maxF - minF))
+                                 "{0:10.6f}".format(maxF - minF))
 
         self.__set_measure_value('minFP',
-                               "{0:10.6f}".format(minP[0]))
+                                 "{0:10.6f}".format(minP[0]))
         self.__set_measure_value('maxFP',
-                               "{0:10.6f}".format(maxP[0]))
+                                 "{0:10.6f}".format(maxP[0]))
         self.__set_measure_value('deltaFP',
-                               "{0:10.6f}".format(maxP[0] - minP[0]))
+                                 "{0:10.6f}".format(maxP[0] - minP[0]))
         self.__set_measure_value('minP',
-                               "{0:6.2f}".format(minP[1]))
+                                 "{0:6.2f}".format(minP[1]))
         self.__set_measure_value('maxP',
-                               "{0:6.2f}".format(maxP[1]))
+                                 "{0:6.2f}".format(maxP[1]))
         self.__set_measure_value('deltaP',
-                               "{0:6.2f}".format(maxP[1] - minP[1]))
+                                 "{0:6.2f}".format(maxP[1] - minP[1]))
 
         self.__set_measure_value('avg',
-                               "{0:6.2f}".format(avgP))
+                                 "{0:6.2f}".format(avgP))
         self.__set_measure_value('gmean',
-                               "{0:6.2f}".format(gMeanP))
+                                 "{0:6.2f}".format(gMeanP))
         self.__set_measure_value('flat',
-                               "{0:.4f}".format(flatness))
+                                 "{0:.4f}".format(flatness))
 
         if hbw[0] is not None:
             text = "{0:10.6f}".format(hbw[0])

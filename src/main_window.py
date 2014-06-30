@@ -281,7 +281,7 @@ class FrameMain(wx.Frame):
     def __create_menu(self):
         menuFile = wx.Menu()
         self.menuNew = menuFile.Append(wx.ID_NEW, "&New",
-                                        "New plot")
+                                       "New plot")
         self.menuOpen = menuFile.Append(wx.ID_OPEN, "&Open...",
                                         "Open plot")
         recent = wx.Menu()
@@ -294,18 +294,18 @@ class FrameMain(wx.Frame):
         self.menuExportScan = menuFile.Append(wx.ID_ANY, "Export scan...",
                                               "Export scan")
         self.menuExportImage = menuFile.Append(wx.ID_ANY, "Export image...",
-                                              "Export image")
+                                               "Export image")
         self.menuExportSeq = menuFile.Append(wx.ID_ANY, "Export image sequence...",
-                                              "Export sweep plots in sequence")
+                                             "Export sweep plots in sequence")
         self.menuExportGeo = menuFile.Append(wx.ID_ANY, "Export map...",
-                                              "Export maps")
+                                             "Export maps")
         menuFile.AppendSeparator()
         self.menuPage = menuFile.Append(wx.ID_ANY, "Page setup...",
                                         "Page setup")
         self.menuPreview = menuFile.Append(wx.ID_ANY, "Print preview...",
-                                        "Print preview")
+                                           "Print preview")
         self.menuPrint = menuFile.Append(wx.ID_ANY, "&Print...",
-                                        "Print plot")
+                                         "Print plot")
         menuFile.AppendSeparator()
         self.menuProperties = menuFile.Append(wx.ID_ANY, "P&roperties...",
                                               "Show properties")
@@ -418,10 +418,10 @@ class FrameMain(wx.Frame):
                                                        "current zoom")
         self.popupMenu.AppendSeparator()
         self.popupMenuPointsLim = self.popupMenu.Append(wx.ID_ANY,
-                                                       "Limit points",
-                                                       "Limit points to "
-                                                       "increase plot speed",
-                                                       kind=wx.ITEM_CHECK)
+                                                        "Limit points",
+                                                        "Limit points to "
+                                                        "increase plot speed",
+                                                        kind=wx.ITEM_CHECK)
         self.popupMenuPointsLim.Check(self.settings.pointsLimit)
 
         self.popupMenu.AppendSeparator()
@@ -543,10 +543,10 @@ class FrameMain(wx.Frame):
             self.status.set_general("Exporting...")
             extent = dlgGeo.get_extent()
             dlgFile = wx.FileDialog(self, "Export map to file",
-                                self.settings.dirExport,
-                                self.filename,
-                                File.get_type_filters(File.Types.GEO),
-                                wx.SAVE | wx.OVERWRITE_PROMPT)
+                                    self.settings.dirExport,
+                                    self.filename,
+                                    File.get_type_filters(File.Types.GEO),
+                                    wx.SAVE | wx.OVERWRITE_PROMPT)
             dlgFile.SetFilterIndex(File.GeoType.KMZ)
             if dlgFile.ShowModal() == wx.ID_OK:
                 fileName = dlgFile.GetFilename()
@@ -695,7 +695,7 @@ class FrameMain(wx.Frame):
         control = event.GetEventObject()
         if control == self.spinCtrlStart:
             self.spinCtrlStop.SetRange(self.spinCtrlStart.GetValue() + 1,
-                                          F_MAX)
+                                       F_MAX)
 
     def __on_choice(self, _event):
         self.__get_controls()
@@ -745,7 +745,7 @@ class FrameMain(wx.Frame):
         xpos = event.xdata
         ypos = event.ydata
         text = ""
-        if xpos is None or ypos is  None or  len(self.spectrum) == 0:
+        if xpos is None or ypos is None or len(self.spectrum) == 0:
             return
 
         if self.settings.display == Display.PLOT:
@@ -829,8 +829,8 @@ class FrameMain(wx.Frame):
         elif status == Event.UPDATED:
             if data and self.settings.liveUpdate:
                 self.__set_plot(self.spectrum,
-                                self.settings.annotate and \
-                                self.settings.retainScans and \
+                                self.settings.annotate and
+                                self.settings.retainScans and
                                 self.settings.mode == Mode.CONTIN)
             self.__progress()
         elif status == Event.DRAW:
@@ -858,7 +858,7 @@ class FrameMain(wx.Frame):
     def __on_process_done(self, data):
         timeStamp, freq, scan = data
         post_event(self, EventThread(Event.PROCESSED, freq,
-                                             (timeStamp, scan)))
+                                     (timeStamp, scan)))
 
     def __auto_cal(self, status):
         freq = self.dlgCal.get_arg1()
@@ -917,7 +917,7 @@ class FrameMain(wx.Frame):
             self.threadScan = ThreadScan(self, self.sdr, self.settings,
                                          self.settings.indexRtl, samples, isCal)
             self.filename = "Scan {0:.1f}-{1:.1f}MHz".format(self.settings.start,
-                                                            self.settings.stop)
+                                                             self.settings.stop)
             self.graph.set_plot_title()
 
             if self.settings.gps:
@@ -947,7 +947,7 @@ class FrameMain(wx.Frame):
         self.steps -= 1
         if self.steps > 0 and not self.stopScan:
             self.status.set_progress((self.stepsTotal - self.steps) * 100
-                    / self.stepsTotal)
+                                     / self.stepsTotal)
             self.status.show_progress()
             self.status.set_general("Scanning")
         else:
@@ -1030,8 +1030,8 @@ class FrameMain(wx.Frame):
         self.menuExportScan.Enable(state and len(self.spectrum) > 0)
         self.menuExportImage.Enable(state)
         self.menuExportSeq.Enable(state and len(self.spectrum) > 0)
-        self.menuExportGeo.Enable(state and len(self.spectrum) > 0 \
-                                  and len(self.location) > 0)
+        self.menuExportGeo.Enable(state and len(self.spectrum) > 0 and
+                                  len(self.location) > 0)
         self.menuPage.Enable(state)
         self.menuPreview.Enable(state)
         self.menuPrint.Enable(state)
@@ -1061,7 +1061,7 @@ class FrameMain(wx.Frame):
         try:
             sel = DWELL[1::2].index(dwell)
         except ValueError:
-            sel = DWELL[1::2][len(DWELL)/4]
+            sel = DWELL[1::2][len(DWELL) / 4]
         self.choiceDwell.SetSelection(sel)
         self.choiceNfft.SetSelection(NFFT.index(self.settings.nfft))
         self.choiceDisplay.SetSelection(DISPLAY[1::2].index(self.settings.display))
@@ -1139,7 +1139,7 @@ class FrameMain(wx.Frame):
             post_event(self, EventThread(Event.VER_NOUPD))
 
     def __update_checked(self, updateFound=False, local=None, remote=None,
-                       failed=False):
+                         failed=False):
         self.threadUpdate = None
         self.status.set_general("")
         if failed:

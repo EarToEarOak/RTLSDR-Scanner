@@ -40,7 +40,7 @@ from mpl_toolkits.mplot3d import Axes3D  # @UnresolvedImport @UnusedImport
 from spectrum import epoch_to_mpl, create_mesh
 
 
-class Plotter3d():
+class Plotter3d(object):
     def __init__(self, notify, figure, settings):
         self.notify = notify
         self.figure = figure
@@ -192,23 +192,23 @@ class ThreadPlot(threading.Thread):
                 vmax = zExtent[1]
             if self.parent.wireframe:
                 self.parent.plot = \
-                self.axes.plot_wireframe(x, y, z,
-                                         rstride=1, cstride=1,
-                                         linewidth=0.1,
-                                         cmap=cm.get_cmap(self.colourMap),
-                                         gid='plot',
-                                         antialiased=True,
-                                         alpha=1)
+                    self.axes.plot_wireframe(x, y, z,
+                                             rstride=1, cstride=1,
+                                             linewidth=0.1,
+                                             cmap=cm.get_cmap(self.colourMap),
+                                             gid='plot',
+                                             antialiased=True,
+                                             alpha=1)
             else:
                 self.parent.plot = \
-                self.axes.plot_surface(x, y, z,
-                                       rstride=1, cstride=1,
-                                       vmin=vmin, vmax=vmax,
-                                       linewidth=0,
-                                       cmap=cm.get_cmap(self.colourMap),
-                                       gid='plot',
-                                       antialiased=True,
-                                       alpha=1)
+                    self.axes.plot_surface(x, y, z,
+                                           rstride=1, cstride=1,
+                                           vmin=vmin, vmax=vmax,
+                                           linewidth=0,
+                                           cmap=cm.get_cmap(self.colourMap),
+                                           gid='plot',
+                                           antialiased=True,
+                                           alpha=1)
 
             if self.annotate:
                 self.__annotate_plot()
@@ -225,7 +225,7 @@ class ThreadPlot(threading.Thread):
         tPos = epoch_to_mpl(t)
 
         text = '{0:.6f} MHz\n{1:.2f} $\mathsf{{dB/\sqrt{{Hz}}}}$\n{2}'.format(f, l, when)
-        if(matplotlib.__version__ < '1.3'):
+        if matplotlib.__version__ < '1.3':
             self.axes.text(f, tPos, l,
                            text,
                            ha='left', va='bottom', size='x-small', gid='peak')

@@ -34,7 +34,7 @@ import numpy
 from misc import db_to_level, level_to_db
 
 
-class Extent():
+class Extent(object):
     def __init__(self, spectrum):
         self.__clear()
         self.__calc_extent(spectrum)
@@ -93,7 +93,7 @@ class Extent():
         return self.fPeak, self.lPeak, self.tPeak
 
 
-class Measure():
+class Measure(object):
     MIN, MAX, AVG, GMEAN, HBW, OBW = range(6)
 
     def __init__(self, spectrum, start, end):

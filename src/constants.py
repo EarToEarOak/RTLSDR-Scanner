@@ -77,35 +77,35 @@ WINFUNC = ["Bartlett", numpy.bartlett,
            "Hanning", numpy.hanning]
 
 
-class Warn:
+class Warn(object):
     SCAN, OPEN, EXIT, NEW = range(4)
 
 
-class Cal:
+class Cal(object):
     START, DONE, OK, CANCEL = range(4)
 
 
-class Display:
+class Display(object):
     PLOT, SPECT, SURFACE = range(3)
 
 
-class Mode:
+class Mode(object):
     SINGLE, CONTIN = range(2)
 
 
-class Plot:
+class Plot(object):
     STR_FULL = 'Full'
     STR_PARTIAL = 'Partial'
 
 
-class PlotFunc:
+class PlotFunc(object):
     NONE, AVG, MIN, MAX, VAR = range(5)
 
 
-class Markers:
+class Markers(object):
     MIN, MAX, AVG, GMEAN, \
-    HP, HFS, HFE, \
-    OP, OFS, OFE = range(10)
+        HP, HFS, HFE, \
+        OP, OFS, OFE = range(10)
 
 
 if __name__ == '__main__':

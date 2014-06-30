@@ -28,7 +28,7 @@ import rtlsdr
 import serial
 
 
-class DeviceGPS():
+class DeviceGPS(object):
     NMEA_SERIAL, GPSD, GPSD_OLD, NMEA_TCP = range(4)
     TYPE = ['NMEA (Serial)', 'GPSd', 'GPSd (Legacy)', 'NMEA (Server)']
     BAUDS = [50, 75, 110, 134, 150, 200, 300, 600, 1200, 1800, 2400, 4800,
@@ -53,10 +53,10 @@ class DeviceGPS():
     def get_serial_desc(self):
         port = self.resource.split('/')
         return '{0} {1}-{2}{3}{4}'.format(port[0], self.baud, self.bytes,
-                                           self.parity, self.stops)
+                                          self.parity, self.stops)
 
 
-class DeviceRTL():
+class DeviceRTL(object):
     def __init__(self):
         self.isDevice = True
         self.indexRtl = None

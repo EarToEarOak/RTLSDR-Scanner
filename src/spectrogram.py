@@ -43,7 +43,7 @@ from misc import format_time
 from spectrum import epoch_to_mpl, split_spectrum, Measure
 
 
-class Spectrogram:
+class Spectrogram(object):
     def __init__(self, notify, figure, settings):
         self.notify = notify
         self.figure = figure
@@ -115,18 +115,18 @@ class Spectrogram:
         bbox = self.axes.bbox
         box = dict(boxstyle='round', fc='white', ec='purple', clip_box=bbox)
         self.labels[Markers.HFS] = Text(0, 0, '-3dB', fontsize='xx-small',
-                                       ha="center", va="top", bbox=box,
-                                       color='purple')
+                                        ha="center", va="top", bbox=box,
+                                        color='purple')
         self.labels[Markers.HFE] = Text(0, 0, '-3dB', fontsize='xx-small',
-                                       ha="center", va="top", bbox=box,
-                                       color='purple')
+                                        ha="center", va="top", bbox=box,
+                                        color='purple')
         box['ec'] = '#996600'
         self.labels[Markers.OFS] = Text(0, 0, 'OBW', fontsize='xx-small',
-                                       ha="center", va="top", bbox=box,
-                                       color='#996600')
+                                        ha="center", va="top", bbox=box,
+                                        color='#996600')
         self.labels[Markers.OFE] = Text(0, 0, 'OBW', fontsize='xx-small',
-                                       ha="center", va="top", bbox=box,
-                                       color='#996600')
+                                        ha="center", va="top", bbox=box,
+                                        color='#996600')
 
         for label in self.labels.itervalues():
             self.axes.add_artist(label)

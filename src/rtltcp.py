@@ -31,14 +31,14 @@ import threading
 import numpy
 
 
-class RtlTcpCmd():
+class RtlTcpCmd(object):
     SET_FREQ = 0x1
     SET_SAMPLE_RATE = 0x2
     SET_GAIN_MODE = 0x3
     SET_GAIN = 0x4
 
 
-class RtlTcp():
+class RtlTcp(object):
     def __init__(self, host, port):
         self.host = host
         self.port = port
@@ -57,10 +57,10 @@ class RtlTcp():
         header = self.threadBuffer.get_header()
         if len(header) == 12:
             if header.startswith('RTL'):
-                self.tuner = (ord(header[4]) << 24) | \
-                             (ord(header[5]) << 16) | \
-                             (ord(header[6]) << 8) | \
-                             ord(header[7])
+                self.tuner = ((ord(header[4]) << 24) |
+                              (ord(header[5]) << 16) |
+                              (ord(header[6]) << 8) |
+                              ord(header[7]))
 
     def __send_command(self, command, data):
         send = array.array('c', '\0' * 5)

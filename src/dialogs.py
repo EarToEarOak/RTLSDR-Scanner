@@ -65,7 +65,9 @@ class DialogCompare(wx.Dialog):
         self.filename = filename
 
         wx.Dialog.__init__(self, parent=parent, title="Compare plots",
-            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.MAXIMIZE_BOX)
+                           style=wx.DEFAULT_DIALOG_STYLE |
+                           wx.RESIZE_BORDER |
+                           wx.MAXIMIZE_BOX)
 
         self.graph = PanelGraphCompare(self, self.__on_cursor)
         self.graph.show_plot1(settings.compareOne)
@@ -161,7 +163,7 @@ class DialogCompare(wx.Dialog):
     def __on_load_plot(self, event):
         dlg = wx.FileDialog(self, "Open a scan", self.dirname, self.filename,
                             File.get_type_filters(File.Types.SAVE),
-                             wx.OPEN)
+                            wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             self.dirname = dlg.GetDirectory()
             self.filename = dlg.GetFilename()
@@ -217,7 +219,7 @@ class DialogAutoCal(wx.Dialog):
         title.SetFont(font)
         text = wx.StaticText(self, label="Frequency (MHz)")
         self.textFreq = masked.NumCtrl(self, value=freq, fractionWidth=3,
-                                        min=F_MIN, max=F_MAX)
+                                       min=F_MIN, max=F_MAX)
 
         self.buttonCal = wx.Button(self, label="Calibrate")
         if len(parent.devicesRtl) == 0:
@@ -531,31 +533,31 @@ class DialogGeo(wx.Dialog):
 
         sizerGrid = wx.GridBagSizer(5, 5)
         sizerGrid.Add(self.canvas, pos=(0, 0), span=(1, 5),
-                  flag=wx.EXPAND | wx.ALL, border=5)
+                      flag=wx.EXPAND | wx.ALL, border=5)
         sizerGrid.Add(self.choiceColour, pos=(1, 0), span=(1, 2),
-                  flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+                      flag=wx.ALL, border=5)
         sizerGrid.Add(self.colourBar, pos=(1, 2), span=(1, 1),
-                  flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+                      flag=wx.ALL, border=5)
         sizerGrid.Add(self.checkAxes, pos=(2, 0), span=(1, 1),
-                  flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+                      flag=wx.ALL, border=5)
         sizerGrid.Add(self.checkHeat, pos=(2, 1), span=(1, 1),
-                  flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+                      flag=wx.ALL, border=5)
         sizerGrid.Add(self.checkCont, pos=(2, 2), span=(1, 1),
-                  flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+                      flag=wx.ALL, border=5)
         sizerGrid.Add(self.checkPoint, pos=(2, 3), span=(1, 1),
-                  flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+                      flag=wx.ALL, border=5)
         sizerGrid.Add(textCentre, pos=(3, 0), span=(1, 1),
-                  flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
+                      flag=wx.ALL, border=5)
         sizerGrid.Add(self.spinCentre, pos=(3, 1), span=(1, 1),
-                  flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+                      flag=wx.ALL, border=5)
         sizerGrid.Add(textBw, pos=(3, 2), span=(1, 1),
-                  flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
+                      flag=wx.ALL, border=5)
         sizerGrid.Add(self.spinBw, pos=(3, 3), span=(1, 1),
-                  flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+                      flag=wx.ALL, border=5)
         sizerGrid.Add(buttonUpdate, pos=(3, 4), span=(1, 1),
-                  flag=wx.ALIGN_LEFT | wx.ALL, border=5)
+                      flag=wx.ALL, border=5)
         sizerGrid.Add(sizerButtons, pos=(4, 4), span=(1, 1),
-                  flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
+                      flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
 
         self.SetSizerAndFit(sizerGrid)
 
@@ -778,17 +780,17 @@ class DialogOffset(wx.Dialog):
 
         gridSizer = wx.GridBagSizer(5, 5)
         gridSizer.Add(self.canvas, pos=(0, 0), span=(1, 2),
-                  flag=wx.ALIGN_CENTRE | wx.ALL, border=5)
+                      flag=wx.ALIGN_CENTRE | wx.ALL, border=5)
         gridSizer.Add(textHelp, pos=(1, 0), span=(1, 2),
-                  flag=wx.ALIGN_CENTRE | wx.ALL, border=5)
+                      flag=wx.ALIGN_CENTRE | wx.ALL, border=5)
         gridSizer.Add(boxSizer1, pos=(2, 0), span=(1, 2),
-                  flag=wx.ALIGN_CENTRE | wx.ALL, border=5)
+                      flag=wx.ALIGN_CENTRE | wx.ALL, border=5)
         gridSizer.Add(refresh, pos=(3, 0), span=(1, 2),
-                  flag=wx.ALIGN_CENTRE | wx.ALL, border=5)
+                      flag=wx.ALIGN_CENTRE | wx.ALL, border=5)
         gridSizer.Add(boxSizer2, pos=(4, 0), span=(1, 2),
-                  flag=wx.ALIGN_CENTRE | wx.ALL, border=5)
+                      flag=wx.ALIGN_CENTRE | wx.ALL, border=5)
         gridSizer.Add(sizerButtons, pos=(5, 1), span=(1, 1),
-                  flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
+                      flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
 
         self.SetSizerAndFit(gridSizer)
         self.__draw_limits()
@@ -812,9 +814,9 @@ class DialogOffset(wx.Dialog):
         pos = WINFUNC[::2].index(self.winFunc)
         function = WINFUNC[1::2][pos]
         powers, freqs = matplotlib.mlab.psd(capture,
-                         NFFT=1024,
-                         Fs=SAMPLE_RATE / 1e6,
-                         window=function(1024))
+                                            NFFT=1024,
+                                            Fs=SAMPLE_RATE / 1e6,
+                                            window=function(1024))
 
         plot = []
         for x, y in itertools.izip(freqs, powers):
@@ -890,7 +892,7 @@ class DialogProperties(wx.Dialog):
         grid = wx.GridBagSizer(0, 0)
 
         boxScan = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Scan"),
-                                     wx.HORIZONTAL)
+                                    wx.HORIZONTAL)
 
         gridScan = wx.GridBagSizer(0, 0)
 
@@ -1097,7 +1099,7 @@ class DialogPrefs(wx.Dialog):
         self.Bind(wx.EVT_CHOICE, self.__on_choice, self.choiceColour)
         self.colourBar = PanelColourBar(self, settings.colourMap)
         self.checkPoints = wx.CheckBox(self, wx.ID_ANY,
-                                      "Limit points")
+                                       "Limit points")
         self.checkPoints.SetValue(settings.pointsLimit)
         self.checkPoints.SetToolTip(wx.ToolTip('Limit the resolution of plots'))
         self.Bind(wx.EVT_CHECKBOX, self.__on_points, self.checkPoints)
@@ -1110,7 +1112,7 @@ class DialogPrefs(wx.Dialog):
         self.spinDpi.SetValue(settings.exportDpi)
         self.spinDpi.SetToolTip(wx.ToolTip('DPI of exported images'))
         self.checkGps = wx.CheckBox(self, wx.ID_ANY,
-                                      "Use GPS")
+                                    "Use GPS")
         self.checkGps.SetValue(settings.gps)
         self.checkGps.SetToolTip(wx.ToolTip('Record GPS location'))
         self.checkTune = wx.CheckBox(self, wx.ID_ANY,
@@ -1139,7 +1141,7 @@ class DialogPrefs(wx.Dialog):
                                                     ' to display'))
 
         self.checkFade = wx.CheckBox(self, wx.ID_ANY,
-                                      "Fade previous scans")
+                                     "Fade previous scans")
         self.checkFade.SetValue(settings.fadeScans)
         textWidth = wx.StaticText(self, label="Line width")
         self.ctrlWidth = NumCtrl(self, integerWidth=2, fractionWidth=1)
@@ -1190,7 +1192,7 @@ class DialogPrefs(wx.Dialog):
         plotgrid.Add(textWidth, pos=(1, 0))
         plotgrid.Add(self.ctrlWidth, pos=(1, 1))
         plotbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Plot View"),
-                                     wx.HORIZONTAL)
+                                    wx.HORIZONTAL)
         plotbox.Add(plotgrid, 0, wx.ALL | wx.EXPAND, 10)
 
         grid = wx.GridBagSizer(10, 10)
@@ -1265,7 +1267,7 @@ class DialogAdvPrefs(wx.Dialog):
                                       0, 75,
                                       style=wx.SL_LABELS)
         self.slideOverlap.SetToolTip(wx.ToolTip('Power spectral density'
-                                                    ' overlap'))
+                                                ' overlap'))
         textWindow = wx.StaticText(self, label='Window')
         self.buttonWindow = wx.Button(self, wx.ID_ANY, self.winFunc)
         self.Bind(wx.EVT_BUTTON, self.__on_window, self.buttonWindow)
@@ -1307,7 +1309,7 @@ class DialogAdvPrefs(wx.Dialog):
 
 class DialogDevicesRTL(wx.Dialog):
     COL_SEL, COL_DEV, COL_TUN, COL_SER, COL_IND, \
-    COL_GAIN, COL_CAL, COL_LO, COL_OFF = range(9)
+        COL_GAIN, COL_CAL, COL_LO, COL_OFF = range(9)
 
     def __init__(self, parent, devices, settings):
         self.devices = copy.copy(devices)
@@ -1763,7 +1765,7 @@ class DialogWinFunc(wx.Dialog):
         sizerGrid.Add(sizerFunction, pos=(1, 0), span=(1, 2),
                       flag=wx.ALIGN_CENTRE | wx.ALL, border=5)
         sizerGrid.Add(sizerButtons, pos=(2, 1),
-                  flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
+                      flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
 
         self.Bind(wx.EVT_CHOICE, self.__on_choice, self.choice)
         self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)

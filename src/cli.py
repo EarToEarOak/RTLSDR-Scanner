@@ -39,7 +39,7 @@ from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
 
 
-class Cli():
+class Cli(object):
     def __init__(self, pool, args):
         start = args.start
         end = args.end
@@ -190,7 +190,7 @@ class Cli():
     def __on_process_done(self, data):
         timeStamp, freq, scan = data
         post_event(self.queue, EventThread(Event.PROCESSED, freq,
-                                                 (timeStamp, scan)))
+                                           (timeStamp, scan)))
 
     def __progress(self):
         self.steps -= 1

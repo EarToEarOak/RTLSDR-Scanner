@@ -85,7 +85,7 @@ class ThreadScan(threading.Thread):
                 tuner = self.sdr.get_tuner_type()
             except IOError as error:
                 post_event(self.notify, EventThread(Event.ERROR,
-                                                          0, error.message))
+                                                    0, error.message))
         else:
             try:
                 self.sdr = rtltcp.RtlTcp(self.server, self.port)
@@ -95,7 +95,7 @@ class ThreadScan(threading.Thread):
                 tuner = self.sdr.get_tuner_type()
             except IOError as error:
                 post_event(self.notify, EventThread(Event.ERROR,
-                                                          0, error))
+                                                    0, error))
 
         return tuner
 
@@ -117,7 +117,7 @@ class ThreadScan(threading.Thread):
                 scan = self.rtl_scan(freq)
                 post_event(self.notify,
                            EventThread(Event.DATA, freq,
-                                            (timeStamp, scan)))
+                                       (timeStamp, scan)))
             except IOError:
                 if self.sdr is not None:
                     self.rtl_close()
@@ -126,7 +126,7 @@ class ThreadScan(threading.Thread):
                 if self.notify:
                     post_event(self.notify,
                                EventThread(Event.ERROR,
-                                                 0, error.message))
+                                           0, error.message))
                 return
             except WindowsError:
                 if self.sdr is not None:
@@ -192,7 +192,7 @@ def update_spectrum(notify, lock, start, stop, freqCentre, data, offset,
         lowerStart = freqCentre - offset - BANDWIDTH / 2
         lowerEnd = freqCentre - offset
 
-        if not timeStamp in spectrum:
+        if timeStamp not in spectrum:
             spectrum[timeStamp] = {}
 
         for freq in scan:
@@ -203,8 +203,8 @@ def update_spectrum(notify, lock, start, stop, freqCentre, data, offset,
                     if freq in spectrum[timeStamp]:
                         spectrum[timeStamp][freq] = \
                             (spectrum[timeStamp][freq] + power) / 2
-                        if alertLevel is not None and \
-                        spectrum[timeStamp][freq] > alertLevel:
+                        if alertLevel is not None and (spectrum[timeStamp][freq] >
+                                                       alertLevel):
                             post_event(notify, EventThread(Event.LEVEL))
                         updated = True
                     else:
