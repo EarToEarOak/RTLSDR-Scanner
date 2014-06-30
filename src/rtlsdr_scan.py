@@ -58,6 +58,7 @@ def __arguments():
     parser.add_argument("-s", "--start", help="Start frequency (MHz)",
                         type=int)
     parser.add_argument("-e", "--end", help="End frequency (MHz)", type=int)
+    parser.add_argument("-w", "--sweeps", help="Number of sweeps", type=int, default=1)
     parser.add_argument("-g", "--gain", help="Gain (dB)", type=float, default=0)
     parser.add_argument("-d", "--dwell", help="Dwell time (seconds)",
                         type=float, default=0.1)

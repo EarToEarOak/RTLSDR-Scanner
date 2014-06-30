@@ -43,6 +43,7 @@ class Cli():
     def __init__(self, pool, args):
         start = args.start
         end = args.end
+        sweeps = args.sweeps
         gain = args.gain
         dwell = args.dwell
         nfft = args.fft
@@ -115,6 +116,7 @@ class Cli():
         self.settings.devicesRtl[index].lo = lo
 
         print "{0} - {1}MHz".format(start, end)
+        print "{0} Sweeps".format(sweeps)
         print "{0}dB Gain".format(gain)
         print "{0}s Dwell".format(self.settings.dwell)
         print "{0} FFT points".format(nfft)
@@ -124,7 +126,7 @@ class Cli():
         else:
             print self.settings.devicesRtl[index].name
 
-        self.__scan(self.settings, index, pool)
+        self.__scan(sweeps, self.settings, index, pool)
 
         fullName = os.path.join(directory, filename)
         if ext == ".rfs":
@@ -138,14 +140,15 @@ class Cli():
 
         print "Done"
 
-    def __scan(self, settings, index, pool):
+    def __scan(self, sweeps, settings, index, pool):
         samples = settings.dwell * SAMPLE_RATE
         samples = next_2_to_pow(int(samples))
-        threadScan = ThreadScan(self.queue, None, settings, index, samples,
-                                False)
-        while threadScan.isAlive() or self.steps > 0:
-            if not self.queue.empty():
-                self.__process_event(self.queue, pool)
+        for i in range(0, sweeps):
+            threadScan = ThreadScan(self.queue, None, settings, index, samples,
+                                    False)
+            while threadScan.isAlive() or self.steps > 0:
+                if not self.queue.empty():
+                    self.__process_event(self.queue, pool)
         print ""
 
     def __process_event(self, queue, pool):
