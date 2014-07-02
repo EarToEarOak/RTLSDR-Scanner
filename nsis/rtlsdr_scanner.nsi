@@ -140,7 +140,7 @@ SectionGroup "/e" "Dependencies" SEC_DEP
         Section "Add Python to PATH"
            Call set_python_path
         SectionEnd
-        Section "dateutil"
+        Section "dateutil" SEC_DATEUTIL
         	StrCpy $UriFile "python-dateutil"
             Call install_easy
         SectionEnd
@@ -154,18 +154,18 @@ SectionGroup "/e" "Dependencies" SEC_DEP
         	StrCpy $UriFile "numpy-1.8.1-win32-superpack-python2.7.exe"
 			Call install_exe
         SectionEnd
-        Section "Pillow"
+        Section "Pillow" SEC_PILLOW
             StrCpy $UriFile "Pillow"
             Call install_easy
         SectionEnd
-        Section "pyparsing"
+        Section "pyparsing" SEC_PYPARSING
             StrCpy $UriFile "pyparsing"
             Call install_easy
         SectionEnd
         Section "pyrtlsdr" SEC_PYRTLSDR
             Call get_pyrtlsdr
         SectionEnd
-        Section "PySerial"
+        Section "PySerial" SEC_PYSERIAL
         	StrCpy $UriFile "pyserial"
             Call install_easy
         SectionEnd
@@ -359,7 +359,12 @@ Function page_type_end
         StrCpy $Type ${TYPE_UPDATE}
         !insertmacro UnselectSection ${SEC_DEP}
         !insertmacro SelectSection ${SEC_RTLSDR}
+        !insertmacro SelectSection ${SEC_DATEUTIL}
+        !insertmacro SelectSection ${SEC_PILLOW}
+        !insertmacro SelectSection ${SEC_PYPARSING}
         !insertmacro SelectSection ${SEC_PYRTLSDR}
+        !insertmacro SelectSection ${SEC_PYSERIAL}
+
     ${EndIf}
 FunctionEnd
 
