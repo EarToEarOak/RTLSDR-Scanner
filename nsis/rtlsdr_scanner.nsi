@@ -56,6 +56,7 @@ Page custom page_type page_type_end
 !insertmacro MUI_PAGE_COMPONENTS
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
+Page custom page_error page_error_end
 !insertmacro MUI_PAGE_FINISH
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_LANGUAGE "English"
@@ -95,6 +96,9 @@ Var Radio2
 Var UpdateText
 Var UpdateNext
 Var InstSize
+
+Var ErrorLog
+Var ErrorMessage
 
 Var PythonPath
 
@@ -300,7 +304,7 @@ Function page_update
     ${EndIf}
     ${NSD_CreateTextMultiline} 0 0% 100% 100% ${UPDATE_CHECK}
     Pop $UpdateText
-        SendMessage $Text ${EM_SETREADONLY} 1 0
+	SendMessage $Text ${EM_SETREADONLY} 1 0
     GetDlgItem $UpdateNext $HWNDPARENT 1
     EnableWindow $UpdateNext 0
     ${NSD_CreateTimer} update_check 1000
@@ -359,6 +363,30 @@ Function page_type_end
     ${EndIf}
 FunctionEnd
 
+Function page_error
+	StrCmp $ErrorLog "" noerrors
+	!insertmacro MUI_HEADER_TEXT "Installation failed" "Errors occurred"
+    nsDialogs::Create 1018
+    Pop $Page
+    ${If} $Page == error
+        Abort
+    ${EndIf}
+    ${NSD_CreateTextMultiline} 0 0% 100% 100% $ErrorLog
+    SendMessage $Text ${EM_SETREADONLY} 1 0
+    GetDlgItem $R0 $HWNDPARENT 1
+	SendMessage $R0 ${WM_SETTEXT} 0 "STR:Close"
+	GetDlgItem $R0 $HWNDPARENT 2
+	EnableWindow $R0 0
+    nsDialogs::Show
+    noerrors:
+FunctionEnd
+
+Function page_error_end
+	StrCmp $ErrorLog "" noerrors
+	Quit
+	noerrors:
+FunctionEnd
+
 Function update_check
     ${NSD_KillTimer} update_check
     inetc::get "https://raw.github.com/EarToEarOak/RTLSDR-Scanner/master/nsis/_version" "$TEMP\_version" /end
@@ -390,14 +418,16 @@ Function install_msi
 	    inetc::get "$UriPath/$UriFile" "$TEMP\$UriFile"  /end
 	    Pop $R0
 	    StrCmp $R0 "OK" exists
-	    MessageBox MB_OK|MB_ICONEXCLAMATION "$UriFile download failed: $R0"
+	    StrCpy $ErrorMessage "$UriFile download failed: $R0"
+	    Call error
 	    Return
     exists:
-    	ExecWait '"msiexec" /i "$TEMP\$UriFile1"'
+    	ExecWait '"msiexec" /i "$TEMP\$UriFile"'
     	IfErrors error
     	Return
     	error:
-    		MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to install $UriFile"
+    		StrCpy $ErrorMessage "Failed to install $UriFile"
+	    	Call error
 FunctionEnd
 
 Function install_exe
@@ -406,28 +436,32 @@ Function install_exe
 	    inetc::get "$UriPath/$UriFile" "$TEMP\$UriFile"  /end
 	    Pop $R0
 	    StrCmp $R0 "OK" exists
-	    MessageBox MB_OK|MB_ICONEXCLAMATION "$UriFile download failed: $R0"
+	    StrCpy $ErrorMessage "$UriFile download failed: $R0"
+	    Call error
 	    Return
     exists:
     	ExecWait "$TEMP\$UriFile"
     	IfErrors error
     	Return
     	error:
-    		MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to install $UriFile"
+    		StrCpy $ErrorMessage "Failed to install $UriFile"
+	    	Call error
 FunctionEnd
 
 Function install_setuptools
     inetc::get "https://bootstrap.pypa.io/ez_setup.py" "$TEMP\ez_setup.py"  /end
     Pop $R0
     StrCmp $R0 "OK" exists
-    MessageBox MB_OK|MB_ICONEXCLAMATION "setuptools download failed: $R0"
+    StrCpy $ErrorMessage "setuptools download failed: $R0"
+	Call error
     Return
     exists:
 	    ExecWait "python $TEMP\ez_setup.py"
 		IfErrors error
     	Return
     	error:
-    		MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to install setuptools"
+    		StrCpy $ErrorMessage "Failed to install setuptools"
+			Call error
 FunctionEnd
 
 Function install_easy
@@ -436,14 +470,16 @@ Function install_easy
 	IfErrors error
     	Return
     	error:
-    		MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to install $UriFile"
+    		StrCpy $ErrorMessage "Failed to install $UriFile"
+			Call error
 FunctionEnd
 
 Function install_rtlsdr_scanner
     inetc::get "https://github.com/EarToEarOak/RTLSDR-Scanner/archive/master.zip" "$TEMP\rtlsdr_scanner.zip" /end
     Pop $R0
     StrCmp $R0 "OK" exists
-    MessageBox MB_OK|MB_ICONEXCLAMATION "RTLSDR Scanner download failed: $R0"
+    StrCpy $ErrorMessage "RTLSDR Scanner download failed: $R0"
+	Call error
     Return
     exists:
 	    ZipDLL::extractall "$TEMP\rtlsdr_scanner.zip" "$TEMP"
@@ -463,7 +499,8 @@ Function install_rtlsdr
     inetc::get "http://sdr.osmocom.org/trac/raw-attachment/wiki/rtl-sdr/RelWithDebInfo.zip" "$TEMP\rtlsdr.zip" /end
     Pop $R0
     StrCmp $R0 "OK" exists
-    MessageBox MB_OK|MB_ICONEXCLAMATION "rtlsdr download failed: $R0"
+    StrCpy $ErrorMessage "rtlsdr download failed: $R0"
+	Call error
     Return
     exists:
 	    ZipDLL::extractall "$TEMP\rtlsdr.zip" "$TEMP"
@@ -475,7 +512,8 @@ Function get_pyrtlsdr
     inetc::get "https://github.com/roger-/pyrtlsdr/archive/master.zip" "$TEMP\pyrtlsdr.zip" /end
     Pop $R0
     StrCmp $R0 "OK" exists
-    MessageBox MB_OK|MB_ICONEXCLAMATION "pyrtlsdr download failed: $R0"
+    StrCpy $ErrorMessage "pyrtlsdr download failed: $R0"
+    Call error
     Return
     exists:
 	    ZipDLL::extractall "$TEMP\pyrtlsdr.zip" "$TEMP"
@@ -490,8 +528,9 @@ Function get_python_path
 		StrCpy $PythonPath $R0
 	Return
 	error:
-		MessageBox MB_OK|MB_ICONEXCLAMATION "Cannot find Python - aborting"
-		Abort "Cannot find Python - aborting"
+		StrCpy $ErrorMessage "Cannot find Python - aborting"
+		MessageBox MB_OK|MB_ICONEXCLAMATION $ErrorMessage
+		Abort $ErrorMessage"
 FunctionEnd
 
 Function set_installer_path
@@ -504,6 +543,10 @@ FunctionEnd
 Function set_python_path
 	Call get_python_path
     ${EnvVarUpdate} $PythonPath "PATH" "A" "HKLM" $PythonPath
+FunctionEnd
+
+Function error
+	StrCpy $ErrorLog "$ErrorLog$\r$\n$ErrorMessage"
 FunctionEnd
 
 Function un.onInit
