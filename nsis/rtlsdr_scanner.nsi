@@ -163,7 +163,7 @@ SectionGroup "/e" "Dependencies" SEC_DEP
             Call install_easy
         SectionEnd
         Section "pyrtlsdr" SEC_PYRTLSDR
-            Call get_pyrtlsdr
+            Call install_pyrtlsdr
         SectionEnd
         Section "PySerial" SEC_PYSERIAL
         	StrCpy $UriFile "pyserial"
@@ -513,7 +513,7 @@ Function install_rtlsdr
 	    RmDir /r "$TEMP\rtl-sdr-release"
 FunctionEnd
 
-Function get_pyrtlsdr
+Function install_pyrtlsdr
     inetc::get "https://github.com/roger-/pyrtlsdr/archive/master.zip" "$TEMP\pyrtlsdr.zip" /end
     Pop $R0
     StrCmp $R0 "OK" exists
@@ -528,6 +528,7 @@ Function get_pyrtlsdr
 FunctionEnd
 
 Function get_python_path
+	ClearErrors
 	ReadRegStr $R0 HKLM Software\Python\PythonCore\2.7\InstallPath ""
 	IfErrors error
 		StrCpy $PythonPath $R0
