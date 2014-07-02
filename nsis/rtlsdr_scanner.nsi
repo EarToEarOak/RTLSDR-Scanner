@@ -130,9 +130,9 @@ SectionGroup "/e" "Dependencies" SEC_DEP
         ExecWait 'vcredist_x86.exe /quiet /norestart'
     SectionEnd
     SectionGroup "/e" "Python" SEC_PYDEP
-        Section "Python 2.7.6" SEC_PYTHON
-        	StrCpy $UriPath "http://www.python.org/ftp/python/2.7.6"
-        	StrCpy $UriFile "python-2.7.6.msi"
+        Section "Python 2.7.8" SEC_PYTHON
+        	StrCpy $UriPath "http://www.python.org/ftp/python/2.7.8"
+        	StrCpy $UriFile "python-2.7.8.msi"
 			Call install_msi
 			Call set_installer_path
 			Call install_setuptools
@@ -149,9 +149,9 @@ SectionGroup "/e" "Dependencies" SEC_DEP
         	StrCpy $UriFile "matplotlib-1.3.1.win32-py2.7.exe"
 			Call install_exe
         SectionEnd
-        Section "numpy 1.8.0"
-            StrCpy $UriPath "http://downloads.sourceforge.net/project/numpy/NumPy/1.8.0"
-        	StrCpy $UriFile "numpy-1.8.0-win32-superpack-python2.7.exe"
+        Section "numpy 1.8.1"
+            StrCpy $UriPath "http://downloads.sourceforge.net/project/numpy/NumPy/1.8.1"
+        	StrCpy $UriFile "numpy-1.8.1-win32-superpack-python2.7.exe"
 			Call install_exe
         SectionEnd
         Section "Pillow"
@@ -169,9 +169,9 @@ SectionGroup "/e" "Dependencies" SEC_DEP
         	StrCpy $UriFile "pyserial"
             Call install_easy
         SectionEnd
-       	Section "wxPython 2.8.12.1"
-            StrCpy $UriPath "http://downloads.sourceforge.net/wxpython"
-        	StrCpy $UriFile "wxPython2.8-win32-unicode-2.8.12.1-py27.exe"
+       	Section "wxPython 3"
+            StrCpy $UriPath "http://downloads.sourceforge.net/wxpython/3.0.0.0"
+        	StrCpy $UriFile "wxPython3.0-win32-3.0.0.0-py27.exe"
 			Call install_exe
         SectionEnd
     SectionGroupEnd
