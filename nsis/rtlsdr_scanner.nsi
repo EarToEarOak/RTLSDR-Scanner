@@ -78,7 +78,6 @@ the rtlsdr driver and pyrtlsdr by running this installer again"'
 !define FILE_TYPE "rfs"
 !define FILE_DESC "RTLSDR Scan"
 
-
 Name "${PRODUCT_NAME}"
 OutFile "rtlsdr_scanner-setup-win32.exe"
 RequestExecutionLevel admin
@@ -96,11 +95,16 @@ Var UpdateText
 Var UpdateNext
 Var InstSize
 
+Var PythonPath
+
+Var UriPath
+Var UriFile
+
 Section "RTLSDR Scanner (Required)" SEC_SCAN
     SetOutPath "$INSTDIR"
     SetOverwrite ifnewer
     File "license.txt"
-    Call get_rtlsdr_scanner
+    Call install_rtlsdr_scanner
     !insertmacro APP_ASSOCIATE "${FILE_TYPE}" "${FILE_CLASS}" "${FILE_DESC}" "$INSTDIR\rtlsdr_scan.ico,0" "Open with RTLSDR Scanner" "python $\"$INSTDIR\rtlsdr_scan.py$\" $\"%1$\""
     CopyFiles "$ExePath" "$InstDir\"
     CreateDirectory "$SMPROGRAMS\RTLSDR Scanner"
@@ -114,7 +118,7 @@ SectionEnd
 
 SectionGroup "/e" "Dependencies" SEC_DEP
     Section "RTLSDR Driver" SEC_RTLSDR
-        Call get_rtlsdr
+        Call install_rtlsdr
     SectionEnd
     Section "MSVC 2010 Runtime" SEC_MSVC
         File vcredist_x86.exe
@@ -122,38 +126,48 @@ SectionGroup "/e" "Dependencies" SEC_DEP
     SectionEnd
     SectionGroup "/e" "Python" SEC_PYDEP
         Section "Python 2.7.6" SEC_PYTHON
-           Call get_python
-           Call set_installer_path
+        	StrCpy $UriPath "http://www.python.org/ftp/python/2.7.6"
+        	StrCpy $UriFile "python-2.7.6.msi"
+			Call install_msi
+			Call set_installer_path
+			Call install_setuptools
         SectionEnd
         Section "Add Python to PATH"
            Call set_python_path
         SectionEnd
-        Section "wxPython 2.8.12.1"
-            Call get_wxpython
+        Section "dateutil"
+        	StrCpy $UriFile "python-dateutil"
+            Call install_easy
         SectionEnd
         Section "matplotlib 1.3.1"
-            Call get_matplotlib
+            StrCpy $UriPath "http://downloads.sourceforge.net/project/matplotlib/matplotlib/matplotlib-1.3.1"
+        	StrCpy $UriFile "matplotlib-1.3.1.win32-py2.7.exe"
+			Call install_exe
         SectionEnd
         Section "numpy 1.8.0"
-            Call get_numpy
+            StrCpy $UriPath "http://downloads.sourceforge.net/project/numpy/NumPy/1.8.0"
+        	StrCpy $UriFile "numpy-1.8.0-win32-superpack-python2.7.exe"
+			Call install_exe
         SectionEnd
-        Section "pyparsing 2.0.1"
-            Call get_pyparsing
+        Section "Pillow"
+            StrCpy $UriFile "Pillow"
+            Call install_easy
         SectionEnd
-        Section "setuptools 2.1"
-            Call get_setuptools
-        SectionEnd
-        Section "dateutil 2.2"
-            Call get_dateutil
-        SectionEnd
-        Section "Pillow 2.4.0"
-            Call get_pillow
-        SectionEnd
-        Section "PySerial 2.7"
-            Call get_pyserial
+        Section "pyparsing"
+            StrCpy $UriFile "pyparsing"
+            Call install_easy
         SectionEnd
         Section "pyrtlsdr" SEC_PYRTLSDR
             Call get_pyrtlsdr
+        SectionEnd
+        Section "PySerial"
+        	StrCpy $UriFile "pyserial"
+            Call install_easy
+        SectionEnd
+       	Section "wxPython 2.8.12.1"
+            StrCpy $UriPath "http://downloads.sourceforge.net/wxpython"
+        	StrCpy $UriFile "wxPython2.8-win32-unicode-2.8.12.1-py27.exe"
+			Call install_exe
         SectionEnd
     SectionGroupEnd
 SectionGroupEnd
@@ -369,135 +383,75 @@ Function update_check
     EnableWindow $UpdateNext 1
 FunctionEnd
 
-Function get_rtlsdr_scanner
+Function install_msi
+    IfFileExists "$TEMP\$UriFile" exists download
+    download:
+	    inetc::get "$UriPath/$UriFile" "$TEMP\$UriFile"  /end
+	    Pop $R0
+	    StrCmp $R0 "OK" exists
+	    MessageBox MB_OK "$UriFile download failed: $R0"
+	    Return
+    exists:
+    	ExecWait '"msiexec" /i "$TEMP\$UriFile"'
+FunctionEnd
+
+Function install_exe
+    IfFileExists "$TEMP\$UriFile" exists download
+    download:
+	    inetc::get "$UriPath/$UriFile" "$TEMP\$UriFile"  /end
+	    Pop $R0
+	    StrCmp $R0 "OK" exists
+	    MessageBox MB_OK "$UriFile download failed: $R0"
+	    Return
+    exists:
+    	ExecWait "$TEMP\$UriFile"
+FunctionEnd
+
+Function install_setuptools
+    inetc::get "https://bootstrap.pypa.io/ez_setup.py" "$TEMP\ez_setup.py"  /end
+    Pop $R0
+    StrCmp $R0 "OK" exists
+    MessageBox MB_OK "setuptools download failed: $R0"
+    Return
+    exists:
+	    ExecWait "python $TEMP\ez_setup.py"
+FunctionEnd
+
+Function install_easy
+	Call get_python_path
+	ExecWait "$PythonPath\Scripts\easy_install $UriFile"
+FunctionEnd
+
+Function install_rtlsdr_scanner
     inetc::get "https://github.com/EarToEarOak/RTLSDR-Scanner/archive/master.zip" "$TEMP\rtlsdr_scanner.zip" /end
     Pop $R0
     StrCmp $R0 "OK" exists
     MessageBox MB_OK "RTLSDR Scanner download failed: $R0"
     return
     exists:
-    ZipDLL::extractall "$TEMP\rtlsdr_scanner.zip" "$TEMP"
-    CopyFiles "$TEMP\RTLSDR-Scanner-master\src\*.py" "$INSTDIR"
-    CopyFiles "$TEMP\RTLSDR-Scanner-master\src\version-timestamp" "$INSTDIR"
-    CreateDirectory "$INSTDIR\res"
-    CopyFiles "$TEMP\RTLSDR-Scanner-master\res\*.png" "$INSTDIR\res"
-    CreateDirectory "$INSTDIR\doc"
-    CopyFiles "$TEMP\RTLSDR-Scanner-master\doc\*.pdf" "$INSTDIR\doc"
-    CopyFiles "$TEMP\RTLSDR-Scanner-master\doc\*.rfs" "$INSTDIR\doc"
-    CopyFiles "$TEMP\RTLSDR-Scanner-master\*.ico" "$INSTDIR"
-    ;Delete "$TEMP\master.zip"
-    RmDir /r "$TEMP\RTLSDR-Scanner-master"
-    ${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR"
+	    ZipDLL::extractall "$TEMP\rtlsdr_scanner.zip" "$TEMP"
+	    CopyFiles "$TEMP\RTLSDR-Scanner-master\src\*.py" "$INSTDIR"
+	    CopyFiles "$TEMP\RTLSDR-Scanner-master\src\version-timestamp" "$INSTDIR"
+	    CreateDirectory "$INSTDIR\res"
+	    CopyFiles "$TEMP\RTLSDR-Scanner-master\res\*.png" "$INSTDIR\res"
+	    CreateDirectory "$INSTDIR\doc"
+	    CopyFiles "$TEMP\RTLSDR-Scanner-master\doc\*.pdf" "$INSTDIR\doc"
+	    CopyFiles "$TEMP\RTLSDR-Scanner-master\doc\*.rfs" "$INSTDIR\doc"
+	    CopyFiles "$TEMP\RTLSDR-Scanner-master\*.ico" "$INSTDIR"
+	    RmDir /r "$TEMP\RTLSDR-Scanner-master"
+	    ${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR"
 FunctionEnd
 
-Function get_rtlsdr
+Function install_rtlsdr
     inetc::get "http://sdr.osmocom.org/trac/raw-attachment/wiki/rtl-sdr/RelWithDebInfo.zip" "$TEMP\rtlsdr.zip" /end
     Pop $R0
     StrCmp $R0 "OK" exists
     MessageBox MB_OK "rtlsdr download failed: $R0"
     return
     exists:
-    ZipDLL::extractall "$TEMP\rtlsdr.zip" "$TEMP"
-    CopyFiles "$TEMP\rtl-sdr-release\x32\*.dll" "$INSTDIR"
-    ;Delete "$TEMP\rtlsdr.zip"
-    RmDir /r "$TEMP\rtl-sdr-release"
-FunctionEnd
-
-Function get_python
-    IfFileExists "$TEMP\python-2.7.6.msi" exists download
-    download:
-    inetc::get "http://www.python.org/ftp/python/2.7.6/python-2.7.6.msi" "$TEMP\python-2.7.6.msi"  /end
-    Pop $R0
-    StrCmp $R0 "OK" exists
-    MessageBox MB_OK "Python download failed: $R0"
-    return
-    exists:
-    ExecWait '"msiexec" /i "$TEMP\python-2.7.6.msi"'
-    ;Delete "$TEMP\python.msi"
-FunctionEnd
-
-Function get_wxpython
-    IfFileExists "$TEMP\wxPython2.8-win32-unicode-2.8.12.1-py27.exe" exists download
-    download:
-    inetc::get "http://downloads.sourceforge.net/wxpython/wxPython2.8-win32-unicode-2.8.12.1-py27.exe" "$TEMP\wxPython2.8-win32-unicode-2.8.12.1-py27.exe" /end
-    Pop $R0
-    StrCmp $R0 "OK" exists
-    MessageBox MB_OK "wxPython download failed: $R0"
-    return
-    exists:
-    ExecWait "$TEMP\wxPython2.8-win32-unicode-2.8.12.1-py27.exe"
-    ;Delete "$TEMP\wxPython2.8-win32-unicode-2.8.12.1-py27.exe"
-FunctionEnd
-
-Function get_matplotlib
-    IfFileExists "$TEMP\matplotlib-1.3.1.win32-py2.7.exe" exists download
-    download:
-    inetc::get "http://downloads.sourceforge.net/project/matplotlib/matplotlib/matplotlib-1.3.1/matplotlib-1.3.1.win32-py2.7.exe" "$TEMP\matplotlib-1.3.1.win32-py2.7.exe"  /end
-    Pop $R0
-    StrCmp $R0 "OK" exists
-    MessageBox MB_OK "matplotlib download failed: $R0"
-    return
-    exists:
-    ExecWait "$TEMP\matplotlib-1.3.1.win32-py2.7.exe"
-    ;Delete "$TEMP\matplotlib-1.3.1.win32-py2.7.exe"
-FunctionEnd
-
-Function get_numpy
-    IfFileExists "$TEMP\numpy-1.8.0-win32-superpack-python2.7.exe" exists download
-    download:
-    inetc::get "http://downloads.sourceforge.net/project/numpy/NumPy/1.8.0/numpy-1.8.0-win32-superpack-python2.7.exe" "$TEMP\numpy-1.8.0-win32-superpack-python2.7.exe"  /end
-    Pop $R0
-    StrCmp $R0 "OK" exists
-    MessageBox MB_OK "NumPy download failed: $R0"
-    return
-    exists:
-    ExecWait "$TEMP\numpy-1.8.0-win32-superpack-python2.7.exe"
-    ;Delete "$TEMP\numpy-1.8.0-win32-superpack-python2.7.exe"
-FunctionEnd
-
-Function get_pyparsing
-    IfFileExists "$TEMP\pyparsing-2.0.1.win32-py2.7.exe" exists download
-    download:
-    inetc::get "http://downloads.sourceforge.net/project/pyparsing/pyparsing/pyparsing-2.0.1/pyparsing-2.0.1.win32-py2.7.exe" "$TEMP\pyparsing-2.0.1.win32-py2.7.exe"  /end
-    Pop $R0
-    StrCmp $R0 "OK" exists
-    MessageBox MB_OK "pyparsing download failed: $R0"
-    return
-    exists:
-    ExecWait "$TEMP\pyparsing-2.0.1.win32-py2.7.exe"
-    ;Delete "$TEMP\pyparsing-2.0.1.win32-py2.7.exe"
-FunctionEnd
-
-Function get_setuptools
-    IfFileExists "$TEMP\setuptools-2.1.tar.gz" exists download
-    download:
-    inetc::get "http://pypi.python.org/packages/source/s/setuptools/setuptools-2.1.tar.gz" "$TEMP\setuptools-2.1.tar.gz"  /end
-    Pop $R0
-    StrCmp $R0 "OK" exists
-    MessageBox MB_OK "setuptools download failed: $R0"
-    return
-    exists:
-    untgz::extract "-d" "$TEMP" "$TEMP\setuptools-2.1.tar.gz"
-    SetOutPath "$TEMP\setuptools-2.1"
-    ExecWait "python $TEMP\setuptools-2.1\setup.py install"
-    ;Delete "$TEMP\setuptools-2.1.tar.gz"
-    RmDir /r "$TEMP\setuptools-2.1"
-FunctionEnd
-
-Function get_dateutil
-    IfFileExists "$TEMP\python-dateutil-2.2.tar.gz" exists download
-    download:
-    inetc::get "http://pypi.python.org/packages/source/p/python-dateutil/python-dateutil-2.2.tar.gz" "$TEMP\python-dateutil-2.2.tar.gz" /end
-    Pop $R0
-    StrCmp $R0 "OK" exists
-    MessageBox MB_OK "dateutil download failed: $R0"
-    return
-    exists:
-    untgz::extract "-d" "$TEMP" "$TEMP\python-dateutil-2.2.tar.gz"
-    SetOutPath "$TEMP\python-dateutil-2.2"
-    ExecWait "python $TEMP\python-dateutil-2.2\setup.py install"
-    ;Delete "$TEMP\python-dateutil-2.2.tar.gz"
-    RmDir /r "$TEMP\python-dateutil-2.2.tar.gz"
+	    ZipDLL::extractall "$TEMP\rtlsdr.zip" "$TEMP"
+	    CopyFiles "$TEMP\rtl-sdr-release\x32\*.dll" "$INSTDIR"
+	    RmDir /r "$TEMP\rtl-sdr-release"
 FunctionEnd
 
 Function get_pyrtlsdr
@@ -507,52 +461,27 @@ Function get_pyrtlsdr
     MessageBox MB_OK "pyrtlsdr download failed: $R0"
     return
     exists:
-    ZipDLL::extractall "$TEMP\pyrtlsdr.zip" "$TEMP"
-    SetOutPath "$TEMP\pyrtlsdr-master"
-    ExecWait "python $TEMP\pyrtlsdr-master\setup.py install"
-    ;Delete "$TEMP\pyrtlsdr.zip"
-    RmDir /r "$TEMP\pyrtlsdr-master"
+	    ZipDLL::extractall "$TEMP\pyrtlsdr.zip" "$TEMP"
+	    SetOutPath "$TEMP\pyrtlsdr-master"
+	    ExecWait "python $TEMP\pyrtlsdr-master\setup.py install"
+	    RmDir /r "$TEMP\pyrtlsdr-master"
 FunctionEnd
 
-Function get_pillow
-    IfFileExists "$TEMP\Pillow-2.4.0.win32-py2.7.exe" exists download
-    download:
-    inetc::get "https://pypi.python.org/packages/2.7/P/Pillow/Pillow-2.4.0.win32-py2.7.exe" "$TEMP\Pillow-2.4.0.win32-py2.7.exe"  /end
-    Pop $R0
-    StrCmp $R0 "OK" exists
-    MessageBox MB_OK "Pillow download failed: $R0"
-    return
-    exists:
-    ExecWait "$TEMP\Pillow-2.4.0.win32-py2.7.exe"
-    ;Delete "$TEMP\Pillow-2.4.0.win32-py2.7.exe"
-FunctionEnd
-
-Function get_pyserial
-    IfFileExists "$TEMP\pyserial-2.7.tar.gz" exists download
-    download:
-    inetc::get "http://downloads.sourceforge.net/project/pyserial/pyserial/2.7/pyserial-2.7.tar.gz" "$TEMP\pyserial-2.7.tar.gz" /end
-    Pop $R0
-    StrCmp $R0 "OK" exists
-    MessageBox MB_OK "PySerial download failed: $R0"
-    return
-    exists:
-    untgz::extract "-d" "$TEMP" "$TEMP\pyserial-2.7.tar.gz"
-    SetOutPath "$TEMP\pyserial-2.7"
-    ExecWait "python $TEMP\pyserial-2.7\setup.py install"
-    ;Delete "$TEMP\pyserial-2.7.tar.gz"
-    RmDir /r "$TEMP\pyserial-2.7"
+Function get_python_path
+	ReadRegStr $R0 HKLM Software\Python\PythonCore\2.7\InstallPath ""
+	StrCpy $PythonPath $R0
 FunctionEnd
 
 Function set_installer_path
+	Call get_python_path
     ReadEnvStr $R0 "PATH"
-    ReadRegStr $R1 HKLM Software\Python\PythonCore\2.7\InstallPath ""
-    StrCpy $R0 "$R0;$R1"
+    StrCpy $R0 "$R0;$PythonPath"
     SetEnv::SetEnvVar "PATH" $R0
 FunctionEnd
 
 Function set_python_path
-    ReadRegStr $0 HKLM Software\Python\PythonCore\2.7\InstallPath ""
-    ${EnvVarUpdate} $0 "PATH" "A" "HKLM" $0
+	Call get_python_path
+    ${EnvVarUpdate} $PythonPath "PATH" "A" "HKLM" $PythonPath
 FunctionEnd
 
 Function un.onInit
