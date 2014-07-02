@@ -47,6 +47,7 @@
 !define MUI_ICON "rtlsdr_scan.ico"
 !define MUI_UNICON "rtlsdr_scan.ico"
 !define MUI_FINISHPAGE_NOAUTOCLOSE
+
 !insertmacro MUI_PAGE_WELCOME
 Page custom page_update
 Page custom page_info
@@ -368,7 +369,7 @@ Function update_check
         Delete "$TEMP\_version"
         ${If} $Version > ${INSTALLER_VERSION}
             ${NSD_SetText} $UpdateText ${UPDATE_FOUND}
-            MessageBox MB_YESNO "Installer update found, download now (recommended)?" IDYES download IDNO skip
+            MessageBox MB_YESNO|MB_ICONQUESTION "Installer update found, download now (recommended)?" IDYES download IDNO skip
             download:
                 ExecShell "open" "http://sourceforge.net/projects/rtlsdrscanner/files/latest/download"
                 SendMessage $HWNDPARENT ${WM_CLOSE} 0 0
@@ -389,10 +390,14 @@ Function install_msi
 	    inetc::get "$UriPath/$UriFile" "$TEMP\$UriFile"  /end
 	    Pop $R0
 	    StrCmp $R0 "OK" exists
-	    MessageBox MB_OK "$UriFile download failed: $R0"
+	    MessageBox MB_OK|MB_ICONEXCLAMATION "$UriFile download failed: $R0"
 	    Return
     exists:
-    	ExecWait '"msiexec" /i "$TEMP\$UriFile"'
+    	ExecWait '"msiexec" /i "$TEMP\$UriFile1"'
+    	IfErrors error
+    	Return
+    	error:
+    		MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to install $UriFile"
 FunctionEnd
 
 Function install_exe
@@ -401,33 +406,45 @@ Function install_exe
 	    inetc::get "$UriPath/$UriFile" "$TEMP\$UriFile"  /end
 	    Pop $R0
 	    StrCmp $R0 "OK" exists
-	    MessageBox MB_OK "$UriFile download failed: $R0"
+	    MessageBox MB_OK|MB_ICONEXCLAMATION "$UriFile download failed: $R0"
 	    Return
     exists:
     	ExecWait "$TEMP\$UriFile"
+    	IfErrors error
+    	Return
+    	error:
+    		MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to install $UriFile"
 FunctionEnd
 
 Function install_setuptools
     inetc::get "https://bootstrap.pypa.io/ez_setup.py" "$TEMP\ez_setup.py"  /end
     Pop $R0
     StrCmp $R0 "OK" exists
-    MessageBox MB_OK "setuptools download failed: $R0"
+    MessageBox MB_OK|MB_ICONEXCLAMATION "setuptools download failed: $R0"
     Return
     exists:
 	    ExecWait "python $TEMP\ez_setup.py"
+		IfErrors error
+    	Return
+    	error:
+    		MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to install setuptools"
 FunctionEnd
 
 Function install_easy
 	Call get_python_path
 	ExecWait "$PythonPath\Scripts\easy_install $UriFile"
+	IfErrors error
+    	Return
+    	error:
+    		MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to install $UriFile"
 FunctionEnd
 
 Function install_rtlsdr_scanner
     inetc::get "https://github.com/EarToEarOak/RTLSDR-Scanner/archive/master.zip" "$TEMP\rtlsdr_scanner.zip" /end
     Pop $R0
     StrCmp $R0 "OK" exists
-    MessageBox MB_OK "RTLSDR Scanner download failed: $R0"
-    return
+    MessageBox MB_OK|MB_ICONEXCLAMATION "RTLSDR Scanner download failed: $R0"
+    Return
     exists:
 	    ZipDLL::extractall "$TEMP\rtlsdr_scanner.zip" "$TEMP"
 	    CopyFiles "$TEMP\RTLSDR-Scanner-master\src\*.py" "$INSTDIR"
@@ -446,8 +463,8 @@ Function install_rtlsdr
     inetc::get "http://sdr.osmocom.org/trac/raw-attachment/wiki/rtl-sdr/RelWithDebInfo.zip" "$TEMP\rtlsdr.zip" /end
     Pop $R0
     StrCmp $R0 "OK" exists
-    MessageBox MB_OK "rtlsdr download failed: $R0"
-    return
+    MessageBox MB_OK|MB_ICONEXCLAMATION "rtlsdr download failed: $R0"
+    Return
     exists:
 	    ZipDLL::extractall "$TEMP\rtlsdr.zip" "$TEMP"
 	    CopyFiles "$TEMP\rtl-sdr-release\x32\*.dll" "$INSTDIR"
@@ -458,8 +475,8 @@ Function get_pyrtlsdr
     inetc::get "https://github.com/roger-/pyrtlsdr/archive/master.zip" "$TEMP\pyrtlsdr.zip" /end
     Pop $R0
     StrCmp $R0 "OK" exists
-    MessageBox MB_OK "pyrtlsdr download failed: $R0"
-    return
+    MessageBox MB_OK|MB_ICONEXCLAMATION "pyrtlsdr download failed: $R0"
+    Return
     exists:
 	    ZipDLL::extractall "$TEMP\pyrtlsdr.zip" "$TEMP"
 	    SetOutPath "$TEMP\pyrtlsdr-master"
@@ -469,7 +486,12 @@ FunctionEnd
 
 Function get_python_path
 	ReadRegStr $R0 HKLM Software\Python\PythonCore\2.7\InstallPath ""
-	StrCpy $PythonPath $R0
+	IfErrors error
+		StrCpy $PythonPath $R0
+	Return
+	error:
+		MessageBox MB_OK|MB_ICONEXCLAMATION "Cannot find Python - aborting"
+		Abort "Cannot find Python - aborting"
 FunctionEnd
 
 Function set_installer_path
