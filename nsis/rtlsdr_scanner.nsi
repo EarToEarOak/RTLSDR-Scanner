@@ -357,6 +357,8 @@ Function update_check
             MessageBox MB_YESNO "Installer update found, download now (recommended)?" IDYES download IDNO skip
             download:
                 ExecShell "open" "http://sourceforge.net/projects/rtlsdrscanner/files/latest/download"
+                SendMessage $HWNDPARENT ${WM_CLOSE} 0 0
+                Quit
             skip:
         ${Else}
             ${NSD_SetText} $UpdateText ${UPDATE_NONE}
