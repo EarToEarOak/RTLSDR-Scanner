@@ -115,9 +115,10 @@ class ThreadScan(threading.Thread):
                 return
             try:
                 scan = self.rtl_scan(freq)
-                post_event(self.notify,
-                           EventThread(Event.DATA, freq,
-                                       (timeStamp, scan)))
+                if len(scan):
+                    post_event(self.notify,
+                               EventThread(Event.DATA, freq,
+                                           (timeStamp, scan)))
             except IOError:
                 if self.sdr is not None:
                     self.rtl_close()
@@ -144,7 +145,12 @@ class ThreadScan(threading.Thread):
 
     def rtl_scan(self, freq):
         self.sdr.set_center_freq(freq + self.lo)
-        capture = self.sdr.read_samples(self.samples)
+        try:
+            capture = self.sdr.read_samples(self.samples)
+        except MemoryError as error:
+            post_event(self.notify, EventThread(Event.ERROR,
+                                                0, error))
+            capture = []
 
         return capture
 
