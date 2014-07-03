@@ -382,8 +382,9 @@ class Plotter(object):
             self.axes.set_axis_off()
             self.bar.set_axis_off()
 
-    def set_colourmap_use(self, use):
-        if use:
+    def set_colourmap_use(self, on):
+        self.set_bar(on)
+        if on:
             colourMap = self.settings.colourMap
         else:
             colourMap = ' Pure Blue'
