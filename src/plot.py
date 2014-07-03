@@ -364,6 +364,24 @@ class Plotter(object):
         self.axes.grid(on)
         self.redraw_plot()
 
+    def set_bar(self, on):
+        self.barBase.ax.set_visible(on)
+        if on:
+            self.axes.change_geometry(1, 2, 1)
+            self.axes.get_subplotspec().get_gridspec().set_width_ratios([9.5, 0.5])
+        else:
+            self.axes.change_geometry(1, 1, 1)
+
+        self.figure.subplots_adjust()
+
+    def set_axes(self, on):
+        if on:
+            self.axes.set_axis_on()
+            self.bar.set_axis_on()
+        else:
+            self.axes.set_axis_off()
+            self.bar.set_axis_off()
+
     def set_colourmap_use(self, use):
         if use:
             colourMap = self.settings.colourMap

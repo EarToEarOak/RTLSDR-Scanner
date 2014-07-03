@@ -325,6 +325,21 @@ class DialogSeq(wx.Dialog):
         textSweeps = wx.StaticText(self, label="Sweeps")
         self.textSweeps = wx.StaticText(self, label="")
 
+        self.checkAxes = wx.CheckBox(self, label='Axes')
+        self.checkAxes.SetValue(True)
+        self.Bind(wx.EVT_CHECKBOX, self.__on_axes, self.checkAxes)
+        self.checkGrid = wx.CheckBox(self, label='Grid')
+        self.checkGrid.SetValue(True)
+        self.Bind(wx.EVT_CHECKBOX, self.__on_grid, self.checkGrid)
+        self.checkBar = wx.CheckBox(self, label='Bar')
+        self.checkBar.SetValue(True)
+        self.Bind(wx.EVT_CHECKBOX, self.__on_bar, self.checkBar)
+
+        sizerCheck = wx.BoxSizer(wx.HORIZONTAL)
+        sizerCheck.Add(self.checkAxes, flag=wx.ALL, border=5)
+        sizerCheck.Add(self.checkGrid, flag=wx.ALL, border=5)
+        sizerCheck.Add(self.checkBar, flag=wx.ALL, border=5)
+
         textDir = wx.StaticText(self, label="Output directory")
         self.editDir = wx.TextCtrl(self)
         self.editDir.SetValue(settings.dirExport)
@@ -355,13 +370,15 @@ class DialogSeq(wx.Dialog):
                       flag=wx.ALIGN_CENTRE_VERTICAL | wx.ALL, border=5)
         sizerGrid.Add(self.textSweeps, pos=(1, 5),
                       flag=wx.ALIGN_CENTRE_VERTICAL | wx.ALL, border=5)
-        sizerGrid.Add(textDir, pos=(2, 0), span=(1, 6),
+        sizerGrid.Add(sizerCheck, pos=(2, 0), span=(1, 4),
+                      flag=wx.ALIGN_CENTRE_VERTICAL | wx.ALL, border=5)
+        sizerGrid.Add(textDir, pos=(3, 0), span=(1, 6),
                       flag=wx.ALL, border=5)
-        sizerGrid.Add(self.editDir, pos=(3, 0), span=(1, 5),
+        sizerGrid.Add(self.editDir, pos=(4, 0), span=(1, 5),
                       flag=wx.ALL | wx.EXPAND, border=5)
-        sizerGrid.Add(buttonBrowse, pos=(3, 5),
+        sizerGrid.Add(buttonBrowse, pos=(4, 5),
                       flag=wx.ALL, border=5)
-        sizerGrid.Add(sizerButtons, pos=(4, 5),
+        sizerGrid.Add(sizerButtons, pos=(5, 5),
                       flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
 
         self.SetSizerAndFit(sizerGrid)
@@ -379,6 +396,18 @@ class DialogSeq(wx.Dialog):
             else:
                 self.choiceEnd.SetSelection(start)
 
+        self.__draw_plot()
+
+    def __on_axes(self, _event):
+        self.plot.set_axes(self.checkAxes.GetValue())
+        self.__draw_plot()
+
+    def __on_grid(self, _event):
+        self.plot.set_grid(self.checkGrid.GetValue())
+        self.__draw_plot()
+
+    def __on_bar(self, _event):
+        self.plot.set_bar(self.checkBar.GetValue())
         self.__draw_plot()
 
     def __on_browse(self, _event):
@@ -403,7 +432,7 @@ class DialogSeq(wx.Dialog):
     def __on_ok(self, _event):
         self.isExporting = True
         extent = Extent(self.spectrum)
-        dlgProgress = wx.ProgressDialog('Exporting', '', len(self.sweeps)-1,
+        dlgProgress = wx.ProgressDialog('Exporting', '', len(self.sweeps) - 1,
                                         style=wx.PD_AUTO_HIDE |
                                         wx.PD_CAN_ABORT |
                                         wx.PD_REMAINING_TIME)
