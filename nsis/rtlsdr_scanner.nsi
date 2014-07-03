@@ -113,7 +113,7 @@ Section "RTLSDR Scanner (Required)" SEC_SCAN
     !insertmacro APP_ASSOCIATE "${FILE_TYPE}" "${FILE_CLASS}" "${FILE_DESC}" "$INSTDIR\rtlsdr_scan.ico,0" "Open with RTLSDR Scanner" "python $\"$INSTDIR\rtlsdr_scan.py$\" $\"%1$\""
     CopyFiles "$ExePath" "$InstDir\"
     CreateDirectory "$SMPROGRAMS\RTLSDR Scanner"
-    CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\RTLSDR Scanner.lnk" "python" '"$INSTDIR\rtlsdr_scan.py"' "$INSTDIR\rtlsdr_scan.ico" 0
+    CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\RTLSDR Scanner.lnk" "python.exe" '"$INSTDIR\rtlsdr_scan.py"' "$INSTDIR\rtlsdr_scan.ico" 0
     CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\Setup.lnk" "$INSTDIR\$EXEFILE"
 
     ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
@@ -176,16 +176,6 @@ SectionGroup "/e" "Dependencies" SEC_DEP
         SectionEnd
     SectionGroupEnd
 SectionGroupEnd
-
-!insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-!insertmacro MUI_DESCRIPTION_TEXT ${SEC_SCAN} "RTLSDR Scanner"
-!insertmacro MUI_DESCRIPTION_TEXT ${SEC_RTLSDR} "Latest rtlsdr driver"
-!insertmacro MUI_DESCRIPTION_TEXT ${SEC_MSVC} "Microsoft Visual C++ Redistributable"
-!insertmacro MUI_DESCRIPTION_TEXT ${SEC_DEP} "Dependencies"
-!insertmacro MUI_DESCRIPTION_TEXT ${SEC_PYDEP} "Python dependencies"
-!insertmacro MUI_DESCRIPTION_TEXT ${SEC_PYRTLSDR} "Latest Python wrapper for the rtlsdr driver"
-!insertmacro MUI_FUNCTION_DESCRIPTION_END
-
 
 Section -AdditionalIcons
     SetOutPath "$INSTDIR"
@@ -282,6 +272,15 @@ Section Uninstall
     DeleteRegKey ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}"
     SetAutoClose true
 SectionEnd
+
+!insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
+!insertmacro MUI_DESCRIPTION_TEXT ${SEC_SCAN} "RTLSDR Scanner"
+!insertmacro MUI_DESCRIPTION_TEXT ${SEC_RTLSDR} "Latest rtlsdr driver"
+!insertmacro MUI_DESCRIPTION_TEXT ${SEC_MSVC} "Microsoft Visual C++ Redistributable"
+!insertmacro MUI_DESCRIPTION_TEXT ${SEC_DEP} "Dependencies"
+!insertmacro MUI_DESCRIPTION_TEXT ${SEC_PYDEP} "Python dependencies"
+!insertmacro MUI_DESCRIPTION_TEXT ${SEC_PYRTLSDR} "Latest Python wrapper for the rtlsdr driver"
+!insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 
 Function .onInit
