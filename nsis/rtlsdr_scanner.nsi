@@ -210,7 +210,6 @@ SectionEnd
 
 
 Section Uninstall
-
     !insertmacro APP_UNASSOCIATE "${FILE_TYPE}" "${FILE_CLASS}"
 
     Delete "$INSTDIR\${PRODUCT_NAME}.url"
@@ -427,6 +426,7 @@ Function install_msi
 	    Call error
 	    Return
     exists:
+    	ClearErrors
     	ExecWait '"msiexec" /i "$TEMP\$UriFile"'
     	IfErrors error
     	Return
@@ -445,6 +445,7 @@ Function install_exe
 	    Call error
 	    Return
     exists:
+    	ClearErrors
     	ExecWait "$TEMP\$UriFile"
     	IfErrors error
     	Return
@@ -461,6 +462,7 @@ Function install_setuptools
 	Call error
     Return
     exists:
+    	ClearErrors
 	    ExecWait "python $TEMP\ez_setup.py"
 		IfErrors error
     	Return
@@ -471,6 +473,7 @@ FunctionEnd
 
 Function install_easy
 	Call get_python_path
+	ClearErrors
 	ExecWait "$PythonPath\Scripts\easy_install $UriFile"
 	IfErrors error
     	Return
