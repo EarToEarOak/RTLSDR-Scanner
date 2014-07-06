@@ -770,7 +770,7 @@ class FrameMain(wx.Frame):
             else:
                 text = "{0:.6f} MHz".format(xpos)
 
-        self.status.SetStatusText(text, 1)
+        self.status.set_info(text)
 
     def __on_event(self, event):
         status = event.data.get_status()
