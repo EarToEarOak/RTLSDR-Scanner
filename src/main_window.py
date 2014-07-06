@@ -960,8 +960,8 @@ class FrameMain(wx.Frame):
     def __progress(self):
         self.steps -= 1
         if self.steps > 0 and not self.stopScan:
-            self.status.set_progress((self.stepsTotal - self.steps) * 100
-                                     / self.stepsTotal)
+            self.status.set_progress((self.stepsTotal - self.steps) * 100.0
+                                     / (self.stepsTotal - 1))
             self.status.show_progress()
             self.status.set_general("Scanning")
         else:

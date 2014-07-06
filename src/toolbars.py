@@ -23,6 +23,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from datetime import timedelta
+import math
+import time
+
 import matplotlib
 from matplotlib.backend_bases import NavigationToolbar2
 from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
@@ -36,6 +40,7 @@ from misc import load_bitmap, get_colours
 class Statusbar(wx.StatusBar):
     def __init__(self, parent):
         self.controls = [None] * 4
+        self.timeStart = None
 
         wx.StatusBar.__init__(self, parent, -1)
         self.SetFieldsCount(4)
@@ -76,13 +81,24 @@ class Statusbar(wx.StatusBar):
         self.controls[2].pulse()
 
     def set_progress(self, progress):
+        if progress == 0:
+            self.timeStart = time.time()
+            text = '{:.1f}%\nUnknown'.format(progress)
+        else:
+            timeTotal = time.time() - self.timeStart
+            timeLeft = ((timeTotal / (progress)) * 100.0) - timeTotal
+            delta = timedelta(seconds=math.ceil(timeLeft))
+            text = '{:.1f}%\n{}'.format(progress, delta)
+
         self.controls[3].SetValue(progress)
+        self.controls[3].SetToolTipString(text)
 
     def show_progress(self):
         self.controls[3].Show()
 
     def hide_progress(self):
         self.controls[3].Hide()
+        self.controls[3].SetToolTipString('')
 
 
 class NavigationToolbar(NavigationToolbar2WxAgg):
