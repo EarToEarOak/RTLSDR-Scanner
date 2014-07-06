@@ -402,6 +402,8 @@ class FrameMain(wx.Frame):
         accelTable = wx.AcceleratorTable([(wx.ACCEL_NORMAL, wx.WXK_F1, idF1)])
         self.SetAcceleratorTable(accelTable)
 
+        self.Bind(wx.EVT_MENU_HIGHLIGHT, self.__on_menu_highlight)
+
     def __create_popup_menu(self):
         self.popupMenu = wx.Menu()
         self.popupMenuStart = self.popupMenu.Append(wx.ID_ANY, "&Start",
@@ -443,6 +445,15 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.__on_show_measure, self.popupMenuShowMeasure)
 
         self.Bind(wx.EVT_CONTEXT_MENU, self.__on_popup_menu)
+
+    def __on_menu_highlight(self, event):
+        item = self.GetMenuBar().FindItemById(event.GetId())
+        if item is not None:
+            help = item.GetHelp()
+        else:
+            help = ''
+
+        self.status.set_general(help)
 
     def __on_popup_menu(self, event):
         pos = event.GetPosition()
@@ -842,7 +853,7 @@ class FrameMain(wx.Frame):
         elif status == Event.VER_UPDFAIL:
             self.__update_checked(failed=True)
         elif status == Event.LOC_WARN:
-            self.status.set_info("GPS: {0}".format(data))
+            self.status.set_gps("{0}".format(data))
         elif status == Event.LOC:
             if self.scanInfo is not None:
                 if data[0] and data[1]:

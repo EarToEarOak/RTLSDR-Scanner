@@ -34,34 +34,50 @@ from misc import load_bitmap, get_colours
 
 class Statusbar(wx.StatusBar):
     def __init__(self, parent):
+        self.controls = [None] * 4
+
         wx.StatusBar.__init__(self, parent, -1)
-        self.SetFieldsCount(3)
-        self.statusProgress = wx.Gauge(self, -1,
-                                       style=wx.GA_HORIZONTAL | wx.GA_SMOOTH)
-        self.statusProgress.Hide()
+        self.SetFieldsCount(4)
+
+        for i in range(0, 3):
+            self.controls[i] = wx.StaticText(self, label='')
+
+        self.controls[3] = wx.Gauge(self, -1,
+                                    style=wx.GA_HORIZONTAL | wx.GA_SMOOTH)
+        self.controls[3].Hide()
+
         self.Bind(wx.EVT_SIZE, self.__on_size)
 
     def __on_size(self, event):
-        rect = self.GetFieldRect(2)
-        self.statusProgress.SetPosition((rect.x + 10, rect.y + 2))
-        self.statusProgress.SetSize((rect.width - 20, rect.height - 4))
+        pos = 0
+        for control in self.controls:
+            rect = self.GetFieldRect(pos)
+            control.SetPosition((rect.x + 10, rect.y + 2))
+            control.SetSize((rect.width - 20, rect.height - 4))
+            pos += 1
+
         event.Skip()
 
     def set_general(self, text):
-        self.SetStatusText(text, 0)
-        self.SetToolTipString(text)
+        self.controls[0].SetLabel(text)
+        self.controls[0].SetToolTipString(text)
 
     def set_info(self, text):
-        self.SetStatusText(text, 1)
+        self.controls[1].SetLabel(text)
+        self.controls[1].SetToolTipString(text)
+
+    def set_gps(self, text):
+        self.controls[2].SetLabel(text)
+        self.controls[2].SetToolTipString(text)
 
     def set_progress(self, progress):
-        self.statusProgress.SetValue(progress)
+        self.controls[3].SetValue(progress)
 
     def show_progress(self):
-        self.statusProgress.Show()
+        self.controls[3].Show()
 
     def hide_progress(self):
-        self.statusProgress.Hide()
+        self.controls[3].Hide()
 
 
 class NavigationToolbar(NavigationToolbar2WxAgg):
