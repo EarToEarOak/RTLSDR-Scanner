@@ -45,16 +45,17 @@ from wx.lib.masked.numctrl import NumCtrl
 
 from constants import F_MIN, F_MAX, Cal, SAMPLE_RATE, BANDWIDTH, WINFUNC, \
     TUNER
+from controls import CellRenderer
 from devices import DeviceRTL, DeviceGPS
 from events import Event
 from file import open_plot, File, export_image
 from location import ThreadLocation
 from misc import close_modeless, format_time, ValidatorCoord, get_colours, \
     nearest, load_bitmap, get_version_timestamp, get_serial_ports
+from panels import PanelGraphCompare, PanelColourBar, PanelLine
 from plot import Plotter
 from rtltcp import RtlTcp
 from spectrum import count_points, sort_spectrum, Extent
-from windows import PanelGraphCompare, PanelColourBar, CellRenderer, PanelLine
 
 
 class DialogCompare(wx.Dialog):

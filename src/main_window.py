@@ -49,12 +49,12 @@ from location import ThreadLocation
 from misc import calc_samples, calc_real_dwell, \
     get_version_timestamp, get_version_timestamp_repo, add_colours, \
     RemoteControl
+from panels import PanelGraph
 from printer import PrintOut
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
 from spectrum import count_points, sort_spectrum, Extent
 from toolbars import Statusbar
-from windows import PanelGraph
 
 
 class DropTarget(wx.FileDropTarget):

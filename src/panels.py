@@ -35,6 +35,7 @@ from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
 import wx
 
 from constants import Display
+from controls import GridToolTips
 from misc import close_modeless
 from plot import Plotter
 from plot3d import Plotter3d
@@ -43,44 +44,6 @@ from spectrogram import Spectrogram
 from spectrum import split_spectrum_sort, Measure, reduce_points
 from toolbars import NavigationToolbar, NavigationToolbarCompare
 import wx.grid as wxGrid
-
-
-class CellRenderer(wxGrid.PyGridCellRenderer):
-    def __init__(self):
-        wxGrid.PyGridCellRenderer.__init__(self)
-
-    def Draw(self, grid, attr, dc, rect, row, col, _isSelected):
-        dc.SetBrush(wx.Brush(attr.GetBackgroundColour()))
-        dc.DrawRectangleRect(rect)
-        if grid.GetCellValue(row, col) == "1":
-            dc.SetBrush(wx.Brush(attr.GetTextColour()))
-            dc.DrawCircle(rect.x + (rect.width / 2),
-                          rect.y + (rect.height / 2),
-                          rect.height / 4)
-
-
-# Based on http://wiki.wxpython.org/wxGrid%20ToolTips
-class GridToolTips(object):
-    def __init__(self, grid, toolTips):
-        self.lastPos = (None, None)
-        self.grid = grid
-        self.toolTips = toolTips
-
-        grid.GetGridWindow().Bind(wx.EVT_MOTION, self.__on_motion)
-
-    def __on_motion(self, event):
-        x, y = self.grid.CalcUnscrolledPosition(event.GetPosition())
-        row = self.grid.YToRow(y)
-        col = self.grid.XToCol(x)
-
-        if (row, col) != self.lastPos:
-            if row >= 0 and col >= 0:
-                self.lastPos = (row, col)
-                if (row, col) in self.toolTips:
-                    toolTip = self.toolTips[(row, col)]
-                else:
-                    toolTip = ''
-                self.grid.GetGridWindow().SetToolTipString(toolTip)
 
 
 class PanelGraph(wx.Panel):

@@ -254,6 +254,7 @@ Section Uninstall
 
     ; Obsolete
     Delete "$INSTDIR\threads.py"
+    Delete "$INSTDIR\windows.py"
     Delete "$INSTDIR\res\auto_range.png"
     Delete "$INSTDIR\res\range.png"
 
