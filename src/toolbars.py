@@ -29,6 +29,7 @@ from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
 import wx
 
 from constants import Display, PlotFunc
+from controls import Led
 from misc import load_bitmap, get_colours
 
 
@@ -39,8 +40,9 @@ class Statusbar(wx.StatusBar):
         wx.StatusBar.__init__(self, parent, -1)
         self.SetFieldsCount(4)
 
-        for i in range(0, 3):
-            self.controls[i] = wx.StaticText(self, label='')
+        self.controls[0] = wx.StaticText(self, label='')
+        self.controls[1] = wx.StaticText(self, label='')
+        self.controls[2] = Led(self, label='')
 
         self.controls[3] = wx.Gauge(self, -1,
                                     style=wx.GA_HORIZONTAL | wx.GA_SMOOTH)
@@ -69,6 +71,9 @@ class Statusbar(wx.StatusBar):
     def set_gps(self, text):
         self.controls[2].SetLabel(text)
         self.controls[2].SetToolTipString(text)
+
+    def pulse_gps(self):
+        self.controls[2].pulse()
 
     def set_progress(self, progress):
         self.controls[3].SetValue(progress)

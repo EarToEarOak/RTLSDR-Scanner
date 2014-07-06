@@ -863,6 +863,9 @@ class FrameMain(wx.Frame):
                         self.location[max(self.spectrum)] = (data[0],
                                                              data[1],
                                                              data[2])
+                    self.status.set_gps('{:.5f}, {:.5f}'.format(data[0],
+                                                                data[1]))
+                    self.status.pulse_gps()
 
         wx.YieldIfNeeded()
 

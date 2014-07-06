@@ -27,6 +27,68 @@ import wx
 from wx.grid import PyGridCellRenderer
 
 
+class Led(wx.PyControl):
+    def __init__(self, parent, id=wx.ID_ANY, label=''):
+        self.on = False
+
+        wx.PyControl.__init__(self, parent=parent, id=id, size=wx.DefaultSize,
+                              style=wx.NO_BORDER)
+
+        self.SetLabel(label)
+
+        self.timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.__on_timer, self.timer)
+
+        self.Bind(wx.EVT_PAINT, self.__on_paint)
+        self.Bind(wx.EVT_SIZE, self.__on_size)
+
+    def __on_paint(self, _event):
+        dc = wx.BufferedPaintDC(self)
+        self.__draw(dc)
+
+    def __on_size(self, _event):
+        self.Refresh()
+
+    def __on_timer(self, _event):
+        self.timer.Stop()
+        self.on = False
+        self.Refresh()
+
+    def __draw(self, dc):
+        colour = self.GetBackgroundColour()
+        brush = wx.Brush(colour, wx.SOLID)
+        dc.SetBackground(brush)
+        dc.SetFont(self.GetFont())
+        dc.Clear()
+
+        label = self.GetLabel()
+        _width, height = self.GetClientSize()
+        ledRadius = height / 3
+        _textWidth, textHeight = dc.GetTextExtent(label)
+
+        gc = wx.GraphicsContext.Create(dc)
+        gc.SetPen(wx.BLACK_PEN)
+
+        if self.on:
+            brush = wx.Brush(wx.GREEN, wx.SOLID)
+            gc.SetBrush(brush)
+
+        path = gc.CreatePath()
+        path.AddCircle(height / 2, height / 2, ledRadius)
+        path.CloseSubpath()
+
+        gc.FillPath(path)
+        gc.StrokePath(path)
+
+        dc.DrawText(self.GetLabel(), height + 10, (height - textHeight) / 2)
+
+    def pulse(self):
+
+        self.on = True
+        self.Refresh()
+        self.timer.Start(250)
+
+
 class CellRenderer(PyGridCellRenderer):
     def __init__(self):
         PyGridCellRenderer.__init__(self)
