@@ -54,6 +54,7 @@ class Statusbar(wx.StatusBar):
         self.controls[3].Hide()
 
         self.Bind(wx.EVT_SIZE, self.__on_size)
+        wx.CallAfter(self.__on_size, None)
 
     def __on_size(self, event):
         pos = 0
@@ -63,7 +64,8 @@ class Statusbar(wx.StatusBar):
             control.SetSize((rect.width - 20, rect.height - 4))
             pos += 1
 
-        event.Skip()
+        if event is not None:
+            event.Skip()
 
     def set_general(self, text):
         self.controls[0].SetLabel(text)
