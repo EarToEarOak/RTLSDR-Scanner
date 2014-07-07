@@ -502,6 +502,9 @@ Function install_rtlsdr_scanner
 	    CopyFiles "$TEMP\RTLSDR-Scanner-master\*.ico" "$INSTDIR"
 	    RmDir /r "$TEMP\RTLSDR-Scanner-master"
 	    ${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR"
+	    DetailPrint "Compiling sources"
+	    Call get_python_path
+	    ExecWait '$PythonPath\python -m compileall -l "$INSTDIR"'
 FunctionEnd
 
 Function install_rtlsdr
