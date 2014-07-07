@@ -110,7 +110,8 @@ Section "RTLSDR Scanner (Required)" SEC_SCAN
     SetOverwrite ifnewer
     File "license.txt"
     Call install_rtlsdr_scanner
-    !insertmacro APP_ASSOCIATE "${FILE_TYPE}" "${FILE_CLASS}" "${FILE_DESC}" "$INSTDIR\rtlsdr_scan.ico,0" "Open with RTLSDR Scanner" "python $\"$INSTDIR\rtlsdr_scan.py$\" $\"%1$\""
+    Call get_python_path
+    !insertmacro APP_ASSOCIATE "${FILE_TYPE}" "${FILE_CLASS}" "${FILE_DESC}" "$INSTDIR\rtlsdr_scan.ico,0" "Open with RTLSDR Scanner" '"$PythonPath\python.exe" "$INSTDIR\rtlsdr_scan.py" "%1"'
     CopyFiles "$ExePath" "$InstDir\"
     CreateDirectory "$SMPROGRAMS\RTLSDR Scanner"
     CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\Setup.lnk" "$INSTDIR\$EXEFILE"
@@ -180,7 +181,7 @@ Section -AdditionalIcons
     SetOutPath "$INSTDIR"
     WriteIniStr "$INSTDIR\${PRODUCT_NAME}.url" "InternetShortcut" "URL" "${PRODUCT_WEB_SITE}"
     Call get_python_path
-    CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\RTLSDR Scanner.lnk" "$PythonPathpython.exe" '"$INSTDIR\rtlsdr_scan.py"' "$INSTDIR\rtlsdr_scan.ico" 0
+    CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\RTLSDR Scanner.lnk" '"$PythonPath\python.exe"' '"$INSTDIR\rtlsdr_scan.py"' "$INSTDIR\rtlsdr_scan.ico" 0
     CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\Website.lnk" "$INSTDIR\${PRODUCT_NAME}.url"
     CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\Uninstall.lnk" "$INSTDIR\uninst.exe"
     CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\Manual.lnk" "$INSTDIR\doc\Manual.pdf"
@@ -475,7 +476,7 @@ FunctionEnd
 Function install_easy
 	Call get_python_path
 	ClearErrors
-	ExecWait "$PythonPath\Scripts\easy_install $UriFile"
+	ExecWait '"$PythonPath\Scripts\easy_install" $UriFile'
 	IfErrors error
     	Return
     	error:
@@ -504,7 +505,7 @@ Function install_rtlsdr_scanner
 	    ${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR"
 	    DetailPrint "Compiling sources"
 	    Call get_python_path
-	    ExecWait '$PythonPath\python -m compileall -l "$INSTDIR"'
+	    ExecWait '"$PythonPath\python.exe" -m compileall -l "$INSTDIR"'
 FunctionEnd
 
 Function install_rtlsdr
