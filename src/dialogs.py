@@ -356,22 +356,6 @@ class DialogSeq(wx.Dialog):
         self.canvas = FigureCanvas(self, -1, self.figure)
         self.plot = Plotter(self.queue, self.figure, settings)
 
-        self.sweepTimeStamps = [timeStamp for timeStamp in spectrum.keys()]
-        sweepChoices = [format_time(timeStamp, True) for timeStamp in self.sweepTimeStamps]
-
-        textStart = wx.StaticText(self, label="Start")
-        self.choiceStart = wx.Choice(self, choices=sweepChoices)
-        self.choiceStart.SetSelection(0)
-        self.Bind(wx.EVT_CHOICE, self.__on_choice, self.choiceStart)
-
-        textEnd = wx.StaticText(self, label="End")
-        self.choiceEnd = wx.Choice(self, choices=sweepChoices)
-        self.choiceEnd.SetSelection(len(self.sweepTimeStamps) - 1)
-        self.Bind(wx.EVT_CHOICE, self.__on_choice, self.choiceEnd)
-
-        textSweeps = wx.StaticText(self, label="Sweeps")
-        self.textSweeps = wx.StaticText(self, label="")
-
         self.checkAxes = wx.CheckBox(self, label='Axes')
         self.checkAxes.SetValue(True)
         self.Bind(wx.EVT_CHECKBOX, self.__on_axes, self.checkAxes)
@@ -386,13 +370,33 @@ class DialogSeq(wx.Dialog):
         sizerCheck.Add(self.checkAxes, flag=wx.ALL, border=5)
         sizerCheck.Add(self.checkGrid, flag=wx.ALL, border=5)
         sizerCheck.Add(self.checkBar, flag=wx.ALL, border=5)
-        buttonSize = wx.Button(self, label='Image size')
+
+        self.sweepTimeStamps = [timeStamp for timeStamp in spectrum.keys()]
+        sweepChoices = [format_time(timeStamp, True) for timeStamp in self.sweepTimeStamps]
+
+        textStart = wx.StaticText(self, label="Start")
+        self.choiceStart = wx.Choice(self, choices=sweepChoices)
+        self.choiceStart.SetSelection(0)
+        self.Bind(wx.EVT_CHOICE, self.__on_choice, self.choiceStart)
+
+        textEnd = wx.StaticText(self, label="End")
+        self.choiceEnd = wx.Choice(self, choices=sweepChoices)
+        self.choiceEnd.SetSelection(len(self.sweepTimeStamps) - 1)
+        self.Bind(wx.EVT_CHOICE, self.__on_choice, self.choiceEnd)
+
+        self.textSweeps = wx.StaticText(self, label="")
+
+        textSize = wx.StaticText(self, label='Image size')
+        self.textSize = wx.StaticText(self)
+        buttonSize = wx.Button(self, label='Change...')
         self.Bind(wx.EVT_BUTTON, self.__on_imagesize, buttonSize)
+        self.__show_image_size()
 
         self.editDir = wx.TextCtrl(self)
         self.editDir.SetValue(settings.dirExport)
 
-        buttonBrowse = wx.Button(self, label='Browse')
+        textDir = wx.StaticText(self, label='Output directory')
+        buttonBrowse = wx.Button(self, label='Browse...')
         self.Bind(wx.EVT_BUTTON, self.__on_browse, buttonBrowse)
 
         sizerButtons = wx.StdDialogButtonSizer()
@@ -406,27 +410,31 @@ class DialogSeq(wx.Dialog):
         sizerGrid = wx.GridBagSizer(5, 5)
         sizerGrid.Add(self.canvas, pos=(0, 0), span=(1, 6),
                       flag=wx.EXPAND | wx.ALL, border=5)
-        sizerGrid.Add(textStart, pos=(1, 0),
+        sizerGrid.Add(sizerCheck, pos=(1, 0), span=(1, 6),
                       flag=wx.ALIGN_CENTRE_VERTICAL | wx.ALL, border=5)
-        sizerGrid.Add(self.choiceStart, pos=(1, 1),
+        sizerGrid.Add(textStart, pos=(2, 0),
+                      flag=wx.ALIGN_CENTRE_VERTICAL | wx.ALL, border=5)
+        sizerGrid.Add(self.choiceStart, pos=(2, 1),
                       flag=wx.ALL, border=5)
-        sizerGrid.Add(textEnd, pos=(1, 2),
+        sizerGrid.Add(textEnd, pos=(3, 0),
                       flag=wx.ALIGN_CENTRE_VERTICAL | wx.ALL, border=5)
-        sizerGrid.Add(self.choiceEnd, pos=(1, 3),
+        sizerGrid.Add(self.choiceEnd, pos=(3, 1),
                       flag=wx.ALL, border=5)
-        sizerGrid.Add(textSweeps, pos=(1, 4),
+        sizerGrid.Add(self.textSweeps, pos=(3, 2),
                       flag=wx.ALIGN_CENTRE_VERTICAL | wx.ALL, border=5)
-        sizerGrid.Add(self.textSweeps, pos=(1, 5),
-                      flag=wx.ALIGN_CENTRE_VERTICAL | wx.ALL, border=5)
-        sizerGrid.Add(sizerCheck, pos=(2, 0), span=(1, 4),
-                      flag=wx.ALIGN_CENTRE_VERTICAL | wx.ALL, border=5)
-        sizerGrid.Add(buttonSize, pos=(3, 0),
+        sizerGrid.Add(textSize, pos=(4, 0),
                       flag=wx.ALL, border=5)
-        sizerGrid.Add(self.editDir, pos=(4, 0), span=(1, 5),
+        sizerGrid.Add(self.textSize, pos=(4, 1),
+                      flag=wx.ALL, border=5)
+        sizerGrid.Add(buttonSize, pos=(4, 2),
+                      flag=wx.ALL, border=5)
+        sizerGrid.Add(textDir, pos=(5, 0),
+                      flag=wx.ALL, border=5)
+        sizerGrid.Add(self.editDir, pos=(5, 1), span=(1, 4),
                       flag=wx.ALL | wx.EXPAND, border=5)
-        sizerGrid.Add(buttonBrowse, pos=(4, 5),
+        sizerGrid.Add(buttonBrowse, pos=(5, 5),
                       flag=wx.ALL, border=5)
-        sizerGrid.Add(sizerButtons, pos=(5, 5),
+        sizerGrid.Add(sizerButtons, pos=(6, 5),
                       flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
 
         self.SetSizerAndFit(sizerGrid)
@@ -461,6 +469,7 @@ class DialogSeq(wx.Dialog):
     def __on_imagesize(self, _event):
         dlg = DialogImageSize(self, self.settings)
         dlg.ShowModal()
+        self.__show_image_size()
 
     def __on_browse(self, _event):
         directory = self.editDir.GetValue()
@@ -525,7 +534,7 @@ class DialogSeq(wx.Dialog):
         start, end = self.__get_range()
         self.__spectrum_range(start, end)
 
-        self.textSweeps.SetLabel('{0}'.format(len(self.sweeps)))
+        self.textSweeps.SetLabel('Sweeps: {0}'.format(len(self.sweeps)))
 
         if len(self.sweeps) > 0:
             total = count_points(self.sweeps)
@@ -534,6 +543,11 @@ class DialogSeq(wx.Dialog):
                 self.plot.set_plot(self.sweeps, extent, False)
         else:
             self.plot.clear_plots()
+
+    def __show_image_size(self):
+        self.textSize.SetLabel('{0}" x {1}" @ {2}dpi'.format(self.settings.exportWidth,
+                                                             self.settings.exportHeight,
+                                                             self.settings.exportDpi))
 
     def __get_range(self):
         start = self.sweepTimeStamps[self.choiceStart.GetSelection()]
