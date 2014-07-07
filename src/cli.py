@@ -131,7 +131,7 @@ class Cli(object):
         fullName = os.path.join(directory, filename)
         if ext == ".rfs":
             scanInfo = ScanInfo()
-            scanInfo.setFromSettings(self.settings)
+            scanInfo.set_from_settings(self.settings)
 
             save_plot(fullName, scanInfo, self.spectrum, {})
         else:

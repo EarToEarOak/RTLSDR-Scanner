@@ -28,6 +28,8 @@ from wx.grid import PyGridCellRenderer
 
 
 class Led(wx.PyControl):
+    PULSE_TIME = 250
+
     def __init__(self, parent, id=wx.ID_ANY, label=''):
         self.on = False
 
@@ -86,7 +88,7 @@ class Led(wx.PyControl):
 
         self.on = True
         self.Refresh()
-        self.timer.Start(250)
+        self.timer.Start(Led.PULSE_TIME)
 
 
 class CellRenderer(PyGridCellRenderer):

@@ -920,7 +920,7 @@ class FrameMain(wx.Frame):
             self.__set_control_state(False)
             samples = calc_samples(self.settings.dwell)
             self.status.set_info('')
-            self.scanInfo.setFromSettings(self.settings)
+            self.scanInfo.set_from_settings(self.settings)
             time = datetime.datetime.utcnow().replace(microsecond=0)
             self.scanInfo.time = time.isoformat() + "Z"
             self.scanInfo.lat = None
@@ -1204,7 +1204,7 @@ class FrameMain(wx.Frame):
         self.scanInfo, spectrum, location = open_plot(dirname, filename)
 
         if len(spectrum) > 0:
-            self.scanInfo.setToSettings(self.settings)
+            self.scanInfo.set_to_settings(self.settings)
             self.spectrum = spectrum
             self.location = location
             self.__saved(True)

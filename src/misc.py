@@ -83,6 +83,7 @@ class ValidatorCoord(wx.PyValidator):
 class RemoteControl(object):
     def __init__(self):
         self.connected = False
+        self.socket = None
 
     def __connect(self):
         if not self.connected:

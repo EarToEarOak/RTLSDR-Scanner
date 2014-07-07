@@ -454,8 +454,8 @@ class DialogSeq(wx.Dialog):
                 if not cont:
                     break
                 count += 1
-        except IOError as e:
-            wx.MessageBox(e.strerror, 'Error', wx.OK | wx.ICON_WARNING)
+        except IOError as error:
+            wx.MessageBox(error.strerror, 'Error', wx.OK | wx.ICON_WARNING)
         finally:
             dlgProgress.Destroy()
             self.EndModal(wx.ID_OK)

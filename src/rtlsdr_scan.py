@@ -34,8 +34,8 @@ try:
     import matplotlib
     matplotlib.interactive(True)
     matplotlib.use('WXAgg')
-    import rtlsdr
-    import wx
+    import rtlsdr  # @UnusedImport
+    import wx  # @UnusedImport
 except ImportError as error:
     print 'Import error: {0}'.format(error)
     input('\nError importing libraries\nPress [Return] to exit')

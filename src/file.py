@@ -153,7 +153,7 @@ class ScanInfo(object):
     lon = None
     desc = ''
 
-    def setFromSettings(self, settings):
+    def set_from_settings(self, settings):
         self.start = settings.start
         self.stop = settings.stop
         self.dwell = settings.dwell
@@ -168,7 +168,7 @@ class ScanInfo(object):
         self.calibration = device.calibration
         self.tuner = device.tuner
 
-    def setToSettings(self, settings):
+    def set_to_settings(self, settings):
         settings.start = self.start
         settings.stop = self.stop
         settings.dwell = self.dwell
