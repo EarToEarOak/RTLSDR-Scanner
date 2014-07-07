@@ -1905,6 +1905,7 @@ class DialogDevicesGPS(wx.Dialog):
             device.type = DeviceGPS.TYPE.index(self.gridDev.GetCellValue(index,
                                                                          self.COL_TYPE))
             self.__set_dev_grid()
+            self.SetSizerAndFit(self.devbox)
             event.Skip()
         elif col == self.COL_HOST:
             if device.type != DeviceGPS.NMEA_SERIAL:
