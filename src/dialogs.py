@@ -329,9 +329,9 @@ class DialogImageSize(wx.Dialog):
         self.SetSizerAndFit(sizer)
 
     def __on_ok(self, _event):
-        self.settings.width = self.ctrlWidth.GetValue()
-        self.settings.height = self.ctrlHeight.GetValue()
-        self.settings.dpi = self.spinDpi.GetValue()
+        self.settings.exportWidth = self.ctrlWidth.GetValue()
+        self.settings.exportHeight = self.ctrlHeight.GetValue()
+        self.settings.exportDpi = self.spinDpi.GetValue()
 
         self.EndModal(wx.ID_OK)
 
