@@ -291,7 +291,7 @@ class DialogAutoCal(wx.Dialog):
 
 
 class DialogImageSize(wx.Dialog):
-    def __init__(self, parent, settings):
+    def __init__(self, parent, settings, onlyDpi=False):
         wx.Dialog.__init__(self, parent=parent, title='Image settings')
 
         self.settings = settings
@@ -325,6 +325,13 @@ class DialogImageSize(wx.Dialog):
         sizer.Add(textDpi, pos=(2, 0), flag=wx.EXPAND | wx.ALL, border=5)
         sizer.Add(self.spinDpi, pos=(2, 1), flag=wx.EXPAND | wx.ALL, border=5)
         sizer.Add(sizerButtons, pos=(3, 1), flag=wx.EXPAND | wx.ALL, border=5)
+        sizer.SetEmptyCellSize((0, 0))
+
+        if onlyDpi:
+            textWidth.Hide()
+            self.ctrlWidth.Hide()
+            textHeight.Hide()
+            self.ctrlHeight.Hide()
 
         self.SetSizerAndFit(sizer)
 
@@ -560,9 +567,9 @@ class DialogGeo(wx.Dialog):
     def __init__(self, parent, spectrum, location, settings):
         self.spectrum = spectrum
         self.location = location
+        self.settings = settings
         self.directory = settings.dirExport
         self.colourMap = settings.colourMap
-        self.dpi = settings.exportDpi
         self.canvas = None
         self.extent = None
         self.xyz = None
@@ -571,7 +578,6 @@ class DialogGeo(wx.Dialog):
         self.plotCont = True
         self.plotPoint = False
         self.plot = None
-        self.colourMap = settings.colourMap
 
         wx.Dialog.__init__(self, parent=parent, title='Export Map')
 
@@ -624,6 +630,12 @@ class DialogGeo(wx.Dialog):
         buttonUpdate = wx.Button(self, label='Update')
         self.Bind(wx.EVT_BUTTON, self.__on_update, buttonUpdate)
 
+        textRes = wx.StaticText(self, label='Image resolution')
+        self.textRes = wx.StaticText(self)
+        buttonRes = wx.Button(self, label='Change...')
+        self.Bind(wx.EVT_BUTTON, self.__on_imageres, buttonRes)
+        self.__show_image_res()
+
         sizerButtons = wx.StdDialogButtonSizer()
         buttonOk = wx.Button(self, wx.ID_OK)
         buttonCancel = wx.Button(self, wx.ID_CANCEL)
@@ -653,7 +665,13 @@ class DialogGeo(wx.Dialog):
                       flag=wx.ALL, border=5)
         sizerGrid.Add(buttonUpdate, pos=(3, 2), span=(2, 1),
                       flag=wx.ALL | wx.ALIGN_CENTRE_VERTICAL, border=5)
-        sizerGrid.Add(sizerButtons, pos=(5, 2), span=(1, 1),
+        sizerGrid.Add(textRes, pos=(5, 0), span=(1, 1),
+                      flag=wx.ALL, border=5)
+        sizerGrid.Add(self.textRes, pos=(5, 1), span=(1, 1),
+                      flag=wx.ALL, border=5)
+        sizerGrid.Add(buttonRes, pos=(5, 2), span=(1, 1),
+                      flag=wx.ALL, border=5)
+        sizerGrid.Add(sizerButtons, pos=(6, 2), span=(1, 1),
                       flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
 
         self.SetSizerAndFit(sizerGrid)
@@ -755,6 +773,11 @@ class DialogGeo(wx.Dialog):
         self.__setup_plot()
         self.__draw_plot()
 
+    def __on_imageres(self, _event):
+        dlg = DialogImageSize(self, self.settings, True)
+        dlg.ShowModal()
+        self.__show_image_res()
+
     def __on_ok(self, _event):
         self.EndModal(wx.ID_OK)
 
@@ -785,6 +808,9 @@ class DialogGeo(wx.Dialog):
             self.plot.set_cmap(self.colourMap)
             self.canvas.draw()
 
+    def __show_image_res(self):
+        self.textRes.SetLabel('{0}dpi'.format(self.settings.exportDpi))
+
     def get_filename(self):
         return self.filename
 
@@ -798,7 +824,7 @@ class DialogGeo(wx.Dialog):
         width = self.extent[1] - self.extent[0]
         height = self.extent[3] - self.extent[2]
         self.figure.set_size_inches((6, 6. * width / height))
-        self.figure.set_dpi(self.dpi)
+        self.figure.set_dpi(self.settings.dpi)
         self.axes.set_title('')
         self.figure.patch.set_alpha(0)
         self.axes.axesPatch.set_alpha(0)
