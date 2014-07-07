@@ -299,15 +299,22 @@ class DialogImageSize(wx.Dialog):
         textWidth = wx.StaticText(self, label="Width (inches)")
         self.ctrlWidth = NumCtrl(self, integerWidth=2, fractionWidth=1)
         self.ctrlWidth.SetValue(settings.exportWidth);
+        self.Bind(masked.EVT_NUM, self.__update_size, self.ctrlWidth)
 
         textHeight = wx.StaticText(self, label="Height (inches)")
         self.ctrlHeight = NumCtrl(self, integerWidth=2, fractionWidth=1)
         self.ctrlHeight.SetValue(settings.exportHeight);
+        self.Bind(masked.EVT_NUM, self.__update_size, self.ctrlHeight)
 
         textDpi = wx.StaticText(self, label="Dots per inch")
         self.spinDpi = wx.SpinCtrl(self)
         self.spinDpi.SetRange(32, 3200)
         self.spinDpi.SetValue(settings.exportDpi)
+        self.Bind(wx.EVT_SPINCTRL, self.__update_size, self.spinDpi)
+
+        textSize = wx.StaticText(self, label='Size')
+        self.textSize = wx.StaticText(self)
+        self.__update_size(None)
 
         sizerButtons = wx.StdDialogButtonSizer()
         buttonOk = wx.Button(self, wx.ID_OK)
@@ -318,13 +325,24 @@ class DialogImageSize(wx.Dialog):
         self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
 
         sizer = wx.GridBagSizer(5, 5)
-        sizer.Add(textWidth, pos=(0, 0), flag=wx.EXPAND | wx.ALL, border=5)
-        sizer.Add(self.ctrlWidth, pos=(0, 1), flag=wx.EXPAND | wx.ALL, border=5)
-        sizer.Add(textHeight, pos=(1, 0), flag=wx.EXPAND | wx.ALL, border=5)
-        sizer.Add(self.ctrlHeight, pos=(1, 1), flag=wx.EXPAND | wx.ALL, border=5)
-        sizer.Add(textDpi, pos=(2, 0), flag=wx.EXPAND | wx.ALL, border=5)
-        sizer.Add(self.spinDpi, pos=(2, 1), flag=wx.EXPAND | wx.ALL, border=5)
-        sizer.Add(sizerButtons, pos=(3, 1), flag=wx.EXPAND | wx.ALL, border=5)
+        sizer.Add(textWidth, pos=(0, 0),
+                  flag=wx.EXPAND | wx.ALL, border=5)
+        sizer.Add(self.ctrlWidth, pos=(0, 1),
+                  flag=wx.EXPAND | wx.ALL, border=5)
+        sizer.Add(textHeight, pos=(1, 0),
+                  flag=wx.EXPAND | wx.ALL, border=5)
+        sizer.Add(self.ctrlHeight, pos=(1, 1),
+                  flag=wx.EXPAND | wx.ALL, border=5)
+        sizer.Add(textDpi, pos=(2, 0),
+                  flag=wx.EXPAND | wx.ALL, border=5)
+        sizer.Add(self.spinDpi, pos=(2, 1),
+                  flag=wx.EXPAND | wx.ALL, border=5)
+        sizer.Add(textSize, pos=(3, 0),
+                  flag=wx.EXPAND | wx.ALL, border=5)
+        sizer.Add(self.textSize, pos=(3, 1),
+                  flag=wx.EXPAND | wx.ALL, border=5)
+        sizer.Add(sizerButtons, pos=(4, 1),
+                  flag=wx.EXPAND | wx.ALL, border=5)
         sizer.SetEmptyCellSize((0, 0))
 
         if onlyDpi:
@@ -332,8 +350,17 @@ class DialogImageSize(wx.Dialog):
             self.ctrlWidth.Hide()
             textHeight.Hide()
             self.ctrlHeight.Hide()
+            self.textSize.Hide()
 
         self.SetSizerAndFit(sizer)
+
+    def __update_size(self, _event):
+        width = self.ctrlWidth.GetValue()
+        height = self.ctrlHeight.GetValue()
+        dpi = self.spinDpi.GetValue()
+
+        self.textSize.SetLabel('{:.0f}px x {:.0f}px'.format(width * dpi,
+                                                            height * dpi))
 
     def __on_ok(self, _event):
         self.settings.exportWidth = self.ctrlWidth.GetValue()
