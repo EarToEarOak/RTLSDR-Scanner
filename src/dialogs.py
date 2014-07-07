@@ -593,6 +593,12 @@ class DialogGeo(wx.Dialog):
         self.checkPoint.SetValue(self.plotPoint)
         self.Bind(wx.EVT_CHECKBOX, self.__on_point, self.checkPoint)
 
+        sizerCheck = wx.BoxSizer(wx.HORIZONTAL)
+        sizerCheck.Add(self.checkAxes, flag=wx.ALL, border=5)
+        sizerCheck.Add(self.checkHeat, flag=wx.ALL, border=5)
+        sizerCheck.Add(self.checkCont, flag=wx.ALL, border=5)
+        sizerCheck.Add(self.checkPoint, flag=wx.ALL, border=5)
+
         colours = get_colours()
         self.choiceColour = wx.Choice(self, choices=colours)
         self.choiceColour.SetSelection(colours.index(self.colourMap))
@@ -629,31 +635,25 @@ class DialogGeo(wx.Dialog):
         self.__setup_plot()
 
         sizerGrid = wx.GridBagSizer(5, 5)
-        sizerGrid.Add(self.canvas, pos=(0, 0), span=(1, 5),
+        sizerGrid.Add(self.canvas, pos=(0, 0), span=(1, 3),
                       flag=wx.EXPAND | wx.ALL, border=5)
         sizerGrid.Add(self.choiceColour, pos=(1, 0), span=(1, 2),
                       flag=wx.ALL, border=5)
         sizerGrid.Add(self.colourBar, pos=(1, 2), span=(1, 1),
                       flag=wx.ALL, border=5)
-        sizerGrid.Add(self.checkAxes, pos=(2, 0), span=(1, 1),
-                      flag=wx.ALL, border=5)
-        sizerGrid.Add(self.checkHeat, pos=(2, 1), span=(1, 1),
-                      flag=wx.ALL, border=5)
-        sizerGrid.Add(self.checkCont, pos=(2, 2), span=(1, 1),
-                      flag=wx.ALL, border=5)
-        sizerGrid.Add(self.checkPoint, pos=(2, 3), span=(1, 1),
+        sizerGrid.Add(sizerCheck, pos=(2, 0), span=(1, 4),
                       flag=wx.ALL, border=5)
         sizerGrid.Add(textCentre, pos=(3, 0), span=(1, 1),
                       flag=wx.ALL, border=5)
         sizerGrid.Add(self.spinCentre, pos=(3, 1), span=(1, 1),
                       flag=wx.ALL, border=5)
-        sizerGrid.Add(textBw, pos=(3, 2), span=(1, 1),
+        sizerGrid.Add(textBw, pos=(4, 0), span=(1, 1),
                       flag=wx.ALL, border=5)
-        sizerGrid.Add(self.spinBw, pos=(3, 3), span=(1, 1),
+        sizerGrid.Add(self.spinBw, pos=(4, 1), span=(1, 1),
                       flag=wx.ALL, border=5)
-        sizerGrid.Add(buttonUpdate, pos=(3, 4), span=(1, 1),
-                      flag=wx.ALL, border=5)
-        sizerGrid.Add(sizerButtons, pos=(4, 4), span=(1, 1),
+        sizerGrid.Add(buttonUpdate, pos=(3, 2), span=(2, 1),
+                      flag=wx.ALL | wx.ALIGN_CENTRE_VERTICAL, border=5)
+        sizerGrid.Add(sizerButtons, pos=(5, 2), span=(1, 1),
                       flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
 
         self.SetSizerAndFit(sizerGrid)
