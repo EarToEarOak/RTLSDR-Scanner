@@ -290,12 +290,58 @@ class DialogAutoCal(wx.Dialog):
         return self.textFreq.GetValue()
 
 
+class DialogImageSize(wx.Dialog):
+    def __init__(self, parent, settings):
+        wx.Dialog.__init__(self, parent=parent, title='Image settings')
+
+        self.settings = settings
+
+        textWidth = wx.StaticText(self, label="Width (inches)")
+        self.ctrlWidth = NumCtrl(self, integerWidth=2, fractionWidth=1)
+        self.ctrlWidth.SetValue(settings.exportWidth);
+
+        textHeight = wx.StaticText(self, label="Height (inches)")
+        self.ctrlHeight = NumCtrl(self, integerWidth=2, fractionWidth=1)
+        self.ctrlHeight.SetValue(settings.exportHeight);
+
+        textDpi = wx.StaticText(self, label="Dots per inch")
+        self.spinDpi = wx.SpinCtrl(self)
+        self.spinDpi.SetRange(32, 3200)
+        self.spinDpi.SetValue(settings.exportDpi)
+
+        sizerButtons = wx.StdDialogButtonSizer()
+        buttonOk = wx.Button(self, wx.ID_OK)
+        buttonCancel = wx.Button(self, wx.ID_CANCEL)
+        sizerButtons.AddButton(buttonOk)
+        sizerButtons.AddButton(buttonCancel)
+        sizerButtons.Realize()
+        self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
+
+        sizer = wx.GridBagSizer(5, 5)
+        sizer.Add(textWidth, pos=(0, 0), flag=wx.EXPAND | wx.ALL, border=5)
+        sizer.Add(self.ctrlWidth, pos=(0, 1), flag=wx.EXPAND | wx.ALL, border=5)
+        sizer.Add(textHeight, pos=(1, 0), flag=wx.EXPAND | wx.ALL, border=5)
+        sizer.Add(self.ctrlHeight, pos=(1, 1), flag=wx.EXPAND | wx.ALL, border=5)
+        sizer.Add(textDpi, pos=(2, 0), flag=wx.EXPAND | wx.ALL, border=5)
+        sizer.Add(self.spinDpi, pos=(2, 1), flag=wx.EXPAND | wx.ALL, border=5)
+        sizer.Add(sizerButtons, pos=(3, 1), flag=wx.EXPAND | wx.ALL, border=5)
+
+        self.SetSizerAndFit(sizer)
+
+    def __on_ok(self, _event):
+        self.settings.width = self.ctrlWidth.GetValue()
+        self.settings.height = self.ctrlHeight.GetValue()
+        self.settings.dpi = self.spinDpi.GetValue()
+
+        self.EndModal(wx.ID_OK)
+
+
 class DialogSeq(wx.Dialog):
     POLL = 250
 
     def __init__(self, parent, spectrum, settings):
         self.spectrum = spectrum
-        self.dpi = settings.exportDpi
+        self.settings = settings
         self.sweeps = None
         self.isExporting = False
 
@@ -340,8 +386,9 @@ class DialogSeq(wx.Dialog):
         sizerCheck.Add(self.checkAxes, flag=wx.ALL, border=5)
         sizerCheck.Add(self.checkGrid, flag=wx.ALL, border=5)
         sizerCheck.Add(self.checkBar, flag=wx.ALL, border=5)
+        buttonSize = wx.Button(self, label='Image size')
+        self.Bind(wx.EVT_BUTTON, self.__on_imagesize, buttonSize)
 
-        textDir = wx.StaticText(self, label="Output directory")
         self.editDir = wx.TextCtrl(self)
         self.editDir.SetValue(settings.dirExport)
 
@@ -373,7 +420,7 @@ class DialogSeq(wx.Dialog):
                       flag=wx.ALIGN_CENTRE_VERTICAL | wx.ALL, border=5)
         sizerGrid.Add(sizerCheck, pos=(2, 0), span=(1, 4),
                       flag=wx.ALIGN_CENTRE_VERTICAL | wx.ALL, border=5)
-        sizerGrid.Add(textDir, pos=(3, 0), span=(1, 6),
+        sizerGrid.Add(buttonSize, pos=(3, 0),
                       flag=wx.ALL, border=5)
         sizerGrid.Add(self.editDir, pos=(4, 0), span=(1, 5),
                       flag=wx.ALL | wx.EXPAND, border=5)
@@ -410,6 +457,10 @@ class DialogSeq(wx.Dialog):
     def __on_bar(self, _event):
         self.plot.set_bar(self.checkBar.GetValue())
         self.__draw_plot()
+
+    def __on_imagesize(self, _event):
+        dlg = DialogImageSize(self, self.settings)
+        dlg.ShowModal()
 
     def __on_browse(self, _event):
         directory = self.editDir.GetValue()
@@ -448,7 +499,9 @@ class DialogSeq(wx.Dialog):
                 thread = self.plot.set_plot({timeStamp: sweep}, extent, False)
                 thread.join()
                 filename = os.path.join(directory, '{0}.png'.format(timeStamp))
-                export_image(filename, File.ImageType.PNG, self.figure, self.dpi)
+                export_image(filename, File.ImageType.PNG,
+                             self.figure,
+                             self.settings)
 
                 cont, _skip = dlgProgress.Update(count, name)
                 if not cont:

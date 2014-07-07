@@ -41,7 +41,7 @@ from constants import F_MIN, F_MAX, MODE, DWELL, NFFT, DISPLAY, Warn, \
 from devices import get_devices_rtl
 from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, \
     DialogDevicesRTL, DialogCompare, DialogAutoCal, DialogAbout, DialogSaveWarn, \
-    DialogDevicesGPS, DialogGeo, DialogSeq
+    DialogDevicesGPS, DialogGeo, DialogSeq, DialogImageSize
 from events import EVENT_THREAD, Event, EventThread, post_event
 from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
     export_map, extension_add, File
@@ -523,25 +523,31 @@ class FrameMain(wx.Frame):
         dlg.Destroy()
 
     def __on_export_image(self, _event):
-        dlg = wx.FileDialog(self, "Export image to file",
-                            self.settings.dirExport,
-                            self.filename,
-                            File.get_type_filters(File.Types.IMAGE),
-                            wx.SAVE | wx.OVERWRITE_PROMPT)
-        dlg.SetFilterIndex(File.ImageType.PNG)
-        if dlg.ShowModal() == wx.ID_OK:
+        dlgFile = wx.FileDialog(self, "Export image to file",
+                                self.settings.dirExport,
+                                self.filename,
+                                File.get_type_filters(File.Types.IMAGE),
+                                wx.SAVE | wx.OVERWRITE_PROMPT)
+        dlgFile.SetFilterIndex(File.ImageType.PNG)
+        if dlgFile.ShowModal() == wx.ID_OK:
+            dlgImg = DialogImageSize(self, self.settings)
+            if dlgImg.ShowModal() != wx.ID_OK:
+                dlgFile.Destroy()
+                return
+
             self.status.set_general("Exporting")
-            fileName = dlg.GetFilename()
-            dirName = dlg.GetDirectory()
+            fileName = dlgFile.GetFilename()
+            dirName = dlgFile.GetDirectory()
             self.settings.dirExport = dirName
-            fileName = extension_add(fileName, dlg.GetFilterIndex(),
+            fileName = extension_add(fileName, dlgFile.GetFilterIndex(),
                                      File.Types.IMAGE)
             fullName = os.path.join(dirName, fileName)
-            exportType = dlg.GetFilterIndex()
+            exportType = dlgFile.GetFilterIndex()
             export_image(fullName, exportType,
-                         self.graph.get_figure(), self.settings.exportDpi)
+                         self.graph.get_figure(),
+                         self.settings)
             self.status.set_general("Finished")
-        dlg.Destroy()
+        dlgFile.Destroy()
 
     def __on_export_image_seq(self, _event):
         dlgSeq = DialogSeq(self, self.spectrum, self.settings)
