@@ -1457,6 +1457,83 @@ class DialogAdvPrefs(wx.Dialog):
         self.EndModal(wx.ID_OK)
 
 
+class DialogWinFunc(wx.Dialog):
+    def __init__(self, parent, winFunc):
+        self.winFunc = winFunc
+        x = numpy.linspace(-numpy.pi, numpy.pi, 1000)
+        self.data = numpy.sin(x) + 0j
+
+        wx.Dialog.__init__(self, parent=parent, title="Window Function")
+
+        self.figure = matplotlib.figure.Figure(facecolor='white',
+                                               figsize=(5, 4))
+        self.figure.suptitle('Window Function')
+        self.canvas = FigureCanvas(self, -1, self.figure)
+        self.axesWin = self.figure.add_subplot(211)
+        self.axesFft = self.figure.add_subplot(212)
+
+        text = wx.StaticText(self, label='Function')
+
+        self.choice = wx.Choice(self, choices=WINFUNC[::2])
+        self.choice.SetSelection(WINFUNC[::2].index(winFunc))
+
+        sizerButtons = wx.StdDialogButtonSizer()
+        buttonOk = wx.Button(self, wx.ID_OK)
+        buttonCancel = wx.Button(self, wx.ID_CANCEL)
+        sizerButtons.AddButton(buttonOk)
+        sizerButtons.AddButton(buttonCancel)
+        sizerButtons.Realize()
+        self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
+
+        sizerFunction = wx.BoxSizer(wx.HORIZONTAL)
+        sizerFunction.Add(text, flag=wx.ALL, border=5)
+        sizerFunction.Add(self.choice, flag=wx.ALL, border=5)
+
+        sizerGrid = wx.GridBagSizer(5, 5)
+        sizerGrid.Add(self.canvas, pos=(0, 0), span=(1, 2), border=5)
+        sizerGrid.Add(sizerFunction, pos=(1, 0), span=(1, 2),
+                      flag=wx.ALIGN_CENTRE | wx.ALL, border=5)
+        sizerGrid.Add(sizerButtons, pos=(2, 1),
+                      flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
+
+        self.Bind(wx.EVT_CHOICE, self.__on_choice, self.choice)
+        self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
+
+        self.__plot()
+
+        self.SetSizerAndFit(sizerGrid)
+
+    def __plot(self):
+        pos = WINFUNC[::2].index(self.winFunc)
+        function = WINFUNC[1::2][pos](512)
+
+        self.axesWin.clear()
+        self.axesWin.plot(function, 'g')
+        self.axesWin.set_xlabel('Time')
+        self.axesWin.set_ylabel('Multiplier')
+        self.axesWin.set_xlim(0, 512)
+        self.axesWin.set_xticklabels([])
+        self.axesFft.clear()
+        self.axesFft.psd(self.data, NFFT=512, Fs=1000, window=function)
+        self.axesFft.set_xlabel('Frequency')
+        self.axesFft.set_ylabel('$\mathsf{dB/\sqrt{Hz}}$')
+        self.axesFft.set_xlim(-256, 256)
+        self.axesFft.set_xticklabels([])
+        self.figure.tight_layout()
+
+        self.canvas.draw()
+
+    def __on_choice(self, _event):
+        self.winFunc = WINFUNC[::2][self.choice.GetSelection()]
+        self.plot()
+
+    def __on_ok(self, _event):
+        self.EndModal(wx.ID_OK)
+
+    def get_win_func(self):
+        return self.winFunc
+
+
 class DialogDevicesRTL(wx.Dialog):
     COL_SEL, COL_DEV, COL_TUN, COL_SER, COL_IND, \
         COL_GAIN, COL_CAL, COL_LO, COL_OFF = range(9)
@@ -1876,83 +1953,6 @@ class DialogDevicesGPS(wx.Dialog):
             if i == index:
                 tick = "1"
             self.gridDev.SetCellValue(i, self.COL_SEL, tick)
-
-
-class DialogWinFunc(wx.Dialog):
-    def __init__(self, parent, winFunc):
-        self.winFunc = winFunc
-        x = numpy.linspace(-numpy.pi, numpy.pi, 1000)
-        self.data = numpy.sin(x) + 0j
-
-        wx.Dialog.__init__(self, parent=parent, title="Window Function")
-
-        self.figure = matplotlib.figure.Figure(facecolor='white',
-                                               figsize=(5, 4))
-        self.figure.suptitle('Window Function')
-        self.canvas = FigureCanvas(self, -1, self.figure)
-        self.axesWin = self.figure.add_subplot(211)
-        self.axesFft = self.figure.add_subplot(212)
-
-        text = wx.StaticText(self, label='Function')
-
-        self.choice = wx.Choice(self, choices=WINFUNC[::2])
-        self.choice.SetSelection(WINFUNC[::2].index(winFunc))
-
-        sizerButtons = wx.StdDialogButtonSizer()
-        buttonOk = wx.Button(self, wx.ID_OK)
-        buttonCancel = wx.Button(self, wx.ID_CANCEL)
-        sizerButtons.AddButton(buttonOk)
-        sizerButtons.AddButton(buttonCancel)
-        sizerButtons.Realize()
-        self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
-
-        sizerFunction = wx.BoxSizer(wx.HORIZONTAL)
-        sizerFunction.Add(text, flag=wx.ALL, border=5)
-        sizerFunction.Add(self.choice, flag=wx.ALL, border=5)
-
-        sizerGrid = wx.GridBagSizer(5, 5)
-        sizerGrid.Add(self.canvas, pos=(0, 0), span=(1, 2), border=5)
-        sizerGrid.Add(sizerFunction, pos=(1, 0), span=(1, 2),
-                      flag=wx.ALIGN_CENTRE | wx.ALL, border=5)
-        sizerGrid.Add(sizerButtons, pos=(2, 1),
-                      flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
-
-        self.Bind(wx.EVT_CHOICE, self.__on_choice, self.choice)
-        self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
-
-        self.__plot()
-
-        self.SetSizerAndFit(sizerGrid)
-
-    def __plot(self):
-        pos = WINFUNC[::2].index(self.winFunc)
-        function = WINFUNC[1::2][pos](512)
-
-        self.axesWin.clear()
-        self.axesWin.plot(function, 'g')
-        self.axesWin.set_xlabel('Time')
-        self.axesWin.set_ylabel('Multiplier')
-        self.axesWin.set_xlim(0, 512)
-        self.axesWin.set_xticklabels([])
-        self.axesFft.clear()
-        self.axesFft.psd(self.data, NFFT=512, Fs=1000, window=function)
-        self.axesFft.set_xlabel('Frequency')
-        self.axesFft.set_ylabel('$\mathsf{dB/\sqrt{Hz}}$')
-        self.axesFft.set_xlim(-256, 256)
-        self.axesFft.set_xticklabels([])
-        self.figure.tight_layout()
-
-        self.canvas.draw()
-
-    def __on_choice(self, _event):
-        self.winFunc = WINFUNC[::2][self.choice.GetSelection()]
-        self.plot()
-
-    def __on_ok(self, _event):
-        self.EndModal(wx.ID_OK)
-
-    def get_win_func(self):
-        return self.winFunc
 
 
 class DialogGPSSerial(wx.Dialog):
