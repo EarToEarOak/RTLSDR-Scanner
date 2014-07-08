@@ -23,6 +23,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from wx import GraphicsMatrix
 import wx
 from wx.grid import PyGridCellRenderer, PyGridCellEditor
 
@@ -110,6 +111,45 @@ class SelectCellRenderer(PyGridCellRenderer):
             path.CloseSubpath()
 
             gc.StrokePath(path)
+
+
+class CheckCellRenderer(PyGridCellRenderer):
+    SIZE = 10
+    PADDING = 3
+
+    def __init__(self):
+        PyGridCellRenderer.__init__(self)
+
+    def GetBestSize(self, _grid, _attr, _dc, _row, _col):
+        return wx.Size(CheckCellRenderer.SIZE * 2, CheckCellRenderer.SIZE)
+
+    def Draw(self, grid, attr, dc, rect, row, col, _isSelected):
+        dc.SetBrush(wx.Brush(attr.GetBackgroundColour()))
+        dc.DrawRectangleRect(rect)
+
+        gc = wx.GraphicsContext.Create(dc)
+        gc.SetPen(wx.Pen(attr.GetTextColour()))
+
+        pad = CheckCellRenderer.PADDING
+        x = rect.x + pad
+        y = rect.y + pad
+        w = rect.height - pad * 2.0
+        h = rect.height - pad * 2.0
+
+        pathBox = gc.CreatePath()
+        pathBox.AddRectangle(x, y, w, h)
+        gc.StrokePath(pathBox)
+
+        if grid.GetCellValue(row, col) == "1":
+            pathTick = gc.CreatePath()
+            pathTick.MoveToPoint(1, 3)
+            pathTick.AddLineToPoint(2, 4)
+            pathTick.AddLineToPoint(4, 1)
+            scale = w / 5.0
+            transform = gc.CreateMatrix()
+            transform.Set(a=scale, d=scale, tx=x, ty=y)
+            pathTick.Transform(transform)
+            gc.StrokePath(pathTick)
 
 
 # Based on http://wiki.wxpython.org/wxGrid%20ToolTips
