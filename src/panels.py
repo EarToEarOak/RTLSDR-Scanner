@@ -35,7 +35,7 @@ from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
 import wx
 
 from constants import Display
-from controls import GridToolTips
+from controls import GridToolTips, CheckCellRenderer
 from misc import close_modeless, format_precision
 from plot import Plotter
 from plot3d import Plotter3d
@@ -655,11 +655,10 @@ class PanelMeasure(wx.Panel):
             self.grid.SetCellFont(row, col, font)
 
     def __set_check_editor(self):
-        editor = wxGrid.GridCellBoolEditor()
         for _desc, (row, col) in self.locsCheck.iteritems():
-            self.grid.SetCellEditor(row, col, editor)
+            self.grid.SetCellEditor(row, col, wxGrid.GridCellBoolEditor())
             self.grid.SetCellAlignment(row, col, wx.ALIGN_RIGHT, wx.ALIGN_CENTRE)
-            self.grid.SetColFormatBool(col)
+            self.grid.SetCellRenderer(row, col, CheckCellRenderer())
 
     def __set_check_value(self, cell, value):
         (row, col) = self.locsCheck[cell]

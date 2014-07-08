@@ -24,7 +24,7 @@
 #
 
 import wx
-from wx.grid import PyGridCellRenderer
+from wx.grid import PyGridCellRenderer, PyGridCellEditor
 
 
 class Led(wx.PyControl):
@@ -91,18 +91,25 @@ class Led(wx.PyControl):
         self.timer.Start(Led.PULSE_TIME)
 
 
-class CellRenderer(PyGridCellRenderer):
+class SelectCellRenderer(PyGridCellRenderer):
     def __init__(self):
         PyGridCellRenderer.__init__(self)
 
     def Draw(self, grid, attr, dc, rect, row, col, _isSelected):
         dc.SetBrush(wx.Brush(attr.GetBackgroundColour()))
         dc.DrawRectangleRect(rect)
+
         if grid.GetCellValue(row, col) == "1":
-            dc.SetBrush(wx.Brush(attr.GetTextColour()))
-            dc.DrawCircle(rect.x + (rect.width / 2),
-                          rect.y + (rect.height / 2),
-                          rect.height / 4)
+            gc = wx.GraphicsContext.Create(dc)
+            gc.SetPen(wx.BLACK_PEN)
+
+            path = gc.CreatePath()
+            path.AddCircle(rect.x + (rect.width / 2),
+                           rect.y + (rect.height / 2),
+                           rect.height / 4)
+            path.CloseSubpath()
+
+            gc.StrokePath(path)
 
 
 # Based on http://wiki.wxpython.org/wxGrid%20ToolTips
