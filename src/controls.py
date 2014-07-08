@@ -91,32 +91,13 @@ class Led(wx.PyControl):
         self.timer.Start(Led.PULSE_TIME)
 
 
-class SelectCellRenderer(PyGridCellRenderer):
-    def __init__(self):
-        PyGridCellRenderer.__init__(self)
-
-    def Draw(self, grid, attr, dc, rect, row, col, _isSelected):
-        dc.SetBrush(wx.Brush(attr.GetBackgroundColour()))
-        dc.DrawRectangleRect(rect)
-
-        if grid.GetCellValue(row, col) == "1":
-            gc = wx.GraphicsContext.Create(dc)
-            gc.SetPen(wx.BLACK_PEN)
-
-            path = gc.CreatePath()
-            path.AddCircle(rect.x + (rect.width / 2),
-                           rect.y + (rect.height / 2),
-                           rect.height / 4)
-            path.CloseSubpath()
-
-            gc.StrokePath(path)
-
-
 class CheckCellRenderer(PyGridCellRenderer):
     SIZE = 10
     PADDING = 3
 
-    def __init__(self):
+    def __init__(self, showBox=True):
+        self.showBox = showBox
+
         PyGridCellRenderer.__init__(self)
 
     def GetBestSize(self, _grid, _attr, _dc, _row, _col):
@@ -135,9 +116,10 @@ class CheckCellRenderer(PyGridCellRenderer):
         w = rect.height - pad * 2.0
         h = rect.height - pad * 2.0
 
-        pathBox = gc.CreatePath()
-        pathBox.AddRectangle(x, y, w, h)
-        gc.StrokePath(pathBox)
+        if self.showBox:
+            pathBox = gc.CreatePath()
+            pathBox.AddRectangle(x, y, w, h)
+            gc.StrokePath(pathBox)
 
         if grid.GetCellValue(row, col) == "1":
             pathTick = gc.CreatePath()
