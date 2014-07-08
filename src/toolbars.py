@@ -38,6 +38,10 @@ from misc import load_bitmap, get_colours
 
 
 class Statusbar(wx.StatusBar):
+    TEXT_GENERAL = 'Status: '
+    TEXT_INFO = 'Info: '
+    TEXT_GPS = 'GPS: '
+
     def __init__(self, parent):
         self.controls = [None] * 4
         self.timeStart = None
@@ -45,9 +49,9 @@ class Statusbar(wx.StatusBar):
         wx.StatusBar.__init__(self, parent, -1)
         self.SetFieldsCount(4)
 
-        self.controls[0] = wx.StaticText(self, label='')
-        self.controls[1] = wx.StaticText(self, label='')
-        self.controls[2] = Led(self, label='')
+        self.controls[0] = wx.StaticText(self, label=Statusbar.TEXT_GENERAL)
+        self.controls[1] = wx.StaticText(self, label=Statusbar.TEXT_INFO)
+        self.controls[2] = Led(self, label=Statusbar.TEXT_GPS)
 
         self.controls[3] = wx.Gauge(self, -1,
                                     style=wx.GA_HORIZONTAL | wx.GA_SMOOTH)
@@ -55,6 +59,8 @@ class Statusbar(wx.StatusBar):
 
         self.Bind(wx.EVT_SIZE, self.__on_size)
         wx.CallAfter(self.__on_size, None)
+
+        self.Fit()
 
     def __on_size(self, event):
         pos = 0
@@ -68,15 +74,15 @@ class Statusbar(wx.StatusBar):
             event.Skip()
 
     def set_general(self, text):
-        self.controls[0].SetLabel(text)
+        self.controls[0].SetLabel(Statusbar.TEXT_GENERAL + text)
         self.controls[0].SetToolTipString(text)
 
     def set_info(self, text):
-        self.controls[1].SetLabel(text)
+        self.controls[1].SetLabel(Statusbar.TEXT_INFO + text)
         self.controls[1].SetToolTipString(text)
 
     def set_gps(self, text):
-        self.controls[2].SetLabel(text)
+        self.controls[2].SetLabel(Statusbar.TEXT_GPS + text)
         self.controls[2].SetToolTipString(text)
 
     def pulse_gps(self):
