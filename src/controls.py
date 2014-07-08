@@ -23,9 +23,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from wx import GraphicsMatrix
 import wx
-from wx.grid import PyGridCellRenderer, PyGridCellEditor
+from wx.grid import PyGridCellRenderer
 
 
 class Led(wx.PyControl):
