@@ -51,7 +51,8 @@ from events import Event
 from file import open_plot, File, export_image
 from location import ThreadLocation
 from misc import close_modeless, format_time, ValidatorCoord, get_colours, \
-    nearest, load_bitmap, get_version_timestamp, get_serial_ports
+    nearest, load_bitmap, get_version_timestamp, get_serial_ports, \
+    format_precision
 from panels import PanelGraphCompare, PanelColourBar, PanelLine
 from plot import Plotter
 from rtltcp import RtlTcp
@@ -202,7 +203,9 @@ class DialogCompare(wx.Dialog):
         if None in [x, y]:
             return ""
 
-        return '{0:.6f} MHz\n{1: .2f}    dB/Hz'.format(x, y)
+        freq, level = format_precision(self.settings, x, y, units=False)
+
+        return '{} MHz\n{}    dB/Hz'.format(freq, level)
 
 
 class DialogAutoCal(wx.Dialog):
@@ -1453,6 +1456,51 @@ class DialogAdvPrefs(wx.Dialog):
     def __on_ok(self, _event):
         self.settings.overlap = self.slideOverlap.GetValue() / 100.0
         self.settings.winFunc = self.winFunc
+
+        self.EndModal(wx.ID_OK)
+
+
+class DialogFormatting(wx.Dialog):
+    def __init__(self, parent, settings):
+        self.settings = settings
+
+        wx.Dialog.__init__(self, parent=parent, title="Number formatting")
+
+        textFreq = wx.StaticText(self, label='Frequency precision')
+        self.spinFreq = wx.SpinCtrl(self, wx.ID_ANY, min=0, max=6)
+        self.spinFreq.SetValue(settings.precisionFreq)
+        self.spinFreq.SetToolTip(wx.ToolTip('Displayed frequency decimal precision'))
+
+        textLevel = wx.StaticText(self, label='Level precision')
+        self.spinLevel = wx.SpinCtrl(self, wx.ID_ANY, min=0, max=2)
+        self.spinLevel.SetValue(settings.precisionLevel)
+        self.spinLevel.SetToolTip(wx.ToolTip('Displayed level decimal precision'))
+
+        sizerButtons = wx.StdDialogButtonSizer()
+        buttonOk = wx.Button(self, wx.ID_OK)
+        buttonCancel = wx.Button(self, wx.ID_CANCEL)
+        sizerButtons.AddButton(buttonOk)
+        sizerButtons.AddButton(buttonCancel)
+        sizerButtons.Realize()
+        self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
+
+        sizer = wx.GridBagSizer(5, 5)
+        sizer.Add(textFreq, pos=(0, 0),
+                  flag=wx.EXPAND | wx.ALL, border=5)
+        sizer.Add(self.spinFreq, pos=(0, 1),
+                  flag=wx.EXPAND | wx.ALL, border=5)
+        sizer.Add(textLevel, pos=(1, 0),
+                  flag=wx.EXPAND | wx.ALL, border=5)
+        sizer.Add(self.spinLevel, pos=(1, 1),
+                  flag=wx.EXPAND | wx.ALL, border=5)
+        sizer.Add(sizerButtons, pos=(2, 1),
+                  flag=wx.EXPAND | wx.ALL, border=5)
+
+        self.SetSizerAndFit(sizer)
+
+    def __on_ok(self, _event):
+        self.settings.precisionFreq = self.spinFreq.GetValue()
+        self.settings.precisionLevel = self.spinLevel.GetValue()
 
         self.EndModal(wx.ID_OK)
 

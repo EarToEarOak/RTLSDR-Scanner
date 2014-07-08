@@ -58,6 +58,9 @@ class Settings(object):
 
         self.clickTune = True
 
+        self.precisionFreq = 6
+        self.precisionLevel = 2
+
         self.compareOne = True
         self.compareTwo = True
         self.compareDiff = True
@@ -201,6 +204,8 @@ class Settings(object):
         self.grid = self.cfg.ReadBool('grid', self.grid)
         self.plotFunc = self.cfg.ReadInt('plotFunc', self.plotFunc)
         self.clickTune = self.cfg.ReadBool('clickTune', self.clickTune)
+        self.precisionFreq = self.cfg.ReadInt('precisionFreq', self.precisionFreq)
+        self.precisionLevel = self.cfg.ReadInt('precisionLevel', self.precisionLevel)
         self.compareOne = self.cfg.ReadBool('compareOne', self.compareOne)
         self.compareTwo = self.cfg.ReadBool('compareTwo', self.compareTwo)
         self.compareDiff = self.cfg.ReadBool('compareDiff', self.compareDiff)
@@ -250,6 +255,8 @@ class Settings(object):
         self.cfg.WriteBool('grid', self.grid)
         self.cfg.WriteInt('plotFunc', self.plotFunc)
         self.cfg.WriteBool('clickTune', self.clickTune)
+        self.cfg.WriteInt('precisionFreq', self.precisionFreq)
+        self.cfg.WriteInt('precisionLevel', self.precisionLevel)
         self.cfg.WriteBool('compareOne', self.compareOne)
         self.cfg.WriteBool('compareTwo', self.compareTwo)
         self.cfg.WriteBool('compareDiff', self.compareDiff)

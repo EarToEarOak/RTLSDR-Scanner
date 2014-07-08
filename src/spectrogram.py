@@ -39,7 +39,7 @@ import numpy
 
 from constants import Markers
 from events import EventThread, Event, post_event
-from misc import format_time
+from misc import format_time, format_precision
 from spectrum import epoch_to_mpl, split_spectrum, Measure
 
 
@@ -248,13 +248,12 @@ class Spectrogram(object):
     def set_title(self, title):
         self.axes.set_title(title, fontsize='medium')
 
-    def set_plot(self, data, extent, annotate=False):
+    def set_plot(self, spectrum, extent, annotate=False):
         self.extent = extent
-        self.threadPlot = ThreadPlot(self, self.axes,
-                                     data, self.extent,
-                                     self.settings.retainMax,
-                                     self.settings.colourMap,
-                                     self.settings.autoL,
+        self.threadPlot = ThreadPlot(self, self.settings,
+                                     self.axes,
+                                     spectrum,
+                                     self.extent,
                                      self.barBase,
                                      annotate)
         self.threadPlot.start()
@@ -288,17 +287,18 @@ class Spectrogram(object):
 
 
 class ThreadPlot(threading.Thread):
-    def __init__(self, parent, axes, data, extent, retainMax, colourMap,
-                 autoL, barBase, annotate):
+    def __init__(self, parent, settings, axes, data, extent,
+                 barBase, annotate):
         threading.Thread.__init__(self)
         self.name = "Plot"
         self.parent = parent
+        self.settings = settings
         self.axes = axes
         self.data = data
         self.extent = extent
-        self.retainMax = retainMax
-        self.colourMap = colourMap
-        self.autoL = autoL
+        self.retainMax = settings.retainMax
+        self.colourMap = settings.colourMap
+        self.autoL = settings.autoL
         self.barBase = barBase
         self.annotate = annotate
 
@@ -350,7 +350,9 @@ class ThreadPlot(threading.Thread):
         textX = ((stop - start) / 50.0) + fMax
         when = format_time(tMax)
 
-        text = '{0:.6f} MHz\n{1:.2f} $\mathsf{{dB/\sqrt{{Hz}}}}$\n{2}'.format(fMax, lMax, when)
+        text = '{}\n{}\n{when}'.format(*format_precision(self.settings, fMax, lMax,
+                                                         fancyUnits=True),
+                                       when=when)
         if matplotlib.__version__ < '1.3':
             self.axes.annotate(text,
                                xy=(fMax, y), xytext=(textX, y),

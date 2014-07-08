@@ -153,6 +153,33 @@ def nearest(value, values):
     return values[offset.index(min(offset))]
 
 
+def format_precision(settings, freq=None, level=None,
+                     units=True, fancyUnits=False):
+    if freq is not None:
+        prec = settings.precisionFreq
+        width = 4 + prec
+        textFreq = '{:{width}.{prec}f}'.format(freq, width=width, prec=prec)
+        if units or fancyUnits:
+            textFreq += " MHz"
+    if level is not None:
+        prec = settings.precisionLevel
+        width = 4 + prec
+        textLevel = '{:.{prec}f}'.format(level, width=width, prec=prec)
+        if fancyUnits:
+            textLevel += r" $\mathsf{{dB/\sqrt{{Hz}}}}$"
+        elif units:
+            textLevel += " dB/Hz"
+
+    if freq and level:
+        return (textFreq, textLevel)
+    if freq:
+        return textFreq
+    if level:
+        return textLevel
+
+    return None
+
+
 def format_time(timeStamp, withDate=False):
     if timeStamp <= 1:
         return 'Unknown'

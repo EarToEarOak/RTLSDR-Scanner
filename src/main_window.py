@@ -41,14 +41,14 @@ from constants import F_MIN, F_MAX, MODE, DWELL, NFFT, DISPLAY, Warn, \
 from devices import get_devices_rtl
 from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, \
     DialogDevicesRTL, DialogCompare, DialogAutoCal, DialogAbout, DialogSaveWarn, \
-    DialogDevicesGPS, DialogGeo, DialogSeq, DialogImageSize
+    DialogDevicesGPS, DialogGeo, DialogSeq, DialogImageSize, DialogFormatting
 from events import EVENT_THREAD, Event, EventThread, post_event
 from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
     export_map, extension_add, File
 from location import ThreadLocation
 from misc import calc_samples, calc_real_dwell, \
     get_version_timestamp, get_version_timestamp_repo, add_colours, \
-    RemoteControl
+    RemoteControl, format_precision
 from panels import PanelGraph
 from printer import PrintOut
 from scan import ThreadScan, anaylse_data, update_spectrum
@@ -106,6 +106,7 @@ class FrameMain(wx.Frame):
         self.menuProperties = None
         self.menuPref = None
         self.menuAdvPref = None
+        self.menuFormatting = None
         self.menuDevicesRtl = None
         self.menuDevicesGps = None
         self.menuReset = None
@@ -317,6 +318,10 @@ class FrameMain(wx.Frame):
                                         "Preferences")
         self.menuAdvPref = menuEdit.Append(wx.ID_ANY, "&Advanced preferences...",
                                            "Advanced preferences")
+        menuEdit.AppendSeparator()
+        self.menuFormatting = menuEdit.Append(wx.ID_ANY, "&Number formatting...",
+                                              "Adjust the displayed precision of values")
+        menuEdit.AppendSeparator()
         self.menuDevicesRtl = menuEdit.Append(wx.ID_ANY, "&Radio Devices...",
                                               "Device selection and configuration")
         self.menuDevicesGps = menuEdit.Append(wx.ID_ANY, "&GPS Devices...",
@@ -383,6 +388,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.__on_exit, menuExit)
         self.Bind(wx.EVT_MENU, self.__on_pref, self.menuPref)
         self.Bind(wx.EVT_MENU, self.__on_adv_pref, self.menuAdvPref)
+        self.Bind(wx.EVT_MENU, self.__on_formatting, self.menuFormatting)
         self.Bind(wx.EVT_MENU, self.__on_devices_rtl, self.menuDevicesRtl)
         self.Bind(wx.EVT_MENU, self.__on_devices_gps, self.menuDevicesGps)
         self.Bind(wx.EVT_MENU, self.__on_reset, self.menuReset)
@@ -646,6 +652,14 @@ class FrameMain(wx.Frame):
             self.__set_control_state(True)
         dlg.Destroy()
 
+    def __on_formatting(self, _event):
+        dlg = DialogFormatting(self, self.settings)
+        if dlg.ShowModal() == wx.ID_OK:
+            self.__set_control_state(True)
+            self.graph.update_measure()
+            self.graph.redraw_plot()
+        dlg.Destroy()
+
     def __on_devices_rtl(self, _event):
         self.__get_controls()
         self.devicesRtl = self.__refresh_devices()
@@ -781,11 +795,11 @@ class FrameMain(wx.Frame):
 
         if spectrum is not None and len(spectrum) > 0:
             x = min(spectrum.keys(), key=lambda freq: abs(freq - xpos))
-            if xpos <= max(spectrum.keys(), key=float):
+            if min(spectrum.keys(), key=float) <= xpos <= max(spectrum.keys(), key=float):
                 y = spectrum[x]
-                text = "{0:.6f} MHz, {1: .2f} dB/Hz".format(x, y)
+                text = "{}, {}".format(*format_precision(self.settings, x, y))
             else:
-                text = "{0:.6f} MHz".format(xpos)
+                text = format_precision(self.settings, xpos)
 
         self.status.set_info(text)
 

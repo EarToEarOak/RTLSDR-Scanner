@@ -36,7 +36,7 @@ import wx
 
 from constants import Display
 from controls import GridToolTips
-from misc import close_modeless
+from misc import close_modeless, format_precision
 from plot import Plotter
 from plot3d import Plotter3d
 from plot_controls import MouseZoom, MouseSelect
@@ -80,7 +80,7 @@ class PanelGraph(wx.Panel):
         self.figure = matplotlib.figure.Figure(facecolor='white')
         self.canvas = FigureCanvas(self, -1, self.figure)
 
-        self.measureTable = PanelMeasure(self)
+        self.measureTable = PanelMeasure(self, settings)
 
         self.toolbar = NavigationToolbar(self.canvas, self, settings,
                                          self.__hide_overlay)
@@ -120,7 +120,7 @@ class PanelGraph(wx.Panel):
 
     def __on_press(self, event):
         if self.settings.clickTune and event.dblclick:
-            frequency = int(event.xdata*1e6)
+            frequency = int(event.xdata * 1e6)
             self.remoteControl.tune(frequency)
 
     def __on_size(self, event):
@@ -265,10 +265,13 @@ class PanelGraph(wx.Panel):
         if self.measure is not None and self.measure.is_valid():
             self.plot.draw_measure(self.measure, self.show)
 
-    def update_measure(self, measure, show):
-        self.measure = measure
-        self.show = show
-        self.__draw_overlay()
+    def update_measure(self, measure=None, show=None):
+        if not measure and not show:
+            self.measureTable.update_measure()
+        else:
+            self.measure = measure
+            self.show = show
+            self.__draw_overlay()
 
     def get_figure(self):
         return self.figure
@@ -508,10 +511,11 @@ class PanelLine(wx.Panel):
 
 
 class PanelMeasure(wx.Panel):
-    def __init__(self, graph):
+    def __init__(self, graph, settings):
         wx.Panel.__init__(self, graph)
 
         self.graph = graph
+        self.settings = settings
 
         self.measure = None
 
@@ -768,60 +772,81 @@ class PanelMeasure(wx.Panel):
         obw = self.measure.get_obw()
 
         self.__set_measure_value('start',
-                                 "{0:10.6f}".format(minF))
+                                 format_precision(self.settings,
+                                                  minF,
+                                                  units=False))
         self.__set_measure_value('end',
-                                 "{0:10.6f}".format(maxF))
+                                 format_precision(self.settings,
+                                                  maxF,
+                                                  units=False))
         self.__set_measure_value('deltaF',
-                                 "{0:10.6f}".format(maxF - minF))
-
+                                 format_precision(self.settings,
+                                                  maxF - minF,
+                                                  units=False))
         self.__set_measure_value('minFP',
-                                 "{0:10.6f}".format(minP[0]))
+                                 format_precision(self.settings,
+                                                  minP[0],
+                                                  units=False))
         self.__set_measure_value('maxFP',
-                                 "{0:10.6f}".format(maxP[0]))
+                                 format_precision(self.settings,
+                                                  maxP[0],
+                                                  units=False))
         self.__set_measure_value('deltaFP',
-                                 "{0:10.6f}".format(maxP[0] - minP[0]))
+                                 format_precision(self.settings,
+                                                  maxP[0] - minP[0],
+                                                  units=False))
         self.__set_measure_value('minP',
-                                 "{0:6.2f}".format(minP[1]))
+                                 format_precision(self.settings,
+                                                  level=minP[1],
+                                                  units=False))
         self.__set_measure_value('maxP',
-                                 "{0:6.2f}".format(maxP[1]))
+                                 format_precision(self.settings,
+                                                  level=maxP[1],
+                                                  units=False))
         self.__set_measure_value('deltaP',
-                                 "{0:6.2f}".format(maxP[1] - minP[1]))
-
+                                 format_precision(self.settings,
+                                                  level=maxP[1] - minP[1],
+                                                  units=False))
         self.__set_measure_value('avg',
-                                 "{0:6.2f}".format(avgP))
+                                 format_precision(self.settings,
+                                                  level=avgP,
+                                                  units=False))
         self.__set_measure_value('gmean',
-                                 "{0:6.2f}".format(gMeanP))
+                                 format_precision(self.settings,
+                                                  level=gMeanP,
+                                                  units=False))
         self.__set_measure_value('flat',
                                  "{0:.4f}".format(flatness))
 
         if hbw[0] is not None:
-            text = "{0:10.6f}".format(hbw[0])
+            text = format_precision(self.settings, hbw[0], units=False)
         else:
             text = ''
         self.__set_measure_value('hbwstart', text)
         if hbw[1] is not None:
-            text = "{0:10.6f}".format(hbw[1])
+            text = format_precision(self.settings, hbw[1], units=False)
         else:
             text = ''
         self.__set_measure_value('hbwend', text)
         if hbw[0] is not None and hbw[1] is not None:
-            text = "{0:10.6f}".format(hbw[1] - hbw[0])
+            text = format_precision(self.settings, hbw[1] - hbw[0], units=False)
         else:
             text = ''
         self.__set_measure_value('hbwdelta', text)
 
         if obw[0] is not None:
-            text = "{0:10.6f}".format(obw[0])
+            text = format_precision(self.settings, obw[0], units=False)
         else:
             text = ''
         self.__set_measure_value('obwstart', text)
         if obw[1] is not None:
-            text = "{0:10.6f}".format(obw[1])
+            text = text = format_precision(self.settings, obw[1], units=False)
         else:
             text = ''
         self.__set_measure_value('obwend', text)
         if obw[0] is not None and obw[1] is not None:
-            text = "{0:10.6f}".format(obw[1] - obw[0])
+            text = text = format_precision(self.settings, obw[1] - obw[0],
+                                           units=False)
         else:
             text = ''
         self.__set_measure_value('obwdelta', text)

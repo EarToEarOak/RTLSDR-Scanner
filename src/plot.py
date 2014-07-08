@@ -40,6 +40,7 @@ import numpy
 
 from constants import Markers, PlotFunc
 from events import EventThread, Event, post_event
+from misc import format_precision
 from spectrum import Measure
 
 
@@ -341,14 +342,12 @@ class Plotter(object):
 
     def set_plot(self, spectrum, extent, annotate=False):
         self.extent = extent
-        self.threadPlot = ThreadPlot(self, self.axes, spectrum,
+        self.threadPlot = ThreadPlot(self, self.settings,
+                                     self.axes,
+                                     spectrum,
                                      self.extent,
-                                     self.colourMap,
-                                     self.settings.autoL,
-                                     self.settings.lineWidth,
                                      self.barBase,
-                                     self.settings.fadeScans,
-                                     annotate, self.settings.plotFunc)
+                                     annotate)
         self.threadPlot.start()
 
         return self.threadPlot
@@ -412,22 +411,22 @@ class Plotter(object):
 
 
 class ThreadPlot(threading.Thread):
-    def __init__(self, parent, axes, data, extent,
-                 colourMap, autoL, lineWidth,
-                 barBase, fade, annotate, plotFunc):
+    def __init__(self, parent, settings, axes, data, extent,
+                 barBase, annotate):
         threading.Thread.__init__(self)
         self.name = "Plot"
         self.parent = parent
+        self.settings = settings
         self.axes = axes
         self.data = data
         self.extent = extent
-        self.colourMap = colourMap
-        self.autoL = autoL
-        self.lineWidth = lineWidth
+        self.colourMap = settings.colourMap
+        self.autoL = settings.autoL
+        self.lineWidth = settings.lineWidth
         self.barBase = barBase
         self.annotate = annotate
-        self.fade = fade
-        self.plotFunc = plotFunc
+        self.fade = settings.fadeScans
+        self.plotFunc = settings.plotFunc
 
     def run(self):
         if self.data is None:
@@ -626,7 +625,8 @@ class ThreadPlot(threading.Thread):
         start, stop = self.axes.get_xlim()
         textX = ((stop - start) / 50.0) + x
 
-        text = '{0:.6f} MHz\n{1:.2f} $\mathsf{{dB/\sqrt{{Hz}}}}$'.format(x, y)
+        text = '{}\n{}'.format(*format_precision(self.settings, x, y,
+                                                 fancyUnits=True))
         if matplotlib.__version__ < '1.3':
             self.axes.annotate(text,
                                xy=(x, y), xytext=(textX, y),
