@@ -105,6 +105,10 @@ Var PythonPath
 Var UriPath
 Var UriFile
 
+Section -UninstPrevious
+	Call uninstall
+SectionEnd
+
 Section "RTLSDR Scanner (Required)" SEC_SCAN
     SetOutPath "$INSTDIR"
     SetOverwrite ifnewer
@@ -533,6 +537,14 @@ Function install_pyrtlsdr
 	    SetOutPath "$TEMP\pyrtlsdr-master"
 	    ExecWait "python $TEMP\pyrtlsdr-master\setup.py install"
 	    RmDir /r "$TEMP\pyrtlsdr-master"
+FunctionEnd
+
+Function uninstall
+	ReadRegStr $0 HKCU "${SETTINGS_KEY}" "${SETTINGS_INSTDIR}"
+    StrCmp $0 "" notinstalled
+    DetailPrint "Removing previous version"
+    ExecWait '"$0\Uninstall.exe /S"'
+    notinstalled:
 FunctionEnd
 
 Function get_python_path
