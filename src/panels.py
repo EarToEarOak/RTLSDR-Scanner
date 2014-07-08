@@ -667,7 +667,10 @@ class PanelMeasure(wx.Panel):
 
     def __set_measure_value(self, cell, value):
         (row, col) = self.locsMeasure[cell]
-        self.grid.SetCellValue(row, col, value)
+        try:
+            self.grid.SetCellValue(row, col, value)
+        except(TypeError):
+            pass
 
     def __set_check_read_only(self, cell, readOnly):
         (row, col) = self.locsCheck[cell]

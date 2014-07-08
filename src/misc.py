@@ -155,6 +155,9 @@ def nearest(value, values):
 
 def format_precision(settings, freq=None, level=None,
                      units=True, fancyUnits=False):
+    textFreq = None
+    textLevel = None
+
     if freq is not None:
         prec = settings.precisionFreq
         width = 4 + prec
@@ -170,11 +173,11 @@ def format_precision(settings, freq=None, level=None,
         elif units:
             textLevel += " dB/Hz"
 
-    if freq and level:
+    if textFreq and textLevel:
         return (textFreq, textLevel)
-    if freq:
+    if textFreq:
         return textFreq
-    if level:
+    if textLevel:
         return textLevel
 
     return None
