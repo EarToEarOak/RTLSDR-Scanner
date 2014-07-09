@@ -168,6 +168,12 @@ class PanelGraph(wx.Panel):
         if self.mouseSelect is not None:
             self.mouseSelect.hide()
 
+    def __warn_average(self):
+        if not self.settings.retainScans:
+            self.figure.text(0, 1,
+                             'Warning: Averaging is enabled in preferences',
+                             va='top', size='x-small')
+
     def create_plot(self):
         if self.plot is not None:
             self.plot.close()
@@ -178,8 +184,10 @@ class PanelGraph(wx.Panel):
             self.plot = Plotter(self.notify, self.figure, self.settings)
         elif self.settings.display == Display.SPECT:
             self.plot = Spectrogram(self.notify, self.figure, self.settings)
+            self.__warn_average()
         else:
             self.plot = Plotter3d(self.notify, self.figure, self.settings)
+            self.__warn_average()
 
         self.__set_fonts()
 
