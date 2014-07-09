@@ -32,7 +32,7 @@
 !include "include\EnvVarUpdate.nsh"
 !include "include\fileassoc.nsh"
 
-!define INSTALLER_VERSION "11"
+!define INSTALLER_VERSION "12"
 
 !define PRODUCT_NAME "RTLSDR Scanner"
 !define PRODUCT_PUBLISHER "Ear to Ear Oak"
