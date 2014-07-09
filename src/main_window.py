@@ -749,6 +749,8 @@ class FrameMain(wx.Frame):
             self.spectrum.clear()
             self.location.clear()
             self.__scan_start()
+            if not self.settings.retainScans:
+                self.status.set_info('Warning: Averaging is enabled in preferences')
 
     def __on_stop(self, _event):
         self.stopScan = True
