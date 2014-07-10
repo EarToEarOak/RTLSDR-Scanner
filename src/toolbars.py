@@ -73,17 +73,23 @@ class Statusbar(wx.StatusBar):
         if event is not None:
             event.Skip()
 
+    def __format_tooltip(self, text):
+        if len(text):
+            width = max(map(len, text.splitlines()))
+            text += '\n' + ' ' * width
+        return text
+
     def set_general(self, text):
         self.controls[0].SetLabel(Statusbar.TEXT_GENERAL + text)
-        self.controls[0].SetToolTipString(text)
+        self.controls[0].SetToolTipString(self.__format_tooltip(text))
 
     def set_info(self, text):
         self.controls[1].SetLabel(Statusbar.TEXT_INFO + text)
-        self.controls[1].SetToolTipString(text)
+        self.controls[1].SetToolTipString(self.__format_tooltip(text))
 
     def set_gps(self, text):
         self.controls[2].SetLabel(Statusbar.TEXT_GPS + text)
-        self.controls[2].SetToolTipString(text)
+        self.controls[2].SetToolTipString(self.__format_tooltip(text))
 
     def pulse_gps(self):
         self.controls[2].pulse()
@@ -99,7 +105,7 @@ class Statusbar(wx.StatusBar):
             text = '{:.1f}%\n{}'.format(progress, delta)
 
         self.controls[3].SetValue(progress)
-        self.controls[3].SetToolTipString(text)
+        self.controls[3].SetToolTipString(self.__format_tooltip(text))
 
     def show_progress(self):
         self.controls[3].Show()
