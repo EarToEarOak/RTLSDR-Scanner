@@ -75,8 +75,9 @@ class Statusbar(wx.StatusBar):
 
     def __format_tooltip(self, text):
         if len(text):
-            width = max(map(len, text.splitlines()))
-            text += '\n' + ' ' * width
+            lines = text.splitlines()
+            width = max(map(len, lines))
+            lines[-1] += '\n' + ' ' * (width - len(lines[-1]))
         return text
 
     def set_general(self, text):
