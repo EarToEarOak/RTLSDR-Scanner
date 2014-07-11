@@ -956,7 +956,7 @@ class FrameMain(wx.Frame):
                                                              self.settings.stop)
             self.graph.set_plot_title()
 
-            if self.settings.gps:
+            if self.settings.gps and len(self.settings.devicesGps):
                 if self.threadLocation and self.threadLocation.isAlive():
                     self.threadLocation.stop()
                     self.threadLocation.join()
