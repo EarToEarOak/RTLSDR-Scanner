@@ -34,6 +34,7 @@ A Windows installer can be found on [SourceForge](http://sourceforge.net/project
 - [Pillow](https://pypi.python.org/pypi/Pillow/2.4.0)
 - [rtlsdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)
 - [pyrtlsdr](https://github.com/roger-/pyrtlsdr)
+- [pyserial](https://pypi.python.org/pypi/pyserial)
 
 To test for missing libraries run `rtlsdr_scan_diag.py`
 
