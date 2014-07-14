@@ -1717,10 +1717,11 @@ class DialogDevicesRTL(wx.Dialog):
 
     def __set_button_state(self):
         if len(self.devices) > 0:
-            if self.devices[self.index].isDevice:
-                self.buttonDel.Disable()
-            else:
-                self.buttonDel.Enable()
+            self.buttonDel.Enable()
+        else:
+            self.buttonDel.Disable()
+        if len(self.devices) == 1:
+            self.__select_row(0)
 
     def __warn_duplicates(self):
         servers = []
@@ -1768,6 +1769,7 @@ class DialogDevicesRTL(wx.Dialog):
         self.gridDev.AppendRows(1)
         self.__set_dev_grid()
         self.SetSizerAndFit(self.devbox)
+        self.__set_button_state()
 
     def __on_del(self, _event):
         del self.devices[self.index]
