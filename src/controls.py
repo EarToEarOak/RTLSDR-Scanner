@@ -31,7 +31,8 @@ class Led(wx.PyControl):
     PULSE_TIME = 250
 
     def __init__(self, parent, id=wx.ID_ANY, label=''):
-        self.on = False
+        self.lit = False
+        self.colour = wx.GREEN
 
         wx.PyControl.__init__(self, parent=parent, id=id, size=wx.DefaultSize,
                               style=wx.NO_BORDER)
@@ -53,7 +54,7 @@ class Led(wx.PyControl):
 
     def __on_timer(self, _event):
         self.timer.Stop()
-        self.on = False
+        self.lit = False
         self.Refresh()
 
     def __draw(self, dc):
@@ -71,8 +72,8 @@ class Led(wx.PyControl):
         gc = wx.GraphicsContext.Create(dc)
         gc.SetPen(wx.BLACK_PEN)
 
-        if self.on:
-            brush = wx.Brush(wx.GREEN, wx.SOLID)
+        if self.lit:
+            brush = wx.Brush(self.colour, wx.SOLID)
             gc.SetBrush(brush)
 
         path = gc.CreatePath()
@@ -84,9 +85,15 @@ class Led(wx.PyControl):
 
         dc.DrawText(self.GetLabel(), height + 10, (height - textHeight) / 2)
 
-    def pulse(self):
+    def on(self, colour=wx.GREEN):
+        self.timer.Stop()
+        self.lit = True
+        self.colour = colour
+        self.Refresh()
 
-        self.on = True
+    def pulse(self, colour=wx.GREEN):
+        self.lit = True
+        self.colour = colour
         self.Refresh()
         self.timer.Start(Led.PULSE_TIME)
 

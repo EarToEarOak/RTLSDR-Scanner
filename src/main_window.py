@@ -884,8 +884,10 @@ class FrameMain(wx.Frame):
             self.__update_checked(failed=True)
         elif status == Event.LOC_WARN:
             self.status.set_gps("{0}".format(data))
+            self.status.warn_gps()
         elif status == Event.LOC_ERR:
             self.status.set_gps("{0}".format(data))
+            self.status.error_gps()
             self.threadLocation = None
         elif status == Event.LOC:
             self.__update_location(data)
