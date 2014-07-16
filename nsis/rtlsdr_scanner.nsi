@@ -32,7 +32,7 @@
 !include "include\EnvVarUpdate.nsh"
 !include "include\fileassoc.nsh"
 
-!define INSTALLER_VERSION "12"
+!define INSTALLER_VERSION "13"
 
 !define PRODUCT_NAME "RTLSDR Scanner"
 !define PRODUCT_PUBLISHER "Ear to Ear Oak"
@@ -377,17 +377,17 @@ Function page_error
 		!insertmacro MUI_HEADER_TEXT "Installation failed" "Errors occurred"
 		nsDialogs::Create 1018
 		Pop $Page
-	${EndIf}
-	${If} $Page == error
+		${If} $Page == error
 		Abort
-	${EndIf}
-	${NSD_CreateTextMultiline} 0 0% 100% 100% $ErrorLog
-	SendMessage $Text ${EM_SETREADONLY} 1 0
-	GetDlgItem $R0 $HWNDPARENT 1
-	SendMessage $R0 ${WM_SETTEXT} 0 "STR:Close"
-	GetDlgItem $R0 $HWNDPARENT 2
-	EnableWindow $R0 0
-	nsDialogs::Show
+		${EndIf}
+		${NSD_CreateTextMultiline} 0 0% 100% 100% $ErrorLog
+		SendMessage $Text ${EM_SETREADONLY} 1 0
+		GetDlgItem $R0 $HWNDPARENT 1
+		SendMessage $R0 ${WM_SETTEXT} 0 "STR:Close"
+		GetDlgItem $R0 $HWNDPARENT 2
+		EnableWindow $R0 0
+		nsDialogs::Show
+		${EndIf}
 FunctionEnd
 
 Function page_error_end
