@@ -63,6 +63,8 @@ class DropTarget(wx.FileDropTarget):
         self.window = window
 
     def OnDropFiles(self, _xPos, _yPos, filenames):
+        if self.window.isScanning:
+            return
         filename = filenames[0]
         if os.path.splitext(filename)[1].lower() == ".rfs":
             dirname, filename = os.path.split(filename)
@@ -481,6 +483,7 @@ class FrameMain(wx.Frame):
     def __on_open(self, _event):
         if self.__save_warn(Warn.OPEN):
             return
+
         dlg = wx.FileDialog(self, "Open a scan", self.settings.dirScans,
                             self.filename,
                             File.get_type_filters(File.Types.SAVE),
@@ -1241,6 +1244,9 @@ class FrameMain(wx.Frame):
             wx.MessageBox('File not found',
                           'Error', wx.OK | wx.ICON_ERROR)
             return
+
+        self.__on_new(None)
+        self.graph.get_canvas().draw()
 
         self.filename = os.path.splitext(filename)[0]
         self.settings.dirScans = dirname
