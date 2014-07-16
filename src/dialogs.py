@@ -854,7 +854,7 @@ class DialogGeo(wx.Dialog):
         width = self.extent[1] - self.extent[0]
         height = self.extent[3] - self.extent[2]
         self.figure.set_size_inches((6, 6. * width / height))
-        self.figure.set_dpi(self.settings.dpi)
+        self.figure.set_dpi(self.settings.exportDpi)
         self.axes.set_title('')
         self.figure.patch.set_alpha(0)
         self.axes.axesPatch.set_alpha(0)
