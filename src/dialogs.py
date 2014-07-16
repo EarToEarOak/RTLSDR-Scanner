@@ -1265,9 +1265,9 @@ class DialogPrefs(wx.Dialog):
         self.spinDpi.SetValue(settings.exportDpi)
         self.spinDpi.SetToolTip(wx.ToolTip('DPI of exported images'))
         self.checkGps = wx.CheckBox(self, wx.ID_ANY,
-                                    "Use GPS")
+                                    "Enable GPS")
         self.checkGps.SetValue(settings.gps)
-        self.checkGps.SetToolTip(wx.ToolTip('Record GPS location'))
+        self.checkGps.SetToolTip(wx.ToolTip('Record GPS locations in scans'))
         self.checkTune = wx.CheckBox(self, wx.ID_ANY,
                                      "Tune SDR#")
         self.checkTune.SetValue(settings.clickTune)

@@ -88,6 +88,8 @@ class FrameMain(wx.Frame):
         self.threadUpdate = None
         self.threadLocation = None
 
+        self.isScanning = False
+
         self.stopAtEnd = False
         self.stopScan = False
 
@@ -190,6 +192,8 @@ class FrameMain(wx.Frame):
 
         self.steps = 0
         self.stepsTotal = 0
+
+        self.__start_gps()
 
     def __create_widgets(self):
         panel = wx.Panel(self)
@@ -673,9 +677,11 @@ class FrameMain(wx.Frame):
         dlg.Destroy()
 
     def __on_devices_gps(self, _event):
+        self.__stop_gps()
         dlg = DialogDevicesGPS(self, self.settings)
         dlg.ShowModal()
         dlg.Destroy()
+        self.__start_gps()
 
     def __on_reset(self, _event):
         dlg = wx.MessageDialog(self,
@@ -811,6 +817,7 @@ class FrameMain(wx.Frame):
         data = event.data.get_arg2()
         if status == Event.STARTING:
             self.status.set_general("Starting")
+            self.isScanning = True
         elif status == Event.STEPS:
             self.stepsTotal = (freq + 1) * 2
             self.steps = self.stepsTotal
@@ -876,18 +883,11 @@ class FrameMain(wx.Frame):
             self.__update_checked(failed=True)
         elif status == Event.LOC_WARN:
             self.status.set_gps("{0}".format(data))
+        elif status == Event.LOC_ERR:
+            self.status.set_gps("{0}".format(data))
+            self.threadLocation = None
         elif status == Event.LOC:
-            if self.scanInfo is not None:
-                if data[0] and data[1]:
-                    self.scanInfo.lat = str(data[0])
-                    self.scanInfo.lon = str(data[1])
-                    if len(self.spectrum) > 0:
-                        self.location[max(self.spectrum)] = (data[0],
-                                                             data[1],
-                                                             data[2])
-                    self.status.set_gps('{:.5f}, {:.5f}'.format(data[0],
-                                                                data[1]))
-                    self.status.pulse_gps()
+            self.__update_location(data)
 
         wx.YieldIfNeeded()
 
@@ -956,12 +956,7 @@ class FrameMain(wx.Frame):
                                                              self.settings.stop)
             self.graph.set_plot_title()
 
-            if self.settings.gps and len(self.settings.devicesGps):
-                if self.threadLocation and self.threadLocation.isAlive():
-                    self.threadLocation.stop()
-                    self.threadLocation.join()
-                device = self.settings.devicesGps[self.settings.indexGps]
-                self.threadLocation = ThreadLocation(self, device)
+            self.__start_gps()
 
             return True
 
@@ -971,10 +966,6 @@ class FrameMain(wx.Frame):
             self.threadScan.abort()
             self.threadScan.join()
         self.threadScan = None
-        if self.threadLocation and self.threadLocation.isAlive():
-            self.threadLocation.stop()
-            self.threadLocation.join()
-        self.threadLocation = None
         if self.sdr is not None:
             self.sdr.close()
         self.__set_control_state(True)
@@ -1008,10 +999,6 @@ class FrameMain(wx.Frame):
         if self.sdr is not None:
             self.sdr.close()
             self.sdr = None
-        if self.threadLocation and self.threadLocation.isAlive():
-            self.threadLocation.stop()
-            self.threadLocation.join()
-        self.threadLocation = None
 
         self.status.hide_progress()
         self.steps = 0
@@ -1019,6 +1006,7 @@ class FrameMain(wx.Frame):
         self.__set_control_state(True)
         self.stopAtEnd = False
         self.stopScan = True
+        self.isScanning = False
 
     def __remove_last(self, data):
         while len(data) >= self.settings.retainMax:
@@ -1029,6 +1017,38 @@ class FrameMain(wx.Frame):
         with self.lock:
             self.__remove_last(self.spectrum)
             self.__remove_last(self.location)
+
+    def __start_gps(self):
+        if self.settings.gps and len(self.settings.devicesGps):
+            if self.threadLocation and self.threadLocation.isAlive():
+                self.threadLocation.stop()
+                self.threadLocation.join()
+            device = self.settings.devicesGps[self.settings.indexGps]
+            self.threadLocation = ThreadLocation(self, device)
+
+    def __stop_gps(self):
+        if self.threadLocation and self.threadLocation.isAlive():
+            self.threadLocation.stop()
+            self.threadLocation.join()
+        self.threadLocation = None
+
+    def __update_location(self, data):
+        self.status.pulse_gps()
+        self.status.set_gps('{:.5f}, {:.5f}'.format(data[0],
+                                                    data[1]))
+
+        if not self.isScanning:
+            return
+
+        if self.scanInfo is not None:
+            if data[0] and data[1]:
+                self.scanInfo.lat = str(data[0])
+                self.scanInfo.lon = str(data[1])
+
+        if len(self.spectrum) > 0:
+            self.location[max(self.spectrum)] = (data[0],
+                                                 data[1],
+                                                 data[2])
 
     def __saved(self, isSaved):
         self.isSaved = isSaved
