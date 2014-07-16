@@ -632,6 +632,7 @@ class FrameMain(wx.Frame):
             self.Bind(wx.EVT_CLOSE, self.__on_exit)
             return
         self.__scan_stop()
+        self.__stop_gps()
         self.__wait_background()
         self.__get_controls()
         self.graph.close()
