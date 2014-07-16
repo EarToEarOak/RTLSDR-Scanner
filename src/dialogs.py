@@ -741,14 +741,15 @@ class DialogGeo(wx.Dialog):
         for timeStamp in self.spectrum:
             spectrum = self.spectrum[timeStamp]
             sweep = [yv for xv, yv in spectrum.items() if freqMin <= xv <= freqMax]
-            peak = max(sweep)
-            try:
-                location = self.location[timeStamp]
-            except KeyError:
-                continue
-            x.append(location[1])
-            y.append(location[0])
-            z.append(peak)
+            if len(sweep):
+                peak = max(sweep)
+                try:
+                    location = self.location[timeStamp]
+                except KeyError:
+                    continue
+                x.append(location[1])
+                y.append(location[0])
+                z.append(peak)
 
         if len(x) == 0:
             self.__draw_warning()
