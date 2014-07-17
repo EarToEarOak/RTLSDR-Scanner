@@ -2314,18 +2314,24 @@ class DialogLog(wx.Dialog):
         self.gridLog.SetColLabelValue(2, "Event")
         self.gridLog.EnableEditing(False)
 
+        textFilter = wx.StaticText(self, label='Level')
         self.choiceFilter = wx.Choice(self,
                                       choices=['All'] + self.log.TEXT_LEVEL)
         self.choiceFilter.SetSelection(0)
+        self.choiceFilter.SetToolTipString('Filter log level')
         self.Bind(wx.EVT_CHOICE, self.__on_filter, self.choiceFilter)
+        sizerFilter = wx.BoxSizer()
+        sizerFilter.Add(textFilter, flag=wx.ALL, border=5)
+        sizerFilter.Add(self.choiceFilter, flag=wx.ALL, border=5)
 
         buttonRefresh = wx.Button(self, wx.ID_ANY, label='Refresh')
+        buttonRefresh.SetToolTipString('Refresh the log')
         buttonOk = wx.Button(self, wx.ID_OK)
         self.Bind(wx.EVT_BUTTON, self.__on_refresh, buttonRefresh)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.gridLog, 1, flag=wx.ALL | wx.EXPAND, border=5)
-        sizer.Add(self.choiceFilter, 0, flag=wx.ALL, border=5)
+        sizer.Add(sizerFilter, 0, flag=wx.ALL, border=5)
         sizer.Add(buttonRefresh, 0, flag=wx.ALL, border=5)
         sizer.Add(buttonOk, 0, flag=wx.ALL | wx.ALIGN_RIGHT, border=5)
 
@@ -2347,20 +2353,38 @@ class DialogLog(wx.Dialog):
     def __update_grid(self, level=None):
         self.gridLog.ClearGrid()
 
+        fontCell = self.gridLog.GetDefaultCellFont()
+        fontSize = fontCell.GetPointSize()
+        fontStyle = fontCell.GetStyle()
+        fontWeight = fontCell.GetWeight()
+        font = wx.Font(fontSize, wx.FONTFAMILY_MODERN, fontStyle,
+                       fontWeight)
+
         i = 0
         for event in self.log.get(level):
             self.gridLog.SetCellValue(i, 0, event[0].strftime('%c'))
             self.gridLog.SetCellValue(i, 1, self.log.TEXT_LEVEL[event[1]])
-            eventText = '\n'.join(textwrap.wrap(event[2]))
+            eventText = '\n'.join(textwrap.wrap(event[2], width=70))
             self.gridLog.SetCellValue(i, 2, eventText)
+            self.gridLog.SetCellFont(i, 0, font)
+            self.gridLog.SetCellFont(i, 1, font)
+            self.gridLog.SetCellFont(i, 2, font)
+            self.gridLog.SetCellAlignment(i, 0, wx.ALIGN_LEFT, wx.ALIGN_CENTRE)
+            self.gridLog.SetCellAlignment(i, 1, wx.ALIGN_LEFT, wx.ALIGN_CENTRE)
             i += 1
 
+        self.gridLog.AppendRows()
+        self.gridLog.SetCellValue(i, 0, '#' * 18)
+        self.gridLog.SetCellValue(i, 1, '#' * 5)
+        self.gridLog.SetCellValue(i, 2, '#' * 80)
         self.gridLog.AutoSize()
-        self.sizer.Layout()
+        self.gridLog.DeleteRows(i)
+
         size = self.gridLog.GetBestSize()
-        size.width *= 1.1
+        size.width += wx.SystemSettings.GetMetric(wx.SYS_VSCROLL_X) + 10
         size.height = 400
-        self.SetSize(size)
+        self.SetClientSize(size)
+        self.sizer.Layout()
 
 
 if __name__ == '__main__':
