@@ -2314,12 +2314,18 @@ class DialogLog(wx.Dialog):
         self.gridLog.SetColLabelValue(2, "Event")
         self.gridLog.EnableEditing(False)
 
+        self.choiceFilter = wx.Choice(self,
+                                      choices=['All'] + self.log.TEXT_LEVEL)
+        self.choiceFilter.SetSelection(0)
+        self.Bind(wx.EVT_CHOICE, self.__on_filter, self.choiceFilter)
+
         buttonRefresh = wx.Button(self, wx.ID_ANY, label='Refresh')
         buttonOk = wx.Button(self, wx.ID_OK)
         self.Bind(wx.EVT_BUTTON, self.__on_refresh, buttonRefresh)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.gridLog, 1, flag=wx.ALL | wx.EXPAND, border=5)
+        sizer.Add(self.choiceFilter, 0, flag=wx.ALL, border=5)
         sizer.Add(buttonRefresh, 0, flag=wx.ALL, border=5)
         sizer.Add(buttonOk, 0, flag=wx.ALL | wx.ALIGN_RIGHT, border=5)
 
@@ -2327,14 +2333,22 @@ class DialogLog(wx.Dialog):
         self.__update_grid()
         self.SetSizer(sizer)
 
+    def __on_filter(self, _event):
+        selection = self.choiceFilter.GetSelection()
+        if selection == 0:
+            level = None
+        else:
+            level = selection - 1
+        self.__update_grid(level)
+
     def __on_refresh(self, _event):
             self.__update_grid()
 
-    def __update_grid(self):
+    def __update_grid(self, level=None):
         self.gridLog.ClearGrid()
 
         i = 0
-        for event in self.log.get():
+        for event in self.log.get(level):
             self.gridLog.SetCellValue(i, 0, event[0].strftime('%c'))
             self.gridLog.SetCellValue(i, 1, self.log.TEXT_LEVEL[event[1]])
             eventText = '\n'.join(textwrap.wrap(event[2]))

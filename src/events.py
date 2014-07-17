@@ -87,7 +87,7 @@ class Log(object):
         while len(self.log) > Log.MAX_ENTRIES:
             self.log.pop(0)
 
-    def get(self, level=None):
+    def get(self, level):
         if level is None:
             return self.log
 
