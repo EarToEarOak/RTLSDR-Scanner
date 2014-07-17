@@ -91,9 +91,12 @@ class DeviceRTL(object):
         return str(gain)
 
 
-def get_devices_rtl(currentDevices=[], statusBar=None):
+def get_devices_rtl(currentDevices=None, statusBar=None):
     if statusBar is not None:
         statusBar.set_general("Refreshing device list...")
+
+    if currentDevices is None:
+        currentDevices = []
 
     devices = []
     count = rtlsdr.librtlsdr.rtlsdr_get_device_count()
