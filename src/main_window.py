@@ -38,6 +38,7 @@ from wx.lib.masked import NumCtrl
 
 from constants import F_MIN, F_MAX, MODE, DWELL, NFFT, DISPLAY, Warn, \
     Display, Cal, Mode
+from controls import MultiButton
 from devices import get_devices_rtl
 from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, \
     DialogDevicesRTL, DialogCompare, DialogAutoCal, DialogAbout, DialogSaveWarn, \
@@ -90,6 +91,7 @@ class FrameMain(wx.Frame):
         self.threadUpdate = None
         self.threadLocation = None
 
+        self.isNewScan = True
         self.isScanning = False
 
         self.stopAtEnd = False
@@ -206,10 +208,12 @@ class FrameMain(wx.Frame):
                                 self.remoteControl)
         self.toolbar = wx.Panel(panel)
 
-        self.buttonStart = wx.Button(self.toolbar, wx.ID_ANY, 'Start')
-        self.buttonStop = wx.Button(self.toolbar, wx.ID_ANY, 'Stop')
-        self.buttonStart.SetToolTip(wx.ToolTip('Start scan'))
-        self.buttonStop.SetToolTip(wx.ToolTip('Stop scan'))
+        self.buttonStart = MultiButton(self.toolbar,
+                                       ['Start', 'Continue'],
+                                       ['Start new scan', 'Continue scanning'])
+        self.buttonStop = MultiButton(self.toolbar,
+                                      ['Stop', 'Stop at end'],
+                                      ['Stop scan', 'Stop scan at end'])
         self.Bind(wx.EVT_BUTTON, self.__on_start, self.buttonStart)
         self.Bind(wx.EVT_BUTTON, self.__on_stop, self.buttonStop)
 
@@ -742,30 +746,38 @@ class FrameMain(wx.Frame):
         self.__get_controls()
         self.graph.create_plot()
 
-    def __on_start(self, _event):
+    def __on_start(self, event):
         if self.settings.start >= self.settings.stop:
             wx.MessageBox('Stop frequency must be greater that start',
                           'Warning', wx.OK | wx.ICON_WARNING)
             return
 
         self.__get_controls()
-        self.graph.clear_plots()
 
         self.devicesRtl = self.__refresh_devices()
         if len(self.devicesRtl) == 0:
             wx.MessageBox('No devices found',
                           'Error', wx.OK | wx.ICON_ERROR)
         else:
-            self.spectrum.clear()
-            self.location.clear()
+            if event.GetInt() == 0:
+                self.isNewScan = True
+                self.spectrum.clear()
+                self.location.clear()
+                self.graph.clear_plots()
+            else:
+                self.isNewScan = False
             self.__scan_start()
             if not self.settings.retainScans:
                 self.status.set_info('Warning: Averaging is enabled in preferences')
 
-    def __on_stop(self, _event):
-        self.stopScan = True
-        self.stopAtEnd = False
-        self.__scan_stop()
+    def __on_stop(self, event):
+        if event.GetInt() == 0:
+            self.stopScan = True
+            self.stopAtEnd = False
+            self.__scan_stop()
+        else:
+            self.stopScan = False
+            self.stopAtEnd = True
 
     def __on_stop_end(self, _event):
         self.stopAtEnd = True
@@ -940,20 +952,21 @@ class FrameMain(wx.Frame):
         return ((freq - peak) / freq) * 1e6
 
     def __scan_start(self, isCal=False):
-        if self.settings.mode == Mode.SINGLE:
-            if self.__save_warn(Warn.SCAN):
-                return False
+        if self.isNewScan and self.__save_warn(Warn.SCAN):
+            return False
 
         if not self.threadScan:
             self.__set_control_state(False)
             samples = calc_samples(self.settings.dwell)
-            self.status.set_info('')
-            self.scanInfo.set_from_settings(self.settings)
-            time = datetime.datetime.utcnow().replace(microsecond=0)
-            self.scanInfo.time = time.isoformat() + "Z"
-            self.scanInfo.lat = None
-            self.scanInfo.lon = None
-            self.scanInfo.desc = ''
+            if self.isNewScan:
+                self.isNewScan = False
+                self.status.set_info('')
+                self.scanInfo.set_from_settings(self.settings)
+                time = datetime.datetime.utcnow().replace(microsecond=0)
+                self.scanInfo.time = time.isoformat() + "Z"
+                self.scanInfo.lat = None
+                self.scanInfo.lon = None
+                self.scanInfo.desc = ''
             self.stopAtEnd = False
             self.stopScan = False
             self.threadScan = ThreadScan(self, self.sdr, self.settings,

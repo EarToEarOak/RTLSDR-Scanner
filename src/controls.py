@@ -27,6 +27,141 @@ import wx
 from wx.grid import PyGridCellRenderer
 
 
+class MultiButton(wx.PyControl):
+    PADDING = 5
+    ARROW_SIZE = 6
+
+    def __init__(self, parent, options, tips=None, selected=0):
+        wx.PyControl.__init__(self, parent=parent, size=wx.DefaultSize,
+                              style=wx.NO_BORDER)
+        self.options = options
+        self.tips = tips
+        self.selected = selected
+        self.isOverArrow = False
+
+        self.__set_text()
+
+        self.menu = wx.Menu()
+        for option in options:
+            item = self.menu.Append(wx.ID_ANY, option)
+            self.Bind(wx.EVT_MENU, self.__on_menu, item)
+
+        self.Bind(wx.EVT_PAINT, self.__on_paint)
+        self.Bind(wx.EVT_SIZE, self.__on_size)
+        self.Bind(wx.EVT_LEFT_UP, self.__on_left_up)
+        self.Bind(wx.EVT_MOTION, self.__on_motion)
+        self.Bind(wx.EVT_LEAVE_WINDOW, self.__on_leave)
+
+    def __on_paint(self, _event):
+        dc = wx.GCDC(wx.PaintDC(self))
+        self.__draw(dc)
+
+    def __on_size(self, _event):
+        self.Refresh()
+
+    def __on_left_up(self, event):
+        if self.__is_over_arrow(event):
+            self.__show_menu()
+        else:
+            event = wx.CommandEvent(wx.wxEVT_COMMAND_BUTTON_CLICKED,
+                                    self.GetId())
+            event.SetEventObject(self)
+            event.SetInt(self.selected)
+            event.SetString(self.GetLabel())
+            self.GetEventHandler().ProcessEvent(event)
+
+    def __on_motion(self, event):
+        if self.isOverArrow != self.__is_over_arrow(event):
+            self.isOverArrow = self.__is_over_arrow(event)
+            self.Refresh()
+
+    def __on_leave(self, _event):
+        self.isOverArrow = False
+        self.Refresh()
+
+    def __on_menu(self, event):
+        item = self.menu.FindItemById(event.Id)
+        label = item.GetLabel()
+        self.selected = self.options.index(label)
+        self.__set_text()
+
+    def __show_menu(self):
+        self.PopupMenu(self.menu)
+
+    def __set_text(self):
+        self.SetLabel(self.options[self.selected])
+        if self.tips is not None:
+            self.SetToolTip(wx.ToolTip(self.tips[self.selected]))
+        self.Refresh()
+
+    def __is_over_arrow(self, event):
+        x = event.GetPosition()[0]
+        y = event.GetPosition()[1]
+        width = event.GetEventObject().GetSize()[0]
+        height = event.GetEventObject().GetSize()[1]
+
+        top = (height / 2) - (MultiButton.ARROW_SIZE / 4) - MultiButton.PADDING
+        bottom = top + MultiButton.ARROW_SIZE / 2 + MultiButton.PADDING * 2
+        right = width - MultiButton.PADDING
+        left = right - MultiButton.ARROW_SIZE - MultiButton.PADDING * 2
+
+        if (right >= x >= left) and (bottom >= y >= top):
+            return True
+        return False
+
+    def __draw(self, dc):
+        renderer = wx.RendererNative.Get()
+        rect = self.GetClientRect()
+        renderer.DrawPushButton(self, dc, rect)
+
+        dc.SetFont(self.GetFont())
+
+        if self.IsEnabled():
+            colour = self.GetForegroundColour()
+        else:
+            colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT)
+        if not self.isOverArrow:
+            brush = wx.Brush(colour, wx.SOLID)
+            dc.SetBrush(brush)
+        pen = wx.Pen(colour)
+        dc.SetPen(pen)
+        dc.SetTextForeground(colour)
+
+        label = self.GetLabel()
+        _textWidth, textHeight = dc.GetTextExtent(label)
+
+        dc.DrawText(self.GetLabel(),
+                    MultiButton.PADDING,
+                    (rect.height - textHeight) / 2)
+
+        top = (rect.height / 2) - (MultiButton.ARROW_SIZE / 4)
+        bottom = top + MultiButton.ARROW_SIZE / 2
+        right = rect.width - MultiButton.PADDING * 2
+        left = right - MultiButton.ARROW_SIZE
+        dc.DrawPolygon([(right, top),
+                        (left, top),
+                        (left + MultiButton.ARROW_SIZE / 2, bottom)])
+
+    def DoGetBestSize(self):
+        label = max(self.options, key=len)
+        font = self.GetFont()
+        dc = wx.ClientDC(self)
+        dc.SetFont(font)
+        textWidth, textHeight = dc.GetTextExtent(label)
+        width = textWidth + MultiButton.ARROW_SIZE + MultiButton.PADDING * 4
+        height = textHeight + MultiButton.PADDING * 2
+
+        return wx.Size(width, height)
+
+    def Enable(self, enabled):
+        self.Enabled = enabled
+        self.Refresh()
+
+    def SetSelected(self, selected):
+        self.selected = selected
+        self.__set_text()
+
+
 class Led(wx.PyControl):
     PULSE_TIME = 250
 
@@ -83,7 +218,7 @@ class Led(wx.PyControl):
         gc.FillPath(path)
         gc.StrokePath(path)
 
-        dc.DrawText(self.GetLabel(), height + 10, (height - textHeight) / 2)
+        dc.DrawText(label, height + 10, (height - textHeight) / 2)
 
     def on(self, colour=wx.GREEN):
         self.timer.Stop()
