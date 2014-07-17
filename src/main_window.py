@@ -761,9 +761,6 @@ class FrameMain(wx.Frame):
         else:
             if event.GetInt() == 0:
                 self.isNewScan = True
-                self.spectrum.clear()
-                self.location.clear()
-                self.graph.clear_plots()
             else:
                 self.isNewScan = False
             self.__scan_start()
@@ -959,6 +956,10 @@ class FrameMain(wx.Frame):
             self.__set_control_state(False)
             samples = calc_samples(self.settings.dwell)
             if self.isNewScan:
+                self.spectrum.clear()
+                self.location.clear()
+                self.graph.clear_plots()
+
                 self.isNewScan = False
                 self.status.set_info('')
                 self.scanInfo.set_from_settings(self.settings)
@@ -967,6 +968,7 @@ class FrameMain(wx.Frame):
                 self.scanInfo.lat = None
                 self.scanInfo.lon = None
                 self.scanInfo.desc = ''
+
             self.stopAtEnd = False
             self.stopScan = False
             self.threadScan = ThreadScan(self, self.sdr, self.settings,
