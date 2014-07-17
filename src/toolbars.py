@@ -83,14 +83,17 @@ class Statusbar(wx.StatusBar):
     def set_general(self, text):
         self.controls[0].SetLabel(Statusbar.TEXT_GENERAL + text)
         self.controls[0].SetToolTipString(self.__format_tooltip(text))
+        self.controls[0].Refresh()
 
     def set_info(self, text):
         self.controls[1].SetLabel(Statusbar.TEXT_INFO + text)
         self.controls[1].SetToolTipString(self.__format_tooltip(text))
+        self.controls[1].Refresh()
 
     def set_gps(self, text):
         self.controls[2].SetLabel(Statusbar.TEXT_GPS + text)
         self.controls[2].SetToolTipString(self.__format_tooltip(text))
+        self.controls[2].Refresh()
 
     def pulse_gps(self):
         self.controls[2].pulse()
