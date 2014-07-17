@@ -27,6 +27,7 @@ import Queue
 import copy
 import itertools
 import os
+import textwrap
 from urlparse import urlparse
 
 from PIL import Image
@@ -2297,6 +2298,55 @@ class DialogAbout(wx.Dialog):
 
         self.SetSizerAndFit(grid)
         self.Centre()
+
+
+class DialogLog(wx.Dialog):
+    def __init__(self, parent, log):
+        wx.Dialog.__init__(self, parent=parent, title="Log")
+
+        self.log = log
+
+        self.gridLog = grid.Grid(self)
+        self.gridLog.CreateGrid(log.MAX_ENTRIES, 3)
+        self.gridLog.SetRowLabelSize(0)
+        self.gridLog.SetColLabelValue(0, "Time")
+        self.gridLog.SetColLabelValue(1, "Level")
+        self.gridLog.SetColLabelValue(2, "Event")
+        self.gridLog.EnableEditing(False)
+
+        buttonRefresh = wx.Button(self, wx.ID_ANY, label='Refresh')
+        buttonOk = wx.Button(self, wx.ID_OK)
+        self.Bind(wx.EVT_BUTTON, self.__on_refresh, buttonRefresh)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.gridLog, 1, flag=wx.ALL | wx.EXPAND, border=5)
+        sizer.Add(buttonRefresh, 0, flag=wx.ALL, border=5)
+        sizer.Add(buttonOk, 0, flag=wx.ALL | wx.ALIGN_RIGHT, border=5)
+
+        self.sizer = sizer
+        self.__update_grid()
+        self.SetSizer(sizer)
+
+    def __on_refresh(self, _event):
+            self.__update_grid()
+
+    def __update_grid(self):
+        self.gridLog.ClearGrid()
+
+        i = 0
+        for event in self.log.get():
+            self.gridLog.SetCellValue(i, 0, event[0].strftime('%c'))
+            self.gridLog.SetCellValue(i, 1, self.log.TEXT_LEVEL[event[1]])
+            eventText = '\n'.join(textwrap.wrap(event[2]))
+            self.gridLog.SetCellValue(i, 2, eventText)
+            i += 1
+
+        self.gridLog.AutoSize()
+        self.sizer.Layout()
+        size = self.gridLog.GetBestSize()
+        size.width *= 1.1
+        size.height = 400
+        self.SetSize(size)
 
 
 if __name__ == '__main__':

@@ -42,8 +42,9 @@ from controls import MultiButton
 from devices import get_devices_rtl
 from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, \
     DialogDevicesRTL, DialogCompare, DialogAutoCal, DialogAbout, DialogSaveWarn, \
-    DialogDevicesGPS, DialogGeo, DialogSeq, DialogImageSize, DialogFormatting
-from events import EVENT_THREAD, Event, EventThread, post_event
+    DialogDevicesGPS, DialogGeo, DialogSeq, DialogImageSize, DialogFormatting, \
+    DialogLog
+from events import EVENT_THREAD, Event, EventThread, post_event, Log
 from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
     export_map, extension_add, File
 from location import ThreadLocation
@@ -98,6 +99,7 @@ class FrameMain(wx.Frame):
         self.stopScan = False
 
         self.dlgCal = None
+        self.dlgLog = None
 
         self.menuNew = None
         self.menuOpen = None
@@ -123,6 +125,10 @@ class FrameMain(wx.Frame):
         self.menuStopEnd = None
         self.menuCompare = None
         self.menuCal = None
+        self.menuLog = None
+        self.menuHelpLink = None
+        self.menuUpdate = None
+        self.menuAbout = None
 
         self.popupMenu = None
         self.popupMenuStart = None
@@ -163,6 +169,8 @@ class FrameMain(wx.Frame):
 
         self.remoteControl = None
 
+        self.log = Log()
+
         self.pageConfig = wx.PageSetupDialogData()
         self.pageConfig.GetPrintData().SetOrientation(wx.LANDSCAPE)
         self.pageConfig.SetMarginTopLeft((20, 20))
@@ -175,7 +183,7 @@ class FrameMain(wx.Frame):
 
         self.Bind(wx.EVT_CLOSE, self.__on_exit)
 
-        self.status = Statusbar(self)
+        self.status = Statusbar(self, self.log)
         self.SetStatusBar(self.status)
 
         add_colours()
@@ -362,6 +370,9 @@ class FrameMain(wx.Frame):
                                             "Compare plots")
         self.menuCal = menuTools.Append(wx.ID_ANY, "&Auto Calibration...",
                                         "Automatically calibrate to a known frequency")
+        menuTools.AppendSeparator()
+        menuLog = menuTools.Append(wx.ID_ANY, "&Log...",
+                                  "Program log")
 
         menuHelp = wx.Menu()
         menuHelpLink = menuHelp.Append(wx.ID_HELP, "&Help...",
@@ -409,9 +420,10 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.__on_stop_end, self.menuStopEnd)
         self.Bind(wx.EVT_MENU, self.__on_compare, self.menuCompare)
         self.Bind(wx.EVT_MENU, self.__on_cal, self.menuCal)
-        self.Bind(wx.EVT_MENU, self.__on_about, menuAbout)
+        self.Bind(wx.EVT_MENU, self.__on_log, menuLog)
         self.Bind(wx.EVT_MENU, self.__on_help, menuHelpLink)
         self.Bind(wx.EVT_MENU, self.__on_update, menuUpdate)
+        self.Bind(wx.EVT_MENU, self.__on_about, menuAbout)
 
         idF1 = wx.wx.NewId()
         self.Bind(wx.EVT_MENU, self.__on_help, id=idF1)
@@ -469,7 +481,7 @@ class FrameMain(wx.Frame):
         else:
             help = ''
 
-        self.status.set_general(help)
+        self.status.set_general(help, level=None)
 
     def __on_popup_menu(self, event):
         pos = event.GetPosition()
@@ -509,7 +521,7 @@ class FrameMain(wx.Frame):
                             File.get_type_filters(File.Types.SAVE),
                             wx.SAVE | wx.OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
-            self.status.set_general("Saving")
+            self.status.set_general("Saving...")
             fileName = dlg.GetFilename()
             dirName = dlg.GetDirectory()
             self.filename = os.path.splitext(fileName)[0]
@@ -528,7 +540,7 @@ class FrameMain(wx.Frame):
                             self.filename, File.get_type_filters(),
                             wx.SAVE | wx.OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
-            self.status.set_general("Exporting")
+            self.status.set_general("Exporting...")
             fileName = dlg.GetFilename()
             dirName = dlg.GetDirectory()
             self.settings.dirExport = dirName
@@ -552,7 +564,7 @@ class FrameMain(wx.Frame):
                 dlgFile.Destroy()
                 return
 
-            self.status.set_general("Exporting")
+            self.status.set_general("Exporting...")
             fileName = dlgFile.GetFilename()
             dirName = dlgFile.GetDirectory()
             self.settings.dirExport = dirName
@@ -722,19 +734,24 @@ class FrameMain(wx.Frame):
         self.dlgCal = DialogAutoCal(self, self.settings.calFreq, self.__auto_cal)
         self.dlgCal.ShowModal()
 
-    def __on_about(self, _event):
-        dlg = DialogAbout(self)
-        dlg.ShowModal()
-        dlg.Destroy()
+    def __on_log(self, _event):
+        if self.dlgLog is None:
+            self.dlgLog = DialogLog(self, self.log)
+            self.dlgLog.Show()
 
     def __on_help(self, _event):
         webbrowser.open("http://eartoearoak.com/software/rtlsdr-scanner")
 
     def __on_update(self, _event):
         if self.threadUpdate is None:
-            self.status.set_general("Checking for updates")
+            self.status.set_general("Checking for updates", level=None)
             self.threadUpdate = Thread(target=self.__update_check)
             self.threadUpdate.start()
+
+    def __on_about(self, _event):
+        dlg = DialogAbout(self)
+        dlg.ShowModal()
+        dlg.Destroy()
 
     def __on_spin(self, event):
         control = event.GetEventObject()
@@ -765,7 +782,8 @@ class FrameMain(wx.Frame):
                 self.isNewScan = False
             self.__scan_start()
             if not self.settings.retainScans:
-                self.status.set_info('Warning: Averaging is enabled in preferences')
+                self.status.set_info('Warning: Averaging is enabled in preferences',
+                                     level=Log.WARN)
 
     def __on_stop(self, event):
         if event.GetInt() == 0:
@@ -822,7 +840,7 @@ class FrameMain(wx.Frame):
             else:
                 text = format_precision(self.settings, xpos)
 
-        self.status.set_info(text)
+        self.status.set_info(text, level=None)
 
     def __on_event(self, event):
         status = event.data.get_status()
@@ -861,7 +879,7 @@ class FrameMain(wx.Frame):
             self.threadScan = None
         elif status == Event.ERROR:
             self.__cleanup()
-            self.status.set_general("Error: {0}".format(data))
+            self.status.set_general("Error: {0}".format(data), level=Log.ERROR)
             if self.dlgCal is not None:
                 self.dlgCal.Destroy()
                 self.dlgCal = None
@@ -895,10 +913,10 @@ class FrameMain(wx.Frame):
         elif status == Event.VER_UPDFAIL:
             self.__update_checked(failed=True)
         elif status == Event.LOC_WARN:
-            self.status.set_gps("{0}".format(data))
+            self.status.set_gps("{0}".format(data), level=Log.WARN)
             self.status.warn_gps()
         elif status == Event.LOC_ERR:
-            self.status.set_gps("{0}".format(data))
+            self.status.set_gps("{0}".format(data), level=Log.ERROR)
             self.status.error_gps()
             self.threadLocation = None
         elif status == Event.LOC:
@@ -961,7 +979,7 @@ class FrameMain(wx.Frame):
                 self.graph.clear_plots()
 
                 self.isNewScan = False
-                self.status.set_info('')
+                self.status.set_info('', level=None)
                 self.scanInfo.set_from_settings(self.settings)
                 time = datetime.datetime.utcnow().replace(microsecond=0)
                 self.scanInfo.time = time.isoformat() + "Z"
@@ -992,12 +1010,13 @@ class FrameMain(wx.Frame):
         self.__set_control_state(True)
 
     def __progress(self):
+        if self.steps == self.stepsTotal:
+            self.status.set_general("Scanning")
         self.steps -= 1
         if self.steps > 0 and not self.stopScan:
             self.status.set_progress((self.stepsTotal - self.steps) * 100.0
                                      / (self.stepsTotal - 1))
             self.status.show_progress()
-            self.status.set_general("Scanning")
         else:
             self.status.hide_progress()
             self.__set_plot(self.spectrum, self.settings.annotate)
@@ -1056,7 +1075,8 @@ class FrameMain(wx.Frame):
     def __update_location(self, data):
         self.status.pulse_gps()
         self.status.set_gps('{:.5f}, {:.5f}'.format(data[0],
-                                                    data[1]))
+                                                    data[1]),
+                            level=None)
 
         if not self.isScanning:
             return
@@ -1218,7 +1238,7 @@ class FrameMain(wx.Frame):
     def __update_checked(self, updateFound=False, local=None, remote=None,
                          failed=False):
         self.threadUpdate = None
-        self.status.set_general("")
+        self.status.set_general("", level=None)
         if failed:
             icon = wx.ICON_ERROR
             message = "Update check failed"
@@ -1282,7 +1302,7 @@ class FrameMain(wx.Frame):
             self.settings.fileHistory.AddFileToHistory(os.path.join(dirname,
                                                                     filename))
         else:
-            self.status.set_general("Open failed")
+            self.status.set_general("Open failed", level=Log.ERROR)
 
 
 if __name__ == '__main__':

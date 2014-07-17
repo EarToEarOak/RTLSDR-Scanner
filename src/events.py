@@ -24,6 +24,7 @@
 #
 
 import Queue
+import datetime
 
 import wx
 
@@ -65,6 +66,37 @@ def post_event(destination, status):
         destination.put(status)
     elif isinstance(destination, wx.EvtHandler):
         wx.PostEvent(destination, status)
+
+
+class Log(object):
+    MAX_ENTRIES = 50
+
+    INFO, WARN, ERROR = range(3)
+    TEXT_LEVEL = ['Info', 'Warn', 'Error']
+
+    def __init__(self):
+        self.log = []
+
+    def add(self, text, level=None):
+        if level is None:
+            return
+        time = datetime.datetime.utcnow()
+        entry = [time, level, text]
+        self.log.append(entry)
+
+        while len(self.log) > Log.MAX_ENTRIES:
+            self.log.pop(0)
+
+    def get(self, level=None):
+        if level is None:
+            return self.log
+
+        filtered = []
+        for entry in self.log:
+            if entry[1] == level:
+                filtered.append(entry)
+
+        return filtered
 
 
 if __name__ == '__main__':
