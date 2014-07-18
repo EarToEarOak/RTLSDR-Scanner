@@ -161,6 +161,9 @@ class MultiButton(wx.PyControl):
         self.selected = selected
         self.__set_text()
 
+    def GetSelected(self):
+        return self.selected
+
 
 class Led(wx.PyControl):
     PULSE_TIME = 250

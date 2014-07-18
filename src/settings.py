@@ -73,6 +73,9 @@ class Settings(object):
         self.overlap = 0.0
         self.winFunc = "Hamming"
 
+        self.startOption = 0
+        self.stopOption = 0
+
         self.liveUpdate = False
         self.calFreq = 1575.42
         self.autoF = True
@@ -216,6 +219,8 @@ class Settings(object):
         self.nfft = self.cfg.ReadInt('nfft', self.nfft)
         self.overlap = self.cfg.ReadFloat('overlap', self.overlap)
         self.winFunc = self.cfg.Read('winFunc', self.winFunc)
+        self.startOption = self.cfg.ReadInt('startOption', self.startOption)
+        self.stopOption = self.cfg.ReadInt('stopOption', self.stopOption)
         self.liveUpdate = self.cfg.ReadBool('liveUpdate', self.liveUpdate)
         self.calFreq = self.cfg.ReadFloat('calFreq', self.calFreq)
         self.autoF = self.cfg.ReadBool('autoF', self.autoF)
@@ -267,6 +272,8 @@ class Settings(object):
         self.cfg.WriteInt('nfft', self.nfft)
         self.cfg.WriteFloat('overlap', self.overlap)
         self.cfg.Write("winFunc", self.winFunc)
+        self.cfg.WriteInt('startOption', self.startOption)
+        self.cfg.WriteInt('stopOption', self.stopOption)
         self.cfg.WriteBool('liveUpdate', self.liveUpdate)
         self.cfg.WriteFloat('calFreq', self.calFreq)
         self.cfg.WriteBool('autoF', self.autoF)

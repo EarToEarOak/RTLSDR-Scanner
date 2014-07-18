@@ -220,9 +220,11 @@ class FrameMain(wx.Frame):
         self.buttonStart = MultiButton(self.toolbar,
                                        ['Start', 'Continue'],
                                        ['Start new scan', 'Continue scanning'])
+        self.buttonStart.SetSelected(self.settings.startOption)
         self.buttonStop = MultiButton(self.toolbar,
                                       ['Stop', 'Stop at end'],
                                       ['Stop scan', 'Stop scan at end'])
+        self.buttonStop.SetSelected(self.settings.stopOption)
         self.Bind(wx.EVT_BUTTON, self.__on_start, self.buttonStart)
         self.Bind(wx.EVT_BUTTON, self.__on_stop, self.buttonStop)
 
@@ -1191,6 +1193,8 @@ class FrameMain(wx.Frame):
     def __get_controls(self):
         self.settings.start = self.spinCtrlStart.GetValue()
         self.settings.stop = self.spinCtrlStop.GetValue()
+        self.settings.startOption = self.buttonStart.GetSelected()
+        self.settings.stopOption = self.buttonStop.GetSelected()
         self.settings.mode = MODE[1::2][self.choiceMode.GetSelection()]
         self.settings.dwell = DWELL[1::2][self.choiceDwell.GetSelection()]
         self.settings.nfft = NFFT[self.choiceNfft.GetSelection()]
