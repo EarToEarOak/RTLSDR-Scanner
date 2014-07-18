@@ -184,6 +184,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_CLOSE, self.__on_exit)
 
         self.status = Statusbar(self, self.log)
+        self.status.set_info(title)
         self.SetStatusBar(self.status)
 
         add_colours()
