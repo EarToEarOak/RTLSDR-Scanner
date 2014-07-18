@@ -2304,6 +2304,7 @@ class DialogLog(wx.Dialog):
     def __init__(self, parent, log):
         wx.Dialog.__init__(self, parent=parent, title="Log")
 
+        self.parent = parent
         self.log = log
 
         self.gridLog = grid.Grid(self)
@@ -2326,18 +2327,21 @@ class DialogLog(wx.Dialog):
 
         buttonRefresh = wx.Button(self, wx.ID_ANY, label='Refresh')
         buttonRefresh.SetToolTipString('Refresh the log')
-        buttonOk = wx.Button(self, wx.ID_OK)
+        buttonClose = wx.Button(self, wx.ID_CLOSE)
         self.Bind(wx.EVT_BUTTON, self.__on_refresh, buttonRefresh)
+        self.Bind(wx.EVT_BUTTON, self.__on_close, buttonClose)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.gridLog, 1, flag=wx.ALL | wx.EXPAND, border=5)
         sizer.Add(sizerFilter, 0, flag=wx.ALL, border=5)
         sizer.Add(buttonRefresh, 0, flag=wx.ALL, border=5)
-        sizer.Add(buttonOk, 0, flag=wx.ALL | wx.ALIGN_RIGHT, border=5)
+        sizer.Add(buttonClose, 0, flag=wx.ALL | wx.ALIGN_RIGHT, border=5)
 
         self.sizer = sizer
         self.__update_grid()
         self.SetSizer(sizer)
+
+        self.Bind(wx.EVT_CLOSE, self.__on_close)
 
     def __on_filter(self, _event):
         selection = self.choiceFilter.GetSelection()
@@ -2349,6 +2353,11 @@ class DialogLog(wx.Dialog):
 
     def __on_refresh(self, _event):
             self.__update_grid()
+
+    def __on_close(self, _event):
+        self.Unbind(wx.EVT_CLOSE)
+        self.parent.dlgLog = None
+        self.Close()
 
     def __update_grid(self, level=None):
         self.gridLog.ClearGrid()
