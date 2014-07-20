@@ -302,12 +302,12 @@ class DialogImageSize(wx.Dialog):
 
         textWidth = wx.StaticText(self, label="Width (inches)")
         self.ctrlWidth = NumCtrl(self, integerWidth=2, fractionWidth=1)
-        self.ctrlWidth.SetValue(settings.exportWidth);
+        self.ctrlWidth.SetValue(settings.exportWidth)
         self.Bind(masked.EVT_NUM, self.__update_size, self.ctrlWidth)
 
         textHeight = wx.StaticText(self, label="Height (inches)")
         self.ctrlHeight = NumCtrl(self, integerWidth=2, fractionWidth=1)
-        self.ctrlHeight.SetValue(settings.exportHeight);
+        self.ctrlHeight.SetValue(settings.exportHeight)
         self.Bind(masked.EVT_NUM, self.__update_size, self.ctrlHeight)
 
         textDpi = wx.StaticText(self, label="Dots per inch")
@@ -2352,7 +2352,7 @@ class DialogLog(wx.Dialog):
         self.__update_grid(level)
 
     def __on_refresh(self, _event):
-            self.__update_grid()
+        self.__update_grid()
 
     def __on_close(self, _event):
         self.Unbind(wx.EVT_CLOSE)
