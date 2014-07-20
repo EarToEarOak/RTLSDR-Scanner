@@ -24,9 +24,12 @@
 #
 
 
+from BaseHTTPServer import HTTPServer
 import datetime
 import math
 import os.path
+import subprocess
+import tempfile
 from threading import Thread
 import threading
 import time
@@ -46,8 +49,8 @@ from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, \
     DialogLog
 from events import EVENT_THREAD, Event, EventThread, post_event, Log
 from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
-    export_map, extension_add, File
-from location import ThreadLocation
+    export_map, extension_add, File, run_file
+from location import ThreadLocation, KmlServer
 from misc import calc_samples, calc_real_dwell, \
     get_version_timestamp, get_version_timestamp_repo, add_colours, \
     RemoteControl, format_precision
@@ -92,6 +95,8 @@ class FrameMain(wx.Frame):
         self.threadUpdate = None
         self.threadLocation = None
 
+        self.serverKml = None
+
         self.isNewScan = True
         self.isScanning = False
 
@@ -125,6 +130,7 @@ class FrameMain(wx.Frame):
         self.menuStopEnd = None
         self.menuCompare = None
         self.menuCal = None
+        self.menuKml = None
         self.menuLog = None
         self.menuHelpLink = None
         self.menuUpdate = None
@@ -207,6 +213,7 @@ class FrameMain(wx.Frame):
         self.stepsTotal = 0
 
         self.__start_gps()
+        self.__start_kml()
 
     def __create_widgets(self):
         panel = wx.Panel(self)
@@ -374,6 +381,9 @@ class FrameMain(wx.Frame):
         self.menuCal = menuTools.Append(wx.ID_ANY, "&Auto Calibration...",
                                         "Automatically calibrate to a known frequency")
         menuTools.AppendSeparator()
+        self.menuKml = menuTools.Append(wx.ID_ANY, "&Track in Google Earth",
+                                        "Display recorded points in Google Earth")
+        menuTools.AppendSeparator()
         menuLog = menuTools.Append(wx.ID_ANY, "&Log...",
                                   "Program log")
 
@@ -423,6 +433,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.__on_stop_end, self.menuStopEnd)
         self.Bind(wx.EVT_MENU, self.__on_compare, self.menuCompare)
         self.Bind(wx.EVT_MENU, self.__on_cal, self.menuCal)
+        self.Bind(wx.EVT_MENU, self.__on_kml, self.menuKml)
         self.Bind(wx.EVT_MENU, self.__on_log, menuLog)
         self.Bind(wx.EVT_MENU, self.__on_help, menuHelpLink)
         self.Bind(wx.EVT_MENU, self.__on_update, menuUpdate)
@@ -655,6 +666,7 @@ class FrameMain(wx.Frame):
             return
         self.__scan_stop()
         self.__stop_gps()
+        self.__stop_kml()
         self.__wait_background()
         self.__get_controls()
         self.graph.close()
@@ -736,6 +748,27 @@ class FrameMain(wx.Frame):
     def __on_cal(self, _event):
         self.dlgCal = DialogAutoCal(self, self.settings.calFreq, self.__auto_cal)
         self.dlgCal.ShowModal()
+
+    def __on_kml(self, _event):
+        tempPath = tempfile.mkdtemp()
+        tempFile = os.path.join(tempPath, 'RTLSDRScannerLink.kml')
+        handle = open(tempFile, 'wb')
+        handle.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+        handle.write('<kml xmlns="http://www.opengis.net/kml/2.2">\n')
+        handle.write('\t<NetworkLink>\n')
+        handle.write('\t\t<name>RTLSDR Scanner</name>\n')
+        handle.write('\t\t<Link>\n')
+        handle.write('\t\t\t<href>http://localhost:12345</href>\n')
+        handle.write('\t\t\t<refreshMode>onInterval</refreshMode>\n')
+        handle.write('\t\t\t<refreshInterval>2</refreshInterval>\n')
+        handle.write('\t\t</Link>\n')
+        handle.write('\t</NetworkLink>\n')
+        handle.write('</kml>\n')
+        handle.close()
+
+        if not run_file(tempFile):
+            wx.MessageBox('Error starting Google Earth', 'Error',
+                          wx.OK | wx.ICON_ERROR)
 
     def __on_log(self, _event):
         if self.dlgLog is None:
@@ -1075,6 +1108,13 @@ class FrameMain(wx.Frame):
             self.threadLocation.join()
         self.threadLocation = None
 
+    def __start_kml(self):
+        self.serverKml = KmlServer(self.location)
+
+    def __stop_kml(self):
+        if self.serverKml:
+            self.serverKml.close()
+
     def __update_location(self, data):
         self.status.pulse_gps()
         self.status.set_gps('{:.5f}, {:.5f}'.format(data[0],
@@ -1297,7 +1337,8 @@ class FrameMain(wx.Frame):
         if len(spectrum) > 0:
             self.scanInfo.set_to_settings(self.settings)
             self.spectrum = spectrum
-            self.location = location
+            self.location.clear()
+            self.location.update(location)
             self.__saved(True)
             self.__set_controls()
             self.__set_control_state(True)

@@ -26,6 +26,8 @@
 import cPickle
 import json
 import os
+import subprocess
+import sys
 import tempfile
 import zipfile
 
@@ -173,6 +175,17 @@ class ScanInfo(object):
         settings.stop = self.stop
         settings.dwell = self.dwell
         settings.nfft = self.nfft
+
+
+def run_file(runFile):
+    if os.name == 'nt':
+        os.startfile(runFile)
+        return True
+    elif sys.platform.startswith('darwin'):
+        return not subprocess.call(('open', runFile))
+    elif os.name == 'posix':
+        subprocess.call(('xdg-open', runFile))
+        return True
 
 
 def open_plot(dirname, filename):

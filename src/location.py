@@ -23,9 +23,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 import json
 import socket
 import threading
+import time
 from urlparse import urlparse
 
 import serial
@@ -298,6 +300,51 @@ class ThreadLocation(threading.Thread):
         self.cancel = True
         if self.raw:
             self.notify.queue.clear()
+
+
+class KmlServer(object):
+    def __init__(self, locations):
+        self.server = HTTPServer(('127.0.0.1', 12345), KmlServerHandler)
+        self.server.locations = locations
+        self.thread = threading.Thread(target=self.__serve_kml)
+        self.thread.start()
+
+    def __serve_kml(self):
+        self.server.serve_forever()
+
+    def close(self):
+        self.server.shutdown()
+
+
+class KmlServerHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type',' application/vnd.google-earth.kml+xml')
+        self.end_headers()
+
+        self.wfile.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+        self.wfile.write('<kml xmlns="http://www.opengis.net/kml/2.2" '
+                         'xmlns:gx="http://www.google.com/kml/ext/2.2" '
+                         'xmlns:kml="http://www.opengis.net/kml/2.2">\n')
+
+        self.wfile.write('\t<Document>\n')
+        self.wfile.write('\t\t<name>RTLSDR Scanner</name>\n')
+        self.wfile.write('\t\t<description>{} locations</description>\n'.
+                         format(len(self.server.locations)))
+
+        for timeStamp in self.server.locations:
+            lat, lon, alt = self.server.locations[timeStamp]
+            timeStr = time.strftime('%c', time.localtime(timeStamp))
+            self.wfile.write('\t\t<Placemark>\n')
+            self.wfile.write('\t\t\t<name>{}</name>\n'.format(timeStr))
+            self.wfile.write('\t\t\t<Point>\n')
+            self.wfile.write('\t\t\t\t<coordinates>{}, {}, {}</coordinates>\n'.
+                             format(lon, lat, alt))
+            self.wfile.write('\t\t\t</Point>\n')
+            self.wfile.write('\t\t</Placemark>\n')
+
+        self.wfile.write('\t</Document>\n')
+        self.wfile.write('</kml>\n')
 
 
 if __name__ == '__main__':
