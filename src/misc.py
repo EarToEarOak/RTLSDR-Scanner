@@ -23,6 +23,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import datetime
 import json
 import math
 import os
@@ -191,6 +192,11 @@ def format_time(timeStamp, withDate=False):
         return time.strftime('%c', time.localtime(timeStamp))
 
     return time.strftime('%H:%M:%S', time.localtime(timeStamp))
+
+
+def format_iso_time(timeStamp):
+    dt = datetime.datetime.fromtimestamp(timeStamp)
+    return dt.isoformat()
 
 
 def load_bitmap(name):

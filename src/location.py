@@ -27,7 +27,6 @@ from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 import json
 import socket
 import threading
-import time
 from urlparse import urlparse
 
 import serial
@@ -35,6 +34,7 @@ from serial.serialutil import SerialException
 
 from devices import DeviceGPS
 from events import post_event, EventThread, Event
+from misc import format_iso_time
 
 
 class ThreadLocation(threading.Thread):
@@ -315,34 +315,46 @@ class KmlServer(object):
     def close(self):
         self.server.shutdown()
 
-# TODO: draw lines instead of placemarks
+
 class KmlServerHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
-        self.send_header('Content-type',' application/vnd.google-earth.kml+xml')
+        self.send_header('Content-type','application/vnd.google-earth.kml+xml')
         self.end_headers()
 
         self.wfile.write('<?xml version="1.0" encoding="UTF-8"?>\n')
         self.wfile.write('<kml xmlns="http://www.opengis.net/kml/2.2" '
-                         'xmlns:gx="http://www.google.com/kml/ext/2.2" '
-                         'xmlns:kml="http://www.opengis.net/kml/2.2">\n')
+                         'xmlns:gx="http://www.google.com/kml/ext/2.2">\n')
 
         self.wfile.write('\t<Document>\n')
+
+        self.wfile.write('\t\t<LookAt>\n')
+        self.wfile.write('\t\t<gx:TimeSpan>\n')
+        begin = format_iso_time(min(self.server.locations))
+        end = format_iso_time(max(self.server.locations))
+        self.wfile.write('\t\t\t<begin>{}</begin>\n'.format(begin))
+        self.wfile.write('\t\t\t<end>{}</end>\n'.format(end))
+        self.wfile.write('\t\t</gx:TimeSpan>\n')
+        self.wfile.write('\t\t</LookAt>\n')
+
         self.wfile.write('\t\t<name>RTLSDR Scanner</name>\n')
-        self.wfile.write('\t\t<description>{} locations</description>\n'.
+        self.wfile.write('\t\t<Placemark>\n')
+        self.wfile.write('\t\t\t<name>Track</name>\n')
+        self.wfile.write('\t\t\t<description>{} locations</description>\n'.
                          format(len(self.server.locations)))
+
+        self.wfile.write('\t\t\t<gx:Track>\n')
+        self.wfile.write('\t\t\t\t<altitudeMode>clampToGround</altitudeMode>\n')
 
         for timeStamp in self.server.locations:
             lat, lon, alt = self.server.locations[timeStamp]
-            timeStr = time.strftime('%c', time.localtime(timeStamp))
-            self.wfile.write('\t\t<Placemark>\n')
-            self.wfile.write('\t\t\t<name>{}</name>\n'.format(timeStr))
-            self.wfile.write('\t\t\t<Point>\n')
-            self.wfile.write('\t\t\t\t<coordinates>{}, {}, {}</coordinates>\n'.
+            timeStr = format_iso_time(timeStamp)
+            self.wfile.write('\t\t\t\t<gx:coord>{} {} {}</gx:coord>\n'.
                              format(lon, lat, alt))
-            self.wfile.write('\t\t\t</Point>\n')
-            self.wfile.write('\t\t</Placemark>\n')
+            self.wfile.write('\t\t\t\t<when>{}</when>\n'.format(timeStr))
 
+        self.wfile.write('\t\t\t</gx:Track>\n')
+        self.wfile.write('\t\t</Placemark>\n')
         self.wfile.write('\t</Document>\n')
         self.wfile.write('</kml>\n')
 
