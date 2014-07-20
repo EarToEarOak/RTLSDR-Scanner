@@ -315,7 +315,7 @@ class KmlServer(object):
     def close(self):
         self.server.shutdown()
 
-
+# TODO: draw lines instead of placemarks
 class KmlServerHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -345,6 +345,9 @@ class KmlServerHandler(BaseHTTPRequestHandler):
 
         self.wfile.write('\t</Document>\n')
         self.wfile.write('</kml>\n')
+
+    def log_message(self, *args, **kwargs):
+        pass
 
 
 if __name__ == '__main__':
