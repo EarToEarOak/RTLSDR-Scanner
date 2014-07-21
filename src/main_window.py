@@ -129,6 +129,7 @@ class FrameMain(wx.Frame):
         self.menuCompare = None
         self.menuCal = None
         self.menuKml = None
+        self.menuLocClear = None
         self.menuLog = None
         self.menuHelpLink = None
         self.menuUpdate = None
@@ -385,8 +386,11 @@ class FrameMain(wx.Frame):
         self.menuKml = menuTools.Append(wx.ID_ANY, "&Track in Google Earth",
                                         "Display recorded points in Google Earth")
         menuTools.AppendSeparator()
+        self.menuLocClear = menuTools.Append(wx.ID_ANY, "&Clear location data...",
+                                             "Remove GPS data from scan")
+        menuTools.AppendSeparator()
         menuLog = menuTools.Append(wx.ID_ANY, "&Log...",
-                                  "Program log")
+                                   "Program log")
 
         menuHelp = wx.Menu()
         menuHelpLink = menuHelp.Append(wx.ID_HELP, "&Help...",
@@ -435,6 +439,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.__on_compare, self.menuCompare)
         self.Bind(wx.EVT_MENU, self.__on_cal, self.menuCal)
         self.Bind(wx.EVT_MENU, self.__on_kml, self.menuKml)
+        self.Bind(wx.EVT_MENU, self.__on_loc_clear, self.menuLocClear)
         self.Bind(wx.EVT_MENU, self.__on_log, menuLog)
         self.Bind(wx.EVT_MENU, self.__on_help, menuHelpLink)
         self.Bind(wx.EVT_MENU, self.__on_update, menuUpdate)
@@ -771,6 +776,14 @@ class FrameMain(wx.Frame):
         if not run_file(tempFile):
             wx.MessageBox('Error starting Google Earth', 'Error',
                           wx.OK | wx.ICON_ERROR)
+
+    def __on_loc_clear(self, _event):
+        result = wx.MessageBox('Remove {} locations from scan?'.format(len(self.location)),
+                               'Clear location data',
+                               wx.YES_NO, self)
+        if result == wx.YES:
+            self.location.clear()
+            self.__set_control_state(True)
 
     def __on_log(self, _event):
         if self.dlgLog is None:
@@ -1191,6 +1204,7 @@ class FrameMain(wx.Frame):
         self.menuDevicesGps.Enable(state)
         self.menuReset.Enable(state)
         self.menuCal.Enable(state)
+        self.menuLocClear.Enable(state and len(self.location))
         self.popupMenuStop.Enable(not state)
         self.popupMenuStart.Enable(state)
         if self.settings.mode == Mode.CONTIN:
