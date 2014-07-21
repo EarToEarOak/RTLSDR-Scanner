@@ -1046,7 +1046,7 @@ class FrameMain(wx.Frame):
 
     def __progress(self):
         if self.steps == self.stepsTotal:
-            self.status.set_general("Scanning")
+            self.status.set_general("Scanning ({} sweeps)".format(len(self.spectrum)))
         self.steps -= 1
         if self.steps > 0 and not self.stopScan:
             self.status.set_progress((self.stepsTotal - self.steps) * 100.0
@@ -1095,11 +1095,9 @@ class FrameMain(wx.Frame):
 
     def __start_gps(self):
         if self.settings.gps and len(self.settings.devicesGps):
-            if self.threadLocation and self.threadLocation.isAlive():
-                self.threadLocation.stop()
-                self.threadLocation.join()
-            device = self.settings.devicesGps[self.settings.indexGps]
-            self.threadLocation = ThreadLocation(self, device)
+            if self.threadLocation is None:
+                device = self.settings.devicesGps[self.settings.indexGps]
+                self.threadLocation = ThreadLocation(self, device)
 
     def __stop_gps(self):
         if self.threadLocation and self.threadLocation.isAlive():

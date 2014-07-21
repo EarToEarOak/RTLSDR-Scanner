@@ -409,7 +409,7 @@ class DialogSeq(wx.Dialog):
         sizerCheck.Add(self.checkGrid, flag=wx.ALL, border=5)
         sizerCheck.Add(self.checkBar, flag=wx.ALL, border=5)
 
-        self.sweepTimeStamps = [timeStamp for timeStamp in spectrum.keys()]
+        self.sweepTimeStamps = sorted([timeStamp for timeStamp in spectrum.keys()])
         sweepChoices = [format_time(timeStamp, True) for timeStamp in self.sweepTimeStamps]
 
         textStart = wx.StaticText(self, label="Start")
@@ -572,7 +572,7 @@ class DialogSeq(wx.Dialog):
         start, end = self.__get_range()
         self.__spectrum_range(start, end)
 
-        self.textSweeps.SetLabel('Sweeps: {0}'.format(len(self.sweeps)))
+        self.textSweeps.SetLabel('Sweeps: {}'.format(len(self.sweeps)))
 
         if len(self.sweeps) > 0:
             total = count_points(self.sweeps)
