@@ -48,13 +48,7 @@ class ThreadLocation(threading.Thread):
         self.cancel = False
         self.comm = None
         self.sats = {}
-
-        if self.device.type in [DeviceGPS.NMEA_SERIAL, DeviceGPS.NMEA_TCP]:
-            if self.__nmea_open():
-                self.start()
-        else:
-            if self.__gpsd_open():
-                self.start()
+        self.start()
 
     def __tcp_connect(self, defaultPort):
         self.comm = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -285,6 +279,13 @@ class ThreadLocation(threading.Thread):
         self.comm.close()
 
     def run(self):
+        if self.device.type in [DeviceGPS.NMEA_SERIAL, DeviceGPS.NMEA_TCP]:
+            if not self.__nmea_open():
+                return
+        else:
+            if not self.__gpsd_open():
+                return
+
         if self.device.type in [DeviceGPS.NMEA_SERIAL, DeviceGPS.NMEA_TCP]:
             self.__nmea_read()
         elif self.device.type == DeviceGPS.GPSD:
