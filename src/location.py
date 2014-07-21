@@ -25,6 +25,7 @@
 
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 import json
+from math import radians, sin, cos, asin, sqrt
 import socket
 import threading
 from urlparse import urlparse
@@ -318,6 +319,47 @@ class KmlServer(object):
 
 
 class KmlServerHandler(BaseHTTPRequestHandler):
+    def __haversine(self, lat1, lat2, lon1, lon2):
+        lat1, lat2, lon1, lon2 = map(radians, [lat1, lat2, lon1, lon2])
+
+        dlon = lon1 - lon2
+        dlat = lat1 - lat2
+        a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
+        b = asin(sqrt(a))
+
+        return 2 * b * 6371000
+
+    def __create_lookat(self):
+        if not len(self.server.locations):
+            return ''
+
+        begin = format_iso_time(min(self.server.locations))
+        end = format_iso_time(max(self.server.locations))
+
+        lat = [y for y, _x, _z in self.server.locations.itervalues()]
+        lon = [x for _y, x, _z in self.server.locations.itervalues()]
+        latMin = min(lat)
+        latMax = max(lat)
+        lonMin = min(lon)
+        lonMax = max(lon)
+        latCen = (latMax + latMin) / 2
+        lonCen = (lonMax + lonMin) / 2
+        dist = self.__haversine(latMin, latMax, lonMin, lonMax)
+        dist = max(min(50000, dist), 100)
+
+        lookAt = ('\t\t<LookAt>\n'
+                  '\t\t\t<latitude>{}</latitude>\n'
+                  '\t\t\t<longitude>{}</longitude>\n'
+                  '\t\t\t<altitudeMode>clampToGround</altitudeMode>\n'
+                  '\t\t\t<range>{}</range>\n'
+                  '\t\t\t<gx:TimeSpan>\n'
+                  '\t\t\t\t<begin>{}</begin>\n'
+                  '\t\t\t\t<end>{}</end>\n'
+                  '\t\t\t</gx:TimeSpan>\n'
+                  '\t\t</LookAt>\n').format(latCen, lonCen, dist * 2, begin, end)
+
+        return lookAt
+
     def do_GET(self):
         self.send_response(200)
         self.send_header('Content-type','application/vnd.google-earth.kml+xml')
@@ -330,14 +372,7 @@ class KmlServerHandler(BaseHTTPRequestHandler):
         self.wfile.write('\t<Document>\n')
         self.wfile.write('\t\t<name>RTLSDR Scanner</name>\n')
 
-        # TODO: calculate <LookAt> position
-        if len(self.server.locations):
-            self.wfile.write('\t\t<gx:TimeSpan>\n')
-            begin = format_iso_time(min(self.server.locations))
-            end = format_iso_time(max(self.server.locations))
-            self.wfile.write('\t\t\t<begin>{}</begin>\n'.format(begin))
-            self.wfile.write('\t\t\t<end>{}</end>\n'.format(end))
-            self.wfile.write('\t\t</gx:TimeSpan>\n')
+        self.wfile.write(self.__create_lookat())
 
         self.wfile.write('\t\t<Style id="track">\n')
         self.wfile.write('\t\t\t<LineStyle>\n')

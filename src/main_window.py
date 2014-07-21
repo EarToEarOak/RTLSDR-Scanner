@@ -759,7 +759,7 @@ class FrameMain(wx.Frame):
         handle.write('\t\t<Link>\n')
         handle.write('\t\t\t<href>http://localhost:12345</href>\n')
         handle.write('\t\t\t<refreshMode>onInterval</refreshMode>\n')
-        handle.write('\t\t\t<refreshInterval>5</refreshInterval>\n')
+        handle.write('\t\t\t<refreshInterval>10</refreshInterval>\n')
         handle.write('\t\t</Link>\n')
         handle.write('\t</NetworkLink>\n')
         handle.write('</kml>\n')
