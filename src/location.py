@@ -391,7 +391,7 @@ class KmlServerHandler(BaseHTTPRequestHandler):
         self.wfile.write('\t\t\t\t<altitudeMode>clampToGround</altitudeMode>\n')
 
         with self.server.lock:
-            for timeStamp in self.server.locations:
+            for timeStamp in sorted(self.server.locations):
                 lat, lon, alt = self.server.locations[timeStamp]
                 timeStr = format_iso_time(timeStamp)
                 self.wfile.write('\t\t\t\t<gx:coord>{} {} {}</gx:coord>\n'.
