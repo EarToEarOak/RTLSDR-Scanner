@@ -51,8 +51,10 @@ class Statusbar(wx.StatusBar):
         wx.StatusBar.__init__(self, parent, -1)
         self.SetFieldsCount(4)
 
-        self.controls[0] = wx.StaticText(self, label=Statusbar.TEXT_GENERAL)
-        self.controls[1] = wx.StaticText(self, label=Statusbar.TEXT_INFO)
+        self.controls[0] = wx.StaticText(self, label=Statusbar.TEXT_GENERAL,
+                                         style=wx.ST_NO_AUTORESIZE)
+        self.controls[1] = wx.StaticText(self, label=Statusbar.TEXT_INFO,
+                                         style=wx.ST_NO_AUTORESIZE)
         self.controls[2] = Led(self, label=Statusbar.TEXT_GPS)
 
         self.controls[3] = wx.Gauge(self, -1,
