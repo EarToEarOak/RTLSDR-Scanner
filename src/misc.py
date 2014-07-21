@@ -195,7 +195,7 @@ def format_time(timeStamp, withDate=False):
 
 
 def format_iso_time(timeStamp):
-    dt = datetime.datetime.fromtimestamp(timeStamp)
+    dt = datetime.datetime.utcfromtimestamp(timeStamp)
     return dt.isoformat()
 
 

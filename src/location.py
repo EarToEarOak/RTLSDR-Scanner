@@ -319,8 +319,7 @@ class KmlServer(object):
 class KmlServerHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
-#         self.send_header('Content-type','application/vnd.google-earth.kml+xml')
-        self.send_header('Content-type','text/plain')
+        self.send_header('Content-type','application/vnd.google-earth.kml+xml')
         self.end_headers()
 
         self.wfile.write('<?xml version="1.0" encoding="UTF-8"?>\n')
@@ -328,15 +327,14 @@ class KmlServerHandler(BaseHTTPRequestHandler):
                          'xmlns:gx="http://www.google.com/kml/ext/2.2">\n')
 
         self.wfile.write('\t<Document>\n')
+        self.wfile.write('\t\t<name>RTLSDR Scanner</name>\n')
 
-        self.wfile.write('\t\t<LookAt>\n')
         self.wfile.write('\t\t<gx:TimeSpan>\n')
         begin = format_iso_time(min(self.server.locations))
         end = format_iso_time(max(self.server.locations))
         self.wfile.write('\t\t\t<begin>{}</begin>\n'.format(begin))
         self.wfile.write('\t\t\t<end>{}</end>\n'.format(end))
         self.wfile.write('\t\t</gx:TimeSpan>\n')
-        self.wfile.write('\t\t</LookAt>\n')
 
         self.wfile.write('\t\t<Style id="track">\n')
         self.wfile.write('\t\t\t<LineStyle>\n')
@@ -345,7 +343,6 @@ class KmlServerHandler(BaseHTTPRequestHandler):
         self.wfile.write('\t\t\t</LineStyle>\n')
         self.wfile.write('\t\t</Style>\n')
 
-        self.wfile.write('\t\t<name>RTLSDR Scanner</name>\n')
         self.wfile.write('\t\t<Placemark>\n')
         self.wfile.write('\t\t\t<name>Track</name>\n')
         self.wfile.write('\t\t\t<description>{} locations</description>\n'.
@@ -355,6 +352,7 @@ class KmlServerHandler(BaseHTTPRequestHandler):
         self.wfile.write('\t\t\t<gx:Track>\n')
         self.wfile.write('\t\t\t\t<altitudeMode>clampToGround</altitudeMode>\n')
 
+        # TODO: lock needed
         for timeStamp in self.server.locations:
             lat, lon, alt = self.server.locations[timeStamp]
             timeStr = format_iso_time(timeStamp)
