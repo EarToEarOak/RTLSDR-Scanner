@@ -185,6 +185,9 @@ class FrameMain(wx.Frame):
 
         wx.Frame.__init__(self, None, title=title)
 
+        self.timerGpsRetry = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.__on_gps_retry, self.timerGpsRetry)
+
         self.Bind(wx.EVT_CLOSE, self.__on_exit)
 
         self.status = Statusbar(self, self.log)
@@ -846,6 +849,11 @@ class FrameMain(wx.Frame):
         self.settings.pointsLimit = self.popupMenuPointsLim.IsChecked()
         self.__set_plot(self.spectrum, self.settings.annotate)
 
+    def __on_gps_retry(self, _event):
+        self.timerGpsRetry.Stop()
+        self.__stop_gps()
+        self.__start_gps()
+
     def __on_motion(self, event):
         xpos = event.xdata
         ypos = event.ydata
@@ -954,6 +962,8 @@ class FrameMain(wx.Frame):
             self.status.set_gps("{0}".format(data), level=Log.ERROR)
             self.status.error_gps()
             self.threadLocation = None
+            if not self.timerGpsRetry.IsRunning():
+                self.timerGpsRetry.Start(5000, True)
         elif status == Event.LOC:
             self.__update_location(data)
 
