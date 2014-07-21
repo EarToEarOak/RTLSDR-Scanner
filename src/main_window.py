@@ -610,7 +610,7 @@ class FrameMain(wx.Frame):
     def __on_export_geo(self, _event):
         dlgGeo = DialogGeo(self, self.spectrum, self.location, self.settings)
         if dlgGeo.ShowModal() == wx.ID_OK:
-
+            self.status.set_general("Exporting...")
             extent = dlgGeo.get_extent()
             dlgFile = wx.FileDialog(self, "Export map to file",
                                     self.settings.dirExport,
