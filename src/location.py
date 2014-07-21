@@ -303,9 +303,10 @@ class ThreadLocation(threading.Thread):
 
 
 class KmlServer(object):
-    def __init__(self, locations):
+    def __init__(self, locations, lock):
         self.server = HTTPServer(('127.0.0.1', 12345), KmlServerHandler)
         self.server.locations = locations
+        self.server.lock = lock
         self.thread = threading.Thread(target=self.__serve_kml)
         self.thread.start()
 
@@ -329,12 +330,14 @@ class KmlServerHandler(BaseHTTPRequestHandler):
         self.wfile.write('\t<Document>\n')
         self.wfile.write('\t\t<name>RTLSDR Scanner</name>\n')
 
-        self.wfile.write('\t\t<gx:TimeSpan>\n')
-        begin = format_iso_time(min(self.server.locations))
-        end = format_iso_time(max(self.server.locations))
-        self.wfile.write('\t\t\t<begin>{}</begin>\n'.format(begin))
-        self.wfile.write('\t\t\t<end>{}</end>\n'.format(end))
-        self.wfile.write('\t\t</gx:TimeSpan>\n')
+        # TODO: calculate <LookAt> position
+        if len(self.server.locations):
+            self.wfile.write('\t\t<gx:TimeSpan>\n')
+            begin = format_iso_time(min(self.server.locations))
+            end = format_iso_time(max(self.server.locations))
+            self.wfile.write('\t\t\t<begin>{}</begin>\n'.format(begin))
+            self.wfile.write('\t\t\t<end>{}</end>\n'.format(end))
+            self.wfile.write('\t\t</gx:TimeSpan>\n')
 
         self.wfile.write('\t\t<Style id="track">\n')
         self.wfile.write('\t\t\t<LineStyle>\n')
@@ -352,13 +355,13 @@ class KmlServerHandler(BaseHTTPRequestHandler):
         self.wfile.write('\t\t\t<gx:Track>\n')
         self.wfile.write('\t\t\t\t<altitudeMode>clampToGround</altitudeMode>\n')
 
-        # TODO: lock needed
-        for timeStamp in self.server.locations:
-            lat, lon, alt = self.server.locations[timeStamp]
-            timeStr = format_iso_time(timeStamp)
-            self.wfile.write('\t\t\t\t<gx:coord>{} {} {}</gx:coord>\n'.
-                             format(lon, lat, alt))
-            self.wfile.write('\t\t\t\t<when>{}</when>\n'.format(timeStr))
+        with self.server.lock:
+            for timeStamp in self.server.locations:
+                lat, lon, alt = self.server.locations[timeStamp]
+                timeStr = format_iso_time(timeStamp)
+                self.wfile.write('\t\t\t\t<gx:coord>{} {} {}</gx:coord>\n'.
+                                 format(lon, lat, alt))
+                self.wfile.write('\t\t\t\t<when>{}</when>\n'.format(timeStr))
 
         self.wfile.write('\t\t\t</gx:Track>\n')
         self.wfile.write('\t\t</Placemark>\n')

@@ -1108,7 +1108,7 @@ class FrameMain(wx.Frame):
         self.threadLocation = None
 
     def __start_kml(self):
-        self.serverKml = KmlServer(self.location)
+        self.serverKml = KmlServer(self.location, self.lock)
 
     def __stop_kml(self):
         if self.serverKml:
@@ -1128,10 +1128,11 @@ class FrameMain(wx.Frame):
                 self.scanInfo.lat = str(data[0])
                 self.scanInfo.lon = str(data[1])
 
-        if len(self.spectrum) > 0:
-            self.location[max(self.spectrum)] = (data[0],
-                                                 data[1],
-                                                 data[2])
+        with self.lock:
+            if len(self.spectrum) > 0:
+                self.location[max(self.spectrum)] = (data[0],
+                                                     data[1],
+                                                     data[2])
 
     def __saved(self, isSaved):
         self.isSaved = isSaved
