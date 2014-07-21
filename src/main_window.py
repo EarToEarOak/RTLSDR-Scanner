@@ -47,7 +47,7 @@ from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, \
     DialogLog
 from events import EVENT_THREAD, Event, EventThread, post_event, Log
 from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
-    export_map, extension_add, File, run_file
+    export_map, extension_add, File, run_file, export_gpx
 from location import ThreadLocation, KmlServer
 from misc import calc_samples, calc_real_dwell, \
     get_version_timestamp, get_version_timestamp_repo, add_colours, \
@@ -111,6 +111,7 @@ class FrameMain(wx.Frame):
         self.menuExportImage = None
         self.menuExportSeq = None
         self.menuExportGeo = None
+        self.menuExportTrack = None
         self.menuPreview = None
         self.menuPage = None
         self.menuPrint = None
@@ -330,6 +331,8 @@ class FrameMain(wx.Frame):
                                              "Export sweep plots in sequence")
         self.menuExportGeo = menuFile.Append(wx.ID_ANY, "Export map...",
                                              "Export maps")
+        self.menuExportTrack = menuFile.Append(wx.ID_ANY, "Export GPS track...",
+                                               "Export GPS data")
         menuFile.AppendSeparator()
         self.menuPage = menuFile.Append(wx.ID_ANY, "Page setup...",
                                         "Page setup")
@@ -420,6 +423,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.__on_export_image, self.menuExportImage)
         self.Bind(wx.EVT_MENU, self.__on_export_image_seq, self.menuExportSeq)
         self.Bind(wx.EVT_MENU, self.__on_export_geo, self.menuExportGeo)
+        self.Bind(wx.EVT_MENU, self.__on_export_track, self.menuExportTrack)
         self.Bind(wx.EVT_MENU, self.__on_page, self.menuPage)
         self.Bind(wx.EVT_MENU, self.__on_preview, self.menuPreview)
         self.Bind(wx.EVT_MENU, self.__on_print, self.menuPrint)
@@ -606,7 +610,7 @@ class FrameMain(wx.Frame):
     def __on_export_geo(self, _event):
         dlgGeo = DialogGeo(self, self.spectrum, self.location, self.settings)
         if dlgGeo.ShowModal() == wx.ID_OK:
-            self.status.set_general("Exporting...")
+
             extent = dlgGeo.get_extent()
             dlgFile = wx.FileDialog(self, "Export map to file",
                                     self.settings.dirExport,
@@ -632,6 +636,24 @@ class FrameMain(wx.Frame):
             self.status.set_general("Finished")
             dlgFile.Destroy()
         dlgGeo.Destroy()
+
+    def __on_export_track(self, _event):
+        dlg = wx.FileDialog(self, "Export GPS to file",
+                            self.settings.dirExport,
+                            self.filename,
+                            File.get_type_filters(File.Types.TRACK),
+                            wx.SAVE | wx.OVERWRITE_PROMPT)
+        if dlg.ShowModal() == wx.ID_OK:
+            self.status.set_general("Exporting...")
+            fileName = dlg.GetFilename()
+            dirName = dlg.GetDirectory()
+            self.settings.dirExport = dirName
+            fileName = extension_add(fileName, dlg.GetFilterIndex(),
+                                     File.Types.TRACK)
+            fullName = os.path.join(dirName, fileName)
+            export_gpx(fullName, self.location, self.GetName())
+            self.status.set_general("Finished")
+        dlg.Destroy()
 
     def __on_page(self, _event):
         dlg = wx.PageSetupDialog(self, self.pageConfig)
@@ -1193,6 +1215,7 @@ class FrameMain(wx.Frame):
         self.menuExportSeq.Enable(state and len(self.spectrum) > 0)
         self.menuExportGeo.Enable(state and len(self.spectrum) > 0 and
                                   len(self.location) > 0)
+        self.menuExportGeo.Enable(state and len(self.location))
         self.menuPage.Enable(state)
         self.menuPreview.Enable(state)
         self.menuPrint.Enable(state)

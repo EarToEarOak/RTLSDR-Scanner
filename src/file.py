@@ -24,6 +24,7 @@
 #
 
 import cPickle
+from collections import OrderedDict
 import json
 import os
 import subprocess
@@ -36,12 +37,13 @@ import matplotlib
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 import wx
 
+from misc import format_iso_time
 from spectrum import sort_spectrum, create_mesh
 
 
 class File(object):
     class Types(object):
-        SAVE, PLOT, IMAGE, GEO = range(4)
+        SAVE, PLOT, IMAGE, GEO, TRACK = range(5)
 
     class SaveType(object):
         RFS = 0
@@ -54,6 +56,9 @@ class File(object):
 
     class GeoType(object):
         KMZ, CSV, BMP, EPS, GIF, JPEG, PDF, PNG, PPM, TIFF = range(10)
+
+    class TrackType(object):
+        GPX = 0
 
     SAVE = [''] * 1
     SAVE[SaveType.RFS] = 'RTLSDR frequency scan (*.rfs)|*.rfs'
@@ -74,7 +79,6 @@ class File(object):
     IMAGE[ImageType.TIFF] = 'Tagged Image File (*.tiff)|*.tiff'
 
     GEO = [''] * 10
-
     GEO[GeoType.BMP] = 'Bitmap image (*.bmp)|*.bmp'
     GEO[GeoType.CSV] = 'CSV Table (*.csv)|*.csv'
     GEO[GeoType.EPS] = 'Encapsulated PostScript (*.eps)|*.eps'
@@ -86,12 +90,15 @@ class File(object):
     GEO[GeoType.PPM] = 'Portable Pixmap image (*.ppm)|*.ppm'
     GEO[GeoType.TIFF] = 'Tagged Image File (*.tiff)|*.tiff'
 
+    TRACK = [''] * 1
+    TRACK[TrackType.GPX] = 'GPX track (*.gpx)|*.gpx'
+
     HEADER = "RTLSDR Scanner"
     VERSION = 9
 
     @staticmethod
     def __get_types(type):
-        return [File.SAVE, File.PLOT, File.IMAGE, File.GEO][type]
+        return [File.SAVE, File.PLOT, File.IMAGE, File.GEO, File.TRACK][type]
 
     @staticmethod
     def get_type_ext(index, type=Types.PLOT):
@@ -456,6 +463,34 @@ def export_xyz(filename, xyz):
 def export_map_image(filename, exportType, image):
     ext = File.get_type_ext(exportType, File.Types.IMAGE)
     image.save(filename, format=ext[1::])
+
+
+def export_gpx(filename, locations, name):
+    handle = open(filename, 'wb')
+
+    header = ('<?xml version="1.0" encoding="UTF-8" standalone="no" ?>\n'
+              '<gpx xmlns="http://www.topografix.com/GPX/1/1" creator="{}" version="1.1">\n'
+              '\t<trk>\n'
+              '\t\t<name>{}</name>\n'
+              '\t\t<trkseg>\n').format(name, 'test name')
+    handle.write(header)
+
+    for location in sorted(locations.items()):
+        timeStamp = format_iso_time(location[0])
+        lat = location[1][0]
+        lon = location[1][1]
+        alt = location[1][2]
+        point = ('\t\t\t<trkpt lat="{}" lon="{}">\n'
+                '\t\t\t\t<ele>{}</ele>\n'
+                '\t\t\t\t<time>{}</time>\n'
+                '\t\t\t</trkpt>\n').format(lat, lon, alt, timeStamp)
+        handle.write(point)
+
+    footer = ('\t\t</trkseg>\n'
+              '\t</trk>\n'
+              '</gpx>\n')
+    handle.write(footer)
+    handle.close()
 
 
 def write_numpy(handle, array, name):

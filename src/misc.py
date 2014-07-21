@@ -196,7 +196,7 @@ def format_time(timeStamp, withDate=False):
 
 def format_iso_time(timeStamp):
     dt = datetime.datetime.utcfromtimestamp(timeStamp)
-    return dt.isoformat()
+    return dt.isoformat()+'Z'
 
 
 def load_bitmap(name):
