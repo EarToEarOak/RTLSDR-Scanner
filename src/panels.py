@@ -36,7 +36,7 @@ import wx
 
 from constants import Display
 from controls import GridToolTips, CheckCellRenderer
-from misc import close_modeless, format_precision
+from misc import format_precision
 from plot import Plotter
 from plot3d import Plotter3d
 from plot_controls import MouseZoom, MouseSelect
@@ -44,6 +44,7 @@ from spectrogram import Spectrogram
 from spectrum import split_spectrum_sort, Measure, reduce_points
 from status import PlotterStatus
 from toolbars import NavigationToolbar, NavigationToolbarCompare
+from utils_wx import close_modeless
 import wx.grid as wxGrid
 
 

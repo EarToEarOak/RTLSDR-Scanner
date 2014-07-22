@@ -27,7 +27,8 @@ import threading
 from matplotlib.table import Table
 
 from events import post_event, EventThread, Event
-from misc import format_precision, format_time, find_artists, set_table_colour
+from misc import format_time, format_precision
+from utils_mpl import find_artists, set_table_colour
 
 
 class PlotterStatus(object):

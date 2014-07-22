@@ -42,22 +42,22 @@ from constants import F_MIN, F_MAX, MODE, DWELL, NFFT, DISPLAY, Warn, \
 from controls import MultiButton
 from devices import get_devices_rtl
 from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, \
-    DialogDevicesRTL, DialogCompare, DialogAutoCal, DialogAbout, DialogSaveWarn, \
-    DialogDevicesGPS, DialogGeo, DialogSeq, DialogImageSize, DialogFormatting, \
-    DialogLog
+    DialogDevicesRTL, DialogCompare, DialogAutoCal, DialogAbout, \
+    DialogSaveWarn, DialogDevicesGPS, DialogGeo, DialogSeq, DialogImageSize, \
+    DialogFormatting, DialogLog
 from events import EVENT_THREAD, Event, EventThread, post_event, Log
 from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
     export_map, extension_add, File, run_file, export_gpx
 from location import ThreadLocation, KmlServer
-from misc import calc_samples, calc_real_dwell, \
-    get_version_timestamp, get_version_timestamp_repo, add_colours, \
-    RemoteControl, format_precision
+from misc import RemoteControl, format_precision, calc_samples, calc_real_dwell, \
+    get_version_timestamp, get_version_timestamp_repo
 from panels import PanelGraph
 from printer import PrintOut
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
 from spectrum import count_points, sort_spectrum, Extent
 from toolbars import Statusbar
+from utils_mpl import add_colours
 
 
 class DropTarget(wx.FileDropTarget):

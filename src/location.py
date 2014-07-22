@@ -363,7 +363,7 @@ class KmlServerHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         self.send_response(200)
-        self.send_header('Content-type','application/vnd.google-earth.kml+xml')
+        self.send_header('Content-type', 'application/vnd.google-earth.kml+xml')
         self.end_headers()
 
         self.wfile.write('<?xml version="1.0" encoding="UTF-8"?>\n')

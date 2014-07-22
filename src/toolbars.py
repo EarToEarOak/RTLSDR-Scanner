@@ -35,7 +35,8 @@ import wx
 from constants import Display, PlotFunc
 from controls import Led
 from events import Log
-from misc import load_bitmap, get_colours
+from utils_mpl import get_colours
+from utils_wx import load_bitmap
 
 
 class Statusbar(wx.StatusBar):
@@ -356,7 +357,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
                                   self.settings.autoL,
                                   self.autoLId)
 
-        if  display != Display.PLOT  and display != Display.STATUS:
+        if display != Display.PLOT and display != Display.STATUS:
             self.autoTId = wx.NewId()
             self.__add_check_tool('auto_t', 'Auto range time',
                                   self.__on_check_auto_t,

@@ -208,11 +208,14 @@ SectionEnd
 Section Uninstall
 	!insertmacro APP_UNASSOCIATE "${FILE_TYPE}" "${FILE_CLASS}"
 
+	Delete "$INSTDIR\*.pyc"
 	Delete "$INSTDIR\${PRODUCT_NAME}.url"
 	Delete "$INSTDIR\rtlsdr_scan.ico"
 	Delete "$INSTDIR\uninst.exe"
 	Delete "$INSTDIR\license.txt"
 	Delete "$INSTDIR\windows.py"
+	Delete "$INSTDIR\utils_wx.py"
+	Delete "$INSTDIR\utils_mpl.py"
 	Delete "$INSTDIR\toolbars.py"
 	Delete "$INSTDIR\spectrum.py"
 	Delete "$INSTDIR\spectrogram.py"
@@ -252,7 +255,6 @@ Section Uninstall
 	Delete "$INSTDIR\res\icon.png"
 	Delete "$INSTDIR\doc\Manual.pdf"
 	Delete "$INSTDIR\doc\BBCR2.rfs"
-	Delete "$INSTDIR\*.pyc"
 	Delete "$INSTDIR\libusb-1.0.dll"
 	Delete "$INSTDIR\pthreadVC2-w32.dll"
 	Delete "$INSTDIR\rtlsdr.dll"

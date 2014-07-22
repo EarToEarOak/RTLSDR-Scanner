@@ -33,52 +33,9 @@ from threading import Thread
 import time
 import urllib
 
-from matplotlib import cm
-from matplotlib.colors import LinearSegmentedColormap
 import serial.tools.list_ports
-import wx
 
 from constants import SAMPLE_RATE, TIMESTAMP_FILE
-
-
-class ValidatorCoord(wx.PyValidator):
-    def __init__(self, isLat):
-        wx.PyValidator.__init__(self)
-        self.isLat = isLat
-
-    def Validate(self, _window):
-        textCtrl = self.GetWindow()
-        text = textCtrl.GetValue()
-        if len(text) == 0 or text == '-' or text.lower() == 'unknown':
-            textCtrl.SetForegroundColour("black")
-            textCtrl.Refresh()
-            return True
-
-        value = None
-        try:
-            value = float(text)
-            if self.isLat and (value < -90 or value > 90):
-                raise ValueError()
-            elif value < -180 or value > 180:
-                raise ValueError()
-        except ValueError:
-            textCtrl.SetForegroundColour("red")
-            textCtrl.SetFocus()
-            textCtrl.Refresh()
-            return False
-
-        textCtrl.SetForegroundColour("black")
-        textCtrl.Refresh()
-        return True
-
-    def TransferToWindow(self):
-        return True
-
-    def TransferFromWindow(self):
-        return True
-
-    def Clone(self):
-        return ValidatorCoord(self.isLat)
 
 
 class RemoteControl(object):
@@ -199,60 +156,6 @@ def format_iso_time(timeStamp):
     return dt.isoformat() + 'Z'
 
 
-def load_bitmap(name):
-    scriptDir = os.path.dirname(os.path.realpath(sys.argv[0]))
-    if os.path.isdir(scriptDir + '/res'):
-        resDir = os.path.normpath(scriptDir + '/res')
-    else:
-        resDir = os.path.normpath(scriptDir + '/../res')
-
-    return wx.Bitmap(resDir + '/' + name + '.png', wx.BITMAP_TYPE_PNG)
-
-
-def add_colours():
-    r = {'red':     ((0.0, 1.0, 1.0),
-                     (1.0, 1.0, 1.0)),
-         'green':   ((0.0, 0.0, 0.0),
-                     (1.0, 0.0, 0.0)),
-         'blue':   ((0.0, 0.0, 0.0),
-                    (1.0, 0.0, 0.0))}
-    g = {'red':     ((0.0, 0.0, 0.0),
-                     (1.0, 0.0, 0.0)),
-         'green':   ((0.0, 1.0, 1.0),
-                     (1.0, 1.0, 1.0)),
-         'blue':    ((0.0, 0.0, 0.0),
-                     (1.0, 0.0, 0.0))}
-    b = {'red':     ((0.0, 0.0, 0.0),
-                     (1.0, 0.0, 0.0)),
-         'green':   ((0.0, 0.0, 0.0),
-                     (1.0, 0.0, 0.0)),
-         'blue':    ((0.0, 1.0, 1.0),
-                     (1.0, 1.0, 1.0))}
-
-    rMap = LinearSegmentedColormap('red_map', r)
-    gMap = LinearSegmentedColormap('red_map', g)
-    bMap = LinearSegmentedColormap('red_map', b)
-    cm.register_cmap(name=' Pure Red', cmap=rMap)
-    cm.register_cmap(name=' Pure Green', cmap=gMap)
-    cm.register_cmap(name=' Pure Blue', cmap=bMap)
-
-
-def get_colours():
-    colours = [colour for colour in cm.cmap_d]
-    colours.sort()
-
-    return colours
-
-
-def find_artists(figure, gid):
-    return figure.findobj(lambda x: x.get_gid() == gid)
-
-
-def set_table_colour(table, colour):
-    for _loc, cell in table.get_celld().items():
-        cell.set_edgecolor(colour)
-
-
 def set_version_timestamp():
     scriptDir = os.path.dirname(os.path.realpath(sys.argv[0]))
     timeStamp = str(int(time.time()))
@@ -277,12 +180,6 @@ def get_version_timestamp_repo():
     timeStamp = int(f.readline())
     f.close()
     return timeStamp
-
-
-def close_modeless():
-    for child in wx.GetTopLevelWindows():
-        if child.Title == 'Configure subplots':
-            child.Close()
 
 
 def get_serial_ports():

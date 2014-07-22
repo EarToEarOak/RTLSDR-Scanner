@@ -51,13 +51,14 @@ from devices import DeviceRTL, DeviceGPS
 from events import Event
 from file import open_plot, File, export_image
 from location import ThreadLocation
-from misc import close_modeless, format_time, ValidatorCoord, get_colours, \
-    nearest, load_bitmap, get_version_timestamp, get_serial_ports, \
-    format_precision
+from misc import format_precision, format_time, nearest, get_serial_ports, \
+    get_version_timestamp
 from panels import PanelGraphCompare, PanelColourBar, PanelLine
 from plot import Plotter
 from rtltcp import RtlTcp
 from spectrum import count_points, sort_spectrum, Extent
+from utils_mpl import get_colours
+from utils_wx import close_modeless, ValidatorCoord, load_bitmap
 
 
 class DialogCompare(wx.Dialog):

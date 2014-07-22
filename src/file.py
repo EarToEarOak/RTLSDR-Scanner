@@ -481,9 +481,9 @@ def export_gpx(filename, locations, name):
         lon = location[1][1]
         alt = location[1][2]
         point = ('\t\t\t<trkpt lat="{}" lon="{}">\n'
-                '\t\t\t\t<ele>{}</ele>\n'
-                '\t\t\t\t<time>{}</time>\n'
-                '\t\t\t</trkpt>\n').format(lat, lon, alt, timeStamp)
+                 '\t\t\t\t<ele>{}</ele>\n'
+                 '\t\t\t\t<time>{}</time>\n'
+                 '\t\t\t</trkpt>\n').format(lat, lon, alt, timeStamp)
         handle.write(point)
 
     footer = ('\t\t</trkseg>\n'
