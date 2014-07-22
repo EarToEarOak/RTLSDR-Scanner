@@ -164,7 +164,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
 
         gridId = wx.NewId()
         self.AddCheckTool(gridId, load_bitmap('grid'),
-                          shortHelp='Toggle plot grid')
+                          shortHelp='Toggle plot_line grid')
         self.ToggleTool(gridId, settings.grid)
         wx.EVT_TOOL(self, gridId, self.__on_check_grid)
 

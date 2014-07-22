@@ -54,7 +54,7 @@ from location import ThreadLocation
 from misc import format_precision, format_time, nearest, get_serial_ports, \
     get_version_timestamp
 from panels import PanelGraphCompare, PanelColourBar, PanelLine
-from plot import Plotter
+from plot_line import Plotter
 from rtltcp import RtlTcp
 from spectrum import count_points, sort_spectrum, Extent
 from utils_mpl import get_colours
@@ -895,7 +895,7 @@ class DialogOffset(wx.Dialog):
         textHelp = wx.StaticText(self,
             label="Remove the aerial and press refresh, "
             "adjust the offset so the shaded areas overlay the flattest parts "
-            "of the plot.")
+            "of the plot_line.")
 
         textFreq = wx.StaticText(self, label="Test frequency (MHz)")
         self.spinFreq = wx.SpinCtrl(self)
@@ -1262,7 +1262,7 @@ class DialogPrefs(wx.Dialog):
         self.spinPoints = wx.SpinCtrl(self, wx.ID_ANY, min=1000, max=100000)
         self.spinPoints.Enable(settings.pointsLimit)
         self.spinPoints.SetValue(settings.pointsMax)
-        self.spinPoints.SetToolTip(wx.ToolTip('Maximum number of points to plot'))
+        self.spinPoints.SetToolTip(wx.ToolTip('Maximum number of points to plot_line'))
         textDpi = wx.StaticText(self, label='Export DPI')
         self.spinDpi = wx.SpinCtrl(self, wx.ID_ANY, min=72, max=6000)
         self.spinDpi.SetValue(settings.exportDpi)
@@ -1274,7 +1274,7 @@ class DialogPrefs(wx.Dialog):
         self.checkTune = wx.CheckBox(self, wx.ID_ANY,
                                      "Tune SDR#")
         self.checkTune.SetValue(settings.clickTune)
-        self.checkTune.SetToolTip(wx.ToolTip('Double click plot to tune SDR#'))
+        self.checkTune.SetToolTip(wx.ToolTip('Double click plot_line to tune SDR#'))
         textPlugin = wx.HyperlinkCtrl(self, wx.ID_ANY,
                                       label="(Requires plugin)",
                                       url="http://eartoearoak.com/software/sdrsharp-net-remote")
@@ -2213,7 +2213,7 @@ class DialogSaveWarn(wx.Dialog):
         prompt = ["scanning again", "opening a file",
                   "exiting", "clearing"][warnType]
         text = wx.StaticText(self,
-                             label="Save plot before {0}?".format(prompt))
+                             label="Save plot_line before {0}?".format(prompt))
         icon = wx.StaticBitmap(self, wx.ID_ANY,
                                wx.ArtProvider.GetBitmap(wx.ART_INFORMATION,
                                                         wx.ART_MESSAGE_BOX))
@@ -2257,7 +2257,7 @@ class DialogRefresh(wx.Dialog):
 
         wx.Dialog.__init__(self, parent=parent, style=0)
 
-        text = wx.StaticText(self, label="Refreshing plot, please wait...")
+        text = wx.StaticText(self, label="Refreshing plot_line, please wait...")
         icon = wx.StaticBitmap(self, wx.ID_ANY,
                                wx.ArtProvider.GetBitmap(wx.ART_INFORMATION,
                                                         wx.ART_MESSAGE_BOX))

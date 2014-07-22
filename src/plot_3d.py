@@ -137,7 +137,7 @@ class Plotter3d(object):
         children = self.axes.get_children()
         for child in children:
             if child.get_gid() is not None:
-                if child.get_gid() == "plot" or child.get_gid() == "peak":
+                if child.get_gid() == "plot_line" or child.get_gid() == "peak":
                     child.remove()
 
     def set_grid(self, on):
@@ -196,7 +196,7 @@ class ThreadPlot(threading.Thread):
                                              rstride=1, cstride=1,
                                              linewidth=0.1,
                                              cmap=cm.get_cmap(self.colourMap),
-                                             gid='plot',
+                                             gid='plot_line',
                                              antialiased=True,
                                              alpha=1)
             else:
@@ -206,7 +206,7 @@ class ThreadPlot(threading.Thread):
                                            vmin=vmin, vmax=vmax,
                                            linewidth=0,
                                            cmap=cm.get_cmap(self.colourMap),
-                                           gid='plot',
+                                           gid='plot_line',
                                            antialiased=True,
                                            alpha=1)
 

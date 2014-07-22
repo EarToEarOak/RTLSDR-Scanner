@@ -262,7 +262,7 @@ class Spectrogram(object):
         children = self.axes.get_children()
         for child in children:
             if child.get_gid() is not None:
-                if child.get_gid() == "plot" or child.get_gid() == "peak":
+                if child.get_gid() == "plot_line" or child.get_gid() == "peak":
                     child.remove()
 
     def set_grid(self, on):
@@ -330,7 +330,7 @@ class ThreadPlot(threading.Thread):
                                                 norm=norm,
                                                 cmap=cm.get_cmap(self.colourMap),
                                                 interpolation='spline16',
-                                                gid="plot")
+                                                gid="plot_line")
 
             if self.annotate:
                 self.__annotate_plot()

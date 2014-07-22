@@ -25,8 +25,8 @@
 
 from matplotlib.patches import Rectangle
 
-from plot3d import Plotter3d
-from status import PlotterStatus
+from plot_3d import Plotter3d
+from plot_status import PlotterStatus
 
 
 class MouseZoom():

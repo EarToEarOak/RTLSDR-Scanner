@@ -313,16 +313,16 @@ class FrameMain(wx.Frame):
     def __create_menu(self):
         menuFile = wx.Menu()
         self.menuNew = menuFile.Append(wx.ID_NEW, "&New",
-                                       "New plot")
+                                       "New plot_line")
         self.menuOpen = menuFile.Append(wx.ID_OPEN, "&Open...",
-                                        "Open plot")
+                                        "Open plot_line")
         recent = wx.Menu()
         self.settings.fileHistory.UseMenu(recent)
         self.settings.fileHistory.AddFilesToMenu()
         menuFile.AppendMenu(wx.ID_ANY, "&Recent Files", recent)
         menuFile.AppendSeparator()
         self.menuSave = menuFile.Append(wx.ID_SAVE, "&Save As...",
-                                        "Save plot")
+                                        "Save plot_line")
         self.menuExportScan = menuFile.Append(wx.ID_ANY, "Export scan...",
                                               "Export scan")
         self.menuExportImage = menuFile.Append(wx.ID_ANY, "Export image...",
@@ -339,7 +339,7 @@ class FrameMain(wx.Frame):
         self.menuPreview = menuFile.Append(wx.ID_ANY, "Print preview...",
                                            "Print preview")
         self.menuPrint = menuFile.Append(wx.ID_ANY, "&Print...",
-                                         "Print plot")
+                                         "Print plot_line")
         menuFile.AppendSeparator()
         self.menuProperties = menuFile.Append(wx.ID_ANY, "P&roperties...",
                                               "Show properties")
@@ -474,7 +474,7 @@ class FrameMain(wx.Frame):
         self.popupMenuPointsLim = self.popupMenu.Append(wx.ID_ANY,
                                                         "Limit points",
                                                         "Limit points to "
-                                                        "increase plot speed",
+                                                        "increase plot_line speed",
                                                         kind=wx.ITEM_CHECK)
         self.popupMenuPointsLim.Check(self.settings.pointsLimit)
 
