@@ -311,11 +311,20 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.plot.set_colourmap_use(check)
         self.panel.redraw_plot()
 
+    def __add_check_tool(self, bitmap, toolTip, callback, setting=None, toolId=None):
+        if toolId is None:
+            toolId = wx.NewId()
+        self.AddCheckTool(toolId, load_bitmap(bitmap), shortHelp=toolTip)
+        wx.EVT_TOOL(self, toolId, callback)
+        if setting is not None:
+            self.ToggleTool(toolId, setting)
+        self.extraTools.append(toolId)
+
     def __add_spacer(self):
         sepId = wx.NewId()
         self.AddCheckTool(sepId, load_bitmap('spacer'))
         self.EnableTool(sepId, False)
-        return sepId
+        self.extraTools.append(sepId)
 
     def __set_func(self):
         buttons = [self.avgId, self.minId, self.maxId, self.varId]
@@ -346,56 +355,44 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
 
         if not display == Display.PLOT:
             self.autoTId = wx.NewId()
-            self.AddCheckTool(self.autoTId, load_bitmap('auto_t'),
-                              shortHelp='Auto range time')
-            self.ToggleTool(self.autoTId, self.settings.autoT)
-            wx.EVT_TOOL(self, self.autoTId, self.__on_check_auto_t)
-            self.extraTools.append(self.autoTId)
+            self.__add_check_tool('auto_t', 'Auto range time',
+                                  self.__on_check_auto_t,
+                                  self.settings.autoT,
+                                  self.autoTId)
 
-        self.extraTools.append(self.__add_spacer())
+        self.__add_spacer()
 
         if display == Display.PLOT:
-            fadeId = wx.NewId()
-            self.AddCheckTool(fadeId, load_bitmap('fade'),
-                              shortHelp='Fade plots')
-            wx.EVT_TOOL(self, fadeId, self.__on_check_fade)
-            self.ToggleTool(fadeId, self.settings.fadeScans)
-            self.extraTools.append(fadeId)
+            self.__add_check_tool('fade', 'Fade plots',
+                                  self.__on_check_fade,
+                                  self.settings.fadeScans)
 
-            self.extraTools.append(self.__add_spacer())
+            self.__add_spacer()
 
             self.avgId = wx.NewId()
-            self.AddCheckTool(self.avgId, load_bitmap('average'),
-                              shortHelp='Show average')
-            wx.EVT_TOOL(self, self.avgId, self.__on_check_avg)
-            self.extraTools.append(self.avgId)
+            self.__add_check_tool('average', 'Show average',
+                                  self.__on_check_avg,
+                                  toolId=self.avgId)
             self.minId = wx.NewId()
-            self.AddCheckTool(self.minId, load_bitmap('min'),
-                              shortHelp='Show minimum')
-            wx.EVT_TOOL(self, self.minId, self.__on_check_min)
-            self.extraTools.append(self.minId)
+            self.__add_check_tool('min', 'Show minimum',
+                                  self.__on_check_min,
+                                  toolId=self.minId)
             self.maxId = wx.NewId()
-            self.AddCheckTool(self.maxId, load_bitmap('max'),
-                              shortHelp='Show maximum')
-            wx.EVT_TOOL(self, self.maxId, self.__on_check_max)
-            self.extraTools.append(self.maxId)
+            self.__add_check_tool('max', 'Show maximum',
+                                  self.__on_check_max,
+                                  toolId=self.maxId)
             self.varId = wx.NewId()
-            self.AddCheckTool(self.varId, load_bitmap('variance'),
-                              shortHelp='Show variance')
-            wx.EVT_TOOL(self, self.varId, self.__on_check_var)
-            self.extraTools.append(self.varId)
-
+            self.__add_check_tool('variance', 'Show variance',
+                                  self.__on_check_var,
+                                  toolId=self.varId)
             self.__set_func()
 
-            self.extraTools.append(self.__add_spacer())
+            self.__add_spacer()
 
         if display == Display.PLOT:
-            colourUseId = wx.NewId()
-            self.AddCheckTool(colourUseId, load_bitmap('colourmap'),
-                              shortHelp='Use colour maps')
-            wx.EVT_TOOL(self, colourUseId, self.__on_colour_use)
-            self.ToggleTool(colourUseId, self.settings.colourMapUse)
-            self.extraTools.append(colourUseId)
+            self.__add_check_tool('colourmap', 'Use colour maps',
+                                  self.__on_colour_use,
+                                  self.settings.colourMapUse)
 
         colours = get_colours()
         colourId = wx.NewId()
@@ -408,14 +405,10 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.extraTools.append(colourId)
 
         if display == Display.SURFACE:
-            self.extraTools.append(self.__add_spacer())
-
-            wireId = wx.NewId()
-            self.AddCheckTool(wireId, load_bitmap('wireframe'),
-                              shortHelp='Wireframe')
-            wx.EVT_TOOL(self, wireId, self.__on_check_wire)
-            self.ToggleTool(wireId, self.settings.wireframe)
-            self.extraTools.append(wireId)
+            self.__add_spacer()
+            self.__add_check_tool('wireframe', 'Wireframe drawing',
+                                  self.__on_check_wire,
+                                  self.settings.wireframe)
 
         self.Realize()
 
