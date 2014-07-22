@@ -27,7 +27,7 @@ import threading
 from matplotlib.table import Table
 
 from events import post_event, EventThread, Event
-from misc import format_precision, format_time, find_artists
+from misc import format_precision, format_time, find_artists, set_table_colour
 
 
 class PlotterStatus(object):
@@ -39,12 +39,13 @@ class PlotterStatus(object):
         self.threadPlot = None
 
         self.__setup_plot()
-        self.redraw_plot()
+        self.set_grid(self.settings.grid)
 
     def __setup_plot(self):
         self.axes = self.figure.add_subplot(111)
         self.axes.set_axis_off()
         self.axes.annotate('No data', (0.5, 0.5),
+                           textcoords='figure fraction',
                            fontsize='large',
                            ha='center', va='center',
                            gid='noData')
@@ -86,10 +87,17 @@ class PlotterStatus(object):
         if table:
             table[0].remove()
         noData = find_artists(self.figure, 'noData')
-        noData[0].set_color('black')
+        noData[0].set_alpha(1)
 
-    def set_grid(self, _on):
-        pass
+    def set_grid(self, on):
+        table = find_artists(self.axes, 'table')
+        if len(table):
+            if on:
+                colour = 'LightGray'
+            else:
+                colour = 'w'
+            set_table_colour(table[0], colour)
+            self.redraw_plot()
 
     def set_bar(self, _on):
         pass
@@ -164,14 +172,19 @@ class ThreadPlot(threading.Thread):
                 table.add_cell(row, col,
                                text=text[row][col],
                                width=1.0 / cols, height=1.0 / rows)
+
+        if self.settings.grid:
+            colour = 'LightGray'
+        else:
+            colour = 'w'
+        set_table_colour(table, colour)
+
         for i in range(3):
             table.auto_set_column_width(i)
-        for _loc, cell in table.get_celld().items():
-            cell.set_edgecolor('LightGray')
 
         self.axes.add_table(table)
         noData = find_artists(self.axes, 'noData')
-        noData[0].set_color('w')
+        noData[0].set_alpha(0)
         self.parent.redraw_plot()
 
         self.parent.threadPlot = None

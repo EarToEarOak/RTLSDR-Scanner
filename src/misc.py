@@ -248,6 +248,11 @@ def find_artists(figure, gid):
     return figure.findobj(lambda x: x.get_gid() == gid)
 
 
+def set_table_colour(table, colour):
+    for _loc, cell in table.get_celld().items():
+        cell.set_edgecolor(colour)
+
+
 def set_version_timestamp():
     scriptDir = os.path.dirname(os.path.realpath(sys.argv[0]))
     timeStamp = str(int(time.time()))

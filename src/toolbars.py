@@ -167,26 +167,8 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.ToggleTool(gridId, settings.grid)
         wx.EVT_TOOL(self, gridId, self.__on_check_grid)
 
-        peakId = wx.NewId()
-        self.AddCheckTool(peakId, load_bitmap('peak'),
-                          shortHelp='Label peak')
-        self.ToggleTool(peakId, settings.annotate)
-        wx.EVT_TOOL(self, peakId, self.__on_check_peak)
-
-        self.__add_spacer()
-
-        self.autoFId = wx.NewId()
-        self.AddCheckTool(self.autoFId, load_bitmap('auto_f'),
-                          shortHelp='Auto range frequency')
-        self.ToggleTool(self.autoFId, settings.autoF)
-        wx.EVT_TOOL(self, self.autoFId, self.__on_check_auto_f)
-
-        self.autoLId = wx.NewId()
-        self.AddCheckTool(self.autoLId, load_bitmap('auto_l'),
-                          shortHelp='Auto range level')
-        self.ToggleTool(self.autoLId, settings.autoL)
-        wx.EVT_TOOL(self, self.autoLId, self.__on_check_auto_l)
-
+        self.autoFId = None
+        self.autoLId = None
         self.autoTId = None
         self.maxId = None
         self.minId = None
@@ -245,6 +227,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
 
     def __on_check_grid(self, event):
         grid = event.Checked()
+        self.settings.grid = grid
         self.panel.set_grid(grid)
 
     def __on_check_peak(self, event):
@@ -337,8 +320,10 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.settings.autoF = state
         self.settings.autoL = state
         self.settings.autoT = state
-        self.ToggleTool(self.autoFId, state)
-        self.ToggleTool(self.autoLId, state)
+        if self.autoFId is not None:
+            self.ToggleTool(self.autoFId, state)
+        if self.autoLId is not None:
+            self.ToggleTool(self.autoLId, state)
         if self.autoTId is not None:
             self.ToggleTool(self.autoTId, state)
 
@@ -353,7 +338,25 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
             self.DeleteTool(toolId)
         self.extraTools = []
 
-        if not display == Display.PLOT:
+        if display != Display.STATUS:
+            self.__add_check_tool('peak', 'Label peak',
+                                  self.__on_check_peak,
+                                  self.settings.annotate)
+
+            self.__add_spacer()
+
+            self.autoFId = wx.NewId()
+            self.__add_check_tool('auto_f', 'Auto range frequency',
+                                  self.__on_check_auto_f,
+                                  self.settings.autoF,
+                                  self.autoFId)
+            self.autoLId = wx.NewId()
+            self.__add_check_tool('auto_l', 'Auto range level',
+                                  self.__on_check_auto_l,
+                                  self.settings.autoL,
+                                  self.autoLId)
+
+        if  display != Display.PLOT  and display != Display.STATUS:
             self.autoTId = wx.NewId()
             self.__add_check_tool('auto_t', 'Auto range time',
                                   self.__on_check_auto_t,
@@ -389,20 +392,20 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
 
             self.__add_spacer()
 
-        if display == Display.PLOT:
             self.__add_check_tool('colourmap', 'Use colour maps',
                                   self.__on_colour_use,
                                   self.settings.colourMapUse)
 
-        colours = get_colours()
-        colourId = wx.NewId()
-        self.colourId = wx.Choice(self, id=colourId, choices=colours)
-        self.colourId.SetSelection(colours.index(self.settings.colourMap))
-        self.AddControl(self.colourId)
-        if display == Display.PLOT:
-            self.colourId.Enable(self.settings.colourMapUse)
-        self.Bind(wx.EVT_CHOICE, self.__on_colour, self.colourId)
-        self.extraTools.append(colourId)
+        if display != Display.STATUS:
+            colours = get_colours()
+            colourId = wx.NewId()
+            self.colourId = wx.Choice(self, id=colourId, choices=colours)
+            self.colourId.SetSelection(colours.index(self.settings.colourMap))
+            self.AddControl(self.colourId)
+            if display == Display.PLOT:
+                self.colourId.Enable(self.settings.colourMapUse)
+            self.Bind(wx.EVT_CHOICE, self.__on_colour, self.colourId)
+            self.extraTools.append(colourId)
 
         if display == Display.SURFACE:
             self.__add_spacer()
