@@ -42,6 +42,7 @@ from plot3d import Plotter3d
 from plot_controls import MouseZoom, MouseSelect
 from spectrogram import Spectrogram
 from spectrum import split_spectrum_sort, Measure, reduce_points
+from status import PlotterStatus
 from toolbars import NavigationToolbar, NavigationToolbarCompare
 import wx.grid as wxGrid
 
@@ -106,13 +107,14 @@ class PanelGraph(wx.Panel):
 
     def __set_fonts(self):
         axes = self.plot.get_axes()
-        axes.xaxis.label.set_size('small')
-        axes.yaxis.label.set_size('small')
-        if self.settings.display == Display.SURFACE:
-            axes.zaxis.label.set_size('small')
-        axes.tick_params(axis='both', which='major', labelsize='small')
-        axes = self.plot.get_axes_bar()
-        axes.tick_params(axis='both', which='major', labelsize='small')
+        if axes is not None:
+            axes.xaxis.label.set_size('small')
+            axes.yaxis.label.set_size('small')
+            if self.settings.display == Display.SURFACE:
+                axes.zaxis.label.set_size('small')
+            axes.tick_params(axis='both', which='major', labelsize='small')
+            axes = self.plot.get_axes_bar()
+            axes.tick_params(axis='both', which='major', labelsize='small')
 
     def __enable_menu(self, state):
         for menu in self.menuClearSelect:
@@ -135,8 +137,9 @@ class PanelGraph(wx.Panel):
 
     def __on_draw(self, _event):
         axes = self.plot.get_axes()
-        self.background = self.canvas.copy_from_bbox(axes.bbox)
-        self.__draw_overlay()
+        if axes is not None:
+            self.background = self.canvas.copy_from_bbox(axes.bbox)
+            self.__draw_overlay()
 
     def __on_idle(self, _event):
         if self.doDraw and self.plot.get_plot_thread() is None:
@@ -153,7 +156,11 @@ class PanelGraph(wx.Panel):
             self.canvas.restore_region(self.background)
             self.__draw_select()
             self.draw_measure()
-            self.canvas.blit(self.plot.get_axes().bbox)
+            axes = self.plot.get_axes()
+            if axes is None:
+                self.canvas.draw()
+            else:
+                self.canvas.blit(axes.bbox)
 
     def __draw_select(self):
         if self.selectStart is not None and self.selectEnd is not None:
@@ -178,8 +185,10 @@ class PanelGraph(wx.Panel):
             self.plot = Plotter(self.notify, self.figure, self.settings)
         elif self.settings.display == Display.SPECT:
             self.plot = Spectrogram(self.notify, self.figure, self.settings)
-        else:
+        elif self.settings.display == Display.SURFACE:
             self.plot = Plotter3d(self.notify, self.figure, self.settings)
+        else:
+            self.plot = PlotterStatus(self.notify, self.figure, self.settings)
 
         self.__set_fonts()
 

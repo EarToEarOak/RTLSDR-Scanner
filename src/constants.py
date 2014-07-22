@@ -61,7 +61,8 @@ DWELL = ["8 ms", 0.008,
 
 DISPLAY = ["Plot", 0,
            "Spectrogram", 1,
-           "3D Spectrogram", 2]
+           "3D Spectrogram", 2,
+           "Status", 3]
 
 TUNER = ["Unknown",
          "Elonics E4000",
@@ -86,7 +87,7 @@ class Cal(object):
 
 
 class Display(object):
-    PLOT, SPECT, SURFACE = range(3)
+    PLOT, SPECT, SURFACE, STATUS = range(4)
 
 
 class Mode(object):

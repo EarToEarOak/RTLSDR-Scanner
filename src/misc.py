@@ -196,7 +196,7 @@ def format_time(timeStamp, withDate=False):
 
 def format_iso_time(timeStamp):
     dt = datetime.datetime.utcfromtimestamp(timeStamp)
-    return dt.isoformat()+'Z'
+    return dt.isoformat() + 'Z'
 
 
 def load_bitmap(name):
@@ -242,6 +242,10 @@ def get_colours():
     colours.sort()
 
     return colours
+
+
+def find_artists(figure, gid):
+    return figure.findobj(lambda x: x.get_gid() == gid)
 
 
 def set_version_timestamp():
