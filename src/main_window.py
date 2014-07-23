@@ -699,15 +699,13 @@ class FrameMain(wx.Frame):
         if self.__save_warn(Warn.EXIT):
             self.Bind(wx.EVT_CLOSE, self.__on_exit)
             return
-        self.__scan_stop()
-        self.__stop_gps()
+        self.__scan_stop(False)
+        self.__stop_gps(False)
         self.__stop_kml()
-        self.__wait_background()
         self.__get_controls()
-        self.graph.close()
         self.settings.devicesRtl = self.devicesRtl
         self.settings.save()
-        self.Close(True)
+        self.Destroy()
 
     def __on_pref(self, _event):
         self.__get_controls()
@@ -1088,11 +1086,12 @@ class FrameMain(wx.Frame):
 
             return True
 
-    def __scan_stop(self):
+    def __scan_stop(self, join=True):
         if self.threadScan:
             self.status.set_general("Stopping")
             self.threadScan.abort()
-            self.threadScan.join()
+            if join:
+                self.threadScan.join()
         self.threadScan = None
         if self.sdr is not None:
             self.sdr.close()
@@ -1156,10 +1155,11 @@ class FrameMain(wx.Frame):
         else:
             self.status.disable_gps()
 
-    def __stop_gps(self):
+    def __stop_gps(self, join=True):
         if self.threadLocation and self.threadLocation.isAlive():
             self.threadLocation.stop()
-            self.threadLocation.join()
+            if join:
+                self.threadLocation.join()
         self.threadLocation = None
 
     def __start_kml(self):
@@ -1377,15 +1377,6 @@ class FrameMain(wx.Frame):
             self.settings.indexRtl = 0
         self.settings.save()
         return self.settings.devicesRtl
-
-    def __wait_background(self):
-        self.Disconnect(-1, -1, EVENT_THREAD, self.__on_event)
-        if self.threadScan:
-            self.threadScan.abort()
-            self.threadScan.join()
-            self.threadScan = None
-        self.pool.close()
-        self.pool.join()
 
     def open(self, dirname, filename):
         if not os.path.exists(os.path.join(dirname, filename)):
