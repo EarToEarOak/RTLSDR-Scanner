@@ -2372,7 +2372,7 @@ class DialogLog(wx.Dialog):
 
         i = 0
         for event in self.log.get(level):
-            self.gridLog.SetCellValue(i, 0, event[0].strftime('%c'))
+            self.gridLog.SetCellValue(i, 0, format_time(event[0], True))
             self.gridLog.SetCellValue(i, 1, self.log.TEXT_LEVEL[event[1]])
             eventText = '\n'.join(textwrap.wrap(event[2], width=70))
             self.gridLog.SetCellValue(i, 2, eventText)

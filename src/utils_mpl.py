@@ -22,8 +22,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import datetime
+import time
+
 from matplotlib import cm
 from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.dates import date2num
 
 
 def add_colours():
@@ -68,6 +72,12 @@ def find_artists(figure, gid):
 def set_table_colour(table, colour):
     for _loc, cell in table.get_celld().items():
         cell.set_edgecolor(colour)
+
+
+def utc_to_mpl(utc):
+    local = time.mktime(time.localtime(utc))
+    dt = datetime.datetime.fromtimestamp(local)
+    return date2num(dt)
 
 
 if __name__ == '__main__':

@@ -40,7 +40,8 @@ import numpy
 from constants import Markers
 from events import EventThread, Event, post_event
 from misc import format_time, format_precision
-from spectrum import epoch_to_mpl, split_spectrum, Measure
+from spectrum import split_spectrum, Measure
+from utils_mpl import utc_to_mpl
 
 
 class Spectrogram(object):
@@ -80,7 +81,7 @@ class Spectrogram(object):
         self.axes.yaxis.set_minor_locator(AutoMinorLocator(10))
         self.axes.set_xlim(self.settings.start, self.settings.stop)
         now = time.time()
-        self.axes.set_ylim(epoch_to_mpl(now), epoch_to_mpl(now - 10))
+        self.axes.set_ylim(utc_to_mpl(now), utc_to_mpl(now - 10))
 
         self.bar = self.figure.add_subplot(gs[1])
         norm = Normalize(vmin=-50, vmax=0)
@@ -344,7 +345,7 @@ class ThreadPlot(threading.Thread):
     def __annotate_plot(self):
         self.__clear_markers()
         fMax, lMax, tMax = self.extent.get_peak_flt()
-        y = epoch_to_mpl(tMax)
+        y = utc_to_mpl(tMax)
 
         start, stop = self.axes.get_xlim()
         textX = ((stop - start) / 50.0) + fMax

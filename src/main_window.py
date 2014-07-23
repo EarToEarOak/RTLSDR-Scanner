@@ -24,7 +24,6 @@
 #
 
 
-import datetime
 import math
 import os.path
 import tempfile
@@ -1074,8 +1073,7 @@ class FrameMain(wx.Frame):
                 self.isNewScan = False
                 self.status.set_info('', level=None)
                 self.scanInfo.set_from_settings(self.settings)
-                time = datetime.datetime.utcnow().replace(microsecond=0)
-                self.scanInfo.time = format_iso_time(time)
+                self.scanInfo.time = format_iso_time(time.time())
                 self.scanInfo.lat = None
                 self.scanInfo.lon = None
                 self.scanInfo.desc = ''

@@ -23,15 +23,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from collections import OrderedDict
-import datetime
 from decimal import Decimal
 from operator import itemgetter, mul
 import time
 
-from matplotlib.dates import date2num, seconds
+from matplotlib.dates import seconds
 import numpy
 
 from misc import db_to_level, level_to_db
+from utils_mpl import utc_to_mpl
 
 
 class Extent(object):
@@ -80,7 +80,7 @@ class Extent(object):
         return self.lMin, self.lMax
 
     def get_t(self):
-        return epoch_to_mpl(self.tMax), epoch_to_mpl(self.tMin - 1)
+        return utc_to_mpl(self.tMax), utc_to_mpl(self.tMin - 1)
 
     def get_ft(self):
         tExtent = self.get_t()
@@ -270,7 +270,7 @@ def create_mesh(spectrum, mplTime):
 
     j = 1
     for ys in spectrum:
-        time = epoch_to_mpl(ys) if mplTime else ys
+        time = utc_to_mpl(ys) if mplTime else ys
         xs, zs = split_spectrum(spectrum[ys])
         for i in range(len(xs)):
             x[i, j] = xs[i]
@@ -298,14 +298,3 @@ def sort_spectrum(spectrum):
         newSpectrum[timeStamp] = newPoints
 
     return newSpectrum
-
-
-def epoch_to_local(epoch):
-    local = time.localtime(epoch)
-    return time.mktime(local)
-
-
-def epoch_to_mpl(epoch):
-    epoch = epoch_to_local(epoch)
-    dt = datetime.datetime.fromtimestamp(epoch)
-    return date2num(dt)

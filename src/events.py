@@ -24,7 +24,7 @@
 #
 
 import Queue
-import datetime
+import time
 
 import wx
 
@@ -80,8 +80,7 @@ class Log(object):
     def add(self, text, level=None):
         if level is None:
             return
-        time = datetime.datetime.utcnow()
-        entry = [time, level, text]
+        entry = [time.time(), level, text]
         self.log.append(entry)
 
         while len(self.log) > Log.MAX_ENTRIES:

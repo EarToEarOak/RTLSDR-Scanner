@@ -37,7 +37,8 @@ from mpl_toolkits.mplot3d import Axes3D  # @UnresolvedImport @UnusedImport
 
 from events import post_event, EventThread, Event
 from misc import format_time, format_precision
-from spectrum import epoch_to_mpl, create_mesh
+from spectrum import create_mesh
+from utils_mpl import utc_to_mpl
 
 
 class Plotter3d(object):
@@ -78,7 +79,7 @@ class Plotter3d(object):
         self.axes.zaxis.set_minor_locator(AutoMinorLocator(10))
         self.axes.set_xlim(self.settings.start, self.settings.stop)
         now = time.time()
-        self.axes.set_ylim(epoch_to_mpl(now), epoch_to_mpl(now - 10))
+        self.axes.set_ylim(utc_to_mpl(now), utc_to_mpl(now - 10))
         self.axes.set_zlim(-50, 0)
 
         self.bar = self.figure.add_subplot(gs[1])
@@ -222,7 +223,7 @@ class ThreadPlot(threading.Thread):
     def __annotate_plot(self):
         f, l, t = self.extent.get_peak_flt()
         when = format_time(t)
-        tPos = epoch_to_mpl(t)
+        tPos = utc_to_mpl(t)
 
         text = '{}\n{}\n{when}'.format(*format_precision(self.settings, f, l,
                                                          fancyUnits=True),
