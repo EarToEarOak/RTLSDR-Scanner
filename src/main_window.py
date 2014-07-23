@@ -125,6 +125,7 @@ class FrameMain(wx.Frame):
         self.menuClearSelect = None
         self.menuShowMeasure = None
         self.menuStart = None
+        self.menuContinue = None
         self.menuStop = None
         self.menuStopEnd = None
         self.menuCompare = None
@@ -138,6 +139,7 @@ class FrameMain(wx.Frame):
 
         self.popupMenu = None
         self.popupMenuStart = None
+        self.popupMenuContinue = None
         self.popupMenuStop = None
         self.popupMenuStopEnd = None
         self.popupMenuRangeLim = None
@@ -375,6 +377,7 @@ class FrameMain(wx.Frame):
 
         menuScan = wx.Menu()
         self.menuStart = menuScan.Append(wx.ID_ANY, "&Start", "Start scan")
+        self.menuContinue = menuScan.Append(wx.ID_ANY, "&Continue", "Continue scan")
         self.menuStop = menuScan.Append(wx.ID_ANY, "S&top",
                                         "Stop scan immediately")
         self.menuStopEnd = menuScan.Append(wx.ID_ANY, "Stop at &end",
@@ -439,6 +442,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.__on_clear_select, self.menuClearSelect)
         self.Bind(wx.EVT_MENU, self.__on_show_measure, self.menuShowMeasure)
         self.Bind(wx.EVT_MENU, self.__on_start, self.menuStart)
+        self.Bind(wx.EVT_MENU, self.__on_continue, self.menuContinue)
         self.Bind(wx.EVT_MENU, self.__on_stop, self.menuStop)
         self.Bind(wx.EVT_MENU, self.__on_stop_end, self.menuStopEnd)
         self.Bind(wx.EVT_MENU, self.__on_compare, self.menuCompare)
@@ -461,6 +465,8 @@ class FrameMain(wx.Frame):
         self.popupMenu = wx.Menu()
         self.popupMenuStart = self.popupMenu.Append(wx.ID_ANY, "&Start",
                                                     "Start scan")
+        self.popupMenuContinue = self.popupMenu.Append(wx.ID_ANY, "&Continue",
+                                                       "Continue scan")
         self.popupMenuStop = self.popupMenu.Append(wx.ID_ANY, "S&top",
                                                    "Stop scan immediately")
         self.popupMenuStopEnd = self.popupMenu.Append(wx.ID_ANY, "Stop at &end",
@@ -490,6 +496,7 @@ class FrameMain(wx.Frame):
         self.popupMenuShowMeasure.Check(self.settings.showMeasure)
 
         self.Bind(wx.EVT_MENU, self.__on_start, self.popupMenuStart)
+        self.Bind(wx.EVT_MENU, self.__on_continue, self.popupMenuContinue)
         self.Bind(wx.EVT_MENU, self.__on_stop, self.popupMenuStop)
         self.Bind(wx.EVT_MENU, self.__on_stop_end, self.popupMenuStopEnd)
         self.Bind(wx.EVT_MENU, self.__on_range_lim, self.popupMenuRangeLim)
@@ -839,12 +846,12 @@ class FrameMain(wx.Frame):
         self.graph.create_plot()
 
     def __on_start(self, event):
+        self.__get_controls()
+
         if self.settings.start >= self.settings.stop:
             wx.MessageBox('Stop frequency must be greater that start',
                           'Warning', wx.OK | wx.ICON_WARNING)
             return
-
-        self.__get_controls()
 
         self.devicesRtl = self.__refresh_devices()
         if len(self.devicesRtl) == 0:
@@ -859,6 +866,10 @@ class FrameMain(wx.Frame):
             if not self.settings.retainScans:
                 self.status.set_info('Warning: Averaging is enabled in preferences',
                                      level=Log.WARN)
+
+    def __on_continue(self, event):
+        event.SetInt(1)
+        self.__on_start(event)
 
     def __on_stop(self, event):
         if event.GetInt() == 0:
@@ -1230,6 +1241,7 @@ class FrameMain(wx.Frame):
         self.menuPreview.Enable(state)
         self.menuPrint.Enable(state)
         self.menuStart.Enable(state)
+        self.menuContinue.Enable(state and len(self.spectrum))
         self.menuStop.Enable(not state)
         self.menuPref.Enable(state)
         self.menuAdvPref.Enable(state)
@@ -1238,8 +1250,10 @@ class FrameMain(wx.Frame):
         self.menuReset.Enable(state)
         self.menuCal.Enable(state)
         self.menuLocClear.Enable(state and len(self.locations))
-        self.popupMenuStop.Enable(not state)
+
         self.popupMenuStart.Enable(state)
+        self.popupMenuContinue.Enable(state and len(self.spectrum))
+        self.popupMenuStop.Enable(not state)
         if self.settings.mode == Mode.CONTIN:
             self.menuStopEnd.Enable(not state)
             self.popupMenuStopEnd.Enable(not state)
