@@ -705,8 +705,6 @@ class FrameMain(wx.Frame):
         self.__wait_background()
         self.__get_controls()
         self.graph.close()
-        self.settings.dwell = DWELL[1::2][self.choiceDwell.GetSelection()]
-        self.settings.nfft = NFFT[self.choiceNfft.GetSelection()]
         self.settings.devicesRtl = self.devicesRtl
         self.settings.save()
         self.Close(True)
