@@ -25,7 +25,6 @@
 
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 import json
-from math import radians, sin, cos, asin, sqrt
 import socket
 import threading
 from urlparse import urlparse
@@ -36,7 +35,8 @@ from serial.serialutil import SerialException
 from constants import KML_PORT
 from devices import DeviceGPS
 from events import post_event, EventThread, Event
-from misc import format_iso_time
+from misc import format_iso_time, haversine
+from utils_wx import load_bitmap
 
 
 class ThreadLocation(threading.Thread):
@@ -322,16 +322,6 @@ class KmlServer(object):
 
 
 class KmlServerHandler(BaseHTTPRequestHandler):
-    def __haversine(self, lat1, lat2, lon1, lon2):
-        lat1, lat2, lon1, lon2 = map(radians, [lat1, lat2, lon1, lon2])
-
-        dlon = lon1 - lon2
-        dlat = lat1 - lat2
-        a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
-        b = asin(sqrt(a))
-
-        return 2 * b * 6371000
-
     def __create_lookat(self):
         if not len(self.server.locations):
             return ''
@@ -347,7 +337,7 @@ class KmlServerHandler(BaseHTTPRequestHandler):
         lonMax = max(lon)
         latCen = (latMax + latMin) / 2
         lonCen = (lonMax + lonMin) / 2
-        dist = self.__haversine(latMin, latMax, lonMin, lonMax)
+        dist = haversine(latMin, latMax, lonMin, lonMax)
         dist = max(min(50000, dist), 100)
 
         lookAt = ('\t\t<LookAt>\n'
@@ -371,6 +361,7 @@ class KmlServerHandler(BaseHTTPRequestHandler):
 
         last = ('\t\t<Placemark>\n'
                 '\t\t\t<name>Last Location</name>\n'
+                '\t\t\t<styleUrl>#last</styleUrl>\n'
                 '\t\t\t<altitudeMode>clampToGround</altitudeMode>\n'
                 '\t\t\t<Point>\n')
 
@@ -416,7 +407,7 @@ class KmlServerHandler(BaseHTTPRequestHandler):
 
         return track
 
-    def do_GET(self):
+    def __send_kml(self):
         self.send_response(200)
         self.send_header('Content-type',
                          'application/vnd.google-earth.kml+xml')
@@ -430,6 +421,16 @@ class KmlServerHandler(BaseHTTPRequestHandler):
                          '\t\t<name>RTLSDR Scanner</name>\n')
 
         self.wfile.write(self.__create_lookat())
+
+        self.wfile.write(('\t\t<Style id="last">\n'
+                          '\t\t\t<IconStyle>\n'
+                          '\t\t\t\t<Icon>\n'
+                          '\t\t\t\t\t<href>http://localhost:{}/crosshair.png</href>\n'
+                          '\t\t\t\t</Icon>\n'
+                          '\t\t\t\t<hotSpot x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>\n'
+                          '\t\t\t\t<scale>2</scale>\n'
+                          '\t\t\t</IconStyle>\n'
+                          '\t\t</Style>\n').format(KML_PORT))
 
         self.wfile.write('\t\t<Style id="track">\n'
                          '\t\t\t<LineStyle>\n'
@@ -449,6 +450,24 @@ class KmlServerHandler(BaseHTTPRequestHandler):
 
         self.wfile.write('\t</Document>\n'
                          '</kml>\n')
+
+    def __send_png(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'image/png')
+        self.end_headers()
+
+        filename = load_bitmap('crosshair', False)
+        f = open(filename, 'rb')
+        self.wfile.write(f.read())
+        f.close()
+
+    def do_GET(self):
+        if self.path == '/':
+            self.__send_kml()
+        elif self.path == '/crosshair.png':
+            self.__send_png()
+        else:
+            self.send_error(404)
 
     def log_message(self, *args, **kwargs):
         pass

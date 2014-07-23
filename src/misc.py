@@ -25,6 +25,7 @@
 
 import datetime
 import json
+from math import radians, sin, cos, asin, sqrt
 import math
 import os
 import socket
@@ -109,6 +110,17 @@ def calc_real_dwell(dwell):
 def nearest(value, values):
     offset = [abs(value - v) for v in values]
     return values[offset.index(min(offset))]
+
+
+def haversine(lat1, lat2, lon1, lon2):
+    lat1, lat2, lon1, lon2 = map(radians, [lat1, lat2, lon1, lon2])
+
+    dlon = lon1 - lon2
+    dlat = lat1 - lat2
+    a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
+    b = asin(sqrt(a))
+
+    return 2 * b * 6371000
 
 
 def format_precision(settings, freq=None, level=None,

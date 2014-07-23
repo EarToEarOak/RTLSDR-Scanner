@@ -69,14 +69,18 @@ class ValidatorCoord(wx.PyValidator):
         return ValidatorCoord(self.isLat)
 
 
-def load_bitmap(name):
+def load_bitmap(name, asBitmap=True):
     scriptDir = os.path.dirname(os.path.realpath(sys.argv[0]))
     if os.path.isdir(scriptDir + '/res'):
         resDir = os.path.normpath(scriptDir + '/res')
     else:
         resDir = os.path.normpath(scriptDir + '/../res')
 
-    return wx.Bitmap(resDir + '/' + name + '.png', wx.BITMAP_TYPE_PNG)
+    filename = resDir + '/' + name + '.png'
+    if not asBitmap:
+        return filename
+
+    return wx.Bitmap(filename, wx.BITMAP_TYPE_PNG)
 
 
 def close_modeless():
