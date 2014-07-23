@@ -30,6 +30,9 @@ F_MAX = 9999
 GAIN = 0
 SAMPLE_RATE = 2e6
 BANDWIDTH = 500e3
+
+KML_PORT = 7786
+
 TIMESTAMP_FILE = 'version-timestamp'
 
 MODE = ["Single", 0,

@@ -38,7 +38,7 @@ import wx
 from wx.lib.masked import NumCtrl
 
 from constants import F_MIN, F_MAX, MODE, DWELL, NFFT, DISPLAY, Warn, \
-    Display, Cal, Mode
+    Display, Cal, Mode, KML_PORT
 from controls import MultiButton
 from devices import get_devices_rtl
 from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, \
@@ -782,18 +782,18 @@ class FrameMain(wx.Frame):
         tempPath = tempfile.mkdtemp()
         tempFile = os.path.join(tempPath, 'RTLSDRScannerLink.kml')
         handle = open(tempFile, 'wb')
-        handle.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-        handle.write('<kml xmlns="http://www.opengis.net/kml/2.2">\n')
-        handle.write('\t<NetworkLink>\n')
-        handle.write('\t\t<flyToView>1</flyToView>\n')
-        handle.write('\t\t<name>RTLSDR Scanner</name>\n')
-        handle.write('\t\t<Link>\n')
-        handle.write('\t\t\t<href>http://localhost:12345</href>\n')
-        handle.write('\t\t\t<refreshMode>onInterval</refreshMode>\n')
-        handle.write('\t\t\t<refreshInterval>10</refreshInterval>\n')
-        handle.write('\t\t</Link>\n')
-        handle.write('\t</NetworkLink>\n')
-        handle.write('</kml>\n')
+        handle.write('<?xml version="1.0" encoding="UTF-8"?>\n'
+                     '<kml xmlns="http://www.opengis.net/kml/2.2">\n'
+                     '\t<NetworkLink>\n'
+                     '\t\t<flyToView>1</flyToView>\n'
+                     '\t\t<name>RTLSDR Scanner</name>\n'
+                     '\t\t<Link>\n'
+                     '\t\t\t<href>http://localhost:{}</href>\n'
+                     '\t\t\t<refreshMode>onInterval</refreshMode>\n'
+                     '\t\t\t<refreshInterval>10</refreshInterval>\n'
+                     '\t\t</Link>\n'
+                     '\t</NetworkLink>\n'
+                     '</kml>\n'.format(KML_PORT))
         handle.close()
 
         if not run_file(tempFile):

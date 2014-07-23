@@ -33,6 +33,7 @@ from urlparse import urlparse
 import serial
 from serial.serialutil import SerialException
 
+from constants import KML_PORT
 from devices import DeviceGPS
 from events import post_event, EventThread, Event
 from misc import format_iso_time
@@ -306,7 +307,7 @@ class ThreadLocation(threading.Thread):
 
 class KmlServer(object):
     def __init__(self, locations, currentLoc, lock):
-        self.server = HTTPServer(('127.0.0.1', 12345), KmlServerHandler)
+        self.server = HTTPServer(('127.0.0.1', KML_PORT), KmlServerHandler)
         self.server.locations = locations
         self.server.currentLoc = currentLoc
         self.server.lock = lock
