@@ -27,6 +27,7 @@ from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 import json
 import socket
 import threading
+import time
 from urlparse import urlparse
 
 import serial
@@ -35,7 +36,7 @@ from serial.serialutil import SerialException
 from constants import KML_PORT
 from devices import DeviceGPS
 from events import post_event, EventThread, Event
-from misc import format_iso_time, haversine
+from misc import format_iso_time, haversine, format_time
 from utils_wx import load_bitmap
 
 
@@ -155,9 +156,8 @@ class ThreadLocation(threading.Thread):
                         alt = data['alt']
                     except KeyError:
                         alt = None
-                    post_event(self.notify,
-                               EventThread(Event.LOC, 0,
-                                           (lat, lon, alt)))
+
+                    self.__post_location(lat, lon, alt)
 
     def __gpsd_old_read(self):
         for resp in self.__tcp_read():
@@ -172,9 +172,8 @@ class ThreadLocation(threading.Thread):
                     alt = float(data[5])
                 except ValueError:
                     alt = None
-                post_event(self.notify,
-                           EventThread(Event.LOC, 0,
-                                       (lat, lon, alt)))
+
+                self.__post_location(lat, lon, alt)
 
     def __gpsd_close(self):
         if self.device.type == DeviceGPS.GPSD:
@@ -229,8 +228,8 @@ class ThreadLocation(threading.Thread):
                 alt = float(data[9])
             except ValueError:
                 alt = None
-            post_event(self.notify,
-                       EventThread(Event.LOC, 0, (lat, lon, alt)))
+
+            self.__post_location(lat, lon, alt)
 
     def __nmea_sats(self, data):
         message = int(data[1])
@@ -278,6 +277,11 @@ class ThreadLocation(threading.Thread):
 
     def ___nmea_close(self):
         self.comm.close()
+
+    def __post_location(self, lat, lon, alt):
+        utc = time.time()
+        post_event(self.notify,
+                   EventThread(Event.LOC, 0, [lat, lon, alt, utc]))
 
     def run(self):
         if self.device.type in [DeviceGPS.NMEA_SERIAL, DeviceGPS.NMEA_TCP]:
@@ -361,9 +365,10 @@ class KmlServerHandler(BaseHTTPRequestHandler):
 
         last = ('\t\t<Placemark>\n'
                 '\t\t\t<name>Last Location</name>\n'
+                '\t\t\t<description>{}</description>\n'
                 '\t\t\t<styleUrl>#last</styleUrl>\n'
                 '\t\t\t<altitudeMode>clampToGround</altitudeMode>\n'
-                '\t\t\t<Point>\n')
+                '\t\t\t<Point>\n').format(format_time(loc[3]))
 
         if loc[2] is None:
             last += '\t\t\t\t<coordinates>{},{}</coordinates>\n'.\

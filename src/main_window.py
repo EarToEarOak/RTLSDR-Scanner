@@ -50,7 +50,7 @@ from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
     export_map, extension_add, File, run_file, export_gpx
 from location import ThreadLocation, KmlServer
 from misc import RemoteControl, format_precision, calc_samples, calc_real_dwell, \
-    get_version_timestamp, get_version_timestamp_repo
+    get_version_timestamp, get_version_timestamp_repo, format_iso_time
 from panels import PanelGraph
 from printer import PrintOut
 from scan import ThreadScan, anaylse_data, update_spectrum
@@ -168,7 +168,7 @@ class FrameMain(wx.Frame):
         self.spectrum = {}
         self.scanInfo = ScanInfo()
         self.locations = {}
-        self.lastLocation = [None] * 3
+        self.lastLocation = [None] * 4
         self.isSaved = True
 
         self.settings = Settings()
@@ -1075,7 +1075,7 @@ class FrameMain(wx.Frame):
                 self.status.set_info('', level=None)
                 self.scanInfo.set_from_settings(self.settings)
                 time = datetime.datetime.utcnow().replace(microsecond=0)
-                self.scanInfo.time = time.isoformat() + "Z"
+                self.scanInfo.time = format_iso_time(time)
                 self.scanInfo.lat = None
                 self.scanInfo.lon = None
                 self.scanInfo.desc = ''
@@ -1180,9 +1180,12 @@ class FrameMain(wx.Frame):
             self.lastLocation[i] = loc
             i += 1
         self.status.pulse_gps()
-        self.status.set_gps('{:.5f}, {:.5f}'.format(data[0],
-                                                    data[1]),
-                            level=None)
+        if data[2] is None:
+            gpsStatus = '{:.5f}, {:.5f}, {:.1f}'.format(data[0], data[1])
+        else:
+            gpsStatus = '{:.5f}, {:.5f}, {:.1f}m'.format(data[0], data[1], data[2])
+
+        self.status.set_gps(gpsStatus, level=None)
 
         if not self.isScanning:
             return
