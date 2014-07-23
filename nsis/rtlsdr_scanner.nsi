@@ -114,8 +114,6 @@ Section "RTLSDR Scanner (Required)" SEC_SCAN
 	SetOverwrite ifnewer
 	File "license.txt"
 	Call install_rtlsdr_scanner
-	Call get_python_path
-	!insertmacro APP_ASSOCIATE "${FILE_TYPE}" "${FILE_CLASS}" "${FILE_DESC}" "$INSTDIR\rtlsdr_scan.ico,0" "Open with RTLSDR Scanner" '"$PythonPath\python.exe" "$INSTDIR\rtlsdr_scan.py" "%1"'
 	CopyFiles "$ExePath" "$InstDir\"
 	CreateDirectory "$SMPROGRAMS\RTLSDR Scanner"
 	CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\Setup.lnk" "$INSTDIR\$EXEFILE"
@@ -195,6 +193,14 @@ SectionEnd
 
 Section -Post
 	WriteRegStr HKCU "${SETTINGS_KEY}" "${SETTINGS_INSTDIR}" "$INSTDIR"
+
+	Call get_python_path
+	!insertmacro APP_ASSOCIATE "${FILE_TYPE}" "${FILE_CLASS}" "${FILE_DESC}" "$INSTDIR\rtlsdr_scan.ico,0" "Open with RTLSDR Scanner" '"$PythonPath\python.exe" "$INSTDIR\rtlsdr_scan.py" "%1"'
+
+	DetailPrint "Compiling sources"
+	Call get_python_path
+	ExecWait '"$PythonPath\python.exe" -m compileall -l "$INSTDIR"'
+
 	WriteUninstaller "$INSTDIR\uninst.exe"
 	WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayName" "$(^Name)"
 	WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString" "$INSTDIR\uninst.exe"
@@ -457,9 +463,6 @@ Function install_rtlsdr_scanner
 		CopyFiles "$TEMP\RTLSDR-Scanner-master\*.ico" "$INSTDIR"
 		RmDir /r "$TEMP\RTLSDR-Scanner-master"
 		${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR"
-		DetailPrint "Compiling sources"
-		Call get_python_path
-		ExecWait '"$PythonPath\python.exe" -m compileall -l "$INSTDIR"'
 	${EndIf}
 FunctionEnd
 
