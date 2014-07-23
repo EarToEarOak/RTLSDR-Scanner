@@ -1142,9 +1142,12 @@ class FrameMain(wx.Frame):
 
     def __start_gps(self):
         if self.settings.gps and len(self.settings.devicesGps):
+            self.status.enable_gps()
             if self.threadLocation is None:
                 device = self.settings.devicesGps[self.settings.indexGps]
                 self.threadLocation = ThreadLocation(self, device)
+        else:
+            self.status.disable_gps()
 
     def __stop_gps(self):
         if self.threadLocation and self.threadLocation.isAlive():

@@ -115,6 +115,14 @@ class Statusbar(wx.StatusBar):
     def error_gps(self):
         self.controls[2].on(wx.RED)
 
+    def enable_gps(self):
+        self.controls[2].on('w')
+        self.set_gps('Enabled')
+
+    def disable_gps(self):
+        self.controls[2].on('grey')
+        self.set_gps('Disabled')
+
     def set_progress(self, progress):
         if progress == 0:
             self.timeStart = time.time()
