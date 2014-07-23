@@ -305,9 +305,10 @@ class ThreadLocation(threading.Thread):
 
 
 class KmlServer(object):
-    def __init__(self, locations, lock):
+    def __init__(self, locations, currentLoc, lock):
         self.server = HTTPServer(('127.0.0.1', 12345), KmlServerHandler)
         self.server.locations = locations
+        self.server.currentLoc = currentLoc
         self.server.lock = lock
         self.thread = threading.Thread(target=self.__serve_kml)
         self.thread.start()
@@ -357,52 +358,96 @@ class KmlServerHandler(BaseHTTPRequestHandler):
                   '\t\t\t\t<begin>{}</begin>\n'
                   '\t\t\t\t<end>{}</end>\n'
                   '\t\t\t</gx:TimeSpan>\n'
-                  '\t\t</LookAt>\n').format(latCen, lonCen, dist * 2, begin, end)
+                  '\t\t</LookAt>\n').\
+            format(latCen, lonCen, dist * 2, begin, end)
 
         return lookAt
 
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header('Content-type', 'application/vnd.google-earth.kml+xml')
-        self.end_headers()
+    def __create_last(self):
+        loc = self.server.currentLoc
+        if loc[0] is None:
+            return ''
 
-        self.wfile.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-        self.wfile.write('<kml xmlns="http://www.opengis.net/kml/2.2" '
-                         'xmlns:gx="http://www.google.com/kml/ext/2.2">\n')
+        last = ('\t\t<Placemark>\n'
+                '\t\t\t<name>Last Location</name>\n'
+                '\t\t\t<altitudeMode>clampToGround</altitudeMode>\n'
+                '\t\t\t<Point>\n')
 
-        self.wfile.write('\t<Document>\n')
-        self.wfile.write('\t\t<name>RTLSDR Scanner</name>\n')
+        if loc[2] is None:
+            last += '\t\t\t\t<coordinates>{},{}</coordinates>\n'.\
+                format(loc[1], loc[0])
+        else:
+            last += '\t\t\t\t<coordinates>{},{},{}</coordinates>\n'.\
+                format(loc[1], loc[0], loc[2])
 
-        self.wfile.write(self.__create_lookat())
+        last += ('\t\t\t</Point>\n'
+                 '\t\t</Placemark>\n')
 
-        self.wfile.write('\t\t<Style id="track">\n')
-        self.wfile.write('\t\t\t<LineStyle>\n')
-        self.wfile.write('\t\t\t\t<color>7f0000ff</color>\n')
-        self.wfile.write('\t\t\t\t<width>4</width>\n')
-        self.wfile.write('\t\t\t</LineStyle>\n')
-        self.wfile.write('\t\t</Style>\n')
+        return last
 
-        self.wfile.write('\t\t<Placemark>\n')
-        self.wfile.write('\t\t\t<name>Track</name>\n')
-        self.wfile.write('\t\t\t<description>{} locations</description>\n'.
-                         format(len(self.server.locations)))
-        self.wfile.write('\t\t\t<styleUrl>#track</styleUrl>\n')
+    def __create_track(self):
+        if not len(self.server.locations):
+            return ''
 
-        self.wfile.write('\t\t\t<gx:Track>\n')
-        self.wfile.write('\t\t\t\t<altitudeMode>clampToGround</altitudeMode>\n')
+        track = ('\t\t<Placemark>\n'
+                 '\t\t\t<name>Track</name>\n'
+                 '\t\t\t<description>{} locations</description>\n'
+                 '\t\t\t<styleUrl>#track</styleUrl>\n'
+                 '\t\t\t<gx:Track>\n'
+                 '\t\t\t\t<altitudeMode>clampToGround</altitudeMode>\n').\
+            format(len(self.server.locations))
 
         with self.server.lock:
             for timeStamp in sorted(self.server.locations):
                 lat, lon, alt = self.server.locations[timeStamp]
                 timeStr = format_iso_time(timeStamp)
-                self.wfile.write('\t\t\t\t<gx:coord>{} {} {}</gx:coord>\n'.
-                                 format(lon, lat, alt))
-                self.wfile.write('\t\t\t\t<when>{}</when>\n'.format(timeStr))
+                if alt is None:
+                    track += '\t\t\t\t<gx:coord>{} {}</gx:coord>\n'.\
+                        format(lon, lat)
 
-        self.wfile.write('\t\t\t</gx:Track>\n')
-        self.wfile.write('\t\t</Placemark>\n')
-        self.wfile.write('\t</Document>\n')
-        self.wfile.write('</kml>\n')
+                else:
+                    track += '\t\t\t\t<gx:coord>{} {} {}</gx:coord>\n'.\
+                        format(lon, lat, alt)
+                track += '\t\t\t\t<when>{}</when>\n'.format(timeStr)
+
+        track += ('\t\t\t</gx:Track>\n'
+                  '\t\t</Placemark>\n')
+
+        return track
+
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type',
+                         'application/vnd.google-earth.kml+xml')
+        self.end_headers()
+
+        self.wfile.write('<?xml version="1.0" encoding="UTF-8"?>\n'
+                         '<kml xmlns="http://www.opengis.net/kml/2.2" '
+                         'xmlns:gx="http://www.google.com/kml/ext/2.2">\n')
+
+        self.wfile.write('\t<Document>\n'
+                         '\t\t<name>RTLSDR Scanner</name>\n')
+
+        self.wfile.write(self.__create_lookat())
+
+        self.wfile.write('\t\t<Style id="track">\n'
+                         '\t\t\t<LineStyle>\n'
+                         '\t\t\t\t<color>7f0000ff</color>\n'
+                         '\t\t\t\t<width>4</width>\n'
+                         '\t\t\t</LineStyle>\n'
+                         '\t\t\t<IconStyle>\n'
+                         '\t\t\t\t<scale>0</scale>\n'
+                         '\t\t\t</IconStyle>\n'
+                         '\t\t\t<LabelStyle>\n'
+                         '\t\t\t\t<scale>0</scale>\n'
+                         '\t\t\t</LabelStyle>\n'
+                         '\t\t</Style>\n')
+
+        self.wfile.write(self.__create_last())
+        self.wfile.write(self.__create_track())
+
+        self.wfile.write('\t</Document>\n'
+                         '</kml>\n')
 
     def log_message(self, *args, **kwargs):
         pass

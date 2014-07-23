@@ -165,7 +165,8 @@ class FrameMain(wx.Frame):
 
         self.spectrum = {}
         self.scanInfo = ScanInfo()
-        self.location = {}
+        self.locations = {}
+        self.lastLocation = [None] * 3
         self.isSaved = True
 
         self.settings = Settings()
@@ -516,7 +517,7 @@ class FrameMain(wx.Frame):
         if self.__save_warn(Warn.NEW):
             return
         self.spectrum.clear()
-        self.location.clear()
+        self.locations.clear()
         self.__saved(True)
         self.__set_plot(self.spectrum, False)
 
@@ -553,7 +554,7 @@ class FrameMain(wx.Frame):
             fileName = extension_add(fileName, dlg.GetFilterIndex(),
                                      File.Types.SAVE)
             fullName = os.path.join(dirName, fileName)
-            save_plot(fullName, self.scanInfo, self.spectrum, self.location)
+            save_plot(fullName, self.scanInfo, self.spectrum, self.locations)
             self.__saved(True)
             self.status.set_general("Finished")
             self.settings.fileHistory.AddFileToHistory(fullName)
@@ -608,7 +609,7 @@ class FrameMain(wx.Frame):
         dlgSeq.Destroy()
 
     def __on_export_geo(self, _event):
-        dlgGeo = DialogGeo(self, self.spectrum, self.location, self.settings)
+        dlgGeo = DialogGeo(self, self.spectrum, self.locations, self.settings)
         if dlgGeo.ShowModal() == wx.ID_OK:
             self.status.set_general("Exporting...")
             extent = dlgGeo.get_extent()
@@ -651,7 +652,7 @@ class FrameMain(wx.Frame):
             fileName = extension_add(fileName, dlg.GetFilterIndex(),
                                      File.Types.TRACK)
             fullName = os.path.join(dirName, fileName)
-            export_gpx(fullName, self.location, self.GetName())
+            export_gpx(fullName, self.locations, self.GetName())
             self.status.set_general("Finished")
         dlg.Destroy()
 
@@ -800,11 +801,11 @@ class FrameMain(wx.Frame):
                           wx.OK | wx.ICON_ERROR)
 
     def __on_loc_clear(self, _event):
-        result = wx.MessageBox('Remove {} locations from scan?'.format(len(self.location)),
+        result = wx.MessageBox('Remove {} locations from scan?'.format(len(self.locations)),
                                'Clear location data',
                                wx.YES_NO, self)
         if result == wx.YES:
-            self.location.clear()
+            self.locations.clear()
             self.__set_control_state(True)
 
     def __on_log(self, _event):
@@ -1019,7 +1020,7 @@ class FrameMain(wx.Frame):
                 self.devicesRtl[self.settings.indexRtl].calibration = 0
                 self.__get_controls()
                 self.spectrum.clear()
-                self.location.clear()
+                self.locations.clear()
                 if not self.__scan_start(isCal=True):
                     self.dlgCal.reset_cal()
             elif status == Cal.DONE:
@@ -1055,7 +1056,7 @@ class FrameMain(wx.Frame):
             samples = calc_samples(self.settings.dwell)
             if self.isNewScan:
                 self.spectrum.clear()
-                self.location.clear()
+                self.locations.clear()
                 self.graph.clear_plots()
 
                 self.isNewScan = False
@@ -1136,7 +1137,7 @@ class FrameMain(wx.Frame):
     def __limit_spectrum(self):
         with self.lock:
             self.__remove_last(self.spectrum)
-            self.__remove_last(self.location)
+            self.__remove_last(self.locations)
 
     def __start_gps(self):
         if self.settings.gps and len(self.settings.devicesGps):
@@ -1151,13 +1152,18 @@ class FrameMain(wx.Frame):
         self.threadLocation = None
 
     def __start_kml(self):
-        self.serverKml = KmlServer(self.location, self.lock)
+        self.serverKml = KmlServer(self.locations, self.lastLocation,
+                                   self.lock)
 
     def __stop_kml(self):
         if self.serverKml:
             self.serverKml.close()
 
     def __update_location(self, data):
+        i = 0
+        for loc in data:
+            self.lastLocation[i] = loc
+            i += 1
         self.status.pulse_gps()
         self.status.set_gps('{:.5f}, {:.5f}'.format(data[0],
                                                     data[1]),
@@ -1173,9 +1179,9 @@ class FrameMain(wx.Frame):
 
         with self.lock:
             if len(self.spectrum) > 0:
-                self.location[max(self.spectrum)] = (data[0],
-                                                     data[1],
-                                                     data[2])
+                self.locations[max(self.spectrum)] = (data[0],
+                                                      data[1],
+                                                      data[2])
 
     def __saved(self, isSaved):
         self.isSaved = isSaved
@@ -1214,8 +1220,8 @@ class FrameMain(wx.Frame):
         self.menuExportImage.Enable(state)
         self.menuExportSeq.Enable(state and len(self.spectrum) > 0)
         self.menuExportGeo.Enable(state and len(self.spectrum) > 0 and
-                                  len(self.location) > 0)
-        self.menuExportGeo.Enable(state and len(self.location))
+                                  len(self.locations) > 0)
+        self.menuExportGeo.Enable(state and len(self.locations))
         self.menuPage.Enable(state)
         self.menuPreview.Enable(state)
         self.menuPrint.Enable(state)
@@ -1227,7 +1233,7 @@ class FrameMain(wx.Frame):
         self.menuDevicesGps.Enable(state)
         self.menuReset.Enable(state)
         self.menuCal.Enable(state)
-        self.menuLocClear.Enable(state and len(self.location))
+        self.menuLocClear.Enable(state and len(self.locations))
         self.popupMenuStop.Enable(not state)
         self.popupMenuStart.Enable(state)
         if self.settings.mode == Mode.CONTIN:
@@ -1382,8 +1388,8 @@ class FrameMain(wx.Frame):
         if len(spectrum) > 0:
             self.scanInfo.set_to_settings(self.settings)
             self.spectrum = spectrum
-            self.location.clear()
-            self.location.update(location)
+            self.locations.clear()
+            self.locations.update(location)
             self.__saved(True)
             self.__set_controls()
             self.__set_control_state(True)
