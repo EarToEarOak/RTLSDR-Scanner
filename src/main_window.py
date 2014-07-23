@@ -172,6 +172,8 @@ class FrameMain(wx.Frame):
 
         self.settings = Settings()
         self.devicesRtl = get_devices_rtl(self.settings.devicesRtl)
+        if self.settings.indexRtl >= len(self.devicesRtl):
+            self.settings.indexRtl = 0
         self.filename = ""
         self.oldCal = 0
 
