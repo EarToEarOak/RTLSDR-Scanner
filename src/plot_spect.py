@@ -318,7 +318,10 @@ class ThreadPlot(threading.Thread):
                 j -= 1
                 _xs, zs = split_spectrum(self.data[ys])
                 for i in range(len(zs)):
-                    c[j, i] = zs[i]
+                    try:
+                        c[j, i] = zs[i]
+                    except IndexError:
+                        continue
 
             norm = None
             if not self.autoL:
