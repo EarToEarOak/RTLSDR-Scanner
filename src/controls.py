@@ -51,6 +51,7 @@ class MultiButton(wx.PyControl):
         self.Bind(wx.EVT_LEFT_UP, self.__on_left_up)
         self.Bind(wx.EVT_MOTION, self.__on_motion)
         self.Bind(wx.EVT_LEAVE_WINDOW, self.__on_leave)
+        self.Bind(wx.EVT_CONTEXT_MENU, self.__on_context)
 
     def __on_paint(self, _event):
         dc = wx.GCDC(wx.PaintDC(self))
@@ -84,6 +85,9 @@ class MultiButton(wx.PyControl):
         label = item.GetLabel()
         self.selected = self.options.index(label)
         self.__set_text()
+
+    def __on_context(self, _event):
+        self.__show_menu()
 
     def __show_menu(self):
         self.PopupMenu(self.menu)
