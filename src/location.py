@@ -36,7 +36,7 @@ from serial.serialutil import SerialException
 from constants import KML_PORT
 from devices import DeviceGPS
 from events import post_event, EventThread, Event
-from misc import format_iso_time, haversine, format_time
+from misc import format_iso_time, haversine, format_time, limit_to_ascii
 from utils_wx import load_bitmap
 
 
@@ -89,6 +89,7 @@ class ThreadLocation(threading.Thread):
                 line, buf = buf.split('\n', 1)
                 yield line
                 if self.raw:
+                    line = limit_to_ascii(line)
                     post_event(self.notify, EventThread(Event.LOC_RAW,
                                                         0, line))
         return
@@ -121,6 +122,7 @@ class ThreadLocation(threading.Thread):
             data = self.comm.readline()
             yield data
             if self.raw:
+                data = limit_to_ascii(data)
                 post_event(self.notify, EventThread(Event.LOC_RAW,
                                                     0, data))
         return
@@ -156,8 +158,9 @@ class ThreadLocation(threading.Thread):
                         alt = data['alt']
                     except KeyError:
                         alt = None
-
                     self.__post_location(lat, lon, alt)
+            elif data['class'] == 'SKY':
+                self.__gpsd_sats(data['satellites'])
 
     def __gpsd_old_read(self):
         for resp in self.__tcp_read():
@@ -181,6 +184,14 @@ class ThreadLocation(threading.Thread):
         else:
             self.comm.sendall('W')
         self.comm.close()
+
+    def __gpsd_sats(self, satData):
+        sats = {}
+        for sat in satData:
+            sats[sat['PRN']] = [sat['ss'], sat['used']]
+
+        post_event(self.notify,
+                   EventThread(Event.LOC_SAT, None, sats))
 
     def __nmea_open(self):
         if self.device.type == DeviceGPS.NMEA_SERIAL:
@@ -242,13 +253,18 @@ class ThreadLocation(threading.Thread):
         blocks = (len(data) - 4) / 4
         for i in range(0, blocks):
             sat = int(data[4 + i * 4])
-            used = False if data[5 + i * 4] == '' else True
-            self.sats[sat] = used
+            level = data[7 + i * 4]
+            used = True
+            if level == '':
+                level = None
+                used = False
+            else:
+                level = int(level)
+            self.sats[sat] = [level, used]
 
         if message == messages and len(self.sats) == viewed:
             post_event(self.notify,
-                       EventThread(Event.LOC_SAT,
-                                   sum(self.sats.values()), viewed))
+                       EventThread(Event.LOC_SAT, None, self.sats))
 
     def __nmea_coord(self, coord, orient):
         pos = None
@@ -275,7 +291,7 @@ class ThreadLocation(threading.Thread):
 
         return pos
 
-    def ___nmea_close(self):
+    def __nmea_close(self):
         self.comm.close()
 
     def __post_location(self, lat, lon, alt):
@@ -299,7 +315,7 @@ class ThreadLocation(threading.Thread):
             self.__gpsd_old_read()
 
         if self.device.type in [DeviceGPS.NMEA_SERIAL, DeviceGPS.NMEA_TCP]:
-            self.___nmea_close()
+            self.__nmea_close()
         else:
             self.__gpsd_close()
 

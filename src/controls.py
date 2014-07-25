@@ -23,6 +23,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from collections import OrderedDict
+
 import wx
 from wx.grid import PyGridCellRenderer
 
@@ -239,6 +241,102 @@ class Led(wx.PyControl):
         self.Refresh()
         self.timer.Start(Led.PULSE_TIME)
 
+
+class SatLevel(wx.PyControl):
+    BAR_WIDTH = 10
+    BAR_HEIGHT = 75
+    PADDING = 5
+
+    def __init__(self, parent, id=wx.ID_ANY, barCount=16):
+        wx.PyControl.__init__(self, parent=parent, id=id, size=wx.DefaultSize,
+                              style=wx.NO_BORDER)
+
+        self.barCount = barCount
+        self.sats = None
+
+        self.Bind(wx.EVT_ERASE_BACKGROUND, self.__on_erase)
+        self.Bind(wx.EVT_PAINT, self.__on_paint)
+
+    def __on_erase(self, _event):
+        pass
+
+    def __on_paint(self, _event):
+        dc = wx.BufferedPaintDC(self)
+        self.__draw(dc)
+
+    def __draw(self, dc):
+        colour = self.GetBackgroundColour()
+        brush = wx.Brush(colour, wx.SOLID)
+        dc.SetBackground(brush)
+        dc.SetFont(self.GetFont())
+        dc.Clear()
+
+        font = self.GetFont()
+        font.SetPointSize(self.BAR_WIDTH)
+        dc.SetFont(font)
+
+        width, height = self.GetClientSize()
+        widthTextFull, _height = dc.GetTextExtent('###')
+        heightBar = height - widthTextFull - (self.PADDING * 2.0)
+        widthBar = width / (self.barCount * 2.0)
+
+        gc = wx.GraphicsContext.Create(dc)
+        gc.SetPen(wx.GREY_PEN)
+        gc.SetBrush(wx.BLUE_BRUSH)
+
+        for i in range(self.barCount):
+            x = self.PADDING + (widthBar * i * 2.0)
+
+            if self.sats is not None and i < len(self.sats):
+                sat = self.sats.items()[i]
+                prn = sat[0]
+                level = sat[1][0]
+                used = sat[1][1]
+                gc.SetBrush(wx.BLUE_BRUSH)
+                if level is not None:
+                    if used:
+                        gc.SetBrush(wx.GREEN_BRUSH)
+                    heightLevel = (level / 99.0) * heightBar
+                else:
+                    gc.SetBrush(wx.Brush(wx.BLUE, wx.CROSSDIAG_HATCH))
+                    heightLevel = heightBar
+
+                path = gc.CreatePath()
+                path.AddRectangle(x,
+                                  heightBar - heightLevel + self.PADDING,
+                                  widthBar,
+                                  heightLevel)
+                gc.FillPath(path)
+                text = '{:3d}'.format(prn)
+                widthText, heightText = dc.GetTextExtent(text)
+                dc.DrawRotatedText(text,
+                                   x + widthBar / 2 - heightText / 2 ,
+                                   height - widthText + self.PADDING * 2,
+                                   90)
+
+            path = gc.CreatePath()
+            path.AddRectangle(x,
+                              self.PADDING,
+                              widthBar,
+                              heightBar)
+            gc.StrokePath(path)
+
+    def DoGetBestSize(self):
+        font = self.GetFont()
+        font.SetPointSize(self.BAR_WIDTH)
+        dc = wx.ClientDC(self)
+        dc.SetFont(font)
+        widthText, heightText = dc.GetTextExtent('###')
+
+        height = widthText + self.BAR_HEIGHT + self.PADDING * 2
+        barWidth = max(heightText, self.BAR_WIDTH + self.PADDING)
+        width = (barWidth + self.PADDING) * self.barCount
+
+        return wx.Size(width, height)
+
+    def set_sats(self, sats):
+        self.sats = OrderedDict(sorted(sats.items()))
+        self.Refresh()
 
 class CheckCellRenderer(PyGridCellRenderer):
     SIZE = 10

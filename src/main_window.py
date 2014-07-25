@@ -43,7 +43,7 @@ from devices import get_devices_rtl
 from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, \
     DialogDevicesRTL, DialogCompare, DialogAutoCal, DialogAbout, \
     DialogSaveWarn, DialogDevicesGPS, DialogGeo, DialogSeq, DialogImageSize, \
-    DialogFormatting, DialogLog
+    DialogFormatting, DialogLog, DialogSats
 from events import EVENT_THREAD, Event, EventThread, post_event, Log
 from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
     export_map, extension_add, File, run_file, export_gpx
@@ -101,6 +101,7 @@ class FrameMain(wx.Frame):
         self.stopScan = False
 
         self.dlgCal = None
+        self.dlgSats = None
         self.dlgLog = None
 
         self.menuNew = None
@@ -168,6 +169,7 @@ class FrameMain(wx.Frame):
         self.scanInfo = ScanInfo()
         self.locations = {}
         self.lastLocation = [None] * 4
+
         self.isSaved = True
 
         self.settings = Settings()
@@ -393,6 +395,8 @@ class FrameMain(wx.Frame):
         menuTools.AppendSeparator()
         self.menuKml = menuTools.Append(wx.ID_ANY, "&Track in Google Earth",
                                         "Display recorded points in Google Earth")
+        menuSats = menuTools.Append(wx.ID_ANY, "&GPS Satellites...",
+                                    "Show satellite signal levels")
         menuTools.AppendSeparator()
         self.menuLocClear = menuTools.Append(wx.ID_ANY, "&Clear location data...",
                                              "Remove GPS data from scan")
@@ -449,6 +453,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.__on_compare, self.menuCompare)
         self.Bind(wx.EVT_MENU, self.__on_cal, self.menuCal)
         self.Bind(wx.EVT_MENU, self.__on_kml, self.menuKml)
+        self.Bind(wx.EVT_MENU, self.__on_sats, menuSats)
         self.Bind(wx.EVT_MENU, self.__on_loc_clear, self.menuLocClear)
         self.Bind(wx.EVT_MENU, self.__on_log, menuLog)
         self.Bind(wx.EVT_MENU, self.__on_help, menuHelpLink)
@@ -746,6 +751,7 @@ class FrameMain(wx.Frame):
 
     def __on_devices_gps(self, _event):
         self.__stop_gps()
+        self.status.set_gps('GPS Stopped')
         dlg = DialogDevicesGPS(self, self.settings)
         dlg.ShowModal()
         dlg.Destroy()
@@ -804,6 +810,11 @@ class FrameMain(wx.Frame):
         if not run_file(tempFile):
             wx.MessageBox('Error starting Google Earth', 'Error',
                           wx.OK | wx.ICON_ERROR)
+
+    def __on_sats(self, _event):
+        if self.dlgSats is None:
+            self.dlgSats = DialogSats(self)
+            self.dlgSats.Show()
 
     def __on_loc_clear(self, _event):
         result = wx.MessageBox('Remove {} locations from scan?'.format(len(self.locations)),
@@ -1011,6 +1022,9 @@ class FrameMain(wx.Frame):
                 self.timerGpsRetry.Start(5000, True)
         elif status == Event.LOC:
             self.__update_location(data)
+        elif status == Event.LOC_SAT:
+            if self.dlgSats is not None:
+                self.dlgSats.set_sats(data)
 
         wx.YieldIfNeeded()
 

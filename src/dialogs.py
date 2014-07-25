@@ -46,7 +46,7 @@ from wx.lib.masked.numctrl import NumCtrl
 
 from constants import F_MIN, F_MAX, Cal, SAMPLE_RATE, BANDWIDTH, WINFUNC, \
     TUNER
-from controls import CheckCellRenderer
+from controls import CheckCellRenderer, SatLevel
 from devices import DeviceRTL, DeviceGPS
 from events import Event
 from file import open_plot, File, export_image
@@ -2105,6 +2105,9 @@ class DialogGPSTest(wx.Dialog):
         self.textRaw = wx.TextCtrl(self,
                                    style=wx.TE_MULTILINE | wx.TE_READONLY)
 
+        textLevel = wx.StaticText(self, label='Level')
+        self.satLevel = SatLevel(self)
+
         self.buttonStart = wx.Button(self, label='Start')
         self.Bind(wx.EVT_BUTTON, self.__on_start, self.buttonStart)
         self.buttonStop = wx.Button(self, label='Stop')
@@ -2116,20 +2119,24 @@ class DialogGPSTest(wx.Dialog):
 
         grid = wx.GridBagSizer(10, 10)
 
-        grid.Add(textLat, pos=(0, 1), flag=wx.ALL, border=5)
-        grid.Add(self.textLat, pos=(0, 2), span=(1, 2), flag=wx.ALL, border=5)
-        grid.Add(textLon, pos=(1, 1), flag=wx.ALL, border=5)
-        grid.Add(self.textLon, pos=(1, 2), span=(1, 2), flag=wx.ALL, border=5)
-        grid.Add(textAlt, pos=(2, 1), flag=wx.ALL, border=5)
-        grid.Add(self.textAlt, pos=(2, 2), span=(1, 2), flag=wx.ALL, border=5)
-        grid.Add(textSats, pos=(3, 1), flag=wx.ALL, border=5)
-        grid.Add(self.textSats, pos=(3, 2), span=(1, 2), flag=wx.ALL, border=5)
+        grid.Add(textLat, pos=(0, 0), flag=wx.ALL, border=5)
+        grid.Add(self.textLat, pos=(0, 1), span=(1, 2), flag=wx.ALL, border=5)
+        grid.Add(textLon, pos=(1, 0), flag=wx.ALL, border=5)
+        grid.Add(self.textLon, pos=(1, 1), span=(1, 2), flag=wx.ALL, border=5)
+        grid.Add(textAlt, pos=(2, 0), flag=wx.ALL, border=5)
+        grid.Add(self.textAlt, pos=(2, 1), span=(1, 2), flag=wx.ALL, border=5)
+        grid.Add(textSats, pos=(3, 0), flag=wx.ALL, border=5)
+        grid.Add(self.textSats, pos=(3, 1), span=(1, 2), flag=wx.ALL, border=5)
+        grid.Add(textLevel, pos=(0, 3), flag=wx.ALL, border=5)
+        grid.Add(self.satLevel, pos=(1, 3), span=(3, 2), flag=wx.ALL, border=5)
         grid.Add(textRaw, pos=(4, 0), flag=wx.ALL, border=5)
-        grid.Add(self.textRaw, pos=(5, 0), span=(5, 4),
+        grid.Add(self.textRaw, pos=(5, 0), span=(5, 5),
                  flag=wx.ALL | wx.EXPAND, border=5)
-        grid.Add(self.buttonStart, pos=(10, 1), flag=wx.ALL, border=5)
-        grid.Add(self.buttonStop, pos=(10, 2), flag=wx.ALL, border=5)
-        grid.Add(buttonOk, pos=(11, 3), flag=wx.ALL, border=5)
+        grid.Add(self.buttonStart, pos=(10, 2), flag=wx.ALL, border=5)
+        grid.Add(self.buttonStop, pos=(10, 3), flag=wx.ALL | wx.ALIGN_RIGHT,
+                 border=5)
+        grid.Add(buttonOk, pos=(11, 4), flag=wx.ALL | wx.ALIGN_RIGHT,
+                 border=5)
 
         self.SetSizerAndFit(grid)
 
@@ -2169,23 +2176,24 @@ class DialogGPSTest(wx.Dialog):
 
             if status == Event.LOC:
                 if loc[0] is not None:
-                    text = str(loc[0])
+                    text = '{:.5f}'.format(loc[0])
                 else:
                     text = ''
                 self.textLon.SetValue(text)
                 if loc[1] is not None:
-                    text = str(loc[1])
+                    text = '{:.5f}'.format(loc[1])
                 else:
                     text = ''
                 self.textLat.SetValue(text)
                 if loc[2] is not None:
-                    text = str(loc[2])
+                    text = '{:.1f}'.format(loc[2])
                 else:
                     text = ''
                 self.textAlt.SetValue(text)
             elif status == Event.LOC_SAT:
-                text = '{0}/{1}'.format(event.data.get_arg1(), loc)
-                self.textSats.SetValue(text)
+                self.satLevel.set_sats(loc)
+                used = sum(1 for sat in loc.values() if sat[1])
+                self.textSats.SetLabel('{}/{}'.format(used, len(loc)))
             elif status == Event.LOC_ERR:
                 self.__on_stop(None)
                 self.__add_raw('{0}'.format(loc))
@@ -2201,7 +2209,40 @@ class DialogGPSTest(wx.Dialog):
         while len(terminal) > 100:
             terminal.pop(0)
         self.textRaw.SetValue('\n'.join(terminal))
-        self.textRaw.ScrollPages(9999)
+        self.textRaw.ScrollPages(self.textRaw.GetNumberOfLines())
+
+
+class DialogSats(wx.Dialog):
+    def __init__(self, parent):
+        wx.Dialog.__init__(self, parent=parent, title='GPS Satellite Levels')
+        self.parent = parent
+
+        self.satLevel = SatLevel(self)
+
+        self.textSats = wx.StaticText(self)
+        self.__set_text(0, 0)
+
+        self.Bind(wx.EVT_CLOSE, self.__on_close)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.satLevel, 1, flag=wx.ALL | wx.EXPAND, border=5)
+        sizer.Add(self.textSats, 0, flag=wx.ALL | wx.EXPAND, border=5)
+
+        self.SetSizerAndFit(sizer)
+
+    def __set_text(self, used, seen):
+        self.textSats.SetLabel('Satellites: {} used, {} seen'.format(used,
+                                                                     seen))
+
+    def __on_close(self, _event):
+        self.Unbind(wx.EVT_CLOSE)
+        self.parent.dlgSats = None
+        self.Close()
+
+    def set_sats(self, sats):
+        self.satLevel.set_sats(sats)
+        used = sum(1 for sat in sats.values() if sat[1])
+        self.__set_text(used, len(sats))
 
 
 class DialogSaveWarn(wx.Dialog):
