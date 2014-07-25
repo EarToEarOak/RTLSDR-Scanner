@@ -42,7 +42,7 @@ class DeviceGPS(object):
 
     def __init__(self):
         self.name = 'GPS'
-        self.type = DeviceGPS.GPSD
+        self.type = self.GPSD
         self.resource = 'localhost:2947'
         self.baud = 115200
         self.bytes = serial.EIGHTBITS

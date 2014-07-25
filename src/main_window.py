@@ -82,8 +82,6 @@ class RtlSdrScanner(wx.App):
 class FrameMain(wx.Frame):
     def __init__(self, title, pool):
 
-        self.grid = True
-
         self.pool = pool
         self.lock = threading.Lock()
 
@@ -130,12 +128,7 @@ class FrameMain(wx.Frame):
         self.menuStopEnd = None
         self.menuCompare = None
         self.menuCal = None
-        self.menuKml = None
         self.menuLocClear = None
-        self.menuLog = None
-        self.menuHelpLink = None
-        self.menuUpdate = None
-        self.menuAbout = None
 
         self.popupMenu = None
         self.popupMenuStart = None
@@ -150,8 +143,6 @@ class FrameMain(wx.Frame):
         self.graph = None
         self.toolbar = None
         self.canvas = None
-        self.mouseZoom = None
-        self.mouseSelect = None
 
         self.buttonStart = None
         self.buttonStop = None
@@ -161,8 +152,6 @@ class FrameMain(wx.Frame):
         self.choiceNfft = None
         self.spinCtrlStart = None
         self.spinCtrlStop = None
-        self.checkUpdate = None
-        self.checkGrid = None
         self.choiceDisplay = None
 
         self.spectrum = {}
@@ -393,8 +382,8 @@ class FrameMain(wx.Frame):
         self.menuCal = menuTools.Append(wx.ID_ANY, "&Auto Calibration...",
                                         "Automatically calibrate to a known frequency")
         menuTools.AppendSeparator()
-        self.menuKml = menuTools.Append(wx.ID_ANY, "&Track in Google Earth",
-                                        "Display recorded points in Google Earth")
+        menuKml = menuTools.Append(wx.ID_ANY, "&Track in Google Earth",
+                                   "Display recorded points in Google Earth")
         menuSats = menuTools.Append(wx.ID_ANY, "&GPS Satellites...",
                                     "Show satellite signal levels")
         menuTools.AppendSeparator()
@@ -452,7 +441,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.__on_stop_end, self.menuStopEnd)
         self.Bind(wx.EVT_MENU, self.__on_compare, self.menuCompare)
         self.Bind(wx.EVT_MENU, self.__on_cal, self.menuCal)
-        self.Bind(wx.EVT_MENU, self.__on_kml, self.menuKml)
+        self.Bind(wx.EVT_MENU, self.__on_kml, menuKml)
         self.Bind(wx.EVT_MENU, self.__on_sats, menuSats)
         self.Bind(wx.EVT_MENU, self.__on_loc_clear, self.menuLocClear)
         self.Bind(wx.EVT_MENU, self.__on_log, menuLog)

@@ -25,7 +25,6 @@
 from collections import OrderedDict
 from decimal import Decimal
 from operator import itemgetter, mul
-import time
 
 from matplotlib.dates import seconds
 import numpy

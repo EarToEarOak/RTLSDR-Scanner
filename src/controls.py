@@ -106,10 +106,10 @@ class MultiButton(wx.PyControl):
         width = event.GetEventObject().GetSize()[0]
         height = event.GetEventObject().GetSize()[1]
 
-        top = (height / 2) - (MultiButton.ARROW_SIZE / 4) - MultiButton.PADDING
-        bottom = top + MultiButton.ARROW_SIZE / 2 + MultiButton.PADDING * 2
-        right = width - MultiButton.PADDING
-        left = right - MultiButton.ARROW_SIZE - MultiButton.PADDING * 2
+        top = (height / 2) - (self.ARROW_SIZE / 4) - self.PADDING
+        bottom = top + self.ARROW_SIZE / 2 + self.PADDING * 2
+        right = width - self.PADDING
+        left = right - self.ARROW_SIZE - self.PADDING * 2
 
         if (right >= x >= left) and (bottom >= y >= top):
             return True
@@ -137,16 +137,16 @@ class MultiButton(wx.PyControl):
         _textWidth, textHeight = dc.GetTextExtent(label)
 
         dc.DrawText(self.GetLabel(),
-                    MultiButton.PADDING,
+                    self.PADDING,
                     (rect.height - textHeight) / 2)
 
-        top = (rect.height / 2) - (MultiButton.ARROW_SIZE / 4)
-        bottom = top + MultiButton.ARROW_SIZE / 2
-        right = rect.width - MultiButton.PADDING * 2
-        left = right - MultiButton.ARROW_SIZE
+        top = (rect.height / 2) - (self.ARROW_SIZE / 4)
+        bottom = top + self.ARROW_SIZE / 2
+        right = rect.width - self.PADDING * 2
+        left = right - self.ARROW_SIZE
         dc.DrawPolygon([(right, top),
                         (left, top),
-                        (left + MultiButton.ARROW_SIZE / 2, bottom)])
+                        (left + self.ARROW_SIZE / 2, bottom)])
 
     def DoGetBestSize(self):
         label = max(self.options, key=len)
@@ -154,8 +154,8 @@ class MultiButton(wx.PyControl):
         dc = wx.ClientDC(self)
         dc.SetFont(font)
         textWidth, textHeight = dc.GetTextExtent(label)
-        width = textWidth + MultiButton.ARROW_SIZE + MultiButton.PADDING * 4
-        height = textHeight + MultiButton.PADDING * 2
+        width = textWidth + self.ARROW_SIZE + self.PADDING * 4
+        height = textHeight + self.PADDING * 2
 
         return wx.Size(width, height)
 
@@ -239,7 +239,7 @@ class Led(wx.PyControl):
         self.lit = True
         self.colour = colour
         self.Refresh()
-        self.timer.Start(Led.PULSE_TIME)
+        self.timer.Start(self.PULSE_TIME)
 
 
 class SatLevel(wx.PyControl):

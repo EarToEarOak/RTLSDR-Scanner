@@ -389,7 +389,7 @@ class DialogSeq(wx.Dialog):
         self.queue = Queue.Queue()
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.__on_timer, self.timer)
-        self.timer.Start(DialogSeq.POLL)
+        self.timer.Start(self.POLL)
 
         self.figure = matplotlib.figure.Figure(facecolor='white')
         self.canvas = FigureCanvas(self, -1, self.figure)
@@ -527,7 +527,7 @@ class DialogSeq(wx.Dialog):
                 if status == Event.DRAW:
                     self.canvas.draw()
 
-        self.timer.Start(DialogSeq.POLL)
+        self.timer.Start(self.POLL)
 
     def __on_ok(self, _event):
         self.isExporting = True
@@ -1221,7 +1221,6 @@ class DialogProperties(wx.Dialog):
 
 
 class DialogPrefs(wx.Dialog):
-
     def __init__(self, parent, settings):
         self.settings = settings
         self.index = 0
@@ -2143,7 +2142,7 @@ class DialogGPSTest(wx.Dialog):
         self.queue = Queue.Queue()
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.__on_timer, self.timer)
-        self.timer.Start(DialogGPSTest.POLL)
+        self.timer.Start(self.POLL)
 
     def __on_start(self, _event):
         if not self.threadLocation:
@@ -2199,7 +2198,7 @@ class DialogGPSTest(wx.Dialog):
                 self.__add_raw('{0}'.format(loc))
             elif status == Event.LOC_RAW:
                 self.__add_raw(loc)
-        self.timer.Start(DialogGPSTest.POLL)
+        self.timer.Start(self.POLL)
 
     def __add_raw(self, text):
         text = text.replace('\n', '')
@@ -2295,7 +2294,6 @@ class DialogSaveWarn(wx.Dialog):
 
 class DialogRefresh(wx.Dialog):
     def __init__(self, parent):
-
         wx.Dialog.__init__(self, parent=parent, style=0)
 
         text = wx.StaticText(self, label="Refreshing plot_line, please wait...")

@@ -83,7 +83,7 @@ class Log(object):
         entry = [time.time(), level, text]
         self.log.append(entry)
 
-        while len(self.log) > Log.MAX_ENTRIES:
+        while len(self.log) > self.MAX_ENTRIES:
             self.log.pop(0)
 
     def get(self, level):

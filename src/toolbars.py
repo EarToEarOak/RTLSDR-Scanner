@@ -52,11 +52,11 @@ class Statusbar(wx.StatusBar):
         wx.StatusBar.__init__(self, parent, -1)
         self.SetFieldsCount(4)
 
-        self.controls[0] = wx.StaticText(self, label=Statusbar.TEXT_GENERAL,
+        self.controls[0] = wx.StaticText(self, label=self.TEXT_GENERAL,
                                          style=wx.ST_NO_AUTORESIZE)
-        self.controls[1] = wx.StaticText(self, label=Statusbar.TEXT_INFO,
+        self.controls[1] = wx.StaticText(self, label=self.TEXT_INFO,
                                          style=wx.ST_NO_AUTORESIZE)
-        self.controls[2] = Led(self, label=Statusbar.TEXT_GPS)
+        self.controls[2] = Led(self, label=self.TEXT_GPS)
 
         self.controls[3] = wx.Gauge(self, -1,
                                     style=wx.GA_HORIZONTAL | wx.GA_SMOOTH)
@@ -86,21 +86,21 @@ class Statusbar(wx.StatusBar):
         return text
 
     def set_general(self, text, level=Log.INFO):
-        text = Statusbar.TEXT_GENERAL + text
+        text = self.TEXT_GENERAL + text
         self.controls[0].SetLabel(text)
         self.controls[0].SetToolTipString(self.__format_tooltip(text))
         self.controls[0].Refresh()
         self.log.add(text, level)
 
     def set_info(self, text, level=Log.INFO):
-        text = Statusbar.TEXT_INFO + text
+        text = self.TEXT_INFO + text
         self.controls[1].SetLabel(text)
         self.controls[1].SetToolTipString(self.__format_tooltip(text))
         self.controls[1].Refresh()
         self.log.add(text, level)
 
     def set_gps(self, text, level=Log.INFO):
-        text = Statusbar.TEXT_GPS + text
+        text = self.TEXT_GPS + text
         self.controls[2].SetLabel(text)
         self.controls[2].SetToolTipString(self.__format_tooltip(text))
         self.controls[2].Refresh()
