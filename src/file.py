@@ -24,12 +24,13 @@
 #
 
 import cPickle
-from collections import OrderedDict
+import datetime
 import json
 import os
 import subprocess
 import sys
 import tempfile
+import uuid
 import zipfile
 
 from PIL import Image
@@ -49,7 +50,7 @@ class File(object):
         RFS = 0
 
     class PlotType(object):
-        CSV, GNUPLOT, FREEMAT = range(3)
+        CSV, GNUPLOT, FREEMAT, WWB = range(4)
 
     class ImageType(object):
         BMP, EPS, GIF, JPEG, PDF, PNG, PPM, TIFF = range(8)
@@ -63,10 +64,11 @@ class File(object):
     SAVE = [''] * 1
     SAVE[SaveType.RFS] = 'RTLSDR frequency scan (*.rfs)|*.rfs'
 
-    PLOT = [''] * 3
+    PLOT = [''] * 4
     PLOT[PlotType.CSV] = "CSV table (*.csv)|*.csv"
     PLOT[PlotType.GNUPLOT] = "gnuplot script (*.plt)|*.plt"
     PLOT[PlotType.FREEMAT] = "FreeMat script (*.m)|*.m"
+    PLOT[PlotType.WWB] = "Wireless Workbench (*.sdb2)|*.sdb2"
 
     IMAGE = [''] * 8
     IMAGE[ImageType.BMP] = 'Bitmap image (*.bmp)|*.bmp'
@@ -332,6 +334,8 @@ def export_plot(filename, exportType, spectrum):
         export_plt(handle, spectrum)
     elif exportType == File.PlotType.FREEMAT:
         export_freemat(handle, spectrum)
+    elif exportType == File.PlotType.WWB:
+        export_wwb(handle, spectrum)
     handle.close()
 
 
@@ -407,6 +411,54 @@ def export_freemat(handle, spectrum):
     handle.write("ylabel('Time')\n")
     handle.write("zlabel('Level (dB/Hz)')\n")
     handle.write("grid('on')\n")
+
+
+def export_wwb(handle, spectrum):
+    fileUuid = uuid.uuid4()
+    fileTime = datetime.datetime.utcfromtimestamp(min(spectrum))
+    header = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+              '<scan_data_source ver="0.0.0.1" id="{{{}}}" model="TODO" '
+              'name="RTLSDR Scanner" date="{}" time="{}" color="#00ff00">\n'
+              '\t<data_sets count="{}" '
+              'no_data_value="-140">\n').format(fileUuid,
+                                                fileTime.strftime('%a %b %d %Y'),
+                                                fileTime.strftime('%H:%M:%S'),
+                                                len(spectrum))
+    handle.write(header)
+
+    freqs = '\t\t<freq_set>\n'
+    for freq in spectrum[min(spectrum)]:
+        freqs += '\t\t\t<f>{}</f>\n'.format(freq * 1e3)
+    freqs += '\t\t</freq_set>\n'
+    handle.write(freqs)
+
+    i = 0
+    for sweep in spectrum.items():
+        dataTime = datetime.datetime.utcfromtimestamp(sweep[0])
+        dataSet = ('\t\t<data_set index="{}" freq_units="KHz" ampl_units="dBm" '
+                   'start_freq="{}" stop_freq="{}" step_freq="{}" '
+                   'res_bandwidth="TODO" scale_factor="1" '
+                   'date="{}" time="{}" '
+                   'date_time="{}">\n').format(i,
+                                               min(sweep[1]) * 1e3,
+                                               max(sweep[1]) * 1e3,
+                                               1.953125,
+                                               dataTime.strftime('%a %b %d %Y'),
+                                               dataTime.strftime('%H:%M:%S'),
+                                               sweep[0])
+        handle.write(dataSet)
+        i += 1
+
+        values = ''
+        for scan in sweep[1].items():
+            values += '\t\t\t<v>{:.1f}</v>\n'.format(scan[1])
+        handle.write(values)
+
+        handle.write('\t\t</data_set>\n')
+
+    handle.write('\t</data_sets>\n')
+    handle.write('\t<markers/>\n')
+    handle.write('</scan_data_source>\n')
 
 
 def export_kmz(filename, bounds, image):
