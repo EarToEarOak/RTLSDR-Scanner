@@ -753,6 +753,7 @@ class FrameMain(wx.Frame):
                                'Reset Settings',
                                wx.YES_NO | wx.ICON_QUESTION)
         if dlg.ShowModal() == wx.ID_YES:
+            self.devicesRtl = []
             self.settings.reset()
             self.__set_controls()
             self.graph.create_plot()
