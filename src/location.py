@@ -36,7 +36,7 @@ from serial.serialutil import SerialException
 from constants import KML_PORT
 from devices import DeviceGPS
 from events import post_event, EventThread, Event
-from misc import format_iso_time, haversine, format_time, limit_to_ascii
+from misc import format_iso_time, haversine, format_time, limit_to_ascii, limit
 from utils_wx import load_bitmap
 
 
@@ -358,7 +358,7 @@ class KmlServerHandler(BaseHTTPRequestHandler):
         latCen = (latMax + latMin) / 2
         lonCen = (lonMax + lonMin) / 2
         dist = haversine(latMin, latMax, lonMin, lonMax)
-        dist = max(min(50000, dist), 100)
+        dist = limit(dist, 100, 50000)
 
         lookAt = ('\t\t<LookAt>\n'
                   '\t\t\t<latitude>{}</latitude>\n'

@@ -77,6 +77,10 @@ class RemoteControl(object):
         self.__send(command)
 
 
+def limit(value, minimum, maximum):
+    return max(min(maximum, value), minimum)
+
+
 def level_to_db(level):
     return 10 * math.log10(level)
 

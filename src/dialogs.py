@@ -52,7 +52,7 @@ from events import Event
 from file import open_plot, File, export_image
 from location import ThreadLocation
 from misc import format_precision, format_time, nearest, get_serial_ports, \
-    get_version_timestamp
+    get_version_timestamp, limit
 from panels import PanelGraphCompare, PanelColourBar, PanelLine
 from plot_line import Plotter
 from rtltcp import RtlTcp
@@ -1878,8 +1878,7 @@ class DialogDevicesGPS(wx.Dialog):
                                           wx.ALIGN_CENTRE, wx.ALIGN_CENTRE)
             i += 1
 
-        if self.index >= len(self.devices):
-            self.index = len(self.devices) - 1
+        self.index = limit(self.index, 0, len(self.devices) - 1)
         self.__select_row(self.index)
         self.index = self.index
 

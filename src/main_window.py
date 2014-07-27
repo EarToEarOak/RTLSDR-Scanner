@@ -49,7 +49,7 @@ from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
     export_map, extension_add, File, run_file, export_gpx
 from location import ThreadLocation, KmlServer
 from misc import RemoteControl, format_precision, calc_samples, calc_real_dwell, \
-    get_version_timestamp, get_version_timestamp_repo, format_iso_time
+    get_version_timestamp, get_version_timestamp_repo, format_iso_time, limit
 from panels import PanelGraph
 from printer import PrintOut
 from scan import ThreadScan, anaylse_data, update_spectrum
@@ -163,8 +163,8 @@ class FrameMain(wx.Frame):
 
         self.settings = Settings()
         self.devicesRtl = get_devices_rtl(self.settings.devicesRtl)
-        if self.settings.indexRtl >= len(self.devicesRtl):
-            self.settings.indexRtl = 0
+        self.settings.indexRtl = limit(self.settings.indexRtl,
+                                       0, len(self.devicesRtl) - 1)
         self.filename = ""
         self.oldCal = 0
 
@@ -1378,8 +1378,8 @@ class FrameMain(wx.Frame):
 
     def __refresh_devices(self):
         self.settings.devicesRtl = get_devices_rtl(self.devicesRtl, self.status)
-        if self.settings.indexRtl > len(self.devicesRtl) - 1:
-            self.settings.indexRtl = 0
+        self.settings.indexRtl = limit(self.settings.indexRtl,
+                                       0, len(self.devicesRtl) - 1)
         self.settings.save()
         return self.settings.devicesRtl
 
