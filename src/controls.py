@@ -38,6 +38,7 @@ class MultiButton(wx.PyControl):
                               style=wx.NO_BORDER)
         self.options = options
         self.tips = tips
+        self.pressed = False
         self.selected = selected
         self.isOverArrow = False
 
@@ -50,6 +51,7 @@ class MultiButton(wx.PyControl):
 
         self.Bind(wx.EVT_PAINT, self.__on_paint)
         self.Bind(wx.EVT_SIZE, self.__on_size)
+        self.Bind(wx.EVT_LEFT_DOWN, self.__on_left_down)
         self.Bind(wx.EVT_LEFT_UP, self.__on_left_up)
         self.Bind(wx.EVT_MOTION, self.__on_motion)
         self.Bind(wx.EVT_LEAVE_WINDOW, self.__on_leave)
@@ -62,15 +64,22 @@ class MultiButton(wx.PyControl):
     def __on_size(self, _event):
         self.Refresh()
 
+    def __on_left_down(self, event):
+        if not self.__is_over_arrow(event):
+            self.pressed = True
+            self.Refresh()
+
     def __on_left_up(self, event):
         if self.__is_over_arrow(event):
             self.__show_menu()
         else:
+            self.pressed = False
             event = wx.CommandEvent(wx.wxEVT_COMMAND_BUTTON_CLICKED,
                                     self.GetId())
             event.SetEventObject(self)
             event.SetInt(self.selected)
             event.SetString(self.GetLabel())
+            self.Refresh()
             self.GetEventHandler().ProcessEvent(event)
 
     def __on_motion(self, event):
@@ -109,7 +118,7 @@ class MultiButton(wx.PyControl):
         top = (height / 2) - (self.ARROW_SIZE / 4) - self.PADDING
         bottom = top + self.ARROW_SIZE / 2 + self.PADDING * 2
         right = width - self.PADDING
-        left = right - self.ARROW_SIZE - self.PADDING * 2
+        left = right - self.ARROW_SIZE - self.PADDING * 3
 
         if (right >= x >= left) and (bottom >= y >= top):
             return True
@@ -118,9 +127,16 @@ class MultiButton(wx.PyControl):
     def __draw(self, dc):
         renderer = wx.RendererNative.Get()
         rect = self.GetClientRect()
-        renderer.DrawPushButton(self, dc, rect)
+        rect.Left += self.PADDING
+        rect.Right -= self.PADDING * 2
+        if self.pressed:
+            flags = wx.CONTROL_PRESSED
+        else:
+            flags = 0
+        renderer.DrawPushButton(self, dc, rect, flags)
 
         dc.SetFont(self.GetFont())
+        dc.Clear()
 
         if self.IsEnabled():
             colour = self.GetForegroundColour()
@@ -137,12 +153,12 @@ class MultiButton(wx.PyControl):
         _textWidth, textHeight = dc.GetTextExtent(label)
 
         dc.DrawText(self.GetLabel(),
-                    self.PADDING,
+                    self.PADDING * 2,
                     (rect.height - textHeight) / 2)
 
         top = (rect.height / 2) - (self.ARROW_SIZE / 4)
         bottom = top + self.ARROW_SIZE / 2
-        right = rect.width - self.PADDING * 2
+        right = rect.width - self.PADDING
         left = right - self.ARROW_SIZE
         dc.DrawPolygon([(right, top),
                         (left, top),
@@ -154,7 +170,7 @@ class MultiButton(wx.PyControl):
         dc = wx.ClientDC(self)
         dc.SetFont(font)
         textWidth, textHeight = dc.GetTextExtent(label)
-        width = textWidth + self.ARROW_SIZE + self.PADDING * 4
+        width = textWidth + self.ARROW_SIZE + self.PADDING * 6
         height = textHeight + self.PADDING * 2
 
         return wx.Size(width, height)
@@ -206,6 +222,8 @@ class Led(wx.PyControl):
         brush = wx.Brush(colour, wx.SOLID)
         dc.SetBackground(brush)
         dc.SetFont(self.GetFont())
+        attr = self.GetClassDefaultAttributes()
+        dc.SetTextForeground(attr.colFg)
         dc.Clear()
 
         label = self.GetLabel()
@@ -214,7 +232,7 @@ class Led(wx.PyControl):
         _textWidth, textHeight = dc.GetTextExtent(label)
 
         gc = wx.GraphicsContext.Create(dc)
-        gc.SetPen(wx.BLACK_PEN)
+        gc.SetPen(wx.Pen(attr.colFg))
 
         if self.lit:
             brush = wx.Brush(self.colour, wx.SOLID)
@@ -269,6 +287,8 @@ class SatLevel(wx.PyControl):
         brush = wx.Brush(colour, wx.SOLID)
         dc.SetBackground(brush)
         dc.SetFont(self.GetFont())
+        attr = self.GetClassDefaultAttributes()
+        dc.SetTextForeground(attr.colFg)
         dc.Clear()
 
         font = self.GetFont()
@@ -308,11 +328,14 @@ class SatLevel(wx.PyControl):
                                   heightLevel)
                 gc.FillPath(path)
                 text = '{:3d}'.format(prn)
-                widthText, heightText = dc.GetTextExtent(text)
-                dc.DrawRotatedText(text,
-                                   x + widthBar / 2 - heightText / 2 ,
-                                   height - widthText + self.PADDING * 2,
-                                   90)
+            else:
+                text = '  |'
+
+            widthText, heightText = dc.GetTextExtent(text)
+            dc.DrawRotatedText(text,
+                               x + widthBar / 2 - heightText / 2,
+                               height - widthText + self.PADDING * 2,
+                               90)
 
             path = gc.CreatePath()
             path.AddRectangle(x,
