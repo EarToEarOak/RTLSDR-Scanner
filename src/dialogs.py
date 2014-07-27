@@ -1266,10 +1266,6 @@ class DialogPrefs(wx.Dialog):
         self.spinDpi = wx.SpinCtrl(self, wx.ID_ANY, min=72, max=6000)
         self.spinDpi.SetValue(settings.exportDpi)
         self.spinDpi.SetToolTip(wx.ToolTip('DPI of exported images'))
-        self.checkGps = wx.CheckBox(self, wx.ID_ANY,
-                                    "Enable GPS")
-        self.checkGps.SetValue(settings.gps)
-        self.checkGps.SetToolTip(wx.ToolTip('Record GPS locations in scans'))
         self.checkTune = wx.CheckBox(self, wx.ID_ANY,
                                      "Tune SDR#")
         self.checkTune.SetValue(settings.clickTune)
@@ -1325,9 +1321,8 @@ class DialogPrefs(wx.Dialog):
         gengrid.Add(self.spinPoints, pos=(4, 1))
         gengrid.Add(textDpi, pos=(5, 0))
         gengrid.Add(self.spinDpi, pos=(5, 1))
-        gengrid.Add(self.checkGps, pos=(6, 0))
-        gengrid.Add(self.checkTune, pos=(7, 0))
-        gengrid.Add(textPlugin, pos=(7, 1))
+        gengrid.Add(self.checkTune, pos=(6, 0))
+        gengrid.Add(textPlugin, pos=(6, 1))
         genbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "General"))
         genbox.Add(gengrid, 0, wx.ALL | wx.ALIGN_CENTRE_VERTICAL, 10)
 
@@ -1393,7 +1388,6 @@ class DialogPrefs(wx.Dialog):
         self.settings.saveWarn = self.checkSaved.GetValue()
         self.settings.alert = self.checkAlert.GetValue()
         self.settings.alertLevel = self.spinLevel.GetValue()
-        self.settings.gps = self.checkGps.GetValue()
         self.settings.clickTune = self.checkTune.GetValue()
         self.settings.pointsLimit = self.checkPoints.GetValue()
         self.settings.pointsMax = self.spinPoints.GetValue()
@@ -1812,6 +1806,10 @@ class DialogDevicesGPS(wx.Dialog):
 
         wx.Dialog.__init__(self, parent=parent, title="GPS Devices")
 
+        self.checkGps = wx.CheckBox(self, wx.ID_ANY, "Enable GPS")
+        self.checkGps.SetToolTip(wx.ToolTip('Record GPS locations in scans'))
+        self.checkGps.SetValue(settings.gps)
+
         self.gridDev = grid.Grid(self)
         self.gridDev.CreateGrid(len(self.devices), 5)
         self.gridDev.SetRowLabelSize(0)
@@ -1841,6 +1839,7 @@ class DialogDevicesGPS(wx.Dialog):
         self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
 
         self.devbox = wx.BoxSizer(wx.VERTICAL)
+        self.devbox.Add(self.checkGps, 0, wx.ALL | wx.EXPAND, 10)
         self.devbox.Add(self.gridDev, 1, wx.ALL | wx.EXPAND, 10)
         self.devbox.Add(sizerDevice, 0, wx.ALL | wx.EXPAND, 10)
         self.devbox.Add(sizerButtons, 0, wx.ALL | wx.EXPAND, 10)
@@ -1993,6 +1992,7 @@ class DialogDevicesGPS(wx.Dialog):
         if self.__warn_duplicates():
             return
 
+        self.settings.gps = self.checkGps.GetValue()
         self.settings.devicesGps = self.devices
         if len(self.devices) == 0:
             self.index = -1
