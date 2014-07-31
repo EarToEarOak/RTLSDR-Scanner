@@ -522,6 +522,7 @@ class FrameMain(wx.Frame):
         self.locations.clear()
         self.__saved(True)
         self.__set_plot(self.spectrum, False)
+        self.graph.clear_selection()
 
     def __on_open(self, _event):
         if self.__save_warn(Warn.OPEN):

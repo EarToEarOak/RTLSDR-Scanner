@@ -760,6 +760,7 @@ class PanelMeasure(wx.Panel):
     def clear_measurement(self):
         for control in self.locsMeasure:
             self.__set_measure_value(control, "")
+        self.__clear_checks()
         self.update_measure()
         self.measure = None
 
