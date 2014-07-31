@@ -26,7 +26,9 @@
 import Queue
 import copy
 import itertools
+import multiprocessing
 import os
+import platform
 import textwrap
 from urlparse import urlparse
 
@@ -38,6 +40,7 @@ from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.ticker import ScalarFormatter
 import numpy
 import rtlsdr
+import serial
 from wx import grid
 import wx
 from wx.lib import masked
@@ -2306,6 +2309,62 @@ class DialogRefresh(wx.Dialog):
 
         self.SetSizerAndFit(box)
         self.Centre()
+
+
+class DialogSysInfo(wx.Dialog):
+    def __init__(self, parent):
+        wx.Dialog.__init__(self, parent=parent, title="Software Versions")
+
+        textVersions = wx.TextCtrl(self,
+                                   style=wx.TE_MULTILINE |
+                                   wx.TE_READONLY |
+                                   wx.TE_DONTWRAP |
+                                   wx.TE_NO_VSCROLL)
+        buttonOk = wx.Button(self, wx.ID_OK)
+
+        self.__populate_versions(textVersions)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(textVersions, 1, flag=wx.ALL, border=10)
+        sizer.Add(buttonOk, 0, flag=wx.ALL | wx.ALIGN_RIGHT, border=10)
+        self.SetSizerAndFit(sizer)
+        self.Centre()
+
+    def __populate_versions(self, control):
+        imageType = 'Pillow'
+        try:
+            imageVer = Image.PILLOW_VERSION
+        except AttributeError:
+            imageType = 'PIL'
+            imageVer = Image.VERSION
+
+        versions = ('Hardware:\n'
+                    '\tProcessor: {}, {} cores\n\n'
+                    'Software:\n'
+                    '\tOS: {}, {}\n'
+                    '\tPython: {}\n'
+                    '\tmatplotlib: {}\n'
+                    '\tNumPy: {}\n'
+                    '\t{}: {}\n'
+                    '\tpySerial: {}\n'
+                    '\twxPython: {}\n'
+                    ).format(platform.processor(), multiprocessing.cpu_count(),
+                             platform.platform(), platform.machine(),
+                             platform.python_version(),
+                             matplotlib.__version__,
+                             numpy.version.version,
+                             imageType, imageVer,
+                             serial.VERSION,
+                             wx.version())
+
+        control.SetValue(versions)
+
+        dc = wx.WindowDC(control)
+        extent = list(dc.GetMultiLineTextExtent(versions, control.GetFont()))
+        extent[0] += wx.SystemSettings.GetMetric(wx.SYS_VSCROLL_X) * 2
+        extent[1] += wx.SystemSettings.GetMetric(wx.SYS_HSCROLL_Y) * 2
+        control.SetMinSize((extent[0], extent[1]))
+        self.Layout()
 
 
 class DialogAbout(wx.Dialog):

@@ -43,7 +43,7 @@ from devices import get_devices_rtl
 from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, \
     DialogDevicesRTL, DialogCompare, DialogAutoCal, DialogAbout, \
     DialogSaveWarn, DialogDevicesGPS, DialogGeo, DialogSeq, DialogImageSize, \
-    DialogFormatting, DialogLog, DialogSats
+    DialogFormatting, DialogLog, DialogSats, DialogSysInfo
 from events import EVENT_THREAD, Event, EventThread, post_event, Log
 from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
     export_map, extension_add, File, run_file, export_gpx
@@ -400,6 +400,9 @@ class FrameMain(wx.Frame):
         menuUpdate = menuHelp.Append(wx.ID_ANY, "&Check for updates...",
                                      "Check for updates to the program")
         menuHelp.AppendSeparator()
+        menuSys = menuHelp.Append(wx.ID_ANY, "&System information...",
+                                  "Displays system information")
+        menuHelp.AppendSeparator()
         menuAbout = menuHelp.Append(wx.ID_ABOUT, "&About...",
                                     "Information about this program")
 
@@ -447,6 +450,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.__on_log, menuLog)
         self.Bind(wx.EVT_MENU, self.__on_help, menuHelpLink)
         self.Bind(wx.EVT_MENU, self.__on_update, menuUpdate)
+        self.Bind(wx.EVT_MENU, self.__on_sys_info, menuSys)
         self.Bind(wx.EVT_MENU, self.__on_about, menuAbout)
 
         idF1 = wx.wx.NewId()
@@ -828,6 +832,11 @@ class FrameMain(wx.Frame):
             self.status.set_general("Checking for updates", level=None)
             self.threadUpdate = Thread(target=self.__update_check)
             self.threadUpdate.start()
+
+    def __on_sys_info(self, _event):
+        dlg = DialogSysInfo(self)
+        dlg.ShowModal()
+        dlg.Destroy()
 
     def __on_about(self, _event):
         dlg = DialogAbout(self)
