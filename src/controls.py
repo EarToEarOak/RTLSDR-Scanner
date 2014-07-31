@@ -361,17 +361,16 @@ class SatLevel(wx.PyControl):
         self.sats = OrderedDict(sorted(sats.items()))
         self.Refresh()
 
-class CheckCellRenderer(PyGridCellRenderer):
-    SIZE = 10
+
+class TickCellRenderer(PyGridCellRenderer):
+    SIZE = 5
     PADDING = 3
 
-    def __init__(self, showBox=True):
-        self.showBox = showBox
-
+    def __init__(self):
         PyGridCellRenderer.__init__(self)
 
     def GetBestSize(self, _grid, _attr, _dc, _row, _col):
-        return wx.Size(CheckCellRenderer.SIZE * 2, CheckCellRenderer.SIZE)
+        return wx.Size(self.SIZE + self.PADDING, self.SIZE + self.PADDING)
 
     def Draw(self, grid, attr, dc, rect, row, col, _isSelected):
         dc.SetBrush(wx.Brush(attr.GetBackgroundColour()))
@@ -380,16 +379,10 @@ class CheckCellRenderer(PyGridCellRenderer):
         gc = wx.GraphicsContext.Create(dc)
         gc.SetPen(wx.Pen(attr.GetTextColour()))
 
-        pad = CheckCellRenderer.PADDING
+        pad = self.PADDING
         x = rect.x + pad
         y = rect.y + pad
         w = rect.height - pad * 2.0
-        h = rect.height - pad * 2.0
-
-        if self.showBox:
-            pathBox = gc.CreatePath()
-            pathBox.AddRectangle(x, y, w, h)
-            gc.StrokePath(pathBox)
 
         if grid.GetCellValue(row, col) == "1":
             pathTick = gc.CreatePath()
@@ -401,6 +394,34 @@ class CheckCellRenderer(PyGridCellRenderer):
             transform.Set(a=scale, d=scale, tx=x, ty=y)
             pathTick.Transform(transform)
             gc.StrokePath(pathTick)
+
+
+class CheckBoxCellRenderer(PyGridCellRenderer):
+    SIZE = 8
+
+    def __init__(self, parent, showBox=True):
+        self.parent = parent
+        self.showBox = showBox
+        self.enabled = True
+
+        PyGridCellRenderer.__init__(self)
+
+    def GetBestSize(self, _grid, _attr, _dc, _row, _col):
+        return wx.Size(self.SIZE * 2, self.SIZE)
+
+    def Draw(self, grid, _attr, dc, rect, row, col, _isSelected):
+        flags = 0
+        if grid.GetCellValue(row, col) == "1":
+            flags = wx.CONTROL_CHECKED
+        if not self.enabled:
+            flags |= wx.CONTROL_DISABLED
+
+        dc.DrawRectangleRect(rect)
+        renderer = wx.RendererNative.Get()
+        renderer.DrawCheckBox(self.parent, dc, rect, flags)
+
+    def Enable(self, enabled):
+        self.enabled = enabled
 
 
 # Based on http://wiki.wxpython.org/wxGrid%20ToolTips

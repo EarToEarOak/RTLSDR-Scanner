@@ -35,14 +35,14 @@ from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
 import wx
 
 from constants import Display
-from controls import GridToolTips, CheckCellRenderer
+from controls import GridToolTips, CheckBoxCellRenderer
 from misc import format_precision
-from plot_line import Plotter
 from plot_3d import Plotter3d
 from plot_controls import MouseZoom, MouseSelect
+from plot_line import Plotter
 from plot_spect import Spectrogram
-from spectrum import split_spectrum_sort, Measure, reduce_points
 from plot_status import PlotterStatus
+from spectrum import split_spectrum_sort, Measure, reduce_points
 from toolbars import NavigationToolbar, NavigationToolbarCompare
 from utils_wx import close_modeless
 import wx.grid as wxGrid
@@ -668,7 +668,7 @@ class PanelMeasure(wx.Panel):
         for _desc, (row, col) in self.locsCheck.iteritems():
             self.grid.SetCellEditor(row, col, wxGrid.GridCellBoolEditor())
             self.grid.SetCellAlignment(row, col, wx.ALIGN_RIGHT, wx.ALIGN_CENTRE)
-            self.grid.SetCellRenderer(row, col, CheckCellRenderer())
+            self.grid.SetCellRenderer(row, col, CheckBoxCellRenderer(self))
 
     def __set_check_value(self, cell, value):
         (row, col) = self.locsCheck[cell]
@@ -683,13 +683,8 @@ class PanelMeasure(wx.Panel):
 
     def __set_check_read_only(self, cell, readOnly):
         (row, col) = self.locsCheck[cell]
-        self.grid.SetReadOnly(row, col, readOnly)
-        if readOnly:
-            colour = 'grey'
-        else:
-            colour = self.grid.GetDefaultCellTextColour()
-
-        self.grid.SetCellTextColour(row, col, colour)
+        renderer = self.grid.GetCellRenderer(row, col)
+        renderer.Enable(not readOnly)
 
     def __get_checks(self):
         checks = {}

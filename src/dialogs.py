@@ -46,7 +46,7 @@ from wx.lib.masked.numctrl import NumCtrl
 
 from constants import F_MIN, F_MAX, Cal, SAMPLE_RATE, BANDWIDTH, WINFUNC, \
     TUNER
-from controls import CheckCellRenderer, SatLevel
+from controls import TickCellRenderer, SatLevel
 from devices import DeviceRTL, DeviceGPS
 from events import Event
 from file import open_plot, File, export_image
@@ -1649,7 +1649,7 @@ class DialogDevicesRTL(wx.Dialog):
             self.gridDev.SetReadOnly(i, self.COL_SER, True)
             self.gridDev.SetReadOnly(i, self.COL_IND, True)
             self.gridDev.SetCellRenderer(i, self.COL_SEL,
-                                         CheckCellRenderer(False))
+                                         TickCellRenderer())
             if device.isDevice:
                 cell = grid.GridCellChoiceEditor(map(str, device.gains),
                                                  allowOthers=False)
@@ -1856,7 +1856,7 @@ class DialogDevicesGPS(wx.Dialog):
         for device in self.devices:
             self.gridDev.SetReadOnly(i, self.COL_SEL, True)
             self.gridDev.SetCellRenderer(i, self.COL_SEL,
-                                         CheckCellRenderer(False))
+                                         TickCellRenderer())
             self.gridDev.SetCellValue(i, self.COL_NAME, device.name)
             cell = grid.GridCellChoiceEditor(sorted(DeviceGPS.TYPE),
                                              allowOthers=False)
