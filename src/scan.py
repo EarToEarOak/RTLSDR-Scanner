@@ -88,7 +88,7 @@ class ThreadScan(threading.Thread):
                                                     0, error.message))
         else:
             try:
-                self.sdr = rtltcp.RtlTcp(self.server, self.port)
+                self.sdr = rtltcp.RtlTcp(self.server, self.port, self.notify)
                 self.sdr.set_sample_rate(SAMPLE_RATE)
                 self.sdr.set_manual_gain_enabled(1)
                 self.sdr.set_gain(self.gain)

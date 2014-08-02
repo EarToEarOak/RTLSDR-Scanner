@@ -30,6 +30,8 @@ import threading
 
 import numpy
 
+from events import post_event, EventThread, Event
+
 
 class RtlTcpCmd(object):
     SET_FREQ = 0x1
@@ -39,7 +41,7 @@ class RtlTcpCmd(object):
 
 
 class RtlTcp(object):
-    def __init__(self, host, port):
+    def __init__(self, host, port, notify):
         self.host = host
         self.port = port
 
@@ -47,10 +49,10 @@ class RtlTcp(object):
         self.tuner = 0
         self.rate = 0
 
-        self.__setup()
+        self.__setup(notify)
 
-    def __setup(self):
-        self.threadBuffer = ThreadBuffer(self.host, self.port)
+    def __setup(self, notify):
+        self.threadBuffer = ThreadBuffer(self.host, self.port, notify)
         self.__get_header()
 
     def __get_header(self):
@@ -117,8 +119,9 @@ class ThreadBuffer(threading.Thread):
     done = False
     READ_SIZE = 4096
 
-    def __init__(self, host, port):
+    def __init__(self, host, port, notify):
         threading.Thread.__init__(self)
+        self.notify = notify
 
         self.condition = threading.Condition()
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -129,14 +132,17 @@ class ThreadBuffer(threading.Thread):
         self.start()
 
     def run(self):
-        while not self.cancel:
-            if self.readLen > 0:
-                self.__read_stream()
-            else:
-                self.__skip_stream()
-
-        self.socket.close()
-        self.__do_notify()
+        try:
+            while not self.cancel:
+                if self.readLen > 0:
+                    self.__read_stream()
+                else:
+                    self.__skip_stream()
+        except socket.error as error:
+            post_event(self.notify, EventThread(Event.ERROR, 0, error))
+        finally:
+            self.socket.close()
+            self.__do_notify()
 
     def __do_wait(self):
         self.condition.acquire()
