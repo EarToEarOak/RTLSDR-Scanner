@@ -2313,7 +2313,7 @@ class DialogRefresh(wx.Dialog):
 
 class DialogSysInfo(wx.Dialog):
     def __init__(self, parent):
-        wx.Dialog.__init__(self, parent=parent, title="Software Versions")
+        wx.Dialog.__init__(self, parent=parent, title="System Information")
 
         textVersions = wx.TextCtrl(self,
                                    style=wx.TE_MULTILINE |
