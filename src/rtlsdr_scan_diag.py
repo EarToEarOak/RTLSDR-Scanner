@@ -54,8 +54,8 @@ if __name__ == '__main__':
     print('Tests for missing libraries\n')
 
     version = sys.version_info
-    if(version < (2, 6)):
-        print('Warning unsupported version, please use Python 2.6 or greater')
+    if(version < (2, 7)):
+        print('Warning unsupported version, please use Python 2.7 or greater')
 
     problem = False
 
@@ -66,6 +66,7 @@ if __name__ == '__main__':
     else:
         platform = sys.platform
         for lib, name, url, package, ports in LIBS:
+            print 'Testing for {}'.format(name)
             if not try_import(lib):
                 problem = True
                 print('{0} not found'.format(name))
