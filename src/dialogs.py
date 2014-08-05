@@ -995,7 +995,7 @@ class DialogOffset(wx.Dialog):
             if self.device.isDevice:
                 sdr = rtlsdr.RtlSdr(self.device.indexRtl)
             else:
-                sdr = RtlTcp(self.device.server, self.device.port)
+                sdr = RtlTcp(self.device.server, self.device.port, None)
             sdr.set_sample_rate(SAMPLE_RATE)
             sdr.set_center_freq(self.spinFreq.GetValue() * 1e6)
             sdr.set_gain(self.spinGain.GetValue())
