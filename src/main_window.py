@@ -57,6 +57,7 @@ from settings import Settings
 from spectrum import count_points, sort_spectrum, Extent
 from toolbars import Statusbar
 from utils_mpl import add_colours
+from utils_wx import load_icon
 
 
 class DropTarget(wx.FileDropTarget):
@@ -206,6 +207,8 @@ class FrameMain(wx.Frame):
         self.Connect(-1, -1, EVENT_THREAD, self.__on_event)
 
         self.SetDropTarget(DropTarget(self))
+
+        self.SetIcon(load_icon('rtlsdr_scan'))
 
         self.steps = 0
         self.stepsTotal = 0

@@ -83,6 +83,17 @@ def load_bitmap(name, asBitmap=True):
     return wx.Bitmap(filename, wx.BITMAP_TYPE_PNG)
 
 
+def load_icon(name):
+    name += '.ico'
+    scriptDir = os.path.dirname(os.path.realpath(sys.argv[0]))
+    if os.path.isfile(scriptDir + '/' + name):
+        iconFile = os.path.normpath(scriptDir + '/' + name)
+    else:
+        iconFile = os.path.normpath(scriptDir + '/../' + name)
+
+    return wx.Icon(iconFile, wx.BITMAP_TYPE_ICO)
+
+
 def close_modeless():
     for child in wx.GetTopLevelWindows():
         if child.Title == 'Configure subplots':
