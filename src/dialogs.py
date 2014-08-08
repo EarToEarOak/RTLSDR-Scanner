@@ -398,6 +398,8 @@ class DialogExportSeq(wx.Dialog):
         self.canvas = FigureCanvas(self, -1, self.figure)
         self.plot = Plotter(self.queue, self.figure, settings)
 
+        textPlot = wx.StaticText(self, label='Plot')
+
         self.checkAxes = wx.CheckBox(self, label='Axes')
         self.checkAxes.SetValue(True)
         self.Bind(wx.EVT_CHECKBOX, self.__on_axes, self.checkAxes)
@@ -413,6 +415,8 @@ class DialogExportSeq(wx.Dialog):
         sizerCheck.Add(self.checkGrid, flag=wx.ALL, border=5)
         sizerCheck.Add(self.checkBar, flag=wx.ALL, border=5)
 
+        textRange = wx.StaticText(self, label='Range')
+
         self.sweepTimeStamps = sorted([timeStamp for timeStamp in spectrum.keys()])
         sweepChoices = [format_time(timeStamp, True) for timeStamp in self.sweepTimeStamps]
 
@@ -426,20 +430,29 @@ class DialogExportSeq(wx.Dialog):
         self.choiceEnd.SetSelection(len(self.sweepTimeStamps) - 1)
         self.Bind(wx.EVT_CHOICE, self.__on_choice, self.choiceEnd)
 
+        textSweeps = wx.StaticText(self, label='Sweeps')
         self.textSweeps = wx.StaticText(self, label="")
 
-        textSize = wx.StaticText(self, label='Image size')
+        textOutput = wx.StaticText(self, label='Output')
+
         self.textSize = wx.StaticText(self)
         buttonSize = wx.Button(self, label='Change...')
+        buttonSize.SetToolTipString('Change exported image size')
         self.Bind(wx.EVT_BUTTON, self.__on_imagesize, buttonSize)
         self.__show_image_size()
+
+        buttonBrowse = wx.Button(self, label='Browse...')
+        self.Bind(wx.EVT_BUTTON, self.__on_browse, buttonBrowse)
 
         self.editDir = wx.TextCtrl(self)
         self.editDir.SetValue(settings.dirExport)
 
-        textDir = wx.StaticText(self, label='Output directory')
-        buttonBrowse = wx.Button(self, label='Browse...')
-        self.Bind(wx.EVT_BUTTON, self.__on_browse, buttonBrowse)
+        font = textPlot.GetFont()
+        fontSize = font.GetPointSize()
+        font.SetPointSize(fontSize + 4)
+        textPlot.SetFont(font)
+        textRange.SetFont(font)
+        textOutput.SetFont(font)
 
         sizerButtons = wx.StdDialogButtonSizer()
         buttonOk = wx.Button(self, wx.ID_OK)
@@ -450,33 +463,37 @@ class DialogExportSeq(wx.Dialog):
         self.Bind(wx.EVT_BUTTON, self.__on_ok, buttonOk)
 
         sizerGrid = wx.GridBagSizer(5, 5)
-        sizerGrid.Add(self.canvas, pos=(0, 0), span=(1, 6),
+        sizerGrid.Add(self.canvas, pos=(0, 0), span=(10, 6),
                       flag=wx.EXPAND | wx.ALL, border=5)
-        sizerGrid.Add(sizerCheck, pos=(1, 0), span=(1, 6),
+        sizerGrid.Add(textPlot, pos=(0, 7),
+                      flag=wx.TOP | wx.BOTTOM, border=5)
+        sizerGrid.Add(sizerCheck, pos=(1, 7), span=(1, 2),
+                      flag=wx.ALL, border=5)
+        sizerGrid.Add(textRange, pos=(2, 7),
+                      flag=wx.TOP | wx.BOTTOM, border=5)
+        sizerGrid.Add(textStart, pos=(3, 7),
                       flag=wx.ALIGN_CENTRE_VERTICAL | wx.ALL, border=5)
-        sizerGrid.Add(textStart, pos=(2, 0),
+        sizerGrid.Add(self.choiceStart, pos=(3, 8),
+                      flag=wx.ALL, border=5)
+        sizerGrid.Add(textEnd, pos=(4, 7),
                       flag=wx.ALIGN_CENTRE_VERTICAL | wx.ALL, border=5)
-        sizerGrid.Add(self.choiceStart, pos=(2, 1),
+        sizerGrid.Add(self.choiceEnd, pos=(4, 8),
                       flag=wx.ALL, border=5)
-        sizerGrid.Add(textEnd, pos=(3, 0),
+        sizerGrid.Add(textSweeps, pos=(5, 7),
                       flag=wx.ALIGN_CENTRE_VERTICAL | wx.ALL, border=5)
-        sizerGrid.Add(self.choiceEnd, pos=(3, 1),
-                      flag=wx.ALL, border=5)
-        sizerGrid.Add(self.textSweeps, pos=(3, 2),
+        sizerGrid.Add(self.textSweeps, pos=(5, 8),
                       flag=wx.ALIGN_CENTRE_VERTICAL | wx.ALL, border=5)
-        sizerGrid.Add(textSize, pos=(4, 0),
+        sizerGrid.Add(textOutput, pos=(6, 7),
+                      flag=wx.TOP | wx.BOTTOM, border=5)
+        sizerGrid.Add(self.textSize, pos=(7, 7),
+                      flag=wx.ALIGN_CENTRE_VERTICAL | wx.ALL, border=5)
+        sizerGrid.Add(buttonSize, pos=(7, 8),
                       flag=wx.ALL, border=5)
-        sizerGrid.Add(self.textSize, pos=(4, 1),
-                      flag=wx.ALL, border=5)
-        sizerGrid.Add(buttonSize, pos=(4, 2),
-                      flag=wx.ALL, border=5)
-        sizerGrid.Add(textDir, pos=(5, 0),
-                      flag=wx.ALL, border=5)
-        sizerGrid.Add(self.editDir, pos=(5, 1), span=(1, 4),
+        sizerGrid.Add(self.editDir, pos=(8, 7), span=(1, 2),
                       flag=wx.ALL | wx.EXPAND, border=5)
-        sizerGrid.Add(buttonBrowse, pos=(5, 5),
+        sizerGrid.Add(buttonBrowse, pos=(9, 7),
                       flag=wx.ALL, border=5)
-        sizerGrid.Add(sizerButtons, pos=(6, 5),
+        sizerGrid.Add(sizerButtons, pos=(10, 7), span=(1, 2),
                       flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
 
         self.SetSizerAndFit(sizerGrid)
@@ -576,7 +593,7 @@ class DialogExportSeq(wx.Dialog):
         start, end = self.__get_range()
         self.__spectrum_range(start, end)
 
-        self.textSweeps.SetLabel('Sweeps: {}'.format(len(self.sweeps)))
+        self.textSweeps.SetLabel(str(len(self.sweeps)))
 
         if len(self.sweeps) > 0:
             total = count_points(self.sweeps)
@@ -621,6 +638,8 @@ class DialogExportGeo(wx.Dialog):
         self.canvas = FigureCanvas(self, -1, self.figure)
         self.axes = self.figure.add_subplot(111)
 
+        textPlot = wx.StaticText(self, label='Plot')
+
         self.checkAxes = wx.CheckBox(self, label='Axes')
         self.checkAxes.SetValue(self.plotAxes)
         self.Bind(wx.EVT_CHECKBOX, self.__on_axes, self.checkAxes)
@@ -650,6 +669,8 @@ class DialogExportGeo(wx.Dialog):
         freqMax = max(spectrum[min(spectrum)]) * 1000
         bw = freqMax - freqMin
 
+        textRange = wx.StaticText(self, label='Range')
+
         textCentre = wx.StaticText(self, label='Centre')
         self.spinCentre = wx.SpinCtrl(self)
         self.spinCentre.SetToolTip(wx.ToolTip('Centre frequency (kHz)'))
@@ -665,11 +686,20 @@ class DialogExportGeo(wx.Dialog):
         buttonUpdate = wx.Button(self, label='Update')
         self.Bind(wx.EVT_BUTTON, self.__on_update, buttonUpdate)
 
-        textRes = wx.StaticText(self, label='Image resolution')
+        textOutput = wx.StaticText(self, label='Output')
+
         self.textRes = wx.StaticText(self)
         buttonRes = wx.Button(self, label='Change...')
+        buttonRes.SetToolTipString('Change output resolution')
         self.Bind(wx.EVT_BUTTON, self.__on_imageres, buttonRes)
         self.__show_image_res()
+
+        font = textPlot.GetFont()
+        fontSize = font.GetPointSize()
+        font.SetPointSize(fontSize + 4)
+        textPlot.SetFont(font)
+        textRange.SetFont(font)
+        textOutput.SetFont(font)
 
         sizerButtons = wx.StdDialogButtonSizer()
         buttonOk = wx.Button(self, wx.ID_OK)
@@ -682,31 +712,35 @@ class DialogExportGeo(wx.Dialog):
         self.__setup_plot()
 
         sizerGrid = wx.GridBagSizer(5, 5)
-        sizerGrid.Add(self.canvas, pos=(0, 0), span=(1, 3),
+        sizerGrid.Add(self.canvas, pos=(0, 0), span=(9, 6),
                       flag=wx.EXPAND | wx.ALL, border=5)
-        sizerGrid.Add(self.choiceColour, pos=(1, 0), span=(1, 2),
+        sizerGrid.Add(textPlot, pos=(0, 7),
+                      flag=wx.TOP | wx.BOTTOM, border=5)
+        sizerGrid.Add(self.choiceColour, pos=(1, 7),
                       flag=wx.ALL, border=5)
-        sizerGrid.Add(self.colourBar, pos=(1, 2), span=(1, 1),
+        sizerGrid.Add(self.colourBar, pos=(1, 8),
                       flag=wx.ALL, border=5)
-        sizerGrid.Add(sizerCheck, pos=(2, 0), span=(1, 4),
+        sizerGrid.Add(sizerCheck, pos=(2, 7), span=(1, 2),
                       flag=wx.ALL, border=5)
-        sizerGrid.Add(textCentre, pos=(3, 0), span=(1, 1),
+        sizerGrid.Add(textRange, pos=(3, 7),
+                      flag=wx.TOP | wx.BOTTOM, border=5)
+        sizerGrid.Add(textCentre, pos=(4, 7),
                       flag=wx.ALL, border=5)
-        sizerGrid.Add(self.spinCentre, pos=(3, 1), span=(1, 1),
+        sizerGrid.Add(self.spinCentre, pos=(4, 8),
                       flag=wx.ALL, border=5)
-        sizerGrid.Add(textBw, pos=(4, 0), span=(1, 1),
+        sizerGrid.Add(textBw, pos=(5, 7),
                       flag=wx.ALL, border=5)
-        sizerGrid.Add(self.spinBw, pos=(4, 1), span=(1, 1),
+        sizerGrid.Add(self.spinBw, pos=(5, 8),
                       flag=wx.ALL, border=5)
-        sizerGrid.Add(buttonUpdate, pos=(3, 2), span=(2, 1),
+        sizerGrid.Add(buttonUpdate, pos=(6, 7),
                       flag=wx.ALL | wx.ALIGN_CENTRE_VERTICAL, border=5)
-        sizerGrid.Add(textRes, pos=(5, 0), span=(1, 1),
+        sizerGrid.Add(textOutput, pos=(7, 7),
+                      flag=wx.TOP | wx.BOTTOM, border=5)
+        sizerGrid.Add(self.textRes, pos=(8, 7),
                       flag=wx.ALL, border=5)
-        sizerGrid.Add(self.textRes, pos=(5, 1), span=(1, 1),
+        sizerGrid.Add(buttonRes, pos=(8, 8),
                       flag=wx.ALL, border=5)
-        sizerGrid.Add(buttonRes, pos=(5, 2), span=(1, 1),
-                      flag=wx.ALL, border=5)
-        sizerGrid.Add(sizerButtons, pos=(6, 2), span=(1, 1),
+        sizerGrid.Add(sizerButtons, pos=(9, 7), span=(1, 2),
                       flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
 
         self.SetSizerAndFit(sizerGrid)
