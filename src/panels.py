@@ -42,6 +42,7 @@ from plot_controls import MouseZoom, MouseSelect
 from plot_line import Plotter
 from plot_spect import Spectrogram
 from plot_status import PlotterStatus
+from plot_time import PlotterTime
 from spectrum import split_spectrum_sort, Measure, reduce_points
 from toolbars import NavigationToolbar, NavigationToolbarCompare
 from utils_wx import close_modeless
@@ -114,7 +115,8 @@ class PanelGraph(wx.Panel):
             if self.settings.display == Display.SURFACE:
                 axes.zaxis.label.set_size('small')
             axes.tick_params(axis='both', which='major', labelsize='small')
-            axes = self.plot.get_axes_bar()
+        axes = self.plot.get_axes_bar()
+        if axes is not None:
             axes.tick_params(axis='both', which='major', labelsize='small')
 
     def __enable_menu(self, state):
@@ -188,8 +190,10 @@ class PanelGraph(wx.Panel):
             self.plot = Spectrogram(self.notify, self.figure, self.settings)
         elif self.settings.display == Display.SURFACE:
             self.plot = Plotter3d(self.notify, self.figure, self.settings)
-        else:
+        elif self.settings.display == Display.STATUS:
             self.plot = PlotterStatus(self.notify, self.figure, self.settings)
+        else:
+            self.plot = PlotterTime(self.notify, self.figure, self.settings)
 
         self.__set_fonts()
 

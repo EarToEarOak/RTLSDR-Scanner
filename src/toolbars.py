@@ -318,6 +318,52 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.EnableTool(sepId, False)
         self.extraTools.append(sepId)
 
+    def __add_peak(self):
+        self.__add_check_tool('peak', 'Label peak',
+                              self.__on_check_peak,
+                              self.settings.annotate)
+
+        self.__add_spacer()
+
+    def __add_auto_range(self, scaleF, scaleL, scaleT):
+        if scaleF:
+            self.autoFId = wx.NewId()
+            self.__add_check_tool('auto_f', 'Auto range frequency',
+                                  self.__on_check_auto_f,
+                                  self.settings.autoF,
+                                  self.autoFId)
+
+        if scaleL:
+            self.autoLId = wx.NewId()
+            self.__add_check_tool('auto_l', 'Auto range level',
+                                  self.__on_check_auto_l,
+                                  self.settings.autoL,
+                                  self.autoLId)
+
+        if scaleT:
+            self.autoTId = wx.NewId()
+            self.__add_check_tool('auto_t', 'Auto range time',
+                                  self.__on_check_auto_t,
+                                  self.settings.autoT,
+                                  self.autoTId)
+
+        self.__add_spacer()
+
+    def __add_colourmap(self, useMapButton=True):
+        if useMapButton:
+            self.__add_check_tool('colourmap', 'Use colour maps',
+                                  self.__on_colour_use,
+                                  self.settings.colourMapUse)
+
+        colours = get_colours()
+        colourId = wx.NewId()
+        self.colourId = wx.Choice(self, id=colourId, choices=colours)
+        self.colourId.SetSelection(colours.index(self.settings.colourMap))
+        self.AddControl(self.colourId)
+        self.colourId.Enable(self.settings.colourMapUse)
+        self.Bind(wx.EVT_CHOICE, self.__on_colour, self.colourId)
+        self.extraTools.append(colourId)
+
     def __set_func(self):
         buttons = [self.avgId, self.minId, self.maxId, self.varId]
         for button in buttons:
@@ -347,40 +393,15 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
             self.DeleteTool(toolId)
         self.extraTools = []
 
-        if display != Display.STATUS:
-            self.__add_check_tool('peak', 'Label peak',
-                                  self.__on_check_peak,
-                                  self.settings.annotate)
-
-            self.__add_spacer()
-
-            self.autoFId = wx.NewId()
-            self.__add_check_tool('auto_f', 'Auto range frequency',
-                                  self.__on_check_auto_f,
-                                  self.settings.autoF,
-                                  self.autoFId)
-            self.autoLId = wx.NewId()
-            self.__add_check_tool('auto_l', 'Auto range level',
-                                  self.__on_check_auto_l,
-                                  self.settings.autoL,
-                                  self.autoLId)
-
-        if display != Display.PLOT and display != Display.STATUS:
-            self.autoTId = wx.NewId()
-            self.__add_check_tool('auto_t', 'Auto range time',
-                                  self.__on_check_auto_t,
-                                  self.settings.autoT,
-                                  self.autoTId)
-
         self.__add_spacer()
 
         if display == Display.PLOT:
+            self.__add_peak()
+            self.__add_auto_range(True, True, False)
             self.__add_check_tool('fade', 'Fade plots',
                                   self.__on_check_fade,
                                   self.settings.fadeScans)
-
             self.__add_spacer()
-
             self.avgId = wx.NewId()
             self.__add_check_tool('average', 'Show average',
                                   self.__on_check_avg,
@@ -397,30 +418,26 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
             self.__add_check_tool('variance', 'Show variance',
                                   self.__on_check_var,
                                   toolId=self.varId)
+            self.__add_spacer()
+            self.__add_colourmap()
             self.__set_func()
 
-            self.__add_spacer()
+        elif display == Display.SPECT:
+            self.__add_peak()
+            self.__add_auto_range(True, True, True)
+            self.__add_colourmap(False)
 
-            self.__add_check_tool('colourmap', 'Use colour maps',
-                                  self.__on_colour_use,
-                                  self.settings.colourMapUse)
-
-        if display != Display.STATUS:
-            colours = get_colours()
-            colourId = wx.NewId()
-            self.colourId = wx.Choice(self, id=colourId, choices=colours)
-            self.colourId.SetSelection(colours.index(self.settings.colourMap))
-            self.AddControl(self.colourId)
-            if display == Display.PLOT:
-                self.colourId.Enable(self.settings.colourMapUse)
-            self.Bind(wx.EVT_CHOICE, self.__on_colour, self.colourId)
-            self.extraTools.append(colourId)
-
-        if display == Display.SURFACE:
+        elif display == Display.SURFACE:
+            self.__add_peak()
+            self.__add_auto_range(True, True, True)
+            self.__add_colourmap(False)
             self.__add_spacer()
             self.__add_check_tool('wireframe', 'Wireframe drawing',
                                   self.__on_check_wire,
                                   self.settings.wireframe)
+
+        elif display == Display.TIMELINE:
+            self.__add_auto_range(False, True, True)
 
         self.Realize()
 
