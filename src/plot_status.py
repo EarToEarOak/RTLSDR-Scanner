@@ -173,7 +173,7 @@ class ThreadPlot(threading.Thread):
 
         self.axes.add_table(table)
         noData = find_artists(self.axes, 'noData')
-        if len(noData[0]):
+        if len(noData):
             noData[0].set_alpha(0)
         self.parent.redraw_plot()
 
