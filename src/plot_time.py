@@ -112,20 +112,11 @@ class PlotterTime(object):
         self.axes.grid(on)
         self.redraw_plot()
 
-    def set_bar(self, _on):
-        pass
-
     def set_axes(self, on):
         if on:
             self.axes.set_axis_on()
         else:
             self.axes.set_axis_off()
-
-    def set_colourmap_use(self, _on):
-        pass
-
-    def set_colourmap(self, _colourMap):
-        pass
 
     def close(self):
         self.figure.clear()

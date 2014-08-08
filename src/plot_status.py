@@ -100,18 +100,6 @@ class PlotterStatus(object):
             set_table_colour(table[0], colour)
             self.redraw_plot()
 
-    def set_bar(self, _on):
-        pass
-
-    def set_axes(self, _on):
-        pass
-
-    def set_colourmap_use(self, _on):
-        pass
-
-    def set_colourmap(self, _colourMap):
-        pass
-
     def close(self):
         self.figure.clear()
         self.figure = None
@@ -185,7 +173,8 @@ class ThreadPlot(threading.Thread):
 
         self.axes.add_table(table)
         noData = find_artists(self.axes, 'noData')
-        noData[0].set_alpha(0)
+        if len(noData[0]):
+            noData[0].set_alpha(0)
         self.parent.redraw_plot()
 
         self.parent.threadPlot = None
