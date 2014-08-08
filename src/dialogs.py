@@ -358,6 +358,7 @@ class DialogImageSize(wx.Dialog):
             self.ctrlWidth.Hide()
             textHeight.Hide()
             self.ctrlHeight.Hide()
+            textSize.Hide()
             self.textSize.Hide()
 
         self.SetSizerAndFit(sizer)
