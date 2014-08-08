@@ -378,7 +378,7 @@ class DialogImageSize(wx.Dialog):
         self.EndModal(wx.ID_OK)
 
 
-class DialogSeq(wx.Dialog):
+class DialogExportSeq(wx.Dialog):
     POLL = 250
 
     def __init__(self, parent, spectrum, settings):
@@ -598,7 +598,7 @@ class DialogSeq(wx.Dialog):
         return start, end
 
 
-class DialogGeo(wx.Dialog):
+class DialogExportGeo(wx.Dialog):
     def __init__(self, parent, spectrum, location, settings):
         self.spectrum = spectrum
         self.location = location

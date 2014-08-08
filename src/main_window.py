@@ -42,7 +42,7 @@ from controls import MultiButton
 from devices import get_devices_rtl
 from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, \
     DialogDevicesRTL, DialogCompare, DialogAutoCal, DialogAbout, \
-    DialogSaveWarn, DialogDevicesGPS, DialogGeo, DialogSeq, DialogImageSize, \
+    DialogSaveWarn, DialogDevicesGPS, DialogExportGeo, DialogExportSeq, DialogImageSize, \
     DialogFormatting, DialogLog, DialogSats, DialogSysInfo
 from events import EVENT_THREAD, Event, EventThread, post_event, Log
 from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
@@ -618,12 +618,12 @@ class FrameMain(wx.Frame):
         dlgFile.Destroy()
 
     def __on_export_image_seq(self, _event):
-        dlgSeq = DialogSeq(self, self.spectrum, self.settings)
+        dlgSeq = DialogExportSeq(self, self.spectrum, self.settings)
         dlgSeq.ShowModal()
         dlgSeq.Destroy()
 
     def __on_export_geo(self, _event):
-        dlgGeo = DialogGeo(self, self.spectrum, self.locations, self.settings)
+        dlgGeo = DialogExportGeo(self, self.spectrum, self.locations, self.settings)
         if dlgGeo.ShowModal() == wx.ID_OK:
             self.status.set_general("Exporting...")
             extent = dlgGeo.get_extent()
