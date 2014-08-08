@@ -77,6 +77,10 @@ class DropTarget(wx.FileDropTarget):
 class RtlSdrScanner(wx.App):
     def __init__(self, pool):
         self.pool = pool
+        try:
+            wx.Dialog.EnableLayoutAdaptation(True)
+        except AttributeError:
+            pass
         wx.App.__init__(self, redirect=False)
 
 
