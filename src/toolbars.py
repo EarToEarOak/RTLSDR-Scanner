@@ -162,7 +162,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.ToggleTool(panId, True)
         self.pan()
 
-        self.__add_spacer()
+        self.__add_spacer(False)
 
         liveId = wx.NewId()
         self.AddCheckTool(liveId, load_bitmap('auto_refresh'),
@@ -312,18 +312,17 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
             self.ToggleTool(toolId, setting)
         self.extraTools.append(toolId)
 
-    def __add_spacer(self):
+    def __add_spacer(self, temp=True):
         sepId = wx.NewId()
         self.AddCheckTool(sepId, load_bitmap('spacer'))
         self.EnableTool(sepId, False)
-        self.extraTools.append(sepId)
+        if temp:
+            self.extraTools.append(sepId)
 
     def __add_peak(self):
         self.__add_check_tool('peak', 'Label peak',
                               self.__on_check_peak,
                               self.settings.annotate)
-
-        self.__add_spacer()
 
     def __add_auto_range(self, scaleF, scaleL, scaleT):
         if scaleF:
@@ -396,12 +395,12 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.__add_spacer()
 
         if display == Display.PLOT:
-            self.__add_peak()
             self.__add_auto_range(True, True, False)
+            self.__add_peak()
+
             self.__add_check_tool('fade', 'Fade plots',
                                   self.__on_check_fade,
                                   self.settings.fadeScans)
-            self.__add_spacer()
             self.avgId = wx.NewId()
             self.__add_check_tool('average', 'Show average',
                                   self.__on_check_avg,
@@ -423,13 +422,15 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
             self.__set_func()
 
         elif display == Display.SPECT:
-            self.__add_peak()
             self.__add_auto_range(True, True, True)
+            self.__add_peak()
+            self.__add_spacer()
             self.__add_colourmap(False)
 
         elif display == Display.SURFACE:
-            self.__add_peak()
             self.__add_auto_range(True, True, True)
+            self.__add_peak()
+            self.__add_spacer()
             self.__add_colourmap(False)
             self.__add_spacer()
             self.__add_check_tool('wireframe', 'Wireframe drawing',

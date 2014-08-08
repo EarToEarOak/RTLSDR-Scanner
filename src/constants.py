@@ -68,7 +68,7 @@ DISPLAY = ["Plot", 0,
            "Spectrogram", 1,
            "3D Spectrogram", 2,
            "Status", 3,
-           "Time line", 4]
+           "Time Line", 4]
 
 TUNER = ["Unknown",
          "Elonics E4000",
