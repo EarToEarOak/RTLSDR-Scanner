@@ -81,9 +81,9 @@ class Cli(object):
                 self.settings.devicesRtl = get_devices_rtl()
                 count = len(self.settings.devicesRtl)
                 if index > count - 1:
-                    error = "Device not found ({0} devices in total):\n".format(count)
+                    error = "Device not found ({} devices in total):\n".format(count)
                     for device in self.settings.devicesRtl:
-                        error += "\t{0}: {1}\n".format(device.indexRtl,
+                        error += "\t{}: {}\n".format(device.indexRtl,
                                                        device.name)
             else:
                 device.isDevice = False
@@ -100,7 +100,7 @@ class Cli(object):
                 index = len(self.settings.devicesRtl) - 1
 
         if error is not None:
-            print "Error: {0}".format(error)
+            print "Error: {}".format(error)
             exit(1)
 
         if end - 1 < start:
@@ -115,12 +115,12 @@ class Cli(object):
         self.settings.devicesRtl[index].gain = gain
         self.settings.devicesRtl[index].lo = lo
 
-        print "{0} - {1}MHz".format(start, end)
-        print "{0} Sweeps".format(sweeps)
-        print "{0}dB Gain".format(gain)
-        print "{0}s Dwell".format(self.settings.dwell)
-        print "{0} FFT points".format(nfft)
-        print "{0}MHz LO".format(lo)
+        print "{} - {}MHz".format(start, end)
+        print "{} Sweeps".format(sweeps)
+        print "{}dB Gain".format(gain)
+        print "{}s Dwell".format(self.settings.dwell)
+        print "{} FFT points".format(nfft)
+        print "{}MHz LO".format(lo)
         if remote is not None:
             print remote
         else:
@@ -144,7 +144,7 @@ class Cli(object):
         samples = settings.dwell * SAMPLE_RATE
         samples = next_2_to_pow(int(samples))
         for sweep in range(0, sweeps):
-            print '\nSweep {0}:'.format(sweep)
+            print '\nSweep {}:'.format(sweep)
             threadScan = ThreadScan(self.queue, None, settings, index, samples,
                                     False)
             while threadScan.isAlive() or self.steps > 0:
@@ -176,7 +176,7 @@ class Cli(object):
                              callback=self.__on_process_done)
             self.__progress()
         elif status == Event.ERROR:
-            print "Error: {0}".format(data)
+            print "Error: {}".format(data)
             exit(1)
         elif status == Event.PROCESSED:
             offset = self.settings.devicesRtl[self.settings.indexRtl].offset

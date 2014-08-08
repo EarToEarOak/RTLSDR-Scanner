@@ -159,7 +159,7 @@ class Settings(object):
                 if device.isDevice:
                     name = device.name
                 else:
-                    name = "{0}:{1}".format(device.server, device.port)
+                    name = "{}:{}".format(device.server, device.port)
                 self.cfg.SetPath("/DevicesRTL/" + format_device_rtl_name(name))
                 self.cfg.Write('serial', device.serial)
                 self.cfg.WriteBool('isDevice', device.isDevice)

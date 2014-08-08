@@ -38,6 +38,7 @@ import matplotlib
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 import wx
 
+from constants import APP_NAME
 from misc import format_iso_time
 from spectrum import sort_spectrum, create_mesh
 
@@ -95,7 +96,7 @@ class File(object):
     TRACK = [''] * 1
     TRACK[TrackType.GPX] = 'GPX track (*.gpx)|*.gpx'
 
-    HEADER = "RTLSDR Scanner"
+    HEADER = APP_NAME
     VERSION = 9
 
     @staticmethod
@@ -376,7 +377,7 @@ def export_csv(handle, spectrum):
     handle.write(u"Time (UTC), Frequency (MHz),Level (dB/Hz)\n")
     for plot in spectrum.iteritems():
         for freq, pwr in plot[1].iteritems():
-            handle.write("{0}, {1}, {2}\n".format(plot[0], freq, pwr))
+            handle.write("{}, {}, {}\n".format(plot[0], freq, pwr))
 
 
 def export_plt(handle, spectrum):
@@ -394,7 +395,7 @@ def export_plt(handle, spectrum):
     for plot in spectrum.iteritems():
         handle.write('\n')
         for freq, pwr in plot[1].iteritems():
-            handle.write("{0} {1} {2}\n".format(freq, plot[0], pwr))
+            handle.write("{} {} {}\n".format(freq, plot[0], pwr))
 
 
 def export_freemat(handle, spectrum):
@@ -418,9 +419,10 @@ def export_wwb(handle, spectrum):
     fileTime = datetime.datetime.utcfromtimestamp(min(spectrum))
     header = ('<?xml version="1.0" encoding="UTF-8"?>\n'
               '<scan_data_source ver="0.0.0.1" id="{{{}}}" model="TODO" '
-              'name="RTLSDR Scanner" date="{}" time="{}" color="#00ff00">\n'
+              'name="{}" date="{}" time="{}" color="#00ff00">\n'
               '\t<data_sets count="{}" '
               'no_data_value="-140">\n').format(fileUuid,
+                                                APP_NAME,
                                                 fileTime.strftime('%a %b %d %Y'),
                                                 fileTime.strftime('%H:%M:%S'),
                                                 len(spectrum))
@@ -468,39 +470,39 @@ def export_kmz(filename, bounds, image):
     filePng = name + '.png'
     fileKml = name + '.kml'
 
-    image.save('{0}/{1}'.format(tempPath, filePng))
+    image.save('{}/{}'.format(tempPath, filePng))
 
-    handle = open('{0}/{1}'.format(tempPath, fileKml), 'wb')
+    handle = open('{}/{}'.format(tempPath, fileKml), 'wb')
     handle.write('<?xml version="1.0" encoding="UTF-8"?>\n')
     handle.write('<kml xmlns="http://www.opengis.net/kml/2.2" '
                  'xmlns:gx="http://www.google.com/kml/ext/2.2" '
                  'xmlns:kml="http://www.opengis.net/kml/2.2" '
                  'xmlns:atom="http://www.w3.org/2005/Atom">\n')
     handle.write('<GroundOverlay>\n')
-    handle.write('\t<name>RTLSDR Scanner - {0}</name>\n'.format(name))
+    handle.write('\t<name>{} - {}</name>\n'.format(APP_NAME, name))
     handle.write('\t<Icon>\n')
-    handle.write('\t\t<href>files/{0}</href>\n'.format(filePng))
+    handle.write('\t\t<href>files/{}</href>\n'.format(filePng))
     handle.write('\t\t<viewBoundScale>0.75</viewBoundScale>\n')
     handle.write('\t</Icon>\n')
     handle.write('\t<LatLonBox>\n')
-    handle.write('\t\t<north>{0}</north>\n'.format(bounds[3]))
-    handle.write('\t\t<south>{0}</south>\n'.format(bounds[2]))
-    handle.write('\t\t<east>{0}</east>\n'.format(bounds[1]))
-    handle.write('\t\t<west>{0}</west>\n'.format(bounds[0]))
+    handle.write('\t\t<north>{}</north>\n'.format(bounds[3]))
+    handle.write('\t\t<south>{}</south>\n'.format(bounds[2]))
+    handle.write('\t\t<east>{}</east>\n'.format(bounds[1]))
+    handle.write('\t\t<west>{}</west>\n'.format(bounds[0]))
     handle.write('\t</LatLonBox>\n')
     handle.write('</GroundOverlay>\n')
     handle.write('</kml>\n')
     handle.close()
 
     kmz = zipfile.ZipFile(filename, 'w')
-    kmz.write('{0}/{1}'.format(tempPath, fileKml),
-              '/{0}'.format(fileKml))
-    kmz.write('{0}/{1}'.format(tempPath, filePng),
-              '/files/{0}'.format(filePng))
+    kmz.write('{}/{}'.format(tempPath, fileKml),
+              '/{}'.format(fileKml))
+    kmz.write('{}/{}'.format(tempPath, filePng),
+              '/files/{}'.format(filePng))
     kmz.close()
 
-    os.remove('{0}/{1}'.format(tempPath, filePng))
-    os.remove('{0}/{1}'.format(tempPath, fileKml))
+    os.remove('{}/{}'.format(tempPath, filePng))
+    os.remove('{}/{}'.format(tempPath, fileKml))
     os.rmdir(tempPath)
 
 
@@ -508,7 +510,7 @@ def export_xyz(filename, xyz):
     handle = open(filename, 'wb')
     handle.write('x, y, Level (dB/Hz)\n')
     for i in range(len(xyz[0])):
-        handle.write('{0}, {1}, {2}\n'.format(xyz[0][i], xyz[1][i], xyz[2][i]))
+        handle.write('{}, {}, {}\n'.format(xyz[0][i], xyz[1][i], xyz[2][i]))
     handle.close()
 
 
@@ -546,10 +548,10 @@ def export_gpx(filename, locations, name):
 
 
 def write_numpy(handle, array, name):
-    handle.write('{0}=[\n'.format(name))
+    handle.write('{}=[\n'.format(name))
     for i in array:
         for j in i:
-            handle.write('{0} '.format(j))
+            handle.write('{} '.format(j))
         handle.write(';\n')
     handle.write(']\n')
 

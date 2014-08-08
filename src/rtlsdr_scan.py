@@ -37,7 +37,7 @@ try:
     import rtlsdr  # @UnusedImport
     import wx  # @UnusedImport
 except ImportError as error:
-    print 'Import error: {0}'.format(error)
+    print 'Import error: {}'.format(error)
     input('\nError importing libraries\nPress [Return] to exit')
     exit(1)
 
@@ -46,6 +46,7 @@ import multiprocessing
 import os.path
 
 from cli import Cli
+from constants import APP_NAME
 from file import File
 from main_window import FrameMain, RtlSdrScanner
 from misc import set_version_timestamp
@@ -97,7 +98,7 @@ def __arguments():
         args.dirname, args.filename = os.path.split(args.file)
 
     if error is not None:
-        print "Error: {0}".format(error)
+        print "Error: {}".format(error)
         parser.exit(1)
 
     return isGui, (args)
@@ -106,14 +107,14 @@ def __arguments():
 if __name__ == '__main__':
     multiprocessing.freeze_support()
     pool = multiprocessing.Pool(initializer=__init_worker)
-    print "RTLSDR Scanner\n"
+    print APP_NAME + "\n"
     if 'rtlsdr_update_timestamp'in os.environ:
         set_version_timestamp()
 
     isGui, args = __arguments()
     if isGui:
         app = RtlSdrScanner(pool)
-        frame = FrameMain("RTLSDR Scanner", pool)
+        frame = FrameMain(APP_NAME, pool)
         if args.file is not None:
             frame.open(os.path.abspath(args.dirname), args.filename)
         app.MainLoop()

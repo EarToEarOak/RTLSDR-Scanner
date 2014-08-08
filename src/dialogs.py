@@ -251,15 +251,15 @@ class DialogAutoCal(wx.Dialog):
         sizer = wx.GridBagSizer(10, 10)
         sizer.Add(title, pos=(0, 0), span=(1, 2),
                   flag=wx.ALIGN_CENTRE | wx.ALL, border=10)
-        sizer.Add(text, pos=(1, 0), flag=wx.ALL | wx.EXPAND, border=10)
-        sizer.Add(self.textFreq, pos=(1, 1), flag=wx.ALL | wx.EXPAND,
+        sizer.Add(text, pos=(1, 0), flag=wx.ALL, border=10)
+        sizer.Add(self.textFreq, pos=(1, 1), flag=wx.ALL,
                   border=5)
         sizer.Add(self.buttonCal, pos=(2, 0), span=(1, 2),
                   flag=wx.ALIGN_CENTRE | wx.ALL | wx.EXPAND, border=10)
         sizer.Add(self.textResult, pos=(3, 0), span=(1, 2),
-                  flag=wx.ALL | wx.EXPAND, border=10)
+                  flag=wx.ALL, border=10)
         sizer.Add(buttons, pos=(4, 0), span=(1, 2),
-                  flag=wx.ALL | wx.EXPAND, border=10)
+                  flag=wx.ALL | wx.ALIGN_RIGHT, border=10)
 
         self.SetSizerAndFit(sizer)
 
@@ -334,23 +334,23 @@ class DialogImageSize(wx.Dialog):
 
         sizer = wx.GridBagSizer(5, 5)
         sizer.Add(textWidth, pos=(0, 0),
-                  flag=wx.EXPAND | wx.ALL, border=5)
+                  flag=wx.ALL, border=5)
         sizer.Add(self.ctrlWidth, pos=(0, 1),
-                  flag=wx.EXPAND | wx.ALL, border=5)
+                  flag=wx.ALL, border=5)
         sizer.Add(textHeight, pos=(1, 0),
-                  flag=wx.EXPAND | wx.ALL, border=5)
+                  flag=wx.ALL, border=5)
         sizer.Add(self.ctrlHeight, pos=(1, 1),
-                  flag=wx.EXPAND | wx.ALL, border=5)
+                  flag=wx.ALL, border=5)
         sizer.Add(textDpi, pos=(2, 0),
-                  flag=wx.EXPAND | wx.ALL, border=5)
+                  flag=wx.ALL, border=5)
         sizer.Add(self.spinDpi, pos=(2, 1),
-                  flag=wx.EXPAND | wx.ALL, border=5)
+                  flag=wx.ALL, border=5)
         sizer.Add(textSize, pos=(3, 0),
-                  flag=wx.EXPAND | wx.ALL, border=5)
+                  flag=wx.ALL, border=5)
         sizer.Add(self.textSize, pos=(3, 1),
-                  flag=wx.EXPAND | wx.ALL, border=5)
-        sizer.Add(sizerButtons, pos=(4, 1),
-                  flag=wx.EXPAND | wx.ALL, border=5)
+                  flag=wx.ALL, border=5)
+        sizer.Add(sizerButtons, pos=(4, 0), span=(1, 2),
+                  flag=wx.ALL | wx.ALIGN_RIGHT, border=5)
         sizer.SetEmptyCellSize((0, 0))
 
         if onlyDpi:
@@ -567,7 +567,7 @@ class DialogExportSeq(wx.Dialog):
 
                 thread = self.plot.set_plot({timeStamp: sweep}, extent, False)
                 thread.join()
-                filename = os.path.join(directory, '{0}.png'.format(timeStamp))
+                filename = os.path.join(directory, '{}.png'.format(timeStamp))
                 export_image(filename, File.ImageType.PNG,
                              self.figure,
                              self.settings)
@@ -605,7 +605,7 @@ class DialogExportSeq(wx.Dialog):
             self.plot.clear_plots()
 
     def __show_image_size(self):
-        self.textSize.SetLabel('{0}" x {1}" @ {2}dpi'.format(self.settings.exportWidth,
+        self.textSize.SetLabel('{}" x {}" @ {}dpi'.format(self.settings.exportWidth,
                                                              self.settings.exportHeight,
                                                              self.settings.exportDpi))
 
@@ -674,13 +674,13 @@ class DialogExportGeo(wx.Dialog):
 
         textCentre = wx.StaticText(self, label='Centre')
         self.spinCentre = wx.SpinCtrl(self)
-        self.spinCentre.SetToolTip(wx.ToolTip('Centre frequency (kHz)'))
+        self.spinCentre.SetToolTipString('Centre frequency (kHz)')
         self.spinCentre.SetRange(freqMin, freqMax)
         self.spinCentre.SetValue(freqMin + bw / 2)
 
         textBw = wx.StaticText(self, label='Bandwidth')
         self.spinBw = wx.SpinCtrl(self)
-        self.spinBw.SetToolTip(wx.ToolTip('Bandwidth (kHz)'))
+        self.spinBw.SetToolTipString('Bandwidth (kHz)')
         self.spinBw.SetRange(1, bw)
         self.spinBw.SetValue(bw / 10)
 
@@ -880,7 +880,7 @@ class DialogExportGeo(wx.Dialog):
             self.canvas.draw()
 
     def __show_image_res(self):
-        self.textRes.SetLabel('{0}dpi'.format(self.settings.exportDpi))
+        self.textRes.SetLabel('{}dpi'.format(self.settings.exportDpi))
 
     def get_filename(self):
         return self.filename
@@ -983,7 +983,7 @@ class DialogOffset(wx.Dialog):
                       flag=wx.ALIGN_CENTRE | wx.ALL, border=5)
         gridSizer.Add(boxSizer2, pos=(4, 0), span=(1, 2),
                       flag=wx.ALIGN_CENTRE | wx.ALL, border=5)
-        gridSizer.Add(sizerButtons, pos=(5, 1), span=(1, 1),
+        gridSizer.Add(sizerButtons, pos=(5, 1),
                       flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
 
         self.SetSizerAndFit(gridSizer)
@@ -1043,7 +1043,7 @@ class DialogOffset(wx.Dialog):
                 message = error
             dlg.Destroy()
             dlg = wx.MessageDialog(self,
-                                   'Capture failed:\n{0}'.format(message),
+                                   'Capture failed:\n{}'.format(message),
                                    'Error',
                                    wx.OK | wx.ICON_ERROR)
             dlg.ShowModal()
@@ -1272,16 +1272,16 @@ class DialogPrefs(wx.Dialog):
         self.checkSaved = wx.CheckBox(self, wx.ID_ANY,
                                       "Save warning")
         self.checkSaved.SetValue(settings.saveWarn)
-        self.checkSaved.SetToolTip(wx.ToolTip('Prompt to save scan on exit'))
+        self.checkSaved.SetToolTipString('Prompt to save scan on exit')
         self.checkAlert = wx.CheckBox(self, wx.ID_ANY,
                                       "Level alert (dB)")
         self.checkAlert.SetValue(settings.alert)
-        self.checkAlert.SetToolTip(wx.ToolTip('Play alert when level exceeded'))
+        self.checkAlert.SetToolTipString('Play alert when level exceeded')
         self.Bind(wx.EVT_CHECKBOX, self.__on_alert, self.checkAlert)
         self.spinLevel = wx.SpinCtrl(self, wx.ID_ANY, min=-100, max=20)
         self.spinLevel.SetValue(settings.alertLevel)
         self.spinLevel.Enable(settings.alert)
-        self.spinLevel.SetToolTip(wx.ToolTip('Alert threshold'))
+        self.spinLevel.SetToolTipString('Alert threshold')
         textBackground = wx.StaticText(self, label='Background colour')
         self.buttonBackground = wx.Button(self, wx.ID_ANY)
         self.buttonBackground.SetBackgroundColour(self.background)
@@ -1294,31 +1294,31 @@ class DialogPrefs(wx.Dialog):
         self.checkPoints = wx.CheckBox(self, wx.ID_ANY,
                                        "Limit points")
         self.checkPoints.SetValue(settings.pointsLimit)
-        self.checkPoints.SetToolTip(wx.ToolTip('Limit the resolution of plots'))
+        self.checkPoints.SetToolTipString('Limit the resolution of plots')
         self.Bind(wx.EVT_CHECKBOX, self.__on_points, self.checkPoints)
         self.spinPoints = wx.SpinCtrl(self, wx.ID_ANY, min=1000, max=100000)
         self.spinPoints.Enable(settings.pointsLimit)
         self.spinPoints.SetValue(settings.pointsMax)
-        self.spinPoints.SetToolTip(wx.ToolTip('Maximum number of points to plot_line'))
+        self.spinPoints.SetToolTipString('Maximum number of points to plot_line')
         textDpi = wx.StaticText(self, label='Export DPI')
         self.spinDpi = wx.SpinCtrl(self, wx.ID_ANY, min=72, max=6000)
         self.spinDpi.SetValue(settings.exportDpi)
-        self.spinDpi.SetToolTip(wx.ToolTip('DPI of exported images'))
+        self.spinDpi.SetToolTipString('DPI of exported images')
         self.checkTune = wx.CheckBox(self, wx.ID_ANY,
                                      "Tune SDR#")
         self.checkTune.SetValue(settings.clickTune)
-        self.checkTune.SetToolTip(wx.ToolTip('Double click plot_line to tune SDR#'))
+        self.checkTune.SetToolTipString('Double click plot_line to tune SDR#')
         textPlugin = wx.HyperlinkCtrl(self, wx.ID_ANY,
                                       label="(Requires plugin)",
                                       url="http://eartoearoak.com/software/sdrsharp-net-remote")
 
         self.radioAvg = wx.RadioButton(self, wx.ID_ANY, 'Average Scans',
                                        style=wx.RB_GROUP)
-        self.radioAvg.SetToolTip(wx.ToolTip('Average level with each scan'))
+        self.radioAvg.SetToolTipString('Average level with each scan')
         self.Bind(wx.EVT_RADIOBUTTON, self.__on_radio, self.radioAvg)
         self.radioRetain = wx.RadioButton(self, wx.ID_ANY,
                                           'Retain previous scans')
-        self.radioRetain.SetToolTip(wx.ToolTip('Can be slow'))
+        self.radioRetain.SetToolTipString('Can be slow')
         self.Bind(wx.EVT_RADIOBUTTON, self.__on_radio, self.radioRetain)
         self.radioRetain.SetValue(settings.retainScans)
 
@@ -1326,8 +1326,8 @@ class DialogPrefs(wx.Dialog):
         self.spinCtrlMaxScans = wx.SpinCtrl(self)
         self.spinCtrlMaxScans.SetRange(1, 500)
         self.spinCtrlMaxScans.SetValue(settings.retainMax)
-        self.spinCtrlMaxScans.SetToolTip(wx.ToolTip('Maximum previous scans'
-                                                    ' to display'))
+        self.spinCtrlMaxScans.SetToolTipString('Maximum previous scans'
+                                               ' to display')
 
         self.checkFade = wx.CheckBox(self, wx.ID_ANY,
                                      "Fade previous scans")
@@ -1453,8 +1453,8 @@ class DialogAdvPrefs(wx.Dialog):
                                       settings.overlap * 100,
                                       0, 75,
                                       style=wx.SL_LABELS)
-        self.slideOverlap.SetToolTip(wx.ToolTip('Power spectral density'
-                                                ' overlap'))
+        self.slideOverlap.SetToolTipString('Power spectral density'
+                                           ' overlap')
         textWindow = wx.StaticText(self, label='Window')
         self.buttonWindow = wx.Button(self, wx.ID_ANY, self.winFunc)
         self.Bind(wx.EVT_BUTTON, self.__on_window, self.buttonWindow)
@@ -1503,12 +1503,12 @@ class DialogFormatting(wx.Dialog):
         textFreq = wx.StaticText(self, label='Frequency precision')
         self.spinFreq = wx.SpinCtrl(self, wx.ID_ANY, min=0, max=6)
         self.spinFreq.SetValue(settings.precisionFreq)
-        self.spinFreq.SetToolTip(wx.ToolTip('Displayed frequency decimal precision'))
+        self.spinFreq.SetToolTipString('Displayed frequency decimal precision')
 
         textLevel = wx.StaticText(self, label='Level precision')
         self.spinLevel = wx.SpinCtrl(self, wx.ID_ANY, min=0, max=2)
         self.spinLevel.SetValue(settings.precisionLevel)
-        self.spinLevel.SetToolTip(wx.ToolTip('Displayed level decimal precision'))
+        self.spinLevel.SetToolTipString('Displayed level decimal precision')
 
         sizerButtons = wx.StdDialogButtonSizer()
         buttonOk = wx.Button(self, wx.ID_OK)
@@ -1520,15 +1520,15 @@ class DialogFormatting(wx.Dialog):
 
         sizer = wx.GridBagSizer(5, 5)
         sizer.Add(textFreq, pos=(0, 0),
-                  flag=wx.EXPAND | wx.ALL, border=5)
+                  flag=wx.ALL, border=5)
         sizer.Add(self.spinFreq, pos=(0, 1),
-                  flag=wx.EXPAND | wx.ALL, border=5)
+                  flag=wx.ALL, border=5)
         sizer.Add(textLevel, pos=(1, 0),
-                  flag=wx.EXPAND | wx.ALL, border=5)
+                  flag=wx.ALL, border=5)
         sizer.Add(self.spinLevel, pos=(1, 1),
-                  flag=wx.EXPAND | wx.ALL, border=5)
-        sizer.Add(sizerButtons, pos=(2, 1),
-                  flag=wx.EXPAND | wx.ALL, border=5)
+                  flag=wx.ALL, border=5)
+        sizer.Add(sizerButtons, pos=(2, 0), span=(1, 2),
+                  flag=wx.ALL | wx.ALIGN_RIGHT, border=5)
 
         self.SetSizerAndFit(sizer)
 
@@ -1707,8 +1707,8 @@ class DialogDevicesRTL(wx.Dialog):
                                                       device.gains)))
             else:
                 self.gridDev.SetCellValue(i, self.COL_DEV,
-                                          '{0}:{1}'.format(device.server,
-                                                           device.port))
+                                          '{}:{}'.format(device.server,
+                                                         device.port))
                 self.gridDev.SetCellValue(i, self.COL_SER, '')
                 self.gridDev.SetCellValue(i, self.COL_IND, '')
                 self.gridDev.SetCellValue(i, self.COL_GAIN, str(device.gain))
@@ -1761,11 +1761,11 @@ class DialogDevicesRTL(wx.Dialog):
         servers = []
         for device in self.devices:
             if not device.isDevice:
-                servers.append("{0}:{1}".format(device.server, device.port))
+                servers.append("{}:{}".format(device.server, device.port))
 
         dupes = set(servers)
         if len(dupes) != len(servers):
-            message = "Duplicate server found:\n'{0}'".format(dupes.pop())
+            message = "Duplicate server found:\n'{}'".format(dupes.pop())
             dlg = wx.MessageDialog(self, message, "Warning",
                                    wx.OK | wx.ICON_WARNING)
             dlg.ShowModal()
@@ -1842,10 +1842,10 @@ class DialogDevicesGPS(wx.Dialog):
         self.devices = copy.copy(settings.devicesGps)
         self.comboType = None
 
-        wx.Dialog.__init__(self, parent=parent, title="GPS Devices")
+        wx.Dialog.__init__(self, parent=parent, title="GPS")
 
         self.checkGps = wx.CheckBox(self, wx.ID_ANY, "Enable GPS")
-        self.checkGps.SetToolTip(wx.ToolTip('Record GPS locations in scans'))
+        self.checkGps.SetToolTipString('Record GPS locations in scans')
         self.checkGps.SetValue(settings.gps)
 
         self.gridDev = grid.Grid(self)
@@ -1940,7 +1940,7 @@ class DialogDevicesGPS(wx.Dialog):
 
         dupes = set(devices)
         if len(dupes) != len(devices):
-            message = "Duplicate name found:\n'{0}'".format(dupes.pop())
+            message = "Duplicate name found:\n'{}'".format(dupes.pop())
             dlg = wx.MessageDialog(self, message, "Warning",
                                    wx.OK | wx.ICON_WARNING)
             dlg.ShowModal()
@@ -2232,7 +2232,7 @@ class DialogGPSTest(wx.Dialog):
                 self.textSats.SetLabel('{}/{}'.format(used, len(loc)))
             elif status == Event.LOC_ERR:
                 self.__on_stop(None)
-                self.__add_raw('{0}'.format(loc))
+                self.__add_raw('{}'.format(loc))
             elif status == Event.LOC_RAW:
                 self.__add_raw(loc)
         self.timer.Start(self.POLL)
@@ -2290,7 +2290,7 @@ class DialogSaveWarn(wx.Dialog):
         prompt = ["scanning again", "opening a file",
                   "exiting", "clearing"][warnType]
         text = wx.StaticText(self,
-                             label="Save plot_line before {0}?".format(prompt))
+                             label="Save plot_line before {}?".format(prompt))
         icon = wx.StaticBitmap(self, wx.ID_ANY,
                                wx.ArtProvider.GetBitmap(wx.ART_INFORMATION,
                                                         wx.ART_MESSAGE_BOX))
@@ -2426,7 +2426,7 @@ class DialogAbout(wx.Dialog):
                  flag=wx.ALIGN_CENTRE | wx.ALL, border=10)
         grid.Add(textTimestamp, pos=(2, 1), span=(1, 2),
                  flag=wx.ALIGN_CENTRE | wx.ALL, border=10)
-        grid.Add(buttonOk, pos=(3, 2), span=(1, 1),
+        grid.Add(buttonOk, pos=(3, 2),
                  flag=wx.ALIGN_RIGHT | wx.ALL, border=10)
 
         self.SetSizerAndFit(grid)

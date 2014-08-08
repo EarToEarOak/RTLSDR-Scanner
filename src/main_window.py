@@ -37,7 +37,7 @@ import wx
 from wx.lib.masked import NumCtrl
 
 from constants import F_MIN, F_MAX, MODE, DWELL, NFFT, DISPLAY, Warn, \
-    Display, Cal, Mode, KML_PORT
+    Display, Cal, Mode, KML_PORT, APP_NAME
 from controls import MultiButton
 from devices import get_devices_rtl
 from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, \
@@ -247,8 +247,8 @@ class FrameMain(wx.Frame):
 
         self.spinCtrlStart = wx.SpinCtrl(self.toolbar)
         self.spinCtrlStop = wx.SpinCtrl(self.toolbar)
-        self.spinCtrlStart.SetToolTip(wx.ToolTip('Start frequency'))
-        self.spinCtrlStop.SetToolTip(wx.ToolTip('Stop frequency'))
+        self.spinCtrlStart.SetToolTipString('Start frequency')
+        self.spinCtrlStop.SetToolTipString('Stop frequency')
         self.spinCtrlStart.SetRange(F_MIN, F_MAX - 1)
         self.spinCtrlStop.SetRange(F_MIN + 1, F_MAX)
         self.Bind(wx.EVT_SPINCTRL, self.__on_spin, self.spinCtrlStart)
@@ -259,22 +259,22 @@ class FrameMain(wx.Frame):
 
         textMode = wx.StaticText(self.toolbar, label="Mode")
         self.choiceMode = wx.Choice(self.toolbar, choices=MODE[::2])
-        self.choiceMode.SetToolTip(wx.ToolTip('Scanning mode'))
+        self.choiceMode.SetToolTipString('Scanning mode')
 
         textDwell = wx.StaticText(self.toolbar, label="Dwell")
         self.choiceDwell = wx.Choice(self.toolbar, choices=DWELL[::2])
-        self.choiceDwell.SetToolTip(wx.ToolTip('Scan time per step'))
+        self.choiceDwell.SetToolTipString('Scan time per step')
 
         textNfft = wx.StaticText(self.toolbar, label="FFT size")
         self.choiceNfft = wx.Choice(self.toolbar, choices=map(str, NFFT))
-        self.choiceNfft.SetToolTip(wx.ToolTip('Higher values for greater'
-                                              'precision'))
+        self.choiceNfft.SetToolTipString('Higher values for greater'
+                                         'precision')
 
         textDisplay = wx.StaticText(self.toolbar, label="Display")
         self.choiceDisplay = wx.Choice(self.toolbar, choices=DISPLAY[::2])
         self.Bind(wx.EVT_CHOICE, self.__on_choice, self.choiceDisplay)
-        self.choiceDisplay.SetToolTip(wx.ToolTip('Spectrogram available in'
-                                                 'continuous mode'))
+        self.choiceDisplay.SetToolTipString('Spectrogram available in'
+                                            'continuous mode')
 
         grid = wx.GridBagSizer(5, 5)
         grid.Add(self.buttonStart, pos=(0, 0), span=(3, 1),
@@ -359,7 +359,7 @@ class FrameMain(wx.Frame):
         menuEdit.AppendSeparator()
         self.menuDevicesRtl = menuEdit.Append(wx.ID_ANY, "&Radio Devices...",
                                               "Device selection and configuration")
-        self.menuDevicesGps = menuEdit.Append(wx.ID_ANY, "&GPS Devices...",
+        self.menuDevicesGps = menuEdit.Append(wx.ID_ANY, "&GPS...",
                                               "GPS selection and configuration")
         menuEdit.AppendSeparator()
         self.menuReset = menuEdit.Append(wx.ID_ANY, "&Reset settings...",
@@ -797,7 +797,7 @@ class FrameMain(wx.Frame):
         handle.write('<?xml version="1.0" encoding="UTF-8"?>\n'
                      '<kml xmlns="http://www.opengis.net/kml/2.2">\n'
                      '\t<NetworkLink>\n'
-                     '\t\t<name>RTLSDR Scanner</name>\n'
+                     '\t\t<name>{}</name>\n'
                      '\t\t<flyToView>1</flyToView>\n'
                      '\t\t<open>1</open>\n'
                      '\t\t<Link>\n'
@@ -806,7 +806,7 @@ class FrameMain(wx.Frame):
                      '\t\t\t<refreshInterval>10</refreshInterval>\n'
                      '\t\t</Link>\n'
                      '\t</NetworkLink>\n'
-                     '</kml>\n'.format(KML_PORT))
+                     '</kml>\n'.format(APP_NAME, KML_PORT))
         handle.close()
 
         if not run_file(tempFile):
@@ -985,7 +985,7 @@ class FrameMain(wx.Frame):
             self.threadScan = None
         elif status == Event.ERROR:
             self.__cleanup()
-            self.status.set_general("Error: {0}".format(data), level=Log.ERROR)
+            self.status.set_general("Error: {}".format(data), level=Log.ERROR)
             if self.dlgCal is not None:
                 self.dlgCal.Destroy()
                 self.dlgCal = None
@@ -1019,10 +1019,10 @@ class FrameMain(wx.Frame):
         elif status == Event.VER_UPDFAIL:
             self.__update_checked(failed=True)
         elif status == Event.LOC_WARN:
-            self.status.set_gps("{0}".format(data), level=Log.WARN)
+            self.status.set_gps("{}".format(data), level=Log.WARN)
             self.status.warn_gps()
         elif status == Event.LOC_ERR:
-            self.status.set_gps("{0}".format(data), level=Log.ERROR)
+            self.status.set_gps("{}".format(data), level=Log.ERROR)
             self.status.error_gps()
             self.threadLocation = None
             if not self.timerGpsRetry.IsRunning():
@@ -1222,7 +1222,7 @@ class FrameMain(wx.Frame):
 
     def __saved(self, isSaved):
         self.isSaved = isSaved
-        title = "RTLSDR Scanner - " + self.filename
+        title = APP_NAME + " - " + self.filename
         if not isSaved:
             title += "*"
         self.SetTitle(title)
@@ -1412,7 +1412,7 @@ class FrameMain(wx.Frame):
 
         self.filename = os.path.splitext(filename)[0]
         self.settings.dirScans = dirname
-        self.status.set_general("Opening: {0}".format(filename))
+        self.status.set_general("Opening: {}".format(filename))
 
         self.scanInfo, spectrum, location = open_plot(dirname, filename)
 

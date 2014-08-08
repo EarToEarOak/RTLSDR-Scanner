@@ -106,7 +106,7 @@ class MultiButton(wx.PyControl):
     def __set_text(self):
         self.SetLabel(self.options[self.selected])
         if self.tips is not None:
-            self.SetToolTip(wx.ToolTip(self.tips[self.selected]))
+            self.SetToolTipString(self.tips[self.selected])
         self.Refresh()
 
     def __is_over_arrow(self, event):

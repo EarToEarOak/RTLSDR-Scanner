@@ -253,9 +253,9 @@ class PanelGraph(wx.Panel):
             gain = self.settings.devicesRtl[self.settings.indexRtl].gain
         else:
             gain = 0
-        self.plot.set_title("Frequency Spectrogram\n{0} - {1} MHz,"
-                            " gain = {2}dB".format(self.settings.start,
-                                                   self.settings.stop, gain))
+        self.plot.set_title("Frequency Spectrogram\n{} - {} MHz,"
+                            " gain = {}dB".format(self.settings.start,
+                                                  self.settings.stop, gain))
 
     def redraw_plot(self):
         if self.spectrum is not None:
@@ -429,7 +429,7 @@ class PanelGraphCompare(wx.Panel):
 
         self.spectrumDiff = diff
 
-        self.textIntersect.SetLabel('Intersections: {0}'.format(intersections))
+        self.textIntersect.SetLabel('Intersections: {}'.format(intersections))
 
     def get_canvas(self):
         return self.canvas
@@ -678,7 +678,7 @@ class PanelMeasure(wx.Panel):
         (row, col) = self.locsMeasure[cell]
         try:
             self.grid.SetCellValue(row, col, value)
-        except(TypeError):
+        except TypeError:
             pass
 
     def __set_check_read_only(self, cell, readOnly):

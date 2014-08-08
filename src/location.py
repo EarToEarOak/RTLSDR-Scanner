@@ -33,7 +33,7 @@ from urlparse import urlparse
 import serial
 from serial.serialutil import SerialException
 
-from constants import KML_PORT
+from constants import KML_PORT, APP_NAME
 from devices import DeviceGPS
 from events import post_event, EventThread, Event
 from misc import format_iso_time, haversine, format_time, limit_to_ascii, limit
@@ -66,7 +66,7 @@ class ThreadLocation(threading.Thread):
         else:
             port = defaultPort
         if self.raw:
-            text = 'Opening "{0}"'.format(self.device.resource)
+            text = 'Opening "{}"'.format(self.device.resource)
             post_event(self.notify, EventThread(Event.LOC_RAW, 0, text))
         try:
             self.comm.connect((host, port))
@@ -96,7 +96,7 @@ class ThreadLocation(threading.Thread):
 
     def __serial_connect(self):
         if self.raw:
-            text = 'Opening "{0}"'.format(self.device.resource)
+            text = 'Opening "{}"'.format(self.device.resource)
             post_event(self.notify, EventThread(Event.LOC_RAW, 0, text))
         try:
             self.comm = serial.Serial(self.device.resource,
@@ -220,8 +220,8 @@ class ThreadLocation(threading.Thread):
                     elif data[0] == 'GPGSV':
                         self.__nmea_sats(data)
                 else:
-                    error = 'Invalid checksum {0}, should be {1}'.format(resp[1],
-                                                                         checksum)
+                    error = 'Invalid checksum {}, should be {}'.format(resp[1],
+                                                                       checksum)
                     post_event(self.notify, EventThread(Event.LOC_WARN,
                                                         0, error))
 
@@ -439,7 +439,7 @@ class KmlServerHandler(BaseHTTPRequestHandler):
                          'xmlns:gx="http://www.google.com/kml/ext/2.2">\n')
 
         self.wfile.write('\t<Document>\n'
-                         '\t\t<name>RTLSDR Scanner</name>\n')
+                         '\t\t<name>{}</name>\n').format(APP_NAME)
 
         self.wfile.write(self.__create_lookat())
 
