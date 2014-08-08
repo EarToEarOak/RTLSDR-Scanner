@@ -42,6 +42,7 @@ from constants import Markers, PlotFunc
 from events import EventThread, Event, post_event
 from misc import format_precision
 from spectrum import Measure
+from utils_mpl import get_colours
 
 
 class Plotter(object):
@@ -386,7 +387,7 @@ class Plotter(object):
         if on:
             colourMap = self.settings.colourMap
         else:
-            colourMap = ' Pure Blue'
+            colourMap = get_colours()[0]
 
         self.set_colourmap(colourMap)
 
@@ -395,10 +396,10 @@ class Plotter(object):
         for collection in self.axes.collections:
             collection.set_cmap(colourMap)
 
-        if colourMap.startswith(' Pure'):
-            self.bar.set_visible(False)
+        if get_colours().index(colourMap) < 4:
+            self.set_bar(False)
         else:
-            self.bar.set_visible(True)
+            self.set_bar(True)
         self.barBase.set_cmap(colourMap)
         try:
             self.barBase.draw_all()
@@ -420,7 +421,10 @@ class ThreadPlot(threading.Thread):
         self.axes = axes
         self.data = data
         self.extent = extent
-        self.colourMap = settings.colourMap
+        if self.settings.colourMapUse:
+            self.colourMap = settings.colourMap
+        else:
+            self.colourMap = get_colours()[0]
         self.autoL = settings.autoL
         self.lineWidth = settings.lineWidth
         self.barBase = barBase
