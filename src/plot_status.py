@@ -146,7 +146,8 @@ class ThreadPlot(threading.Thread):
                 ['', 'Time', peakT],
                 ]
 
-        table = Table(self.axes, loc='center', gid='table')
+        table = Table(self.axes, loc='center')
+        table.set_gid('table')
 
         rows = len(text)
         cols = len(text[0])
