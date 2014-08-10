@@ -27,7 +27,8 @@ import time
 
 from matplotlib import cm
 from matplotlib.colors import LinearSegmentedColormap
-from matplotlib.dates import date2num
+from matplotlib.dates import date2num, AutoDateLocator, AutoDateFormatter, \
+    DateFormatter, MinuteLocator, num2date, DayLocator
 
 
 def add_colours():
@@ -78,6 +79,21 @@ def utc_to_mpl(utc):
     local = time.mktime(time.localtime(utc))
     dt = datetime.datetime.fromtimestamp(local)
     return date2num(dt)
+
+
+def set_date_ticks(axis, auto=True):
+    axis.axis_date()
+    if auto:
+        timeLocator = AutoDateLocator()
+        timeFormatter = AutoDateFormatter(timeLocator)
+        timeFormatter.scaled[1. / (24. * 60.)] = '%H:%M:%S'
+        timeFormatter.scaled[1. / (24. * 60. * 1000.)] = '%H:%M:%S.%f'
+    else:
+        timeFormatter = DateFormatter("%H:%M:%S")
+        timeLocator = MinuteLocator()
+
+    axis.set_major_locator(timeLocator)
+    axis.set_major_formatter(timeFormatter)
 
 
 if __name__ == '__main__':

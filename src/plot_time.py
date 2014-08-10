@@ -25,11 +25,10 @@
 import threading
 import time
 
-from matplotlib.dates import DateFormatter
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 
 from events import post_event, EventThread, Event
-from utils_mpl import utc_to_mpl
+from utils_mpl import utc_to_mpl, set_date_ticks
 
 
 class PlotterTime(object):
@@ -51,10 +50,8 @@ class PlotterTime(object):
         self.axes.set_ylabel('Points')
 
         numFormatter = ScalarFormatter(useOffset=False)
-        timeFormatter = DateFormatter("%H:%M:%S")
-        self.axes.xaxis.set_major_formatter(timeFormatter)
+        set_date_ticks(self.axes.xaxis, False)
         self.axes.yaxis.set_major_formatter(numFormatter)
-        self.axes.xaxis.set_minor_locator(AutoMinorLocator(10))
         self.axes.yaxis.set_minor_locator(AutoMinorLocator(10))
 
         now = time.time()
@@ -102,6 +99,7 @@ class PlotterTime(object):
             post_event(self.notify, EventThread(Event.DRAW))
 
     def clear_plots(self):
+        set_date_ticks(self.axes.xaxis, False)
         children = self.axes.get_children()
         for child in children:
             if child.get_gid() is not None:
@@ -149,6 +147,7 @@ class ThreadPlot(threading.Thread):
 
             self.parent.plot = self.axes.plot(xs, ys, 'bo', gid='plot')
 
+            set_date_ticks(self.axes.xaxis)
             self.parent.scale_plot()
             self.parent.redraw_plot()
 
