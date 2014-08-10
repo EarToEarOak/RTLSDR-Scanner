@@ -41,15 +41,11 @@ class PlotterStatus(object):
 
         self.__setup_plot()
         self.set_grid(self.settings.grid)
+        self.set_plot(None, None, None)
 
     def __setup_plot(self):
         self.axes = self.figure.add_subplot(111)
         self.axes.set_axis_off()
-        self.axes.annotate('No data', (0.5, 0.5),
-                           textcoords='figure fraction',
-                           fontsize='large',
-                           ha='center', va='center',
-                           gid='noData')
 
     def draw_measure(self, _measure, _show):
         pass
@@ -87,8 +83,6 @@ class PlotterStatus(object):
         table = find_artists(self.figure, 'table')
         if table:
             table[0].remove()
-        noData = find_artists(self.figure, 'noData')
-        noData[0].set_alpha(1)
 
     def set_grid(self, on):
         table = find_artists(self.axes, 'table')
@@ -118,27 +112,27 @@ class ThreadPlot(threading.Thread):
     def run(self):
         self.parent.clear_plots()
         if self.data is None:
-            self.parent.threadPlot = None
-            return
+            length, tMin, tMax, fMin, fMax, lMin, lMax, peakF, peakL, peakT = ('',) * 10
+        else:
+            length = len(self.data)
+            tMin = format_time(self.extent.tMin, True)
+            tMax = format_time(self.extent.tMax, True)
+            fMin = format_precision(self.settings, freq=self.extent.fMin,
+                                    fancyUnits=True)
+            fMax = format_precision(self.settings, freq=self.extent.fMax,
+                                    fancyUnits=True)
+            lMin = format_precision(self.settings, level=self.extent.lMin,
+                                    fancyUnits=True)
+            lMax = format_precision(self.settings, level=self.extent.lMax,
+                                    fancyUnits=True)
+            peak = self.extent.get_peak_flt()
+            peakF = format_precision(self.settings, freq=peak[0],
+                                     fancyUnits=True)
+            peakL = format_precision(self.settings, level=peak[1],
+                                     fancyUnits=True)
+            peakT = format_time(peak[2], True)
 
-        tMin = format_time(self.extent.tMin, True)
-        tMax = format_time(self.extent.tMax, True)
-        fMin = format_precision(self.settings, freq=self.extent.fMin,
-                                fancyUnits=True)
-        fMax = format_precision(self.settings, freq=self.extent.fMax,
-                                fancyUnits=True)
-        lMin = format_precision(self.settings, level=self.extent.lMin,
-                                fancyUnits=True)
-        lMax = format_precision(self.settings, level=self.extent.lMax,
-                                fancyUnits=True)
-        peak = self.extent.get_peak_flt()
-        peakF = format_precision(self.settings, freq=peak[0],
-                                 fancyUnits=True)
-        peakL = format_precision(self.settings, level=peak[1],
-                                 fancyUnits=True)
-        peakT = format_time(peak[2], True)
-
-        text = [['Sweeps', '', len(self.data)],
+        text = [['Sweeps', '', length],
                 ['Extents', '', ''],
                 ['', 'Start', tMin],
                 ['', 'End', tMax],
@@ -172,9 +166,6 @@ class ThreadPlot(threading.Thread):
             table.auto_set_column_width(i)
 
         self.axes.add_table(table)
-        noData = find_artists(self.axes, 'noData')
-        if len(noData):
-            noData[0].set_alpha(0)
         self.parent.redraw_plot()
 
         self.parent.threadPlot = None
