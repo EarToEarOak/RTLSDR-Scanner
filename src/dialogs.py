@@ -2288,7 +2288,7 @@ class DialogSaveWarn(wx.Dialog):
         wx.Dialog.__init__(self, parent=parent, title="Warning")
 
         prompt = ["scanning again", "opening a file",
-                  "exiting", "clearing"][warnType]
+                  "exiting", "clearing", "merging"][warnType]
         text = wx.StaticText(self,
                              label="Save plot_line before {}?".format(prompt))
         icon = wx.StaticBitmap(self, wx.ID_ANY,

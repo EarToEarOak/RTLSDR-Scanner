@@ -85,7 +85,7 @@ WINFUNC = ["Bartlett", numpy.bartlett,
 
 
 class Warn(object):
-    SCAN, OPEN, EXIT, NEW = range(4)
+    SCAN, OPEN, EXIT, NEW, MERGE = range(5)
 
 
 class Cal(object):

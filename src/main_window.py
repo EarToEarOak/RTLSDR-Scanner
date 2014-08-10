@@ -58,6 +58,7 @@ from spectrum import count_points, sort_spectrum, Extent
 from toolbars import Statusbar
 from utils_mpl import add_colours
 from utils_wx import load_icon
+from collections import OrderedDict
 
 
 class DropTarget(wx.FileDropTarget):
@@ -109,6 +110,7 @@ class FrameMain(wx.Frame):
 
         self.menuNew = None
         self.menuOpen = None
+        self.menuMerge = None
         self.menuSave = None
         self.menuExportScan = None
         self.menuExportImage = None
@@ -159,9 +161,9 @@ class FrameMain(wx.Frame):
         self.spinCtrlStop = None
         self.choiceDisplay = None
 
-        self.spectrum = {}
+        self.spectrum = OrderedDict()
         self.scanInfo = ScanInfo()
-        self.locations = {}
+        self.locations = OrderedDict()
         self.lastLocation = [None] * 4
 
         self.isSaved = True
@@ -318,6 +320,8 @@ class FrameMain(wx.Frame):
                                        "New plot_line")
         self.menuOpen = menuFile.Append(wx.ID_OPEN, "&Open...",
                                         "Open plot_line")
+        self.menuMerge = menuFile.Append(wx.ID_ANY, "&Merge...",
+                                         "Open and merge with current plot")
         recent = wx.Menu()
         self.settings.fileHistory.UseMenu(recent)
         self.settings.fileHistory.AddFilesToMenu()
@@ -424,6 +428,7 @@ class FrameMain(wx.Frame):
 
         self.Bind(wx.EVT_MENU, self.__on_new, self.menuNew)
         self.Bind(wx.EVT_MENU, self.__on_open, self.menuOpen)
+        self.Bind(wx.EVT_MENU, self.__on_merge, self.menuMerge)
         self.Bind(wx.EVT_MENU_RANGE, self.__on_file_history, id=wx.ID_FILE1,
                   id2=wx.ID_FILE9)
         self.Bind(wx.EVT_MENU, self.__on_save, self.menuSave)
@@ -545,6 +550,18 @@ class FrameMain(wx.Frame):
                             wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             self.open(dlg.GetDirectory(), dlg.GetFilename())
+        dlg.Destroy()
+
+    def __on_merge(self, _event):
+        if self.__save_warn(Warn.MERGE):
+            return
+
+        dlg = wx.FileDialog(self, "Merge a scan", self.settings.dirScans,
+                            self.filename,
+                            File.get_type_filters(File.Types.SAVE),
+                            wx.OPEN)
+        if dlg.ShowModal() == wx.ID_OK:
+            self.__merge(dlg.GetDirectory(), dlg.GetFilename())
         dlg.Destroy()
 
     def __on_file_history(self, event):
@@ -1252,6 +1269,7 @@ class FrameMain(wx.Frame):
         self.buttonStop.Enable(not state and hasDevices)
         self.menuNew.Enable(state)
         self.menuOpen.Enable(state)
+        self.menuMerge.Enable(state and len(self.spectrum) > 0)
         self.menuSave.Enable(state and len(self.spectrum) > 0)
         self.menuExportScan.Enable(state and len(self.spectrum) > 0)
         self.menuExportImage.Enable(state)
@@ -1400,6 +1418,33 @@ class FrameMain(wx.Frame):
                                        0, len(self.devicesRtl) - 1)
         self.settings.save()
         return self.settings.devicesRtl
+
+    def __merge(self, dirname, filename):
+        if not os.path.exists(os.path.join(dirname, filename)):
+            wx.MessageBox('File not found',
+                          'Error', wx.OK | wx.ICON_ERROR)
+            return
+
+        self.filename = os.path.splitext(filename)[0]
+        self.settings.dirScans = dirname
+        self.status.set_general("Merging: {}".format(filename))
+
+        _scanInfo, spectrum, locations = open_plot(dirname, filename)
+
+        if len(spectrum) > 0:
+            spectrum.update(self.spectrum)
+            locations.update(self.locations)
+            self.spectrum.clear()
+            self.locations.clear()
+            self.spectrum.update(OrderedDict(sorted(spectrum.items())))
+            self.locations.update(OrderedDict(sorted(locations.items())))
+            self.__set_plot(self.spectrum, self.settings.annotate)
+            self.graph.scale_plot(True)
+            self.status.set_general("Finished")
+            self.settings.fileHistory.AddFileToHistory(os.path.join(dirname,
+                                                                    filename))
+        else:
+            self.status.set_general("Merge failed", level=Log.ERROR)
 
     def open(self, dirname, filename):
         if not os.path.exists(os.path.join(dirname, filename)):

@@ -24,6 +24,7 @@
 #
 
 import cPickle
+from collections import OrderedDict
 import datetime
 import json
 import os
@@ -208,12 +209,12 @@ def open_plot(dirname, filename):
     lo = None
     calibration = None
     tuner = 0
-    spectrum = {}
+    spectrum = OrderedDict()
     time = None
     lat = None
     lon = None
     desc = ''
-    location = {}
+    location = OrderedDict()
 
     path = os.path.join(dirname, filename)
     if not os.path.exists(path):
