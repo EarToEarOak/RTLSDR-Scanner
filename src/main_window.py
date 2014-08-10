@@ -24,6 +24,8 @@
 #
 
 
+from collections import OrderedDict
+import locale
 import math
 import os.path
 import tempfile
@@ -58,7 +60,6 @@ from spectrum import count_points, sort_spectrum, Extent
 from toolbars import Statusbar
 from utils_mpl import add_colours
 from utils_wx import load_icon
-from collections import OrderedDict
 
 
 class DropTarget(wx.FileDropTarget):
@@ -78,6 +79,9 @@ class DropTarget(wx.FileDropTarget):
 class RtlSdrScanner(wx.App):
     def __init__(self, pool):
         self.pool = pool
+
+        locale.setlocale(locale.LC_ALL, "")
+
         try:
             wx.Dialog.EnableLayoutAdaptation(True)
         except AttributeError:
