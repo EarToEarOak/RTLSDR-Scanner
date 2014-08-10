@@ -23,6 +23,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import matplotlib
 from matplotlib.patches import Rectangle
 
 from plot_3d import Plotter3d
@@ -164,7 +165,7 @@ class RangeSelector():
         return
 
     def __skip_event(self, event):
-        if event.dblclick:
+        if matplotlib.__version__ >= '1.2' and event.dblclick:
             return True
 
         if event.button != 2:

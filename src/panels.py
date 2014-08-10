@@ -124,7 +124,7 @@ class PanelGraph(wx.Panel):
             menu.Enable(state)
 
     def __on_press(self, event):
-        if self.settings.clickTune and event.dblclick:
+        if self.settings.clickTune and matplotlib.__version__ >= '1.2' and event.dblclick:
             frequency = int(event.xdata * 1e6)
             self.remoteControl.tune(frequency)
 
