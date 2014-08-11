@@ -311,9 +311,10 @@ class ThreadPlot(threading.Thread):
         total = len(self.data)
         if total > 0:
             width = len(self.data[min(self.data)])
-            c = numpy.ma.masked_all((self.retainMax, width))
+            height = len(self.data)
+            c = numpy.ma.masked_all((height, width))
             self.parent.clear_plots()
-            j = self.retainMax
+            j = height
             for ys in self.data:
                 j -= 1
                 _xs, zs = split_spectrum(self.data[ys])
@@ -339,7 +340,6 @@ class ThreadPlot(threading.Thread):
             if self.annotate:
                 self.__annotate_plot()
 
-        if total > 0:
             self.parent.scale_plot()
             self.parent.redraw_plot()
 
