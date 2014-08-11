@@ -214,7 +214,6 @@ class ThreadPlot(threading.Thread):
             if self.annotate:
                 self.__annotate_plot()
 
-        if total > 0:
             self.parent.scale_plot()
             self.parent.redraw_plot()
 
