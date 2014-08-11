@@ -114,6 +114,7 @@ if __name__ == '__main__':
     isGui, args = __arguments()
     if isGui:
         app = RtlSdrScanner(pool)
+        app.SetClassName(APP_NAME)
         frame = FrameMain(APP_NAME, pool)
         if args.file is not None:
             frame.open(os.path.abspath(args.dirname), args.filename)
