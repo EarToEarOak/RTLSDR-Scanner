@@ -28,7 +28,7 @@ import time
 from matplotlib import cm
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.dates import date2num, AutoDateLocator, AutoDateFormatter, \
-    DateFormatter, MinuteLocator, num2date, DayLocator
+    DateFormatter, MinuteLocator
 
 
 def add_colours():

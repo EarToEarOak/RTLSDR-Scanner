@@ -84,7 +84,7 @@ class Cli(object):
                     error = "Device not found ({} devices in total):\n".format(count)
                     for device in self.settings.devicesRtl:
                         error += "\t{}: {}\n".format(device.indexRtl,
-                                                       device.name)
+                                                     device.name)
             else:
                 device.isDevice = False
                 url = urlparse('//' + remote)

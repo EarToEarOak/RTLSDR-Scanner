@@ -92,7 +92,7 @@ class MouseSelect():
     def __init__(self, plot, callbackPre, callbackPost):
         self.selector = None
         if isinstance(plot, (Plotter3d, PlotterStatus, PlotterTime)):
-                return
+            return
 
         axes = plot.get_axes()
         self.selector = RangeSelector(axes, callbackPre, callbackPost)

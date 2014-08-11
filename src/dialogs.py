@@ -606,8 +606,8 @@ class DialogExportSeq(wx.Dialog):
 
     def __show_image_size(self):
         self.textSize.SetLabel('{}" x {}" @ {}dpi'.format(self.settings.exportWidth,
-                                                             self.settings.exportHeight,
-                                                             self.settings.exportDpi))
+                                                          self.settings.exportHeight,
+                                                          self.settings.exportDpi))
 
     def __get_range(self):
         start = self.sweepTimeStamps[self.choiceStart.GetSelection()]
