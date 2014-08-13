@@ -115,6 +115,7 @@ if __name__ == '__main__':
     if isGui:
         app = RtlSdrScanner(pool)
         app.SetClassName(APP_NAME)
+        wx.Locale().Init2()
         frame = FrameMain(APP_NAME, pool)
         if args.file is not None:
             frame.open(os.path.abspath(args.dirname), args.filename)

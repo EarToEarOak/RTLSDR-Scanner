@@ -25,7 +25,6 @@
 
 
 from collections import OrderedDict
-import locale
 import math
 import os.path
 import tempfile
@@ -79,8 +78,6 @@ class DropTarget(wx.FileDropTarget):
 class RtlSdrScanner(wx.App):
     def __init__(self, pool):
         self.pool = pool
-
-        locale.setlocale(locale.LC_ALL, "")
 
         try:
             wx.Dialog.EnableLayoutAdaptation(True)
