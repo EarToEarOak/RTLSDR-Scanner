@@ -297,8 +297,6 @@ class ThreadPlot(threading.Thread):
         self.axes = axes
         self.data = data
         self.extent = extent
-        self.retainMax = settings.retainMax
-        self.colourMap = settings.colourMap
         self.autoL = settings.autoL
         self.barBase = barBase
         self.annotate = annotate
@@ -333,7 +331,7 @@ class ThreadPlot(threading.Thread):
             self.parent.plot = self.axes.imshow(c, aspect='auto',
                                                 extent=extent,
                                                 norm=norm,
-                                                cmap=cm.get_cmap(self.colourMap),
+                                                cmap=cm.get_cmap(self.settings.colourMap),
                                                 interpolation='spline16',
                                                 gid="plot_line")
 

@@ -52,7 +52,6 @@ class Plotter3d(object):
         self.plot = None
         self.extent = None
         self.threadPlot = None
-        self.wireframe = settings.wireframe
         self.__setup_plot()
         self.set_grid(settings.grid)
 
@@ -169,8 +168,6 @@ class ThreadPlot(threading.Thread):
         self.axes = axes
         self.data = data
         self.extent = extent
-        self.retainMax = settings.retainMax
-        self.colourMap = settings.colourMap
         self.autoL = settings.autoL
         self.barBase = barBase
         self.annotate = annotate
@@ -191,12 +188,12 @@ class ThreadPlot(threading.Thread):
                 zExtent = self.extent.get_l()
                 vmin = zExtent[0]
                 vmax = zExtent[1]
-            if self.parent.wireframe:
+            if self.parent.settings.wireframe:
                 self.parent.plot = \
                     self.axes.plot_wireframe(x, y, z,
                                              rstride=1, cstride=1,
                                              linewidth=0.1,
-                                             cmap=cm.get_cmap(self.colourMap),
+                                             cmap=cm.get_cmap(self.settings.colourMap),
                                              gid='plot_line',
                                              antialiased=True,
                                              alpha=1)
@@ -206,7 +203,7 @@ class ThreadPlot(threading.Thread):
                                            rstride=1, cstride=1,
                                            vmin=vmin, vmax=vmax,
                                            linewidth=0,
-                                           cmap=cm.get_cmap(self.colourMap),
+                                           cmap=cm.get_cmap(self.settings.colourMap),
                                            gid='plot_line',
                                            antialiased=True,
                                            alpha=1)

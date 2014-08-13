@@ -50,7 +50,6 @@ class Plotter(object):
         self.notify = notify
         self.figure = figure
         self.settings = settings
-        self.colourMap = self.settings.colourMap
         self.axes = None
         self.bar = None
         self.barBase = None
@@ -392,7 +391,7 @@ class Plotter(object):
         self.set_colourmap(colourMap)
 
     def set_colourmap(self, colourMap):
-        self.colourMap = colourMap
+        self.settings.colourMap = colourMap
         for collection in self.axes.collections:
             collection.set_cmap(colourMap)
 
