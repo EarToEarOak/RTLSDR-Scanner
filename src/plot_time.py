@@ -130,8 +130,6 @@ class ThreadPlot(threading.Thread):
         self.axes = axes
         self.data = data
         self.extent = extent
-        self.autoL = settings.autoL
-        self.lineWidth = settings.lineWidth
 
     def run(self):
         if self.data is None:

@@ -424,11 +424,9 @@ class ThreadPlot(threading.Thread):
             self.colourMap = settings.colourMap
         else:
             self.colourMap = get_colours()[0]
-        self.autoL = settings.autoL
         self.lineWidth = settings.lineWidth
         self.barBase = barBase
         self.annotate = annotate
-        self.fade = settings.fadeScans
         self.plotFunc = settings.plotFunc
 
     def run(self):
@@ -493,7 +491,7 @@ class ThreadPlot(threading.Thread):
                 self.parent.threadPlot = None
                 return None, None
 
-            if self.fade:
+            if self.settings.fadeScans:
                 alpha = (total - count) / total
             else:
                 alpha = 1
@@ -504,7 +502,7 @@ class ThreadPlot(threading.Thread):
             segments, levels = self.__create_segments(data)
             lc = LineCollection(segments)
             lc.set_array(numpy.array(levels))
-            lc.set_norm(self.__get_norm(self.autoL, self.extent))
+            lc.set_norm(self.__get_norm(self.settings.autoL, self.extent))
             lc.set_cmap(self.colourMap)
             lc.set_linewidth(self.lineWidth)
             lc.set_gid('plot')
@@ -521,7 +519,7 @@ class ThreadPlot(threading.Thread):
         segments, levels = self.__create_segments(data)
         lc = LineCollection(segments)
         lc.set_array(numpy.array(levels))
-        lc.set_norm(self.__get_norm(self.autoL, self.extent))
+        lc.set_norm(self.__get_norm(self.settings.autoL, self.extent))
         lc.set_cmap(self.colourMap)
         lc.set_linewidth(self.lineWidth)
         lc.set_gid('plot')

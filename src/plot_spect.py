@@ -297,7 +297,6 @@ class ThreadPlot(threading.Thread):
         self.axes = axes
         self.data = data
         self.extent = extent
-        self.autoL = settings.autoL
         self.barBase = barBase
         self.annotate = annotate
 
@@ -323,7 +322,7 @@ class ThreadPlot(threading.Thread):
                         continue
 
             norm = None
-            if not self.autoL:
+            if not self.settings.autoL:
                 minY, maxY = self.barBase.get_clim()
                 norm = Normalize(vmin=minY, vmax=maxY)
 

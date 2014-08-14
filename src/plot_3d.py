@@ -168,7 +168,6 @@ class ThreadPlot(threading.Thread):
         self.axes = axes
         self.data = data
         self.extent = extent
-        self.autoL = settings.autoL
         self.barBase = barBase
         self.annotate = annotate
 
@@ -182,7 +181,7 @@ class ThreadPlot(threading.Thread):
             x, y, z = create_mesh(self.data, True)
             self.parent.clear_plots()
 
-            if self.autoL:
+            if self.settings.autoL:
                 vmin, vmax = self.barBase.get_clim()
             else:
                 zExtent = self.extent.get_l()
