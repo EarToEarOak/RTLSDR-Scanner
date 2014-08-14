@@ -300,6 +300,15 @@ def sort_spectrum(spectrum):
     return newSpectrum
 
 
+def diff_spectrum(spectrum):
+    data = OrderedDict()
+    for timeStamp, sweep in spectrum.items():
+        diff = numpy.diff(sweep.values())
+        data[timeStamp] = OrderedDict(zip(sweep.keys(), diff))
+
+    return data
+
+
 def smooth_spectrum(spectrum, winFunc, ratio):
     data = OrderedDict()
     for timeStamp, sweep in spectrum.items():

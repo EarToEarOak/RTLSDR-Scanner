@@ -180,11 +180,14 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.autoFId = None
         self.autoLId = None
         self.autoTId = None
+
         self.maxId = None
         self.minId = None
         self.avgId = None
         self.varId = None
         self.smoothId = None
+        self.diffId = None
+
         self.colourId = None
 
     def home(self, event):
@@ -301,6 +304,15 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.__set_func()
         self.panel.redraw_plot()
 
+    def __on_check_diff(self, event):
+        check = event.Checked()
+        if check:
+            self.settings.plotFunc = PlotFunc.DIFF
+        else:
+            self.settings.plotFunc = PlotFunc.NONE
+        self.__set_func()
+        self.panel.redraw_plot()
+
     def __on_set_smooth(self, _event):
         dlg = DialogSmooth(self, self.settings)
         if dlg.ShowModal() == wx.ID_OK:
@@ -380,7 +392,9 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.extraTools.append(colourId)
 
     def __set_func(self):
-        buttons = [self.avgId, self.minId, self.maxId, self.varId, self.smoothId]
+        buttons = [self.avgId, self.minId, self.maxId,
+                   self.varId, self.smoothId, self.diffId]
+
         for button in buttons:
             if button is not None:
                 self.ToggleTool(button, False)
@@ -418,6 +432,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
             self.__add_check_tool('fade', 'Fade plots',
                                   self.__on_check_fade,
                                   self.settings.fadeScans)
+            self.__add_spacer()
             self.avgId = wx.NewId()
             self.__add_check_tool('average', 'Show average',
                                   self.__on_check_avg,
@@ -439,6 +454,10 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
                                   self.__on_check_smooth,
                                   toolId=self.smoothId)
             wx.EVT_TOOL_RCLICKED(self, self.smoothId, self.__on_set_smooth)
+            self.diffId = wx.NewId()
+            self.__add_check_tool('diff', 'Differentiate spectrum',
+                                  self.__on_check_diff,
+                                  toolId=self.diffId)
 
             self.__add_spacer()
             self.__add_colourmap()
@@ -451,6 +470,10 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
                                   self.__on_check_smooth,
                                   toolId=self.smoothId)
             wx.EVT_TOOL_RCLICKED(self, self.smoothId, self.__on_set_smooth)
+            self.diffId = wx.NewId()
+            self.__add_check_tool('diff', 'Differentiate spectrum',
+                                  self.__on_check_diff,
+                                  toolId=self.diffId)
             self.__add_spacer()
             self.__add_colourmap(False)
 
@@ -462,6 +485,10 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
                                   self.__on_check_smooth,
                                   toolId=self.smoothId)
             wx.EVT_TOOL_RCLICKED(self, self.smoothId, self.__on_set_smooth)
+            self.diffId = wx.NewId()
+            self.__add_check_tool('diff', 'Differentiate spectrum',
+                                  self.__on_check_diff,
+                                  toolId=self.diffId)
             self.__add_spacer()
             self.__add_colourmap(False)
             self.__add_spacer()

@@ -41,7 +41,8 @@ import numpy
 from constants import Markers, PlotFunc
 from events import EventThread, Event, post_event
 from misc import format_precision
-from spectrum import Measure, smooth_sweep, Extent, smooth_spectrum
+from spectrum import Measure, smooth_sweep, Extent, smooth_spectrum, \
+    diff_spectrum
 from utils_mpl import get_colours
 
 
@@ -449,6 +450,8 @@ class ThreadPlot(threading.Thread):
                 peakF, peakL = self.__plot_variance()
             elif self.settings.plotFunc == PlotFunc.SMOOTH:
                 peakF, peakL = self.__plot_smooth()
+            elif self.settings.plotFunc == PlotFunc.DIFF:
+                peakF, peakL = self.__plot_diff()
 
             if self.annotate:
                 self.__annotate_plot(peakF, peakL)
@@ -600,6 +603,12 @@ class ThreadPlot(threading.Thread):
                                self.settings.smoothFunc,
                                self.settings.smoothRatio)
         self.extent = Extent(data)
+        return self.__plot_all(data)
+
+    def __plot_diff(self):
+        data = diff_spectrum(self.data)
+        self.extent = Extent(data)
+        self.parent.extent = self.extent
         return self.__plot_all(data)
 
     def __create_segments(self, points):

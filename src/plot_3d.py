@@ -38,7 +38,7 @@ from mpl_toolkits.mplot3d import Axes3D  # @UnresolvedImport @UnusedImport
 from constants import PlotFunc
 from events import post_event, EventThread, Event
 from misc import format_time, format_precision
-from spectrum import create_mesh, smooth_spectrum, Extent
+from spectrum import create_mesh, smooth_spectrum, Extent, diff_spectrum
 from utils_mpl import utc_to_mpl
 
 
@@ -183,6 +183,8 @@ class ThreadPlot(threading.Thread):
                 peakF, peakL, peakT = self.__plot(self.data)
             elif self.settings.plotFunc == PlotFunc.SMOOTH:
                 peakF, peakL, peakT = self.__plot_smooth()
+            elif self.settings.plotFunc == PlotFunc.DIFF:
+                peakF, peakL, peakT = self.__plot_diff()
 
             if self.annotate:
                 self.__annotate_plot(peakF, peakL, peakT)
@@ -229,6 +231,12 @@ class ThreadPlot(threading.Thread):
                                self.settings.smoothFunc,
                                self.settings.smoothRatio)
         self.extent = Extent(data)
+        return self.__plot(data)
+
+    def __plot_diff(self):
+        data = diff_spectrum(self.data)
+        self.extent = Extent(data)
+        self.parent.extent = self.extent
         return self.__plot(data)
 
     def __annotate_plot(self, peakF, peakL, peakT):

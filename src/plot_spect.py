@@ -40,7 +40,8 @@ import numpy
 from constants import Markers, PlotFunc
 from events import EventThread, Event, post_event
 from misc import format_time, format_precision
-from spectrum import split_spectrum, Measure, smooth_spectrum, Extent
+from spectrum import split_spectrum, Measure, smooth_spectrum, Extent, \
+    diff_spectrum
 from utils_mpl import utc_to_mpl
 
 
@@ -311,6 +312,8 @@ class ThreadPlot(threading.Thread):
                 peakF, peakL, peakT = self.__plot(self.data)
             elif self.settings.plotFunc == PlotFunc.SMOOTH:
                 peakF, peakL, peakT = self.__plot_smooth()
+            elif self.settings.plotFunc == PlotFunc.DIFF:
+                peakF, peakL, peakT = self.__plot_diff()
 
             if self.annotate:
                 self.__annotate_plot(peakF, peakL, peakT)
@@ -355,6 +358,12 @@ class ThreadPlot(threading.Thread):
                                self.settings.smoothFunc,
                                self.settings.smoothRatio)
         self.extent = Extent(data)
+        return self.__plot(data)
+
+    def __plot_diff(self):
+        data = diff_spectrum(self.data)
+        self.extent = Extent(data)
+        self.parent.extent = self.extent
         return self.__plot(data)
 
     def __annotate_plot(self, peakF, peakL, peakT):
