@@ -382,7 +382,8 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
     def __set_func(self):
         buttons = [self.avgId, self.minId, self.maxId, self.varId, self.smoothId]
         for button in buttons:
-            self.ToggleTool(button, False)
+            if button is not None:
+                self.ToggleTool(button, False)
         if self.settings.plotFunc != PlotFunc.NONE:
             self.ToggleTool(buttons[self.settings.plotFunc - 1], True)
 
@@ -441,17 +442,26 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
 
             self.__add_spacer()
             self.__add_colourmap()
-            self.__set_func()
 
         elif display == Display.SPECT:
             self.__add_auto_range(True, True, True)
             self.__add_peak()
+            self.smoothId = wx.NewId()
+            self.__add_check_tool('smooth', 'Smooth (right click for options)',
+                                  self.__on_check_smooth,
+                                  toolId=self.smoothId)
+            wx.EVT_TOOL_RCLICKED(self, self.smoothId, self.__on_set_smooth)
             self.__add_spacer()
             self.__add_colourmap(False)
 
         elif display == Display.SURFACE:
             self.__add_auto_range(True, True, True)
             self.__add_peak()
+            self.smoothId = wx.NewId()
+            self.__add_check_tool('smooth', 'Smooth (right click for options)',
+                                  self.__on_check_smooth,
+                                  toolId=self.smoothId)
+            wx.EVT_TOOL_RCLICKED(self, self.smoothId, self.__on_set_smooth)
             self.__add_spacer()
             self.__add_colourmap(False)
             self.__add_spacer()
@@ -461,6 +471,8 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
 
         elif display == Display.TIMELINE:
             self.__add_auto_range(False, True, True)
+
+        self.__set_func()
 
         self.Realize()
 

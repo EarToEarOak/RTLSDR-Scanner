@@ -301,21 +301,29 @@ def sort_spectrum(spectrum):
 
 
 def smooth_spectrum(spectrum, winFunc, ratio):
+    data = OrderedDict()
+    for timeStamp, sweep in spectrum.items():
+        data[timeStamp] = smooth_sweep(sweep, winFunc, ratio)
+
+    return data
+
+
+def smooth_sweep(sweep, winFunc, ratio):
     pos = WINFUNC[::2].index(winFunc)
     function = WINFUNC[1::2][pos]
-    length = len(spectrum) / ratio
+    length = len(sweep) / ratio
     if length < 2:
         length = 2
     window = function(length)
 
-    data = numpy.array([x[1] for x in spectrum.items()])
+    data = numpy.array([x[1] for x in sweep.items()])
     series = numpy.r_[2 * data[0] - data[length - 1::-1],
                       data,
                       2 * data[-1] - data[-1:-length:-1]]
     levels = numpy.convolve(window / window.sum(), series, mode='same')
     smoothed = levels[length:-length + 1]
 
-    return OrderedDict(zip(spectrum.keys(), smoothed))
+    return OrderedDict(zip(sweep.keys(), smoothed))
 
 
 if __name__ == '__main__':

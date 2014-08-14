@@ -35,9 +35,10 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 from mpl_toolkits.mplot3d import Axes3D  # @UnresolvedImport @UnusedImport
 
+from constants import PlotFunc
 from events import post_event, EventThread, Event
 from misc import format_time, format_precision
-from spectrum import create_mesh
+from spectrum import create_mesh, smooth_spectrum, Extent
 from utils_mpl import utc_to_mpl
 
 
@@ -178,67 +179,82 @@ class ThreadPlot(threading.Thread):
 
         total = len(self.data)
         if total > 0:
-            x, y, z = create_mesh(self.data, True)
-            self.parent.clear_plots()
-
-            if self.settings.autoL:
-                vmin, vmax = self.barBase.get_clim()
-            else:
-                zExtent = self.extent.get_l()
-                vmin = zExtent[0]
-                vmax = zExtent[1]
-            if self.parent.settings.wireframe:
-                self.parent.plot = \
-                    self.axes.plot_wireframe(x, y, z,
-                                             rstride=1, cstride=1,
-                                             linewidth=0.1,
-                                             cmap=cm.get_cmap(self.settings.colourMap),
-                                             gid='plot_line',
-                                             antialiased=True,
-                                             alpha=1)
-            else:
-                self.parent.plot = \
-                    self.axes.plot_surface(x, y, z,
-                                           rstride=1, cstride=1,
-                                           vmin=vmin, vmax=vmax,
-                                           linewidth=0,
-                                           cmap=cm.get_cmap(self.settings.colourMap),
-                                           gid='plot_line',
-                                           antialiased=True,
-                                           alpha=1)
+            if self.settings.plotFunc == PlotFunc.NONE:
+                peakF, peakL, peakT = self.__plot(self.data)
+            elif self.settings.plotFunc == PlotFunc.SMOOTH:
+                peakF, peakL, peakT = self.__plot_smooth()
 
             if self.annotate:
-                self.__annotate_plot()
+                self.__annotate_plot(peakF, peakL, peakT)
 
             self.parent.scale_plot()
             self.parent.redraw_plot()
 
         self.parent.threadPlot = None
 
-    def __annotate_plot(self):
-        f, l, t = self.extent.get_peak_flt()
-        when = format_time(t)
-        tPos = utc_to_mpl(t)
+    def __plot(self, spectrum):
+        x, y, z = create_mesh(spectrum, True)
+        self.parent.clear_plots()
 
-        text = '{}\n{}\n{when}'.format(*format_precision(self.settings, f, l,
+        if self.settings.autoL:
+            vmin, vmax = self.barBase.get_clim()
+        else:
+            zExtent = self.extent.get_l()
+            vmin = zExtent[0]
+            vmax = zExtent[1]
+        if self.parent.settings.wireframe:
+            self.parent.plot = \
+                self.axes.plot_wireframe(x, y, z,
+                                         rstride=1, cstride=1,
+                                         linewidth=0.1,
+                                         cmap=cm.get_cmap(self.settings.colourMap),
+                                         gid='plot_line',
+                                         antialiased=True,
+                                         alpha=1)
+        else:
+            self.parent.plot = \
+                self.axes.plot_surface(x, y, z,
+                                       rstride=1, cstride=1,
+                                       vmin=vmin, vmax=vmax,
+                                       linewidth=0,
+                                       cmap=cm.get_cmap(self.settings.colourMap),
+                                       gid='plot_line',
+                                       antialiased=True,
+                                       alpha=1)
+
+        return self.extent.get_peak_flt()
+
+    def __plot_smooth(self):
+        data = smooth_spectrum(self.data,
+                               self.settings.smoothFunc,
+                               self.settings.smoothRatio)
+        self.extent = Extent(data)
+        return self.__plot(data)
+
+    def __annotate_plot(self, peakF, peakL, peakT):
+        when = format_time(peakT)
+        tPos = utc_to_mpl(peakT)
+
+        text = '{}\n{}\n{when}'.format(*format_precision(self.settings,
+                                                         peakF, peakL,
                                                          fancyUnits=True),
                                        when=when)
         if matplotlib.__version__ < '1.3':
-            self.axes.text(f, tPos, l,
+            self.axes.text(peakF, tPos, peakL,
                            text,
                            ha='left', va='bottom', size='x-small', gid='peak')
-            self.axes.plot([f], [tPos], [l], marker='x', markersize=10,
+            self.axes.plot([peakF], [tPos], [peakL], marker='x', markersize=10,
                            mew=3, color='w', gid='peak')
-            self.axes.plot([f], [tPos], [l], marker='x', markersize=10,
+            self.axes.plot([peakF], [tPos], [peakL], marker='x', markersize=10,
                            color='r', gid='peak')
         else:
             effect = patheffects.withStroke(linewidth=2, foreground="w",
                                             alpha=0.75)
-            self.axes.text(f, tPos, l,
+            self.axes.text(peakF, tPos, peakL,
                            text,
                            ha='left', va='bottom', size='x-small', gid='peak',
                            path_effects=[effect])
-            self.axes.plot([f], [tPos], [l], marker='x', markersize=10,
+            self.axes.plot([peakF], [tPos], [peakL], marker='x', markersize=10,
                            color='r', gid='peak', path_effects=[effect])
 
     def __clear_markers(self):

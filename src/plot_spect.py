@@ -37,10 +37,10 @@ from matplotlib.text import Text
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 import numpy
 
-from constants import Markers
+from constants import Markers, PlotFunc
 from events import EventThread, Event, post_event
 from misc import format_time, format_precision
-from spectrum import split_spectrum, Measure
+from spectrum import split_spectrum, Measure, smooth_spectrum, Extent
 from utils_mpl import utc_to_mpl
 
 
@@ -307,70 +307,84 @@ class ThreadPlot(threading.Thread):
 
         total = len(self.data)
         if total > 0:
-            width = len(self.data[min(self.data)])
-            height = len(self.data)
-            c = numpy.ma.masked_all((height, width))
-            self.parent.clear_plots()
-            j = height
-            for ys in self.data:
-                j -= 1
-                _xs, zs = split_spectrum(self.data[ys])
-                for i in range(len(zs)):
-                    try:
-                        c[j, i] = zs[i]
-                    except IndexError:
-                        continue
-
-            norm = None
-            if not self.settings.autoL:
-                minY, maxY = self.barBase.get_clim()
-                norm = Normalize(vmin=minY, vmax=maxY)
-
-            extent = self.extent.get_ft()
-            self.parent.plot = self.axes.imshow(c, aspect='auto',
-                                                extent=extent,
-                                                norm=norm,
-                                                cmap=cm.get_cmap(self.settings.colourMap),
-                                                interpolation='spline16',
-                                                gid="plot_line")
+            if self.settings.plotFunc == PlotFunc.NONE:
+                peakF, peakL, peakT = self.__plot(self.data)
+            elif self.settings.plotFunc == PlotFunc.SMOOTH:
+                peakF, peakL, peakT = self.__plot_smooth()
 
             if self.annotate:
-                self.__annotate_plot()
+                self.__annotate_plot(peakF, peakL, peakT)
 
             self.parent.scale_plot()
             self.parent.redraw_plot()
 
         self.parent.threadPlot = None
 
-    def __annotate_plot(self):
+    def __plot(self, spectrum):
+        width = len(spectrum[min(self.data)])
+        height = len(spectrum)
+        c = numpy.ma.masked_all((height, width))
+        self.parent.clear_plots()
+        j = height
+        for ys in spectrum:
+            j -= 1
+            _xs, zs = split_spectrum(spectrum[ys])
+            for i in range(len(zs)):
+                try:
+                    c[j, i] = zs[i]
+                except IndexError:
+                    continue
+
+        norm = None
+        if not self.settings.autoL:
+            minY, maxY = self.barBase.get_clim()
+            norm = Normalize(vmin=minY, vmax=maxY)
+
+        extent = self.extent.get_ft()
+        self.parent.plot = self.axes.imshow(c, aspect='auto',
+                                            extent=extent,
+                                            norm=norm,
+                                            cmap=cm.get_cmap(self.settings.colourMap),
+                                            interpolation='spline16',
+                                            gid="plot_line")
+
+        return self.extent.get_peak_flt()
+
+    def __plot_smooth(self):
+        data = smooth_spectrum(self.data,
+                               self.settings.smoothFunc,
+                               self.settings.smoothRatio)
+        self.extent = Extent(data)
+        return self.__plot(data)
+
+    def __annotate_plot(self, peakF, peakL, peakT):
         self.__clear_markers()
-        fMax, lMax, tMax = self.extent.get_peak_flt()
-        y = utc_to_mpl(tMax)
+        y = utc_to_mpl(peakT)
 
         start, stop = self.axes.get_xlim()
-        textX = ((stop - start) / 50.0) + fMax
-        when = format_time(tMax)
+        textX = ((stop - start) / 50.0) + peakF
+        when = format_time(peakT)
 
-        text = '{}\n{}\n{when}'.format(*format_precision(self.settings, fMax, lMax,
+        text = '{}\n{}\n{when}'.format(*format_precision(self.settings, peakF, peakL,
                                                          fancyUnits=True),
                                        when=when)
         if matplotlib.__version__ < '1.3':
             self.axes.annotate(text,
-                               xy=(fMax, y), xytext=(textX, y),
+                               xy=(peakF, y), xytext=(textX, y),
                                ha='left', va='bottom', size='x-small',
                                color='w', gid='peak')
-            self.axes.plot(fMax, y, marker='x', markersize=10, color='w',
+            self.axes.plot(peakF, y, marker='x', markersize=10, color='w',
                            mew=3, gid='peak')
-            self.axes.plot(fMax, y, marker='x', markersize=10, color='r',
+            self.axes.plot(peakF, y, marker='x', markersize=10, color='r',
                            gid='peak')
         else:
             effect = patheffects.withStroke(linewidth=2, foreground="w",
                                             alpha=0.75)
             self.axes.annotate(text,
-                               xy=(fMax, y), xytext=(textX, y),
+                               xy=(peakF, y), xytext=(textX, y),
                                ha='left', va='bottom', size='x-small',
                                path_effects=[effect], gid='peak')
-            self.axes.plot(fMax, y, marker='x', markersize=10, color='r',
+            self.axes.plot(peakF, y, marker='x', markersize=10, color='r',
                            path_effects=[effect], gid='peak')
 
     def __clear_markers(self):

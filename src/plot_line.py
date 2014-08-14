@@ -41,7 +41,7 @@ import numpy
 from constants import Markers, PlotFunc
 from events import EventThread, Event, post_event
 from misc import format_precision
-from spectrum import Measure, smooth_spectrum, Extent
+from spectrum import Measure, smooth_sweep, Extent, smooth_spectrum
 from utils_mpl import get_colours
 
 
@@ -427,7 +427,6 @@ class ThreadPlot(threading.Thread):
         self.lineWidth = settings.lineWidth
         self.barBase = barBase
         self.annotate = annotate
-        self.plotFunc = settings.plotFunc
 
     def run(self):
         if self.data is None:
@@ -438,17 +437,17 @@ class ThreadPlot(threading.Thread):
         if total > 0:
             self.parent.clear_plots()
 
-            if self.plotFunc == PlotFunc.NONE:
+            if self.settings.plotFunc == PlotFunc.NONE:
                 peakF, peakL = self.__plot_all(self.data)
-            elif self.plotFunc == PlotFunc.MIN:
+            elif self.settings.plotFunc == PlotFunc.MIN:
                 peakF, peakL = self.__plot_min()
-            elif self.plotFunc == PlotFunc.MAX:
+            elif self.settings.plotFunc == PlotFunc.MAX:
                 peakF, peakL = self.__plot_max()
-            elif self.plotFunc == PlotFunc.AVG:
+            elif self.settings.plotFunc == PlotFunc.AVG:
                 peakF, peakL = self.__plot_avg()
-            elif self.plotFunc == PlotFunc.VAR:
+            elif self.settings.plotFunc == PlotFunc.VAR:
                 peakF, peakL = self.__plot_variance()
-            elif self.plotFunc == PlotFunc.SMOOTH:
+            elif self.settings.plotFunc == PlotFunc.SMOOTH:
                 peakF, peakL = self.__plot_smooth()
 
             if self.annotate:
@@ -597,12 +596,9 @@ class ThreadPlot(threading.Thread):
         return None, None
 
     def __plot_smooth(self):
-        data = OrderedDict()
-        for timeStamp, sweep in self.data.items():
-            data[timeStamp] = smooth_spectrum(sweep,
-                                              self.settings.smoothFunc,
-                                              self.settings.smoothRatio)
-
+        data = smooth_spectrum(self.data,
+                               self.settings.smoothFunc,
+                               self.settings.smoothRatio)
         self.extent = Extent(data)
         return self.__plot_all(data)
 
