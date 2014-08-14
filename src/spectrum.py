@@ -29,6 +29,7 @@ from operator import itemgetter, mul
 from matplotlib.dates import seconds
 import numpy
 
+from constants import WINFUNC
 from misc import db_to_level, level_to_db
 from utils_mpl import utc_to_mpl
 
@@ -297,3 +298,26 @@ def sort_spectrum(spectrum):
         newSpectrum[timeStamp] = newPoints
 
     return newSpectrum
+
+
+def smooth_spectrum(spectrum, winFunc, ratio):
+    pos = WINFUNC[::2].index(winFunc)
+    function = WINFUNC[1::2][pos]
+    length = len(spectrum) / ratio
+    if length < 2:
+        length = 2
+    window = function(length)
+
+    data = numpy.array([x[1] for x in spectrum.items()])
+    series = numpy.r_[2 * data[0] - data[length - 1::-1],
+                      data,
+                      2 * data[-1] - data[-1:-length:-1]]
+    levels = numpy.convolve(window / window.sum(), series, mode='same')
+    smoothed = levels[length:-length + 1]
+
+    return OrderedDict(zip(spectrum.keys(), smoothed))
+
+
+if __name__ == '__main__':
+    print 'Please run rtlsdr_scan.py'
+    exit(1)

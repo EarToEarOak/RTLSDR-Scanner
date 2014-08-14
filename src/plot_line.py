@@ -41,7 +41,7 @@ import numpy
 from constants import Markers, PlotFunc
 from events import EventThread, Event, post_event
 from misc import format_precision
-from spectrum import Measure
+from spectrum import Measure, smooth_spectrum, Extent
 from utils_mpl import get_colours
 
 
@@ -441,7 +441,7 @@ class ThreadPlot(threading.Thread):
             self.parent.clear_plots()
 
             if self.plotFunc == PlotFunc.NONE:
-                peakF, peakL = self.__plot_all()
+                peakF, peakL = self.__plot_all(self.data)
             elif self.plotFunc == PlotFunc.MIN:
                 peakF, peakL = self.__plot_min()
             elif self.plotFunc == PlotFunc.MAX:
@@ -450,6 +450,8 @@ class ThreadPlot(threading.Thread):
                 peakF, peakL = self.__plot_avg()
             elif self.plotFunc == PlotFunc.VAR:
                 peakF, peakL = self.__plot_variance()
+            elif self.plotFunc == PlotFunc.SMOOTH:
+                peakF, peakL = self.__plot_smooth()
 
             if self.annotate:
                 self.__annotate_plot(peakF, peakL)
@@ -483,11 +485,11 @@ class ThreadPlot(threading.Thread):
 
         return points
 
-    def __plot_all(self):
-        total = len(self.data)
+    def __plot_all(self, spectrum):
+        total = len(spectrum)
         count = 0.0
-        for timeStamp in self.data:
-            if len(self.data[timeStamp]) < 2:
+        for timeStamp in spectrum:
+            if len(spectrum[timeStamp]) < 2:
                 self.parent.threadPlot = None
                 return None, None
 
@@ -496,7 +498,7 @@ class ThreadPlot(threading.Thread):
             else:
                 alpha = 1
 
-            data = self.data[timeStamp].items()
+            data = spectrum[timeStamp].items()
             peakF, peakL = self.extent.get_peak_fl()
 
             segments, levels = self.__create_segments(data)
@@ -509,6 +511,21 @@ class ThreadPlot(threading.Thread):
             lc.set_alpha(alpha)
             self.axes.add_collection(lc)
             count += 1
+
+        return peakF, peakL
+
+    def __plot_single(self, points):
+        data = points.items()
+        peakF, peakL = max(data, key=lambda item: item[1])
+
+        segments, levels = self.__create_segments(data)
+        lc = LineCollection(segments)
+        lc.set_array(numpy.array(levels))
+        lc.set_norm(self.__get_norm(self.autoL, self.extent))
+        lc.set_cmap(self.colourMap)
+        lc.set_linewidth(self.lineWidth)
+        lc.set_gid('plot')
+        self.axes.add_collection(lc)
 
         return peakF, peakL
 
@@ -581,20 +598,15 @@ class ThreadPlot(threading.Thread):
 
         return None, None
 
-    def __plot_single(self, points):
-        data = points.items()
-        peakF, peakL = max(data, key=lambda item: item[1])
+    def __plot_smooth(self):
+        data = OrderedDict()
+        for timeStamp, sweep in self.data.items():
+            data[timeStamp] = smooth_spectrum(sweep,
+                                              self.settings.smoothFunc,
+                                              self.settings.smoothRatio)
 
-        segments, levels = self.__create_segments(data)
-        lc = LineCollection(segments)
-        lc.set_array(numpy.array(levels))
-        lc.set_norm(self.__get_norm(self.autoL, self.extent))
-        lc.set_cmap(self.colourMap)
-        lc.set_linewidth(self.lineWidth)
-        lc.set_gid('plot')
-        self.axes.add_collection(lc)
-
-        return peakF, peakL
+        self.extent = Extent(data)
+        return self.__plot_all(data)
 
     def __create_segments(self, points):
         segments = []

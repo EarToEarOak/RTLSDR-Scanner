@@ -35,7 +35,7 @@ from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
 import wx
 
 from constants import Display
-from controls import GridToolTips, CheckBoxCellRenderer
+from widgets import GridToolTips, CheckBoxCellRenderer
 from misc import format_precision
 from plot_3d import Plotter3d
 from plot_controls import MouseZoom, MouseSelect

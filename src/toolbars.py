@@ -33,10 +33,11 @@ from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
 import wx
 
 from constants import Display, PlotFunc
-from controls import Led
+from dialogs_toolbars import DialogSmooth
 from events import Log
 from utils_mpl import get_colours
 from utils_wx import load_bitmap
+from widgets import Led
 
 
 class Statusbar(wx.StatusBar):
@@ -183,6 +184,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.minId = None
         self.avgId = None
         self.varId = None
+        self.smoothId = None
         self.colourId = None
 
     def home(self, event):
@@ -263,15 +265,6 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.__set_func()
         self.panel.redraw_plot()
 
-    def __on_check_var(self, event):
-        check = event.Checked()
-        if check:
-            self.settings.plotFunc = PlotFunc.VAR
-        else:
-            self.settings.plotFunc = PlotFunc.NONE
-        self.__set_func()
-        self.panel.redraw_plot()
-
     def __on_check_min(self, event):
         check = event.Checked()
         if check:
@@ -289,6 +282,29 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
             self.settings.plotFunc = PlotFunc.NONE
         self.__set_func()
         self.panel.redraw_plot()
+
+    def __on_check_var(self, event):
+        check = event.Checked()
+        if check:
+            self.settings.plotFunc = PlotFunc.VAR
+        else:
+            self.settings.plotFunc = PlotFunc.NONE
+        self.__set_func()
+        self.panel.redraw_plot()
+
+    def __on_check_smooth(self, event):
+        check = event.Checked()
+        if check:
+            self.settings.plotFunc = PlotFunc.SMOOTH
+        else:
+            self.settings.plotFunc = PlotFunc.NONE
+        self.__set_func()
+        self.panel.redraw_plot()
+
+    def __on_set_smooth(self, _event):
+        dlg = DialogSmooth(self, self.settings)
+        if dlg.ShowModal() == wx.ID_OK:
+            self.panel.redraw_plot()
 
     def __on_colour(self, event):
         colourMap = event.GetString()
@@ -364,7 +380,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.extraTools.append(colourId)
 
     def __set_func(self):
-        buttons = [self.avgId, self.minId, self.maxId, self.varId]
+        buttons = [self.avgId, self.minId, self.maxId, self.varId, self.smoothId]
         for button in buttons:
             self.ToggleTool(button, False)
         if self.settings.plotFunc != PlotFunc.NONE:
@@ -417,6 +433,12 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
             self.__add_check_tool('variance', 'Show variance',
                                   self.__on_check_var,
                                   toolId=self.varId)
+            self.smoothId = wx.NewId()
+            self.__add_check_tool('smooth', 'Smooth (right click for options)',
+                                  self.__on_check_smooth,
+                                  toolId=self.smoothId)
+            wx.EVT_TOOL_RCLICKED(self, self.smoothId, self.__on_set_smooth)
+
             self.__add_spacer()
             self.__add_colourmap()
             self.__set_func()

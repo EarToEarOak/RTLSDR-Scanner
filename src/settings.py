@@ -55,6 +55,8 @@ class Settings(object):
         self.pointsMax = 5000
         self.grid = True
         self.plotFunc = PlotFunc.NONE
+        self.smoothFunc = 'Hamming'
+        self.smoothRatio = 50
 
         self.clickTune = True
 
@@ -206,6 +208,8 @@ class Settings(object):
         self.pointsMax = self.cfg.ReadInt('pointsMax', self.pointsMax)
         self.grid = self.cfg.ReadBool('grid', self.grid)
         self.plotFunc = self.cfg.ReadInt('plotFunc', self.plotFunc)
+        self.smoothFunc = self.cfg.Read('smoothFunc', self.smoothFunc)
+        self.smoothRatio = self.cfg.ReadInt('smoothRatio', self.smoothRatio)
         self.clickTune = self.cfg.ReadBool('clickTune', self.clickTune)
         self.precisionFreq = self.cfg.ReadInt('precisionFreq', self.precisionFreq)
         self.precisionLevel = self.cfg.ReadInt('precisionLevel', self.precisionLevel)
@@ -259,6 +263,8 @@ class Settings(object):
         self.cfg.WriteInt('pointsMax', self.pointsMax)
         self.cfg.WriteBool('grid', self.grid)
         self.cfg.WriteInt('plotFunc', self.plotFunc)
+        self.cfg.WriteInt('smoothRatio', self.smoothRatio)
+        self.cfg.Write('smoothFunc', self.smoothFunc)
         self.cfg.WriteBool('clickTune', self.clickTune)
         self.cfg.WriteInt('precisionFreq', self.precisionFreq)
         self.cfg.WriteInt('precisionLevel', self.precisionLevel)

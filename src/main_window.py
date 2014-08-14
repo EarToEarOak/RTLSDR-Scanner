@@ -23,7 +23,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-
 from collections import OrderedDict
 import math
 import os.path
@@ -35,16 +34,17 @@ import webbrowser
 
 from matplotlib.dates import num2epoch
 import wx
-from wx.lib.masked import NumCtrl
+from wx.lib.masked.numctrl import NumCtrl
 
 from constants import F_MIN, F_MAX, MODE, DWELL, NFFT, DISPLAY, Warn, \
     Display, Cal, Mode, KML_PORT, APP_NAME
-from controls import MultiButton
 from devices import get_devices_rtl
-from dialogs import DialogProperties, DialogPrefs, DialogAdvPrefs, \
-    DialogDevicesRTL, DialogCompare, DialogAutoCal, DialogAbout, \
-    DialogSaveWarn, DialogDevicesGPS, DialogExportGeo, DialogExportSeq, DialogImageSize, \
-    DialogFormatting, DialogLog, DialogSats, DialogSysInfo
+from dialogs_devices import DialogDevicesRTL, DialogDevicesGPS
+from dialogs_file import DialogImageSize, DialogExportSeq, DialogExportGeo, \
+    DialogProperties, DialogSaveWarn
+from dialogs_help import DialogLog, DialogSysInfo, DialogAbout
+from dialogs_prefs import DialogPrefs, DialogAdvPrefs, DialogFormatting
+from dialogs_tools import DialogCompare, DialogAutoCal, DialogSats
 from events import EVENT_THREAD, Event, EventThread, post_event, Log
 from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
     export_map, extension_add, File, run_file, export_gpx
@@ -56,9 +56,10 @@ from printer import PrintOut
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
 from spectrum import count_points, sort_spectrum, Extent
-from toolbars import Statusbar
+from toolbars import Statusbar, NavigationToolbar
 from utils_mpl import add_colours
 from utils_wx import load_icon
+from widgets import MultiButton
 
 
 class DropTarget(wx.FileDropTarget):
@@ -528,9 +529,10 @@ class FrameMain(wx.Frame):
         self.status.set_general(help, level=None)
 
     def __on_popup_menu(self, event):
-        pos = event.GetPosition()
-        pos = self.ScreenToClient(pos)
-        self.PopupMenu(self.popupMenu, pos)
+        if not isinstance(event.GetEventObject(), NavigationToolbar):
+            pos = event.GetPosition()
+            pos = self.ScreenToClient(pos)
+            self.PopupMenu(self.popupMenu, pos)
 
     def __on_new(self, _event):
         if self.__save_warn(Warn.NEW):
