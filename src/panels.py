@@ -245,8 +245,9 @@ class PanelGraph(wx.Panel):
             self.timer.Stop()
             self.measureTable.set_selected(self.spectrum, self.selectStart,
                                            self.selectEnd)
+
             if isLimited:
-                spectrum = reduce_points(spectrum, limit)
+                self.spectrum = reduce_points(spectrum, limit)
             self.plot.set_plot(self.spectrum, self.extent, annotate)
 
         else:
