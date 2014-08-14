@@ -49,6 +49,7 @@ from events import EVENT_THREAD, Event, EventThread, post_event, Log
 from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
     export_map, extension_add, File, run_file, export_gpx
 from location import ThreadLocation, KmlServer
+from menus import MenuMain, PopMenuMain
 from misc import RemoteControl, format_precision, calc_samples, calc_real_dwell, \
     get_version_timestamp, get_version_timestamp_repo, format_iso_time, limit
 from panels import PanelGraph
@@ -110,44 +111,8 @@ class FrameMain(wx.Frame):
         self.dlgSats = None
         self.dlgLog = None
 
-        self.menuNew = None
-        self.menuOpen = None
-        self.menuMerge = None
-        self.menuSave = None
-        self.menuExportScan = None
-        self.menuExportImage = None
-        self.menuExportSeq = None
-        self.menuExportGeo = None
-        self.menuExportTrack = None
-        self.menuPreview = None
-        self.menuPage = None
-        self.menuPrint = None
-        self.menuProperties = None
-        self.menuPref = None
-        self.menuAdvPref = None
-        self.menuFormatting = None
-        self.menuDevicesRtl = None
-        self.menuDevicesGps = None
-        self.menuReset = None
-        self.menuClearSelect = None
-        self.menuShowMeasure = None
-        self.menuStart = None
-        self.menuContinue = None
-        self.menuStop = None
-        self.menuStopEnd = None
-        self.menuCompare = None
-        self.menuCal = None
-        self.menuLocClear = None
-
-        self.popupMenu = None
-        self.popupMenuStart = None
-        self.popupMenuContinue = None
-        self.popupMenuStop = None
-        self.popupMenuStopEnd = None
-        self.popupMenuRangeLim = None
-        self.popupMenuPointsLim = None
-        self.popupMenuClearSelect = None
-        self.popupMenuShowMeasure = None
+        self.menuMain = None
+        self.menuPopup = None
 
         self.graph = None
         self.toolbar = None
@@ -317,155 +282,46 @@ class FrameMain(wx.Frame):
         panel.Layout()
 
     def __create_menu(self):
-        menuFile = wx.Menu()
-        self.menuNew = menuFile.Append(wx.ID_NEW, "&New",
-                                       "New plot_line")
-        self.menuOpen = menuFile.Append(wx.ID_OPEN, "&Open...",
-                                        "Open plot_line")
-        self.menuMerge = menuFile.Append(wx.ID_ANY, "&Merge...",
-                                         "Open and merge with current plot")
-        recent = wx.Menu()
-        self.settings.fileHistory.UseMenu(recent)
-        self.settings.fileHistory.AddFilesToMenu()
-        menuFile.AppendMenu(wx.ID_ANY, "&Recent Files", recent)
-        menuFile.AppendSeparator()
-        self.menuSave = menuFile.Append(wx.ID_SAVE, "&Save As...",
-                                        "Save plot_line")
-        self.menuExportScan = menuFile.Append(wx.ID_ANY, "Export scan...",
-                                              "Export scan")
-        self.menuExportImage = menuFile.Append(wx.ID_ANY, "Export image...",
-                                               "Export image")
-        self.menuExportSeq = menuFile.Append(wx.ID_ANY, "Export image sequence...",
-                                             "Export sweep plots in sequence")
-        self.menuExportGeo = menuFile.Append(wx.ID_ANY, "Export map...",
-                                             "Export maps")
-        self.menuExportTrack = menuFile.Append(wx.ID_ANY, "Export GPS track...",
-                                               "Export GPS data")
-        menuFile.AppendSeparator()
-        self.menuPage = menuFile.Append(wx.ID_ANY, "Page setup...",
-                                        "Page setup")
-        self.menuPreview = menuFile.Append(wx.ID_ANY, "Print preview...",
-                                           "Print preview")
-        self.menuPrint = menuFile.Append(wx.ID_ANY, "&Print...",
-                                         "Print plot_line")
-        menuFile.AppendSeparator()
-        self.menuProperties = menuFile.Append(wx.ID_ANY, "P&roperties...",
-                                              "Show properties")
-        menuFile.AppendSeparator()
-        menuExit = menuFile.Append(wx.ID_EXIT, "E&xit", "Exit the program")
+        self.menuMain = MenuMain(self, self.settings)
 
-        menuEdit = wx.Menu()
-        self.menuPref = menuEdit.Append(wx.ID_ANY, "&Preferences...",
-                                        "Preferences")
-        self.menuAdvPref = menuEdit.Append(wx.ID_ANY, "&Advanced preferences...",
-                                           "Advanced preferences")
-        menuEdit.AppendSeparator()
-        self.menuFormatting = menuEdit.Append(wx.ID_ANY, "&Number formatting...",
-                                              "Adjust the displayed precision of values")
-        menuEdit.AppendSeparator()
-        self.menuDevicesRtl = menuEdit.Append(wx.ID_ANY, "&Radio Devices...",
-                                              "Device selection and configuration")
-        self.menuDevicesGps = menuEdit.Append(wx.ID_ANY, "&GPS...",
-                                              "GPS selection and configuration")
-        menuEdit.AppendSeparator()
-        self.menuReset = menuEdit.Append(wx.ID_ANY, "&Reset settings...",
-                                         "Reset setting to the default")
-
-        menuView = wx.Menu()
-        self.menuClearSelect = menuView.Append(wx.ID_ANY, "Clear selection",
-                                               "Clear current selection")
-        self.graph.add_menu_clear_select(self.menuClearSelect)
-        self.menuShowMeasure = menuView.Append(wx.ID_ANY, "Show &measurements",
-                                               "Show measurements window",
-                                               kind=wx.ITEM_CHECK)
-        self.menuShowMeasure.Check(self.settings.showMeasure)
-
-        menuScan = wx.Menu()
-        self.menuStart = menuScan.Append(wx.ID_ANY, "&Start", "Start scan")
-        self.menuContinue = menuScan.Append(wx.ID_ANY, "&Continue", "Continue scan")
-        self.menuStop = menuScan.Append(wx.ID_ANY, "S&top",
-                                        "Stop scan immediately")
-        self.menuStopEnd = menuScan.Append(wx.ID_ANY, "Stop at &end",
-                                           "Complete current sweep "
-                                           "before stopping")
-
-        menuTools = wx.Menu()
-        self.menuCompare = menuTools.Append(wx.ID_ANY, "&Compare...",
-                                            "Compare plots")
-        self.menuCal = menuTools.Append(wx.ID_ANY, "&Auto Calibration...",
-                                        "Automatically calibrate to a known frequency")
-        menuTools.AppendSeparator()
-        menuKml = menuTools.Append(wx.ID_ANY, "&Track in Google Earth",
-                                   "Display recorded points in Google Earth")
-        menuSats = menuTools.Append(wx.ID_ANY, "&GPS Satellites...",
-                                    "Show satellite signal levels")
-        menuTools.AppendSeparator()
-        self.menuLocClear = menuTools.Append(wx.ID_ANY, "&Clear location data...",
-                                             "Remove GPS data from scan")
-        menuTools.AppendSeparator()
-        menuLog = menuTools.Append(wx.ID_ANY, "&Log...",
-                                   "Program log")
-
-        menuHelp = wx.Menu()
-        menuHelpLink = menuHelp.Append(wx.ID_HELP, "&Help...",
-                                       "Link to help")
-        menuHelp.AppendSeparator()
-        menuUpdate = menuHelp.Append(wx.ID_ANY, "&Check for updates...",
-                                     "Check for updates to the program")
-        menuHelp.AppendSeparator()
-        menuSys = menuHelp.Append(wx.ID_ANY, "&System information...",
-                                  "Displays system information")
-        menuHelp.AppendSeparator()
-        menuAbout = menuHelp.Append(wx.ID_ABOUT, "&About...",
-                                    "Information about this program")
-
-        menuBar = wx.MenuBar()
-        menuBar.Append(menuFile, "&File")
-        menuBar.Append(menuEdit, "&Edit")
-        menuBar.Append(menuView, "&View")
-        menuBar.Append(menuScan, "&Scan")
-        menuBar.Append(menuTools, "&Tools")
-        menuBar.Append(menuHelp, "&Help")
-        self.SetMenuBar(menuBar)
-
-        self.Bind(wx.EVT_MENU, self.__on_new, self.menuNew)
-        self.Bind(wx.EVT_MENU, self.__on_open, self.menuOpen)
-        self.Bind(wx.EVT_MENU, self.__on_merge, self.menuMerge)
-        self.Bind(wx.EVT_MENU_RANGE, self.__on_file_history, id=wx.ID_FILE1,
-                  id2=wx.ID_FILE9)
-        self.Bind(wx.EVT_MENU, self.__on_save, self.menuSave)
-        self.Bind(wx.EVT_MENU, self.__on_export_scan, self.menuExportScan)
-        self.Bind(wx.EVT_MENU, self.__on_export_image, self.menuExportImage)
-        self.Bind(wx.EVT_MENU, self.__on_export_image_seq, self.menuExportSeq)
-        self.Bind(wx.EVT_MENU, self.__on_export_geo, self.menuExportGeo)
-        self.Bind(wx.EVT_MENU, self.__on_export_track, self.menuExportTrack)
-        self.Bind(wx.EVT_MENU, self.__on_page, self.menuPage)
-        self.Bind(wx.EVT_MENU, self.__on_preview, self.menuPreview)
-        self.Bind(wx.EVT_MENU, self.__on_print, self.menuPrint)
-        self.Bind(wx.EVT_MENU, self.__on_properties, self.menuProperties)
-        self.Bind(wx.EVT_MENU, self.__on_exit, menuExit)
-        self.Bind(wx.EVT_MENU, self.__on_pref, self.menuPref)
-        self.Bind(wx.EVT_MENU, self.__on_adv_pref, self.menuAdvPref)
-        self.Bind(wx.EVT_MENU, self.__on_formatting, self.menuFormatting)
-        self.Bind(wx.EVT_MENU, self.__on_devices_rtl, self.menuDevicesRtl)
-        self.Bind(wx.EVT_MENU, self.__on_devices_gps, self.menuDevicesGps)
-        self.Bind(wx.EVT_MENU, self.__on_reset, self.menuReset)
-        self.Bind(wx.EVT_MENU, self.__on_clear_select, self.menuClearSelect)
-        self.Bind(wx.EVT_MENU, self.__on_show_measure, self.menuShowMeasure)
-        self.Bind(wx.EVT_MENU, self.__on_start, self.menuStart)
-        self.Bind(wx.EVT_MENU, self.__on_continue, self.menuContinue)
-        self.Bind(wx.EVT_MENU, self.__on_stop, self.menuStop)
-        self.Bind(wx.EVT_MENU, self.__on_stop_end, self.menuStopEnd)
-        self.Bind(wx.EVT_MENU, self.__on_compare, self.menuCompare)
-        self.Bind(wx.EVT_MENU, self.__on_cal, self.menuCal)
-        self.Bind(wx.EVT_MENU, self.__on_kml, menuKml)
-        self.Bind(wx.EVT_MENU, self.__on_sats, menuSats)
-        self.Bind(wx.EVT_MENU, self.__on_loc_clear, self.menuLocClear)
-        self.Bind(wx.EVT_MENU, self.__on_log, menuLog)
-        self.Bind(wx.EVT_MENU, self.__on_help, menuHelpLink)
-        self.Bind(wx.EVT_MENU, self.__on_update, menuUpdate)
-        self.Bind(wx.EVT_MENU, self.__on_sys_info, menuSys)
-        self.Bind(wx.EVT_MENU, self.__on_about, menuAbout)
+        self.Bind(wx.EVT_MENU, self.__on_new, self.menuMain.new)
+        self.Bind(wx.EVT_MENU, self.__on_open, self.menuMain.open)
+        self.Bind(wx.EVT_MENU, self.__on_merge, self.menuMain.merge)
+        self.Bind(wx.EVT_MENU_RANGE, self.__on_file_history,
+                  id=wx.ID_FILE1, id2=wx.ID_FILE9)
+        self.Bind(wx.EVT_MENU, self.__on_save, self.menuMain.save)
+        self.Bind(wx.EVT_MENU, self.__on_export_scan, self.menuMain.exportScan)
+        self.Bind(wx.EVT_MENU, self.__on_export_image, self.menuMain.exportImage)
+        self.Bind(wx.EVT_MENU, self.__on_export_image_seq, self.menuMain.exportSeq)
+        self.Bind(wx.EVT_MENU, self.__on_export_geo, self.menuMain.exportGeo)
+        self.Bind(wx.EVT_MENU, self.__on_export_track, self.menuMain.exportTrack)
+        self.Bind(wx.EVT_MENU, self.__on_page, self.menuMain.page)
+        self.Bind(wx.EVT_MENU, self.__on_preview, self.menuMain.preview)
+        self.Bind(wx.EVT_MENU, self.__on_print, self.menuMain.printer)
+        self.Bind(wx.EVT_MENU, self.__on_properties, self.menuMain.properties)
+        self.Bind(wx.EVT_MENU, self.__on_exit, self.menuMain.close)
+        self.Bind(wx.EVT_MENU, self.__on_pref, self.menuMain.pref)
+        self.Bind(wx.EVT_MENU, self.__on_adv_pref, self.menuMain.advPref)
+        self.Bind(wx.EVT_MENU, self.__on_formatting, self.menuMain.formatting)
+        self.Bind(wx.EVT_MENU, self.__on_devices_rtl, self.menuMain.devicesRtl)
+        self.Bind(wx.EVT_MENU, self.__on_devices_gps, self.menuMain.devicesGps)
+        self.Bind(wx.EVT_MENU, self.__on_reset, self.menuMain.reset)
+        self.Bind(wx.EVT_MENU, self.__on_clear_select, self.menuMain.clearSelect)
+        self.Bind(wx.EVT_MENU, self.__on_show_measure, self.menuMain.showMeasure)
+        self.Bind(wx.EVT_MENU, self.__on_start, self.menuMain.start)
+        self.Bind(wx.EVT_MENU, self.__on_continue, self.menuMain.cont)
+        self.Bind(wx.EVT_MENU, self.__on_stop, self.menuMain.stop)
+        self.Bind(wx.EVT_MENU, self.__on_stop_end, self.menuMain.stopEnd)
+        self.Bind(wx.EVT_MENU, self.__on_compare, self.menuMain.compare)
+        self.Bind(wx.EVT_MENU, self.__on_cal, self.menuMain.cal)
+        self.Bind(wx.EVT_MENU, self.__on_kml, self.menuMain.kml)
+        self.Bind(wx.EVT_MENU, self.__on_sats, self.menuMain.sats)
+        self.Bind(wx.EVT_MENU, self.__on_loc_clear, self.menuMain.locClear)
+        self.Bind(wx.EVT_MENU, self.__on_log, self.menuMain.log)
+        self.Bind(wx.EVT_MENU, self.__on_help, self.menuMain.helpLink)
+        self.Bind(wx.EVT_MENU, self.__on_update, self.menuMain.update)
+        self.Bind(wx.EVT_MENU, self.__on_sys_info, self.menuMain.sys)
+        self.Bind(wx.EVT_MENU, self.__on_about, self.menuMain.about)
 
         idF1 = wx.wx.NewId()
         self.Bind(wx.EVT_MENU, self.__on_help, id=idF1)
@@ -474,48 +330,19 @@ class FrameMain(wx.Frame):
 
         self.Bind(wx.EVT_MENU_HIGHLIGHT, self.__on_menu_highlight)
 
+        self.SetMenuBar(self.menuMain.menuBar)
+
     def __create_popup_menu(self):
-        self.popupMenu = wx.Menu()
-        self.popupMenuStart = self.popupMenu.Append(wx.ID_ANY, "&Start",
-                                                    "Start scan")
-        self.popupMenuContinue = self.popupMenu.Append(wx.ID_ANY, "&Continue",
-                                                       "Continue scan")
-        self.popupMenuStop = self.popupMenu.Append(wx.ID_ANY, "S&top",
-                                                   "Stop scan immediately")
-        self.popupMenuStopEnd = self.popupMenu.Append(wx.ID_ANY, "Stop at &end",
-                                                      "Complete current sweep "
-                                                      "before stopping")
-        self.popupMenu.AppendSeparator()
-        self.popupMenuRangeLim = self.popupMenu.Append(wx.ID_ANY,
-                                                       "Set range to current zoom",
-                                                       "Set scanning range to the "
-                                                       "current zoom")
-        self.popupMenu.AppendSeparator()
-        self.popupMenuPointsLim = self.popupMenu.Append(wx.ID_ANY,
-                                                        "Limit points",
-                                                        "Limit points to "
-                                                        "increase plot_line speed",
-                                                        kind=wx.ITEM_CHECK)
-        self.popupMenuPointsLim.Check(self.settings.pointsLimit)
+        self.menuPopup = PopMenuMain(self.settings)
 
-        self.popupMenu.AppendSeparator()
-        self.popupMenuClearSelect = self.popupMenu.Append(wx.ID_ANY, "Clear selection",
-                                                          "Clear current selection")
-        self.graph.add_menu_clear_select(self.popupMenuClearSelect)
-        self.popupMenuShowMeasure = self.popupMenu.Append(wx.ID_ANY,
-                                                          "Show &measurements",
-                                                          "Show measurements window",
-                                                          kind=wx.ITEM_CHECK)
-        self.popupMenuShowMeasure.Check(self.settings.showMeasure)
-
-        self.Bind(wx.EVT_MENU, self.__on_start, self.popupMenuStart)
-        self.Bind(wx.EVT_MENU, self.__on_continue, self.popupMenuContinue)
-        self.Bind(wx.EVT_MENU, self.__on_stop, self.popupMenuStop)
-        self.Bind(wx.EVT_MENU, self.__on_stop_end, self.popupMenuStopEnd)
-        self.Bind(wx.EVT_MENU, self.__on_range_lim, self.popupMenuRangeLim)
-        self.Bind(wx.EVT_MENU, self.__on_points_lim, self.popupMenuPointsLim)
-        self.Bind(wx.EVT_MENU, self.__on_clear_select, self.popupMenuClearSelect)
-        self.Bind(wx.EVT_MENU, self.__on_show_measure, self.popupMenuShowMeasure)
+        self.Bind(wx.EVT_MENU, self.__on_start, self.menuPopup.start)
+        self.Bind(wx.EVT_MENU, self.__on_continue, self.menuPopup.cont)
+        self.Bind(wx.EVT_MENU, self.__on_stop, self.menuPopup.stop)
+        self.Bind(wx.EVT_MENU, self.__on_stop_end, self.menuPopup.stopEnd)
+        self.Bind(wx.EVT_MENU, self.__on_range_lim, self.menuPopup.rangeLim)
+        self.Bind(wx.EVT_MENU, self.__on_points_lim, self.menuPopup.pointsLim)
+        self.Bind(wx.EVT_MENU, self.__on_clear_select, self.menuPopup.clearSelect)
+        self.Bind(wx.EVT_MENU, self.__on_show_measure, self.menuPopup.showMeasure)
 
         self.Bind(wx.EVT_CONTEXT_MENU, self.__on_popup_menu)
 
@@ -532,7 +359,7 @@ class FrameMain(wx.Frame):
         if not isinstance(event.GetEventObject(), NavigationToolbar):
             pos = event.GetPosition()
             pos = self.ScreenToClient(pos)
-            self.PopupMenu(self.popupMenu, pos)
+            self.PopupMenu(self.menuPopup.menu, pos)
 
     def __on_new(self, _event):
         if self.__save_warn(Warn.NEW):
@@ -542,6 +369,7 @@ class FrameMain(wx.Frame):
         self.__saved(True)
         self.__set_plot(self.spectrum, False)
         self.graph.clear_selection()
+        self.__set_control_state(True)
 
     def __on_open(self, _event):
         if self.__save_warn(Warn.OPEN):
@@ -800,7 +628,7 @@ class FrameMain(wx.Frame):
 
     def __on_show_measure(self, event):
         show = event.Checked()
-        self.menuShowMeasure.Check(show)
+        self.menuMain.showMeasure.Check(show)
         self.popupMenuShowMeasure.Check(show)
         self.settings.showMeasure = show
         self.graph.show_measure_table(show)
@@ -929,7 +757,7 @@ class FrameMain(wx.Frame):
         self.__set_controls()
 
     def __on_points_lim(self, _event):
-        self.settings.pointsLimit = self.popupMenuPointsLim.IsChecked()
+        self.settings.pointsLimit = self.menuPopup.pointsLim.IsChecked()
         self.__set_plot(self.spectrum, self.settings.annotate)
 
     def __on_gps_retry(self, _event):
@@ -1262,6 +1090,7 @@ class FrameMain(wx.Frame):
 
     def __set_control_state(self, state):
         hasDevices = len(self.devicesRtl) > 0
+
         self.spinCtrlStart.Enable(state)
         self.spinCtrlStop.Enable(state)
         self.controlGain.Enable(state)
@@ -1270,40 +1099,9 @@ class FrameMain(wx.Frame):
         self.choiceNfft.Enable(state)
         self.buttonStart.Enable(state and hasDevices)
         self.buttonStop.Enable(not state and hasDevices)
-        self.menuNew.Enable(state)
-        self.menuOpen.Enable(state)
-        self.menuMerge.Enable(state and len(self.spectrum) > 0)
-        self.menuSave.Enable(state and len(self.spectrum) > 0)
-        self.menuExportScan.Enable(state and len(self.spectrum) > 0)
-        self.menuExportImage.Enable(state)
-        self.menuExportSeq.Enable(state and len(self.spectrum) > 0)
-        self.menuExportGeo.Enable(state and len(self.spectrum) > 0 and
-                                  len(self.locations) > 0)
-        self.menuExportGeo.Enable(state and len(self.locations))
-        self.menuPage.Enable(state)
-        self.menuPreview.Enable(state)
-        self.menuPrint.Enable(state)
-        self.menuStart.Enable(state)
-        self.menuContinue.Enable(state and len(self.spectrum))
-        self.menuStop.Enable(not state)
-        self.menuPref.Enable(state)
-        self.menuAdvPref.Enable(state)
-        self.menuDevicesRtl.Enable(state)
-        self.menuDevicesGps.Enable(state)
-        self.menuReset.Enable(state)
-        self.menuCal.Enable(state)
-        self.menuLocClear.Enable(state and len(self.locations))
 
-        self.popupMenuStart.Enable(state)
-        self.popupMenuContinue.Enable(state and len(self.spectrum))
-        self.popupMenuStop.Enable(not state)
-        if self.settings.mode == Mode.CONTIN:
-            self.menuStopEnd.Enable(not state)
-            self.popupMenuStopEnd.Enable(not state)
-        else:
-            self.menuStopEnd.Enable(False)
-            self.popupMenuStopEnd.Enable(False)
-        self.popupMenuRangeLim.Enable(state)
+        self.menuMain.set_state(state, self.spectrum, self.locations)
+        self.menuPopup.set_state(state, self.spectrum)
 
     def __set_controls(self):
         self.spinCtrlStart.SetValue(self.settings.start)

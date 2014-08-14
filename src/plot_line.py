@@ -41,7 +41,7 @@ import numpy
 from constants import Markers, PlotFunc
 from events import EventThread, Event, post_event
 from misc import format_precision
-from spectrum import Measure, smooth_sweep, Extent, smooth_spectrum, \
+from spectrum import Measure, Extent, smooth_spectrum, \
     diff_spectrum
 from utils_mpl import get_colours
 
