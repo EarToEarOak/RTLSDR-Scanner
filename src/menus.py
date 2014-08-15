@@ -118,7 +118,7 @@ class MenuMain(object):
                                 "Display recorded points in Google Earth")
         self.sats = tools.Append(wx.ID_ANY, "&GPS Satellites...",
                                  "Show satellite signal levels")
-        view.AppendSeparator()
+        tools.AppendSeparator()
         self.locClear = tools.Append(wx.ID_ANY, "&Clear location data...",
                                      "Remove GPS data from scan")
         tools.AppendSeparator()
