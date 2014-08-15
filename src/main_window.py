@@ -44,7 +44,7 @@ from dialogs_file import DialogImageSize, DialogExportSeq, DialogExportGeo, \
     DialogProperties, DialogSaveWarn
 from dialogs_help import DialogLog, DialogSysInfo, DialogAbout
 from dialogs_prefs import DialogPrefs, DialogAdvPrefs, DialogFormatting
-from dialogs_tools import DialogCompare, DialogAutoCal, DialogSats
+from dialogs_tools import DialogCompare, DialogAutoCal, DialogSats, DialogSmooth
 from events import EVENT_THREAD, Event, EventThread, post_event, Log
 from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
     export_map, extension_add, File, run_file, export_gpx
@@ -313,6 +313,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.__on_stop, self.menuMain.stop)
         self.Bind(wx.EVT_MENU, self.__on_stop_end, self.menuMain.stopEnd)
         self.Bind(wx.EVT_MENU, self.__on_compare, self.menuMain.compare)
+        self.Bind(wx.EVT_MENU, self.__on_smooth, self.menuMain.smooth)
         self.Bind(wx.EVT_MENU, self.__on_cal, self.menuMain.cal)
         self.Bind(wx.EVT_MENU, self.__on_kml, self.menuMain.kml)
         self.Bind(wx.EVT_MENU, self.__on_sats, self.menuMain.sats)
@@ -363,13 +364,14 @@ class FrameMain(wx.Frame):
 
     def __on_new(self, _event):
         if self.__save_warn(Warn.NEW):
-            return
+            return True
         self.spectrum.clear()
         self.locations.clear()
         self.__saved(True)
         self.__set_plot(self.spectrum, False)
         self.graph.clear_selection()
         self.__set_control_state(True)
+        return False
 
     def __on_open(self, _event):
         if self.__save_warn(Warn.OPEN):
@@ -622,6 +624,22 @@ class FrameMain(wx.Frame):
     def __on_compare(self, _event):
         dlg = DialogCompare(self, self.settings, self.filename)
         dlg.Show()
+
+    def __on_smooth(self, _event):
+        dlg = DialogSmooth(self, self.spectrum, self.settings)
+        if dlg.ShowModal() == wx.ID_OK:
+            saved = self.isSaved
+            self.isSaved = False
+            if not self.__on_new(None):
+                self.spectrum.clear()
+                spectrum = dlg.get_spectrum()
+                self.spectrum.update(OrderedDict(sorted(spectrum.items())))
+                self.__set_plot(self.spectrum, False)
+                self.graph.update_measure()
+                self.graph.redraw_plot()
+                self.__saved(False)
+            else:
+                self.__saved(saved)
 
     def __on_clear_select(self, _event):
         self.graph.clear_selection()

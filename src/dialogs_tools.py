@@ -23,13 +23,21 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import Queue
+import copy
+
+import matplotlib
+from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 import wx
 from wx.lib import masked
 
-from constants import F_MIN, F_MAX, Cal
+from constants import F_MIN, F_MAX, Cal, WINFUNC, PlotFunc
+from events import Event
 from file import File, open_plot
 from misc import format_precision
 from panels import PanelGraphCompare, PanelLine
+from plot_line import Plotter
+from spectrum import Extent, sort_spectrum, smooth_spectrum
 from utils_wx import close_modeless
 from widgets import SatLevel
 
@@ -181,6 +189,99 @@ class DialogCompare(wx.Dialog):
         freq, level = format_precision(self.settings, x, y, units=False)
 
         return '{} MHz\n{}    dB/Hz'.format(freq, level)
+
+
+class DialogSmooth(wx.Dialog):
+    POLL = 250
+
+    def __init__(self, parent, spectrum, settings):
+        self.spectrum = sort_spectrum(spectrum)
+        self.settings = settings
+        self.smoothed = None
+
+        wx.Dialog.__init__(self, parent=parent, title='Smooth Spectrum')
+
+        self.queue = Queue.Queue()
+        self.timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.__on_timer, self.timer)
+        self.timer.Start(self.POLL)
+
+        self.figure = matplotlib.figure.Figure(facecolor='white')
+        self.canvas = FigureCanvas(self, -1, self.figure)
+        settings = copy.copy(settings)
+        settings.plotFunc = PlotFunc.NONE
+        self.plot = Plotter(self.queue, self.figure, settings)
+
+        textFunc = wx.StaticText(self, label='Window function')
+        self.choiceFunc = wx.Choice(self, choices=WINFUNC[::2])
+        self.choiceFunc.SetSelection(WINFUNC[::2].index(settings.smoothFunc))
+
+        textRatio = wx.StaticText(self, label='Smoothing')
+        self.slideRatio = wx.Slider(self, value=settings.smoothRatio,
+                                    minValue=2, maxValue=100,
+                                    style=wx.SL_INVERSE)
+
+        buttonSmooth = wx.Button(self, label='Smooth')
+        self.Bind(wx.EVT_BUTTON, self.__on_smooth, buttonSmooth)
+
+        sizerButtons = wx.StdDialogButtonSizer()
+        self.buttonOk = wx.Button(self, wx.ID_OK)
+        self.buttonOk.Disable()
+        buttonCancel = wx.Button(self, wx.ID_CANCEL)
+        sizerButtons.AddButton(self.buttonOk)
+        sizerButtons.AddButton(buttonCancel)
+        sizerButtons.Realize()
+        self.Bind(wx.EVT_BUTTON, self.__on_ok, self.buttonOk)
+
+        sizerGrid = wx.GridBagSizer(5, 5)
+        sizerGrid.Add(self.canvas, pos=(0, 0), span=(10, 6),
+                      flag=wx.EXPAND | wx.ALL, border=5)
+        sizerGrid.Add(textFunc, pos=(0, 6),
+                      flag=wx.ALL, border=5)
+        sizerGrid.Add(self.choiceFunc, pos=(1, 6), span=(1, 2),
+                      flag=wx.EXPAND | wx.ALL, border=5)
+        sizerGrid.Add(textRatio, pos=(2, 6),
+                      flag=wx.ALL, border=5)
+        sizerGrid.Add(self.slideRatio, pos=(3, 6), span=(1, 2),
+                      flag=wx.EXPAND | wx.ALL, border=5)
+        sizerGrid.Add(buttonSmooth, pos=(4, 6), span=(1, 2),
+                      flag=wx.ALL | wx.ALIGN_CENTRE, border=5)
+        sizerGrid.Add(sizerButtons, pos=(10, 6), span=(1, 2),
+                      flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
+
+        self.SetSizerAndFit(sizerGrid)
+
+        self.__draw_plot(self.spectrum)
+
+    def __on_timer(self, _event):
+        self.timer.Stop()
+        while not self.queue.empty():
+            event = self.queue.get()
+            status = event.data.get_status()
+
+            if status == Event.DRAW:
+                self.canvas.draw()
+
+        self.timer.Start(self.POLL)
+
+    def __on_smooth(self, _event):
+        dlg = wx.BusyInfo('Please wait...')
+        func = self.choiceFunc.GetStringSelection()
+        ratio = self.slideRatio.GetValue()
+        self.smoothed = smooth_spectrum(self.spectrum, func, ratio)
+        self.__draw_plot(self.smoothed)
+        self.buttonOk.Enable()
+        dlg.Destroy()
+
+    def __on_ok(self, _event):
+        self.EndModal(wx.ID_OK)
+
+    def __draw_plot(self, spectrum):
+        extent = Extent(spectrum)
+        self.plot.set_plot(spectrum, extent, False)
+
+    def get_spectrum(self):
+        return self.smoothed
 
 
 class DialogAutoCal(wx.Dialog):

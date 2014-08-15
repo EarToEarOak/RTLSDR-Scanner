@@ -28,7 +28,7 @@ import wx
 from constants import WINFUNC
 
 
-class DialogSmooth(wx.Dialog):
+class DialogSmoothPrefs(wx.Dialog):
     def __init__(self, parent, settings):
         wx.Dialog.__init__(self, parent=parent, title='Smoothing')
 

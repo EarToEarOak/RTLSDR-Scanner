@@ -33,7 +33,7 @@ from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
 import wx
 
 from constants import Display, PlotFunc
-from dialogs_toolbars import DialogSmooth
+from dialogs_toolbars import DialogSmoothPrefs
 from events import Log
 from utils_mpl import get_colours
 from utils_wx import load_bitmap
@@ -314,7 +314,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.panel.redraw_plot()
 
     def __on_set_smooth(self, _event):
-        dlg = DialogSmooth(self, self.settings)
+        dlg = DialogSmoothPrefs(self, self.settings)
         if dlg.ShowModal() == wx.ID_OK:
             self.panel.redraw_plot()
 

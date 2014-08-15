@@ -107,6 +107,10 @@ class MenuMain(object):
         tools = wx.Menu()
         self.compare = tools.Append(wx.ID_ANY, "&Compare...",
                                     "Compare plots")
+        tools.AppendSeparator()
+        self.smooth = tools.Append(wx.ID_ANY, "&Smooth...",
+                                   "Smooth scans")
+        tools.AppendSeparator()
         self.cal = tools.Append(wx.ID_ANY, "&Auto Calibration...",
                                 "Automatically calibrate to a known frequency")
         tools.AppendSeparator()
@@ -163,6 +167,7 @@ class MenuMain(object):
         self.devicesRtl.Enable(state)
         self.devicesGps.Enable(state)
         self.reset.Enable(state)
+        self.smooth.Enable(state)
         self.cal.Enable(state)
         self.locClear.Enable(state and len(locations))
 
