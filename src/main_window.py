@@ -877,7 +877,7 @@ class FrameMain(wx.Frame):
                                 self.settings.mode == Mode.CONTIN)
             self.__progress()
         elif status == Event.DRAW:
-            threading.Thread(target=self.graph.draw(), name='Draw').start()
+            self.graph.draw()
         elif status == Event.VER_UPD:
             self.__update_checked(True, freq, data)
         elif status == Event.VER_NOUPD:
