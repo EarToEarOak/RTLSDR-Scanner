@@ -177,7 +177,7 @@ class MenuMain(object):
             self.stopEnd.Enable(False)
 
 
-class PopMenuMain():
+class PopMenuMain(object):
     def __init__(self, settings):
         self.settings = settings
 
