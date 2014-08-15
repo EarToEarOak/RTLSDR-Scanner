@@ -489,10 +489,6 @@ class ThreadPlot(threading.Thread):
         total = len(spectrum)
         count = 0.0
         for timeStamp in spectrum:
-            if len(spectrum[timeStamp]) < 2:
-                self.parent.threadPlot = None
-                return None, None
-
             if self.settings.fadeScans:
                 alpha = (total - count) / total
             else:
@@ -502,15 +498,16 @@ class ThreadPlot(threading.Thread):
             peakF, peakL = self.extent.get_peak_fl()
 
             segments, levels = self.__create_segments(data)
-            lc = LineCollection(segments)
-            lc.set_array(numpy.array(levels))
-            lc.set_norm(self.__get_norm(self.settings.autoL, self.extent))
-            lc.set_cmap(self.colourMap)
-            lc.set_linewidth(self.lineWidth)
-            lc.set_gid('plot')
-            lc.set_alpha(alpha)
-            self.axes.add_collection(lc)
-            count += 1
+            if segments is not None:
+                lc = LineCollection(segments)
+                lc.set_array(numpy.array(levels))
+                lc.set_norm(self.__get_norm(self.settings.autoL, self.extent))
+                lc.set_cmap(self.colourMap)
+                lc.set_linewidth(self.lineWidth)
+                lc.set_gid('plot')
+                lc.set_alpha(alpha)
+                self.axes.add_collection(lc)
+                count += 1
 
         return peakF, peakL
 
@@ -543,8 +540,8 @@ class ThreadPlot(threading.Thread):
         points = OrderedDict()
 
         for timeStamp in self.data:
-            if len(self.data[timeStamp]) < 2:
-                return None, None
+#             if len(self.data[timeStamp]) < 2:
+#                 return None, None
 
             for x, y in self.data[timeStamp].items():
                 if x in points:
@@ -615,14 +612,17 @@ class ThreadPlot(threading.Thread):
         segments = []
         levels = []
 
-        prev = points[0]
-        for point in points:
-            segment = [prev, point]
-            segments.append(segment)
-            levels.append((point[1] + prev[1]) / 2.0)
-            prev = point
+        if len(points):
+            prev = points[0]
+            for point in points:
+                segment = [prev, point]
+                segments.append(segment)
+                levels.append((point[1] + prev[1]) / 2.0)
+                prev = point
 
-        return segments, levels
+            return segments, levels
+
+        return None, None
 
     def __get_norm(self, autoL, extent):
         if autoL:

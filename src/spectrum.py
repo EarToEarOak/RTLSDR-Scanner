@@ -76,7 +76,7 @@ class Extent(object):
 
     def get_l(self):
         if self.lMin == self.lMax:
-            return self.lMin, self.lMax - 0.001
+            return self.lMin, self.lMax + 0.001
         return self.lMin, self.lMax
 
     def get_t(self):
