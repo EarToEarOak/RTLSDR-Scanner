@@ -190,13 +190,11 @@ class FrameMain(wx.Frame):
         self.__start_kml()
 
     def __create_widgets(self):
-        panel = wx.Panel(self)
-
         self.remoteControl = RemoteControl()
 
-        self.graph = PanelGraph(panel, self, self.settings, self.__on_motion,
+        self.graph = PanelGraph(self, self, self.settings, self.__on_motion,
                                 self.remoteControl)
-        self.toolbar = wx.Panel(panel)
+        self.toolbar = wx.Panel(self)
 
         self.buttonStart = MultiButton(self.toolbar,
                                        ['Start', 'Continue'],
@@ -278,8 +276,8 @@ class FrameMain(wx.Frame):
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.graph, 1, wx.EXPAND)
         sizer.Add(self.toolbar, 0, wx.EXPAND)
-        panel.SetSizer(sizer)
-        panel.Layout()
+        self.SetSizer(sizer)
+        self.Layout()
 
     def __create_menu(self):
         self.menuMain = MenuMain(self, self.settings)
