@@ -25,6 +25,7 @@
 
 import copy
 import math
+import re
 import threading
 
 from matplotlib import cm
@@ -143,7 +144,7 @@ class PanelGraph(wx.Panel):
         xpos = event.xdata
         ypos = event.ydata
         text = ""
-        if xpos is None or ypos is None or len(self.spectrum) == 0:
+        if xpos is None or ypos is None or self.spectrum is None:
             return
 
         if self.settings.display == Display.PLOT:
@@ -159,10 +160,20 @@ class PanelGraph(wx.Panel):
                 spectrum = self.spectrum[nearest]
         else:
             spectrum = None
+            coords = self.plot.get_axes().format_coord(event.xdata,
+                                                       event.ydata)
+            match = re.match('x=([-|0-9|\.]+).*y=([0-9|\:]+).*z=([-|0-9|\.]+)',
+                             coords)
+            if match is not None and match.lastindex == 3:
+                freq = float(match.group(1))
+                level = float(match.group(3))
+                text = "{}, {}".format(*format_precision(self.settings,
+                                                         freq, level))
 
         if spectrum is not None and len(spectrum) > 0:
             x = min(spectrum.keys(), key=lambda freq: abs(freq - xpos))
-            if min(spectrum.keys(), key=float) <= xpos <= max(spectrum.keys(), key=float):
+            if min(spectrum.keys(), key=float) <= xpos <= max(spectrum.keys(),
+                                                              key=float):
                 y = spectrum[x]
                 text = "{}, {}".format(*format_precision(self.settings, x, y))
             else:
