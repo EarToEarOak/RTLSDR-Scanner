@@ -41,7 +41,7 @@ from constants import Markers, PlotFunc
 from events import EventThread, Event, post_event
 from misc import format_time, format_precision
 from spectrum import split_spectrum, Measure, smooth_spectrum, Extent, \
-    diff_spectrum
+    diff_spectrum, get_peaks
 from utils_mpl import utc_to_mpl
 
 
@@ -316,7 +316,10 @@ class ThreadPlot(threading.Thread):
                 peakF, peakL, peakT = self.__plot_diff()
 
             if self.annotate:
-                self.__annotate_plot(peakF, peakL, peakT)
+                self.__plot_peak(peakF, peakL, peakT)
+
+            if self.settings.peaks:
+                self.__plot_peaks()
 
             self.parent.scale_plot()
             self.parent.redraw_plot()
@@ -366,7 +369,7 @@ class ThreadPlot(threading.Thread):
         self.parent.extent = self.extent
         return self.__plot(data)
 
-    def __annotate_plot(self, peakF, peakL, peakT):
+    def __plot_peak(self, peakF, peakL, peakT):
         self.__clear_markers()
         y = utc_to_mpl(peakT)
 
@@ -374,16 +377,17 @@ class ThreadPlot(threading.Thread):
         textX = ((stop - start) / 50.0) + peakF
         when = format_time(peakT)
 
-        text = '{}\n{}\n{when}'.format(*format_precision(self.settings, peakF, peakL,
+        text = '{}\n{}\n{when}'.format(*format_precision(self.settings,
+                                                         peakF, peakL,
                                                          fancyUnits=True),
                                        when=when)
         if matplotlib.__version__ < '1.3':
             self.axes.annotate(text,
                                xy=(peakF, y), xytext=(textX, y),
                                ha='left', va='bottom', size='x-small',
-                               color='w', gid='peak')
+                               color='w', gid='peakText')
             self.axes.plot(peakF, y, marker='x', markersize=10, color='w',
-                           mew=3, gid='peak')
+                           mew=3, gid='peakShadow')
             self.axes.plot(peakF, y, marker='x', markersize=10, color='r',
                            gid='peak')
         else:
@@ -392,15 +396,26 @@ class ThreadPlot(threading.Thread):
             self.axes.annotate(text,
                                xy=(peakF, y), xytext=(textX, y),
                                ha='left', va='bottom', size='x-small',
-                               path_effects=[effect], gid='peak')
+                               path_effects=[effect], gid='peakText')
             self.axes.plot(peakF, y, marker='x', markersize=10, color='r',
                            path_effects=[effect], gid='peak')
+
+    def __plot_peaks(self):
+        sweep, indices = get_peaks(self.data, self.settings.peaksThres)
+        lastTime = utc_to_mpl(max(self.data))
+
+        for i in indices:
+            self.axes.plot(sweep.keys()[i], lastTime,
+                           linestyle='None',
+                           marker='+', markersize=10, color='r',
+                           gid='peakThres')
 
     def __clear_markers(self):
         children = self.axes.get_children()
         for child in children:
             if child.get_gid() is not None:
-                if child.get_gid() == 'peak':
+                if child.get_gid() in ['peak', 'peakText',
+                                       'peakShadow', 'peakThres']:
                     child.remove()
 
 

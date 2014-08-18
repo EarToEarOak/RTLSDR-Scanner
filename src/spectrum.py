@@ -335,6 +335,17 @@ def smooth_sweep(sweep, winFunc, ratio):
     return OrderedDict(zip(sweep.keys(), smoothed))
 
 
+def get_peaks(spectrum, threshold):
+    sweep = OrderedDict(spectrum[max(spectrum)])
+    for freq, level in sweep.items():
+        if level < threshold:
+            del sweep[freq]
+
+    indices = (numpy.diff(numpy.sign(numpy.diff(sweep.values()))) < 0).nonzero()[0] + 1
+
+    return sweep, indices
+
+
 if __name__ == '__main__':
     print 'Please run rtlsdr_scan.py'
     exit(1)

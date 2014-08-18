@@ -38,7 +38,8 @@ from mpl_toolkits.mplot3d import Axes3D  # @UnresolvedImport @UnusedImport
 from constants import PlotFunc
 from events import post_event, EventThread, Event
 from misc import format_time, format_precision
-from spectrum import create_mesh, smooth_spectrum, Extent, diff_spectrum
+from spectrum import create_mesh, smooth_spectrum, Extent, diff_spectrum, \
+    get_peaks
 from utils_mpl import utc_to_mpl
 
 
@@ -187,7 +188,10 @@ class ThreadPlot(threading.Thread):
                 peakF, peakL, peakT = self.__plot_diff()
 
             if self.annotate:
-                self.__annotate_plot(peakF, peakL, peakT)
+                self.__plot_peak(peakF, peakL, peakT)
+
+            if self.settings.peaks:
+                self.__plot_peaks()
 
             self.parent.scale_plot()
             self.parent.redraw_plot()
@@ -239,7 +243,7 @@ class ThreadPlot(threading.Thread):
         self.parent.extent = self.extent
         return self.__plot(data)
 
-    def __annotate_plot(self, peakF, peakL, peakT):
+    def __plot_peak(self, peakF, peakL, peakT):
         when = format_time(peakT)
         tPos = utc_to_mpl(peakT)
 
@@ -250,26 +254,37 @@ class ThreadPlot(threading.Thread):
         if matplotlib.__version__ < '1.3':
             self.axes.text(peakF, tPos, peakL,
                            text,
-                           ha='left', va='bottom', size='x-small', gid='peak')
+                           ha='left', va='bottom', size='x-small', gid='peakText')
             self.axes.plot([peakF], [tPos], [peakL], marker='x', markersize=10,
                            mew=3, color='w', gid='peak')
             self.axes.plot([peakF], [tPos], [peakL], marker='x', markersize=10,
-                           color='r', gid='peak')
+                           color='r', gid='peakShadow')
         else:
             effect = patheffects.withStroke(linewidth=2, foreground="w",
                                             alpha=0.75)
             self.axes.text(peakF, tPos, peakL,
                            text,
-                           ha='left', va='bottom', size='x-small', gid='peak',
+                           ha='left', va='bottom', size='x-small', gid='peakText',
                            path_effects=[effect])
             self.axes.plot([peakF], [tPos], [peakL], marker='x', markersize=10,
                            color='r', gid='peak', path_effects=[effect])
+
+    def __plot_peaks(self):
+        sweep, indices = get_peaks(self.data, self.settings.peaksThres)
+        lastTime = utc_to_mpl(max(self.data))
+
+        for i in indices:
+            self.axes.plot([sweep.keys()[i]], [lastTime], [sweep.values()[i]],
+                           linestyle='None',
+                           marker='+', markersize=10, color='r',
+                           gid='peakThres')
 
     def __clear_markers(self):
         children = self.axes.get_children()
         for child in children:
             if child.get_gid() is not None:
-                if child.get_gid() == 'peak':
+                if child.get_gid() in ['peak', 'peakText',
+                                       'peakShadow', 'peakThres']:
                     child.remove()
 
 

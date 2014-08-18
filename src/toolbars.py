@@ -33,7 +33,7 @@ from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
 import wx
 
 from constants import Display, PlotFunc
-from dialogs_toolbars import DialogSmoothPrefs
+from dialogs_toolbars import DialogSmoothPrefs, DialogPeakThreshold
 from events import Log
 from utils_mpl import get_colours
 from utils_wx import load_bitmap
@@ -177,6 +177,9 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.ToggleTool(gridId, settings.grid)
         wx.EVT_TOOL(self, gridId, self.__on_check_grid)
 
+        self.peakId = wx.NewId()
+        self.peaksId = None
+
         self.autoFId = None
         self.autoLId = None
         self.autoTId = None
@@ -249,6 +252,11 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.settings.annotate = peak
         self.panel.redraw_plot()
 
+    def __on_check_peaks(self, event):
+        peaks = event.Checked()
+        self.settings.peaks = peaks
+        self.panel.redraw_plot()
+
     def __on_check_fade(self, event):
         fade = event.Checked()
         self.settings.fadeScans = fade
@@ -318,6 +326,11 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         if dlg.ShowModal() == wx.ID_OK:
             self.panel.redraw_plot()
 
+    def __on_set_peaks(self, _event):
+        dlg = DialogPeakThreshold(self, self.settings)
+        if dlg.ShowModal() == wx.ID_OK:
+            self.panel.redraw_plot()
+
     def __on_colour(self, event):
         colourMap = event.GetString()
         self.settings.colourMap = colourMap
@@ -350,7 +363,17 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
     def __add_peak(self):
         self.__add_check_tool('peak', 'Label peak',
                               self.__on_check_peak,
-                              self.settings.annotate)
+                              self.settings.annotate,
+                              toolId=self.peakId)
+
+    def __add_peaks(self):
+        self.peaksId = wx.NewId()
+        self.__add_check_tool('peaks', 'Mark peaks above threshold '
+                              '(right click for options)',
+                              self.__on_check_peaks,
+                              self.settings.peaks,
+                              toolId=self.peaksId)
+        wx.EVT_TOOL_RCLICKED(self, self.peaksId, self.__on_set_peaks)
 
     def __add_auto_range(self, scaleF, scaleL, scaleT):
         if scaleF:
@@ -391,6 +414,14 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.Bind(wx.EVT_CHOICE, self.__on_colour, self.colourId)
         self.extraTools.append(colourId)
 
+    def __enable_tool(self, toolId, state):
+        if toolId is not None:
+            self.EnableTool(toolId, state)
+
+    def __toggle_tool(self, toolId, state):
+        if toolId is not None:
+            self.ToggleTool(toolId, state)
+
     def __set_func(self):
         buttons = [self.avgId, self.minId, self.maxId,
                    self.varId, self.smoothId, self.diffId]
@@ -398,8 +429,27 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         for button in buttons:
             if button is not None:
                 self.ToggleTool(button, False)
+
         if self.settings.plotFunc != PlotFunc.NONE:
             self.ToggleTool(buttons[self.settings.plotFunc - 1], True)
+
+        if self.settings.plotFunc == PlotFunc.NONE:
+            self.__enable_tool(self.peakId, True)
+            self.__enable_tool(self.peaksId, True)
+        elif self.settings.plotFunc in [PlotFunc.AVG, PlotFunc.MIN,
+                                        PlotFunc.MAX, PlotFunc.SMOOTH,
+                                        PlotFunc.DIFF]:
+            self.__enable_tool(self.peakId, True)
+            self.__enable_tool(self.peaksId, False)
+            self.__toggle_tool(self.peaksId, False)
+            self.settings.peaks = False
+        else:
+            self.__enable_tool(self.peakId, False)
+            self.__enable_tool(self.peaksId, False)
+            self.__toggle_tool(self.peaksId, False)
+            self.__toggle_tool(self.peakId, False)
+            self.settings.annotate = False
+            self.settings.peaks = False
 
     def set_auto(self, state):
         self.settings.autoF = state
@@ -428,6 +478,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         if display == Display.PLOT:
             self.__add_auto_range(True, True, False)
             self.__add_peak()
+            self.__add_peaks()
 
             self.__add_check_tool('fade', 'Fade plots',
                                   self.__on_check_fade,
@@ -465,6 +516,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         elif display == Display.SPECT:
             self.__add_auto_range(True, True, True)
             self.__add_peak()
+            self.__add_peaks()
             self.smoothId = wx.NewId()
             self.__add_check_tool('smooth', 'Smooth (right click for options)',
                                   self.__on_check_smooth,
@@ -480,6 +532,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         elif display == Display.SURFACE:
             self.__add_auto_range(True, True, True)
             self.__add_peak()
+            self.__add_peaks()
             self.smoothId = wx.NewId()
             self.__add_check_tool('smooth', 'Smooth (right click for options)',
                                   self.__on_check_smooth,

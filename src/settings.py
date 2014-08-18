@@ -42,6 +42,8 @@ class Settings(object):
         self.display = Display.PLOT
 
         self.annotate = True
+        self.peaks = False
+        self.peaksThres = -30
 
         self.retainScans = True
         self.retainMax = 20
@@ -196,6 +198,8 @@ class Settings(object):
         self.dirScans = self.cfg.Read('dirScans', self.dirScans)
         self.dirExport = self.cfg.Read('dirExport', self.dirExport)
         self.annotate = self.cfg.ReadBool('annotate', self.annotate)
+        self.peaks = self.cfg.ReadBool('peaks', self.peaks)
+        self.peaksThres = self.cfg.ReadInt('peaksThres', self.peaksThres)
         self.retainScans = self.cfg.ReadBool('retainScans', self.retainScans)
         self.fadeScans = self.cfg.ReadBool('fadeScans', self.fadeScans)
         self.lineWidth = self.cfg.ReadFloat('lineWidth', self.lineWidth)
@@ -251,6 +255,8 @@ class Settings(object):
         self.cfg.Write('dirScans', self.dirScans)
         self.cfg.Write('dirExport', self.dirExport)
         self.cfg.WriteBool('annotate', self.annotate)
+        self.cfg.WriteBool('peaks', self.peaks)
+        self.cfg.WriteInt('peaksThres', self.peaksThres)
         self.cfg.WriteBool('retainScans', self.retainScans)
         self.cfg.WriteBool('fadeScans', self.fadeScans)
         self.cfg.WriteFloat('lineWidth', self.lineWidth)

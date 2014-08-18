@@ -42,7 +42,7 @@ from constants import Markers, PlotFunc
 from events import EventThread, Event, post_event
 from misc import format_precision
 from spectrum import Measure, Extent, smooth_spectrum, \
-    diff_spectrum
+    diff_spectrum, get_peaks
 from utils_mpl import get_colours
 
 
@@ -453,37 +453,18 @@ class ThreadPlot(threading.Thread):
             elif self.settings.plotFunc == PlotFunc.DIFF:
                 peakF, peakL = self.__plot_diff()
 
+            self.__clear_markers()
+
             if self.annotate:
-                self.__annotate_plot(peakF, peakL)
+                self.__plot_peak(peakF, peakL)
+
+            if self.settings.peaks:
+                self.__plot_peaks()
 
             self.parent.scale_plot()
             self.parent.redraw_plot()
 
         self.parent.threadPlot = None
-
-    def __calc_min(self):
-        points = OrderedDict()
-
-        for timeStamp in self.data:
-            for x, y in self.data[timeStamp].items():
-                if x in points:
-                    points[x] = min(points[x], y)
-                else:
-                    points[x] = y
-
-        return points
-
-    def __calc_max(self):
-        points = OrderedDict()
-
-        for timeStamp in self.data:
-            for x, y in self.data[timeStamp].items():
-                if x in points:
-                    points[x] = max(points[x], y)
-                else:
-                    points[x] = y
-
-        return points
 
     def __plot_all(self, spectrum):
         total = len(spectrum)
@@ -540,8 +521,6 @@ class ThreadPlot(threading.Thread):
         points = OrderedDict()
 
         for timeStamp in self.data:
-#             if len(self.data[timeStamp]) < 2:
-#                 return None, None
 
             for x, y in self.data[timeStamp].items():
                 if x in points:
@@ -608,6 +587,67 @@ class ThreadPlot(threading.Thread):
         self.parent.extent = self.extent
         return self.__plot_all(data)
 
+    def __plot_peak(self, x, y):
+        if x is None or y is None:
+            return
+
+        start, stop = self.axes.get_xlim()
+        textX = ((stop - start) / 50.0) + x
+
+        text = '{}\n{}'.format(*format_precision(self.settings, x, y,
+                                                 fancyUnits=True))
+        if matplotlib.__version__ < '1.3':
+            self.axes.annotate(text,
+                               xy=(x, y), xytext=(textX, y),
+                               ha='left', va='top', size='x-small',
+                               gid='peakText')
+            self.axes.plot(x, y, marker='x', markersize=10, color='w',
+                           mew=3, gid='peakShadow')
+            self.axes.plot(x, y, marker='x', markersize=10, color='r',
+                           gid='peak')
+        else:
+            effect = patheffects.withStroke(linewidth=2, foreground="w",
+                                            alpha=0.75)
+            self.axes.annotate(text,
+                               xy=(x, y), xytext=(textX, y),
+                               ha='left', va='top', size='x-small',
+                               path_effects=[effect], gid='peakText')
+            self.axes.plot(x, y, marker='x', markersize=10, color='r',
+                           path_effects=[effect], gid='peak')
+
+    def __plot_peaks(self):
+        sweep, indices = get_peaks(self.data, self.settings.peaksThres)
+
+        for i in indices:
+            self.axes.plot(sweep.keys()[i], sweep.values()[i],
+                           linestyle='None',
+                           marker='+', markersize=10, color='r',
+                           gid='peakThres')
+
+    def __calc_min(self):
+        points = OrderedDict()
+
+        for timeStamp in self.data:
+            for x, y in self.data[timeStamp].items():
+                if x in points:
+                    points[x] = min(points[x], y)
+                else:
+                    points[x] = y
+
+        return points
+
+    def __calc_max(self):
+        points = OrderedDict()
+
+        for timeStamp in self.data:
+            for x, y in self.data[timeStamp].items():
+                if x in points:
+                    points[x] = max(points[x], y)
+                else:
+                    points[x] = y
+
+        return points
+
     def __create_segments(self, points):
         segments = []
         levels = []
@@ -634,36 +674,6 @@ class ThreadPlot(threading.Thread):
 
         return Normalize(vmin=vmin, vmax=vmax)
 
-    def __annotate_plot(self, x, y):
-        self.__clear_markers()
-
-        if x is None or y is None:
-            return
-
-        start, stop = self.axes.get_xlim()
-        textX = ((stop - start) / 50.0) + x
-
-        text = '{}\n{}'.format(*format_precision(self.settings, x, y,
-                                                 fancyUnits=True))
-        if matplotlib.__version__ < '1.3':
-            self.axes.annotate(text,
-                               xy=(x, y), xytext=(textX, y),
-                               ha='left', va='top', size='x-small',
-                               gid='peak')
-            self.axes.plot(x, y, marker='x', markersize=10, color='w',
-                           mew=3, gid='peak')
-            self.axes.plot(x, y, marker='x', markersize=10, color='r',
-                           gid='peak')
-        else:
-            effect = patheffects.withStroke(linewidth=2, foreground="w",
-                                            alpha=0.75)
-            self.axes.annotate(text,
-                               xy=(x, y), xytext=(textX, y),
-                               ha='left', va='top', size='x-small',
-                               path_effects=[effect], gid='peak')
-            self.axes.plot(x, y, marker='x', markersize=10, color='r',
-                           path_effects=[effect], gid='peak')
-
     def __get_plots(self):
         plots = []
         children = self.axes.get_children()
@@ -678,7 +688,8 @@ class ThreadPlot(threading.Thread):
         children = self.axes.get_children()
         for child in children:
             if child.get_gid() is not None:
-                if child.get_gid() == 'peak':
+                if child.get_gid() in ['peak', 'peakText',
+                                       'peakShadow', 'peakThres']:
                     child.remove()
 
 

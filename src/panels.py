@@ -34,7 +34,7 @@ from matplotlib.backends.backend_wxagg import \
 from matplotlib.colorbar import ColorbarBase
 from matplotlib.colors import Normalize
 from matplotlib.dates import num2epoch
-from matplotlib.text import Annotation
+from matplotlib.lines import Line2D
 from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
 import wx
 
@@ -172,19 +172,21 @@ class PanelGraph(wx.Panel):
 
         axes = self.figure.get_axes()[0]
         markers = find_artists(self.figure, 'peak')
+        markers.extend(find_artists(self.figure, 'peakThres'))
         hit = False
         for marker in markers:
-            if isinstance(marker, Annotation):
-                markX, markY = axes.transData.transform(marker.xy)
+            if isinstance(marker, Line2D):
+                location = marker.get_path().vertices[0]
+                markX, markY = axes.transData.transform(location)
                 dist = abs(math.hypot(event.x - markX, event.y - markY))
                 if dist <= 5:
                     if self.settings.display == Display.PLOT:
                         tip = "{}, {}".format(*format_precision(self.settings,
-                                                                marker.xy[0],
-                                                                marker.xy[1]))
+                                                                location[0],
+                                                                location[1]))
                     else:
                         tip = "{}".format(format_precision(self.settings,
-                                                           marker.xy[0]))
+                                                           location[0]))
                     self.toolTip.SetTip(tip)
                     hit = True
                     break
