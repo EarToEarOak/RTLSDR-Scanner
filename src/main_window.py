@@ -192,8 +192,7 @@ class FrameMain(wx.Frame):
     def __create_widgets(self):
         self.remoteControl = RemoteControl()
 
-        self.graph = PanelGraph(self, self, self.settings, self.__on_motion,
-                                self.remoteControl)
+        self.graph = PanelGraph(self, self, self.settings, self.status, self.remoteControl)
         self.toolbar = wx.Panel(self)
 
         self.buttonStart = MultiButton(self.toolbar,
@@ -780,37 +779,6 @@ class FrameMain(wx.Frame):
         self.timerGpsRetry.Stop()
         self.__stop_gps()
         self.__start_gps()
-
-    def __on_motion(self, event):
-        xpos = event.xdata
-        ypos = event.ydata
-        text = ""
-        if xpos is None or ypos is None or len(self.spectrum) == 0:
-            return
-
-        if self.settings.display == Display.PLOT:
-            timeStamp = max(self.spectrum)
-            spectrum = self.spectrum[timeStamp]
-        elif self.settings.display == Display.SPECT:
-            timeStamp = num2epoch(ypos)
-            if timeStamp in self.spectrum:
-                spectrum = self.spectrum[timeStamp]
-            else:
-                nearest = min(self.spectrum.keys(),
-                              key=lambda k: abs(k - timeStamp))
-                spectrum = self.spectrum[nearest]
-        else:
-            spectrum = None
-
-        if spectrum is not None and len(spectrum) > 0:
-            x = min(spectrum.keys(), key=lambda freq: abs(freq - xpos))
-            if min(spectrum.keys(), key=float) <= xpos <= max(spectrum.keys(), key=float):
-                y = spectrum[x]
-                text = "{}, {}".format(*format_precision(self.settings, x, y))
-            else:
-                text = format_precision(self.settings, xpos)
-
-        self.status.set_info(text, level=None)
 
     def __on_event(self, event):
         status = event.data.get_status()

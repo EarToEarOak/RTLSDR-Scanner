@@ -24,6 +24,7 @@
 #
 
 import copy
+import math
 import threading
 
 from matplotlib import cm
@@ -32,6 +33,8 @@ from matplotlib.backends.backend_wxagg import \
     FigureCanvasWxAgg as FigureCanvas
 from matplotlib.colorbar import ColorbarBase
 from matplotlib.colors import Normalize
+from matplotlib.dates import num2epoch
+from matplotlib.text import Annotation
 from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
 import wx
 
@@ -45,23 +48,27 @@ from plot_status import PlotterStatus
 from plot_time import PlotterTime
 from spectrum import split_spectrum_sort, Measure, reduce_points
 from toolbars import NavigationToolbar, NavigationToolbarCompare
+from utils_mpl import find_artists
 from utils_wx import close_modeless
 from widgets import GridToolTips, CheckBoxCellRenderer
 import wx.grid as wxGrid
 
 
 class PanelGraph(wx.Panel):
-    def __init__(self, panel, notify, settings, callbackMotion, remoteControl):
+    def __init__(self, panel, notify, settings, status, remoteControl):
         self.panel = panel
         self.notify = notify
         self.plot = None
         self.settings = settings
+        self.status = status
         self.remoteControl = remoteControl
         self.spectrum = None
         self.isLimited = None
         self.limit = None
         self.extent = None
         self.annotate = None
+
+        self.toolTip = wx.ToolTip('')
 
         self.mouseSelect = None
         self.mouseZoom = None
@@ -83,6 +90,9 @@ class PanelGraph(wx.Panel):
 
         self.figure = matplotlib.figure.Figure(facecolor='white')
         self.canvas = FigureCanvas(self, -1, self.figure)
+        self.toolTip.Enable(False)
+        self.toolTip.SetDelay(0)
+        self.canvas.SetToolTip(self.toolTip)
 
         self.measureTable = PanelMeasure(self, settings)
 
@@ -100,7 +110,7 @@ class PanelGraph(wx.Panel):
         self.create_plot()
 
         self.canvas.mpl_connect('button_press_event', self.__on_press)
-        self.canvas.mpl_connect('motion_notify_event', callbackMotion)
+        self.canvas.mpl_connect('motion_notify_event', self.__on_motion)
         self.canvas.mpl_connect('draw_event', self.__on_draw)
         self.canvas.mpl_connect('idle_event', self.__on_idle)
         self.Bind(wx.EVT_SIZE, self.__on_size)
@@ -128,6 +138,57 @@ class PanelGraph(wx.Panel):
         if self.settings.clickTune and matplotlib.__version__ >= '1.2' and event.dblclick:
             frequency = int(event.xdata * 1e6)
             self.remoteControl.tune(frequency)
+
+    def __on_motion(self, event):
+        xpos = event.xdata
+        ypos = event.ydata
+        text = ""
+        if xpos is None or ypos is None or len(self.spectrum) == 0:
+            return
+
+        if self.settings.display == Display.PLOT:
+            timeStamp = max(self.spectrum)
+            spectrum = self.spectrum[timeStamp]
+        elif self.settings.display == Display.SPECT:
+            timeStamp = num2epoch(ypos)
+            if timeStamp in self.spectrum:
+                spectrum = self.spectrum[timeStamp]
+            else:
+                nearest = min(self.spectrum.keys(),
+                              key=lambda k: abs(k - timeStamp))
+                spectrum = self.spectrum[nearest]
+        else:
+            spectrum = None
+
+        if spectrum is not None and len(spectrum) > 0:
+            x = min(spectrum.keys(), key=lambda freq: abs(freq - xpos))
+            if min(spectrum.keys(), key=float) <= xpos <= max(spectrum.keys(), key=float):
+                y = spectrum[x]
+                text = "{}, {}".format(*format_precision(self.settings, x, y))
+            else:
+                text = format_precision(self.settings, xpos)
+
+        self.status.set_info(text, level=None)
+
+        axes = self.figure.get_axes()[0]
+        markers = find_artists(self.figure, 'peak')
+        hit = False
+        for marker in markers:
+            if isinstance(marker, Annotation):
+                markX, markY = axes.transData.transform(marker.xy)
+                dist = abs(math.hypot(event.x - markX, event.y - markY))
+                if dist <= 5:
+                    if self.settings.display == Display.PLOT:
+                        tip = "{}, {}".format(*format_precision(self.settings,
+                                                                marker.xy[0],
+                                                                marker.xy[1]))
+                    else:
+                        tip = "{}".format(format_precision(self.settings,
+                                                           marker.xy[0]))
+                    self.toolTip.SetTip(tip)
+                    hit = True
+                    break
+        self.toolTip.Enable(hit)
 
     def __on_size(self, event):
         ppi = wx.ScreenDC().GetPPI()
