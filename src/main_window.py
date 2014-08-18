@@ -32,12 +32,11 @@ import threading
 import time
 import webbrowser
 
-from matplotlib.dates import num2epoch
 import wx
 from wx.lib.masked.numctrl import NumCtrl
 
 from constants import F_MIN, F_MAX, MODE, DWELL, NFFT, DISPLAY, Warn, \
-    Display, Cal, Mode, KML_PORT, APP_NAME
+    Cal, Mode, KML_PORT, APP_NAME
 from devices import get_devices_rtl
 from dialogs_devices import DialogDevicesRTL, DialogDevicesGPS
 from dialogs_file import DialogImageSize, DialogExportSeq, DialogExportGeo, \
@@ -50,7 +49,7 @@ from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
     export_map, extension_add, File, run_file, export_gpx
 from location import ThreadLocation, KmlServer
 from menus import MenuMain, PopMenuMain
-from misc import RemoteControl, format_precision, calc_samples, calc_real_dwell, \
+from misc import RemoteControl, calc_samples, calc_real_dwell, \
     get_version_timestamp, get_version_timestamp_repo, format_iso_time, limit
 from panels import PanelGraph
 from printer import PrintOut
