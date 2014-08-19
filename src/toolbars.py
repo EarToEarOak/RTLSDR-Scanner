@@ -427,11 +427,10 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
                    self.varId, self.smoothId, self.diffId]
 
         for button in buttons:
-            if button is not None:
-                self.ToggleTool(button, False)
+                self.__toggle_tool(button, False)
 
         if self.settings.plotFunc != PlotFunc.NONE:
-            self.ToggleTool(buttons[self.settings.plotFunc - 1], True)
+            self.__toggle_tool(buttons[self.settings.plotFunc - 1], True)
 
         if self.settings.plotFunc == PlotFunc.NONE:
             self.__enable_tool(self.peakId, True)
@@ -455,12 +454,9 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.settings.autoF = state
         self.settings.autoL = state
         self.settings.autoT = state
-        if self.autoFId is not None:
-            self.ToggleTool(self.autoFId, state)
-        if self.autoLId is not None:
-            self.ToggleTool(self.autoLId, state)
-        if self.autoTId is not None:
-            self.ToggleTool(self.autoTId, state)
+        self.__toggle_tool(self.autoFId, state)
+        self.__toggle_tool(self.autoLId, state)
+        self.__toggle_tool(self.autoTId, state)
 
     def clear_auto(self):
         self.set_auto(False)
