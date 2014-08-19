@@ -269,9 +269,6 @@ class DialogPrefs(wx.Dialog):
         self.spinCtrlMaxScans.SetToolTipString('Maximum previous scans'
                                                ' to display')
 
-        self.checkFade = wx.CheckBox(self, wx.ID_ANY,
-                                     "Fade previous scans")
-        self.checkFade.SetValue(settings.fadeScans)
         textWidth = wx.StaticText(self, label="Line width")
         self.ctrlWidth = NumCtrl(self, integerWidth=2, fractionWidth=1)
         self.ctrlWidth.SetValue(settings.lineWidth)
@@ -316,9 +313,8 @@ class DialogPrefs(wx.Dialog):
         conbox.Add(congrid, 0, wx.ALL | wx.EXPAND, 10)
 
         plotgrid = wx.GridBagSizer(10, 10)
-        plotgrid.Add(self.checkFade, pos=(0, 0))
-        plotgrid.Add(textWidth, pos=(1, 0))
-        plotgrid.Add(self.ctrlWidth, pos=(1, 1))
+        plotgrid.Add(textWidth, pos=(0, 0))
+        plotgrid.Add(self.ctrlWidth, pos=(0, 1))
         plotbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Plot View"),
                                     wx.HORIZONTAL)
         plotbox.Add(plotgrid, 0, wx.ALL | wx.EXPAND, 10)
@@ -355,7 +351,6 @@ class DialogPrefs(wx.Dialog):
 
     def __on_radio(self, _event):
         enabled = self.radioRetain.GetValue()
-        self.checkFade.Enable(enabled)
         self.spinCtrlMaxScans.Enable(enabled)
 
     def __on_choice(self, _event):
@@ -371,7 +366,6 @@ class DialogPrefs(wx.Dialog):
         self.settings.pointsMax = self.spinPoints.GetValue()
         self.settings.exportDpi = self.spinDpi.GetValue()
         self.settings.retainScans = self.radioRetain.GetValue()
-        self.settings.fadeScans = self.checkFade.GetValue()
         self.settings.lineWidth = self.ctrlWidth.GetValue()
         self.settings.retainMax = self.spinCtrlMaxScans.GetValue()
         self.settings.colourMap = self.choiceColour.GetStringSelection()
