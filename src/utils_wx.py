@@ -69,14 +69,14 @@ class ValidatorCoord(wx.PyValidator):
         return ValidatorCoord(self.isLat)
 
 
-def load_bitmap(name, asBitmap=True):
+def load_bitmap(name, asBitmap=True, ext='png'):
     scriptDir = os.path.dirname(os.path.realpath(sys.argv[0]))
     if os.path.isdir(scriptDir + '/res'):
         resDir = os.path.normpath(scriptDir + '/res')
     else:
         resDir = os.path.normpath(scriptDir + '/../res')
 
-    filename = resDir + '/' + name + '.png'
+    filename = resDir + '/' + name + '.' + ext
     if not asBitmap:
         return filename
 

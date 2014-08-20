@@ -26,7 +26,6 @@
 import copy
 import math
 import re
-import threading
 
 from matplotlib import cm
 import matplotlib
@@ -222,7 +221,8 @@ class PanelGraph(wx.Panel):
     def __on_idle(self, _event):
         if self.doDraw and self.plot.get_plot_thread() is None:
             self.__hide_overlay()
-            threading.Thread(target=self.canvas.draw(), name='Draw').start()
+            self.canvas.draw()
+            self.status.set_busy(False)
             self.doDraw = False
 
     def __on_timer(self, _event):
@@ -323,6 +323,8 @@ class PanelGraph(wx.Panel):
 
             if isLimited:
                 self.spectrum = reduce_points(spectrum, limit)
+
+            self.status.set_busy(True)
             self.plot.set_plot(self.spectrum, self.extent, annotate)
 
         else:

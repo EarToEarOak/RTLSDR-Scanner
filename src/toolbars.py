@@ -31,6 +31,7 @@ import matplotlib
 from matplotlib.backend_bases import NavigationToolbar2
 from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
 import wx
+from wx.animate import AnimationCtrl, Animation
 
 from constants import Display, PlotFunc
 from dialogs_toolbars import DialogSmoothPrefs, DialogPeakThreshold
@@ -46,22 +47,29 @@ class Statusbar(wx.StatusBar):
     TEXT_GPS = 'GPS: '
 
     def __init__(self, parent, log):
-        self.controls = [None] * 4
+        self.controls = [None] * 5
         self.timeStart = None
         self.log = log
 
         wx.StatusBar.__init__(self, parent, -1)
-        self.SetFieldsCount(4)
+        self.SetFieldsCount(len(self.controls))
 
         self.controls[0] = wx.StaticText(self, label=self.TEXT_GENERAL,
                                          style=wx.ST_NO_AUTORESIZE)
         self.controls[1] = wx.StaticText(self, label=self.TEXT_INFO,
                                          style=wx.ST_NO_AUTORESIZE)
         self.controls[2] = Led(self, label=self.TEXT_GPS)
-
         self.controls[3] = wx.Gauge(self, -1,
                                     style=wx.GA_HORIZONTAL | wx.GA_SMOOTH)
+        animation = Animation(load_bitmap('busy', False, 'gif'))
+        busy = AnimationCtrl(self, anim=animation)
+        busy.SetToolTipString('Updating plot')
+        self.controls[4] = busy
+
         self.controls[3].Hide()
+        self.controls[4].Hide()
+
+        self.SetStatusWidths([-1, -1, -1, -1, busy.GetSize()[0] * 4])
 
         self.Bind(wx.EVT_SIZE, self.__on_size)
         wx.CallAfter(self.__on_size, None)
@@ -143,6 +151,14 @@ class Statusbar(wx.StatusBar):
     def hide_progress(self):
         self.controls[3].Hide()
         self.controls[3].SetToolTipString('')
+
+    def set_busy(self, busy):
+        animCtrl = self.controls[4]
+        animCtrl.Show(busy)
+        if busy:
+            animCtrl.Play()
+        else:
+            animCtrl.Stop()
 
 
 class NavigationToolbar(NavigationToolbar2WxAgg):
