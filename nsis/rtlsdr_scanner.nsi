@@ -32,7 +32,7 @@
 !include "include\EnvVarUpdate.nsh"
 !include "include\fileassoc.nsh"
 
-!define INSTALLER_VERSION "14"
+!define INSTALLER_VERSION "15"
 
 !define PRODUCT_NAME "RTLSDR Scanner"
 !define PRODUCT_PUBLISHER "Ear to Ear Oak"
@@ -457,6 +457,7 @@ Function install_rtlsdr_scanner
 		CopyFiles "$TEMP\RTLSDR-Scanner-master\src\version-timestamp" "$INSTDIR"
 		CreateDirectory "$INSTDIR\res"
 		CopyFiles "$TEMP\RTLSDR-Scanner-master\res\*.png" "$INSTDIR\res"
+		CopyFiles "$TEMP\RTLSDR-Scanner-master\res\*.gif" "$INSTDIR\res"
 		CreateDirectory "$INSTDIR\doc"
 		CopyFiles "$TEMP\RTLSDR-Scanner-master\doc\*.pdf" "$INSTDIR\doc"
 		CopyFiles "$TEMP\RTLSDR-Scanner-master\doc\*.rfs" "$INSTDIR\doc"
