@@ -157,7 +157,7 @@ class PanelGraph(wx.Panel):
                 nearest = min(self.spectrum.keys(),
                               key=lambda k: abs(k - timeStamp))
                 spectrum = self.spectrum[nearest]
-        else:
+        elif self.settings.display == Display.SURFACE:
             spectrum = None
             coords = self.plot.get_axes().format_coord(event.xdata,
                                                        event.ydata)
@@ -168,6 +168,8 @@ class PanelGraph(wx.Panel):
                 level = float(match.group(3))
                 text = "{}, {}".format(*format_precision(self.settings,
                                                          freq, level))
+        else:
+            spectrum = None
 
         if spectrum is not None and len(spectrum) > 0:
             x = min(spectrum.keys(), key=lambda freq: abs(freq - xpos))
