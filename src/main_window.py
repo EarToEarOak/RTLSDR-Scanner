@@ -191,7 +191,9 @@ class FrameMain(wx.Frame):
     def __create_widgets(self):
         self.remoteControl = RemoteControl()
 
-        self.graph = PanelGraph(self, self, self.settings, self.status, self.remoteControl)
+        self.graph = PanelGraph(self, self,
+                                self.settings, self.status,
+                                self.remoteControl)
         self.toolbar = wx.Panel(self)
 
         self.buttonStart = MultiButton(self.toolbar,

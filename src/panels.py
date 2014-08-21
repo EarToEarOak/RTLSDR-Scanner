@@ -25,7 +25,9 @@
 
 import copy
 import math
+import os
 import re
+import threading
 
 from matplotlib import cm
 import matplotlib
@@ -67,6 +69,8 @@ class PanelGraph(wx.Panel):
         self.limit = None
         self.extent = None
         self.annotate = None
+
+        self.lockDraw = threading.Lock()
 
         self.toolTip = wx.ToolTip('')
 
@@ -223,13 +227,25 @@ class PanelGraph(wx.Panel):
     def __on_idle(self, _event):
         if self.doDraw and self.plot.get_plot_thread() is None:
             self.__hide_overlay()
-            self.canvas.draw()
-            self.status.set_busy(False)
             self.doDraw = False
+            if os.name == 'nt':
+                threading.Thread(target=self.__draw_canvas, name='Draw').start()
+            else:
+                with self.lockDraw:
+                    self.canvas.draw()
+                self.status.set_busy(False)
 
     def __on_timer(self, _event):
         self.timer.Stop()
         self.set_plot(None, None, None, None, self.annotate)
+
+    def __draw_canvas(self):
+        with self.lockDraw:
+            try:
+                self.canvas.draw()
+            except wx.PyDeadObjectError:
+                pass
+        wx.CallAfter(self.status.set_busy, False)
 
     def __draw_overlay(self):
         if self.background is not None:
@@ -365,7 +381,8 @@ class PanelGraph(wx.Panel):
         else:
             self.measure = measure
             self.show = show
-            self.__draw_overlay()
+            with self.lockDraw:
+                self.__draw_overlay()
 
     def get_figure(self):
         return self.figure
