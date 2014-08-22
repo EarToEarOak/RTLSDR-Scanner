@@ -443,7 +443,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
                    self.varId, self.smoothId, self.diffId]
 
         for button in buttons:
-                self.__toggle_tool(button, False)
+            self.__toggle_tool(button, False)
 
         if self.settings.plotFunc != PlotFunc.NONE:
             self.__toggle_tool(buttons[self.settings.plotFunc - 1], True)
