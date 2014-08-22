@@ -94,8 +94,6 @@ class PanelGraph(wx.Panel):
 
         self.figure = matplotlib.figure.Figure(facecolor='white')
         self.canvas = FigureCanvas(self, -1, self.figure)
-        self.toolTip.Enable(False)
-        self.toolTip.SetDelay(0)
         self.canvas.SetToolTip(self.toolTip)
 
         self.measureTable = PanelMeasure(self, settings)
@@ -114,6 +112,8 @@ class PanelGraph(wx.Panel):
         self.create_plot()
 
         self.canvas.mpl_connect('button_press_event', self.__on_press)
+        self.canvas.mpl_connect('figure_enter_event', self.__on_enter)
+        self.canvas.mpl_connect('figure_leave_event', self.__on_leave)
         self.canvas.mpl_connect('motion_notify_event', self.__on_motion)
         self.canvas.mpl_connect('draw_event', self.__on_draw)
         self.canvas.mpl_connect('idle_event', self.__on_idle)
@@ -142,6 +142,12 @@ class PanelGraph(wx.Panel):
         if self.settings.clickTune and matplotlib.__version__ >= '1.2' and event.dblclick:
             frequency = int(event.xdata * 1e6)
             self.remoteControl.tune(frequency)
+
+    def __on_enter(self, _event):
+        self.toolTip.Enable(False)
+
+    def __on_leave(self, _event):
+        self.toolTip.Enable(True)
 
     def __on_motion(self, event):
         xpos = event.xdata
