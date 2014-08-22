@@ -445,7 +445,10 @@ class GridToolTips(object):
                     toolTip = self.toolTips[(row, col)]
                 else:
                     toolTip = ''
-                self.grid.GetGridWindow().SetToolTipString(toolTip)
+            else:
+                toolTip = ''
+
+            self.grid.GetGridWindow().SetToolTipString(toolTip)
 
 
 if __name__ == '__main__':
