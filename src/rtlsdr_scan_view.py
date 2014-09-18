@@ -24,9 +24,13 @@
 #
 
 
+import argparse
+from os.path import os
+
 import wx
 
 from file import File, open_plot
+from settings import Settings
 from spectrum import sort_spectrum
 import visvis as vv
 
@@ -35,7 +39,10 @@ app = vv.use('wx')
 
 
 class MainWindow(wx.Frame):
-    def __init__(self):
+    def __init__(self, args=None):
+        settings = Settings()
+        self.directory = settings.dirScans
+
         wx.Frame.__init__(self, None, -1, 'RTLSDR Scanner Viewer', size=(800, 600))
 
         Figure = app.GetFigureClass()
@@ -44,6 +51,10 @@ class MainWindow(wx.Frame):
         panel = wx.Panel(self)
         button = wx.Button(panel, wx.ID_ANY, 'Open')
         button.Bind(wx.EVT_BUTTON, self.__on_open)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(button, 0, wx.ALIGN_CENTRE | wx.ALL, border=5)
+        panel.SetSizer(sizer)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(fig._widget, 1, wx.EXPAND | wx.ALL, border=5)
@@ -55,8 +66,11 @@ class MainWindow(wx.Frame):
 
         self.Show()
 
+        if args.file is not None:
+            self.__open(*os.path.split(args.file))
+
     def __on_open(self, _event):
-        dlg = wx.FileDialog(self, "Open a scan", '.',
+        dlg = wx.FileDialog(self, "Open a scan", self.directory,
                             '',
                             File.get_type_filters(File.Types.SAVE),
                             wx.OPEN)
@@ -66,24 +80,37 @@ class MainWindow(wx.Frame):
 
     def __open(self, dirname, filename):
         _info, spectrum, _locs = open_plot(dirname, filename)
+        self.directory = dirname
         self.__plot(sort_spectrum(spectrum))
+        vv.title(filename)
 
     def __plot(self, spectrum):
         vv.clf()
         axes = vv.gca()
-        axes.axis.showGrid = 1
-        axes.axis.xlabel = 'Frequency (MHz)'
-        axes.axis.ylabel = 'Level (dB)'
+        axes.axis.showGrid = True
+        axes.axis.xLabel = 'Frequency (MHz)'
+        axes.axis.yLabel = 'Level (dB)'
 
         total = len(spectrum)
         count = 0.
         for _time, sweep in spectrum.items():
             alpha = (total - count) / total
-            plot = vv.plot(sweep.keys(), sweep.values(), lw=1, alpha=alpha)
+            vv.plot(sweep.keys(), sweep.values(), lw=1, alpha=alpha)
             count += 1
 
 
+def __arguments():
+    parser = argparse.ArgumentParser(prog="rtlsdr_scan_view.py",
+                                     description='A quick viewer for scans')
+    parser.add_argument("file", help=help, nargs='?')
+    args = parser.parse_args()
+
+    return args
+
+
 if __name__ == '__main__':
+    args = __arguments()
+
     wxApp = wx.App()
-    m = MainWindow()
+    m = MainWindow(args)
     wxApp.MainLoop()
