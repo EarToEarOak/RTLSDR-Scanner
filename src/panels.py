@@ -143,6 +143,8 @@ class PanelGraph(wx.Panel):
         if self.settings.clickTune and matplotlib.__version__ >= '1.2' and event.dblclick:
             frequency = int(event.xdata * 1e6)
             self.remoteControl.tune(frequency)
+        elif isinstance(self.plot, PlotterPreview):
+            self.plot.to_front()
 
     def __on_enter(self, _event):
         self.toolTip.Enable(False)

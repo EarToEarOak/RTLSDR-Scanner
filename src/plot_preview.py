@@ -30,14 +30,15 @@ try:
     from visvis.core.line import Line
     app = vv.use('wx')
     vvPresent = True
-except ImportError as error:
+except ImportError:
     vvPresent = False
 
 
 class PlotterPreview(object):
-    def __init__(self, notify, figure, _settings):
+    def __init__(self, notify, figure, settings):
         self.notify = notify
         self.figure = figure
+        self.settings = settings
         self.axes = None
         self.window = None
         self.preview = None
@@ -49,13 +50,16 @@ class PlotterPreview(object):
     def __setup_plot(self):
         self.axes = self.figure.add_subplot(111)
         self.axes.set_axis_off()
-        if not vvPresent:
+        if vvPresent:
+            self.axes.text(0.5, 0.5, 'Click for preview',
+                           ha='center', va='center')
+        else:
             self.axes.text(0.5, 0.5, '"visvis" is not installed',
                            ha='center', va='center')
 
     def __setup_window(self):
         if vvPresent:
-            self.preview = DialogPreview(self.window)
+            self.preview = DialogPreview(self.window, self.settings)
             self.preview.Show()
 
     def draw_measure(self, _measure, _show):
@@ -97,6 +101,10 @@ class PlotterPreview(object):
     def set_grid(self, _on):
         pass
 
+    def to_front(self):
+        if self.preview is not None:
+            self.preview.to_front()
+
     def close(self):
         if self.preview is not None:
             self.preview.Destroy()
@@ -105,7 +113,9 @@ class PlotterPreview(object):
 
 
 class DialogPreview(wx.Dialog):
-    def __init__(self, parent):
+    def __init__(self, parent, settings):
+        self.settings = settings
+
         wx.Dialog.__init__(self, parent=parent, title="Preview",
                            style=wx.RESIZE_BORDER | wx.CAPTION |
                            wx.MAXIMIZE_BOX | wx.MINIMIZE_BOX | wx.SYSTEM_MENU)
@@ -114,7 +124,6 @@ class DialogPreview(wx.Dialog):
         Figure = app.GetFigureClass()
         fig = Figure(self)
         fig.bgcolor = (1, 1, 1)
-        self.__setup_plot()
 
         sizer = wx.BoxSizer()
         sizer.Add(fig._widget, 1, wx.EXPAND | wx.ALL, border=5)
@@ -123,11 +132,17 @@ class DialogPreview(wx.Dialog):
         self.SetAutoLayout(True)
         self.Layout()
 
+        self.__setup_plot()
+
+    def __restore_style(self, style):
+        self.SetWindowStyle(style)
+
     def __setup_plot(self):
         axes = vv.gca()
         axes.axis.showGrid = True
         axes.axis.xLabel = 'Frequency (MHz)'
         axes.axis.yLabel = 'Level (dB)'
+        axes.camera = 2
 
     def clear_plots(self):
         for wobject in vv.gca().wobjects:
@@ -139,10 +154,22 @@ class DialogPreview(wx.Dialog):
 
         total = len(spectrum)
         count = 0.
+        alpha = 1
         for _time, sweep in spectrum.items():
-            alpha = (total - count) / total
+            if self.settings.fadeScans:
+                alpha = (total - count) / total
             vv.plot(sweep.keys(), sweep.values(), lw=1, alpha=alpha)
             count += 1
 
     def set_title(self, title):
         vv.title(title.replace('\n', ' '))
+
+    def to_front(self):
+        style = self.GetWindowStyle()
+        self.SetWindowStyle(style | wx.STAY_ON_TOP)
+        wx.CallAfter(self.__restore_style, style)
+
+
+if __name__ == '__main__':
+    print 'Please run rtlsdr_scan.py'
+    exit(1)

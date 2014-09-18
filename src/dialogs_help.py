@@ -65,6 +65,13 @@ class DialogSysInfo(wx.Dialog):
             imageType = 'PIL'
             imageVer = Image.VERSION
 
+
+        try:
+            import visvis as vv
+            visvisVer = vv.__version__
+        except ImportError:
+            visvisVer = 'Not installed'
+
         versions = ('Hardware:\n'
                     '\tProcessor: {}, {} cores\n\n'
                     'Software:\n'
@@ -74,6 +81,7 @@ class DialogSysInfo(wx.Dialog):
                     '\tNumPy: {}\n'
                     '\t{}: {}\n'
                     '\tpySerial: {}\n'
+                    '\tvisvis: {}\n'
                     '\twxPython: {}\n'
                     ).format(platform.processor(), multiprocessing.cpu_count(),
                              platform.platform(), platform.machine(),
@@ -82,6 +90,7 @@ class DialogSysInfo(wx.Dialog):
                              numpy.version.version,
                              imageType, imageVer,
                              serial.VERSION,
+                             visvisVer,
                              wx.version())
 
         control.SetValue(versions)

@@ -564,6 +564,11 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         elif display == Display.TIMELINE:
             self.__add_auto_range(False, True, True)
 
+        elif display == Display.PREVIEW:
+            self.__add_check_tool('fade', 'Fade plots',
+                                  self.__on_check_fade,
+                                  self.settings.fadeScans)
+
         self.__set_func()
 
         self.Realize()

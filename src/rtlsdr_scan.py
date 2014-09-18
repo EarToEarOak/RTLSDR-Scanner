@@ -44,7 +44,7 @@ except ImportError as error:
 try:
     import visvis as vv
     vv.use('wx')
-except ImportError as error:
+except ImportError:
     pass
 
 import argparse
