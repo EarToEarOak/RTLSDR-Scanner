@@ -41,6 +41,12 @@ except ImportError as error:
     input('\nError importing libraries\nPress [Return] to exit')
     exit(1)
 
+try:
+    import visvis as vv
+    vv.use('wx')
+except ImportError as error:
+    pass
+
 import argparse
 import multiprocessing
 import os.path

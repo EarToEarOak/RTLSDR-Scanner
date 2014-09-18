@@ -68,7 +68,8 @@ DISPLAY = ["Plot", 0,
            "Spectrogram", 1,
            "3D Spectrogram", 2,
            "Status", 3,
-           "Time Line", 4]
+           "Time Line", 4,
+           "Preview", 5]
 
 TUNER = ["Unknown",
          "Elonics E4000",
@@ -93,7 +94,7 @@ class Cal(object):
 
 
 class Display(object):
-    PLOT, SPECT, SURFACE, STATUS, TIMELINE = range(5)
+    PLOT, SPECT, SURFACE, STATUS, TIMELINE, PREVIEW = range(6)
 
 
 class Mode(object):

@@ -45,6 +45,7 @@ from misc import format_precision
 from plot_3d import Plotter3d
 from plot_controls import MouseZoom, MouseSelect
 from plot_line import Plotter
+from plot_preview import PlotterPreview
 from plot_spect import Spectrogram
 from plot_status import PlotterStatus
 from plot_time import PlotterTime
@@ -291,8 +292,11 @@ class PanelGraph(wx.Panel):
             self.plot = Plotter3d(self.notify, self.figure, self.settings)
         elif self.settings.display == Display.STATUS:
             self.plot = PlotterStatus(self.notify, self.figure, self.settings)
-        else:
+        elif self.settings.display == Display.TIMELINE:
             self.plot = PlotterTime(self.notify, self.figure, self.settings)
+        elif self.settings.display == Display.PREVIEW:
+            self.plot = PlotterPreview(self.notify, self.figure, self.settings)
+            self.plot.set_window(self)
 
         self.__set_fonts()
 
@@ -419,6 +423,7 @@ class PanelGraph(wx.Panel):
         self.__enable_menu(False)
 
     def close(self):
+        self.plot.close()
         close_modeless()
 
 

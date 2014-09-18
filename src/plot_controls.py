@@ -27,6 +27,7 @@ import matplotlib
 from matplotlib.patches import Rectangle
 
 from plot_3d import Plotter3d
+from plot_preview import PlotterPreview
 from plot_status import PlotterStatus
 from plot_time import PlotterTime
 
@@ -36,7 +37,7 @@ class MouseZoom():
 
     def __init__(self, toolbar, figure=None, plot=None, callbackHide=None):
         if figure is None:
-            if isinstance(plot, (Plotter3d, PlotterStatus)):
+            if isinstance(plot, (Plotter3d, PlotterStatus, PlotterPreview)):
                 return
 
             self.axes = plot.get_axes()
@@ -91,7 +92,8 @@ class MouseZoom():
 class MouseSelect():
     def __init__(self, plot, callbackPre, callbackPost):
         self.selector = None
-        if isinstance(plot, (Plotter3d, PlotterStatus, PlotterTime)):
+        if isinstance(plot, (Plotter3d, PlotterStatus,
+                             PlotterTime, PlotterPreview)):
             return
 
         axes = plot.get_axes()

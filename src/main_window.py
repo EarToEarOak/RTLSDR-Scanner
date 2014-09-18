@@ -561,6 +561,7 @@ class FrameMain(wx.Frame):
         self.__get_controls()
         self.settings.devicesRtl = self.devicesRtl
         self.settings.save()
+        self.graph.close()
         self.Destroy()
 
     def __on_pref(self, _event):
