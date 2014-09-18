@@ -32,7 +32,7 @@
 !include "include\EnvVarUpdate.nsh"
 !include "include\fileassoc.nsh"
 
-!define INSTALLER_VERSION "15"
+!define INSTALLER_VERSION "16"
 
 !define PRODUCT_NAME "RTLSDR Scanner"
 !define PRODUCT_PUBLISHER "Ear to Ear Oak"
@@ -169,6 +169,10 @@ SectionGroup "/e" "Dependencies" SEC_DEP
 		SectionEnd
 		Section "PySerial" SEC_PYSERIAL
 			StrCpy $UriFile "pyserial"
+			Call install_easy
+		SectionEnd
+		Section "visvis (Optional)" SEC_VISVIS
+			StrCpy $UriFile "visvis"
 			Call install_easy
 		SectionEnd
 		Section "wxPython 3"
@@ -331,6 +335,7 @@ Function page_type_end
 		!insertmacro SelectSection ${SEC_PYPARSING}
 		!insertmacro SelectSection ${SEC_PYRTLSDR}
 		!insertmacro SelectSection ${SEC_PYSERIAL}
+		!insertmacro SelectSection ${SEC_VISVIS}
 	${EndIf}
 FunctionEnd
 
