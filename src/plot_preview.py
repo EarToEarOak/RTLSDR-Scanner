@@ -134,6 +134,11 @@ class DialogPreview(wx.Dialog):
 
         self.__setup_plot()
 
+        self.Bind(wx.EVT_CLOSE, self.__on_close)
+
+    def __on_close(self, event):
+        event.Veto()
+
     def __restore_style(self, style):
         self.SetWindowStyle(style)
 
