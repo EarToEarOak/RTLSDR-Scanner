@@ -44,7 +44,7 @@ from misc import format_time
 from panels import PanelColourBar
 from plot_line import Plotter
 from spectrum import Extent, sort_spectrum, count_points
-from utils_mpl import get_colours
+from utils_mpl import get_colours, create_heatmap
 from utils_wx import ValidatorCoord
 
 
@@ -550,22 +550,31 @@ class DialogExportSeq(wx.Dialog):
 
 
 class DialogExportGeo(wx.Dialog):
+    IMAGE_SIZE = 500
+
     def __init__(self, parent, spectrum, location, settings):
         self.spectrum = spectrum
         self.location = location
         self.settings = settings
         self.directory = settings.dirExport
         self.colourMap = settings.colourMap
+        self.colourHeat = settings.colourMap
         self.canvas = None
         self.extent = None
         self.xyz = None
         self.plotAxes = False
-        self.plotHeat = True
+        self.plotMesh = True
         self.plotCont = True
         self.plotPoint = False
+        self.plotHeat = False
         self.plot = None
 
         wx.Dialog.__init__(self, parent=parent, title='Export Map')
+
+        colours = get_colours()
+        freqMin = min(spectrum[min(spectrum)]) * 1000
+        freqMax = max(spectrum[min(spectrum)]) * 1000
+        bw = freqMax - freqMin
 
         self.figure = matplotlib.figure.Figure(facecolor='white')
         self.figure.set_size_inches((6, 6))
@@ -573,65 +582,101 @@ class DialogExportGeo(wx.Dialog):
         self.axes = self.figure.add_subplot(111)
 
         textPlot = wx.StaticText(self, label='Plot')
-
         self.checkAxes = wx.CheckBox(self, label='Axes')
         self.checkAxes.SetValue(self.plotAxes)
         self.Bind(wx.EVT_CHECKBOX, self.__on_axes, self.checkAxes)
-        self.checkHeat = wx.CheckBox(self, label='Heat Map')
-        self.checkHeat.SetValue(self.plotHeat)
-        self.Bind(wx.EVT_CHECKBOX, self.__on_heat, self.checkHeat)
-        self.checkCont = wx.CheckBox(self, label='Contour Lines')
+        self.checkCont = wx.CheckBox(self, label='Contour lines')
         self.checkCont.SetValue(self.plotCont)
         self.Bind(wx.EVT_CHECKBOX, self.__on_cont, self.checkCont)
         self.checkPoint = wx.CheckBox(self, label='Locations')
         self.checkPoint.SetValue(self.plotPoint)
         self.Bind(wx.EVT_CHECKBOX, self.__on_point, self.checkPoint)
+        sizerPlotCheck = wx.BoxSizer(wx.HORIZONTAL)
+        sizerPlotCheck.Add(self.checkAxes, flag=wx.ALL, border=5)
+        sizerPlotCheck.Add(self.checkCont, flag=wx.ALL, border=5)
+        sizerPlotCheck.Add(self.checkPoint, flag=wx.ALL, border=5)
+        sizerPlot = wx.BoxSizer(wx.VERTICAL)
+        sizerPlot.Add(textPlot, flag=wx.ALL, border=5)
+        sizerPlot.Add(sizerPlotCheck, flag=wx.ALL, border=5)
 
-        sizerCheck = wx.BoxSizer(wx.HORIZONTAL)
-        sizerCheck.Add(self.checkAxes, flag=wx.ALL, border=5)
-        sizerCheck.Add(self.checkHeat, flag=wx.ALL, border=5)
-        sizerCheck.Add(self.checkCont, flag=wx.ALL, border=5)
-        sizerCheck.Add(self.checkPoint, flag=wx.ALL, border=5)
+        textMesh = wx.StaticText(self, label='Mesh')
+        self.checkMesh = wx.CheckBox(self, label='On')
+        self.checkMesh.SetValue(self.plotMesh)
+        self.Bind(wx.EVT_CHECKBOX, self.__on_mesh, self.checkMesh)
+        self.choiceMapMesh = wx.Choice(self, choices=colours)
+        self.choiceMapMesh.SetSelection(colours.index(self.colourMap))
+        self.Bind(wx.EVT_CHOICE, self.__on_colour_mesh, self.choiceMapMesh)
+        self.barMesh = PanelColourBar(self, self.colourMap)
+        sizerMapMesh = wx.BoxSizer(wx.HORIZONTAL)
+        sizerMapMesh.Add(self.choiceMapMesh, flag=wx.ALL, border=5)
+        sizerMapMesh.Add(self.barMesh, flag=wx.ALL, border=5)
+        sizerMesh = wx.BoxSizer(wx.VERTICAL)
+        sizerMesh.Add(textMesh, flag=wx.ALL, border=5)
+        sizerMesh.Add(self.checkMesh, flag=wx.ALL, border=5)
+        sizerMesh.Add(sizerMapMesh, flag=wx.ALL, border=5)
 
         colours = get_colours()
-        self.choiceColour = wx.Choice(self, choices=colours)
-        self.choiceColour.SetSelection(colours.index(self.colourMap))
-        self.Bind(wx.EVT_CHOICE, self.__on_colour, self.choiceColour)
-        self.colourBar = PanelColourBar(self, settings.colourMap)
-
-        freqMin = min(spectrum[min(spectrum)]) * 1000
-        freqMax = max(spectrum[min(spectrum)]) * 1000
-        bw = freqMax - freqMin
+        textHeat = wx.StaticText(self, label='Heat map')
+        self.checkHeat = wx.CheckBox(self, label='On')
+        self.checkHeat.SetValue(self.plotHeat)
+        self.Bind(wx.EVT_CHECKBOX, self.__on_heat, self.checkHeat)
+        self.choiceMapHeat = wx.Choice(self, choices=colours)
+        self.choiceMapHeat.SetSelection(colours.index(self.colourHeat))
+        self.Bind(wx.EVT_CHOICE, self.__on_colour_heat, self.choiceMapHeat)
+        self.barHeat = PanelColourBar(self, self.colourHeat)
+        sizerMapHeat = wx.BoxSizer(wx.HORIZONTAL)
+        sizerMapHeat.Add(self.choiceMapHeat, flag=wx.ALL, border=5)
+        sizerMapHeat.Add(self.barHeat, flag=wx.ALL, border=5)
+        sizerHeat = wx.BoxSizer(wx.VERTICAL)
+        sizerHeat.Add(textHeat, flag=wx.ALL, border=5)
+        sizerHeat.Add(self.checkHeat, flag=wx.ALL, border=5)
+        sizerHeat.Add(sizerMapHeat, flag=wx.ALL, border=5)
 
         textRange = wx.StaticText(self, label='Range')
-
         textCentre = wx.StaticText(self, label='Centre')
         self.spinCentre = wx.SpinCtrl(self)
         self.spinCentre.SetToolTipString('Centre frequency (kHz)')
         self.spinCentre.SetRange(freqMin, freqMax)
         self.spinCentre.SetValue(freqMin + bw / 2)
-
+        sizerCentre = wx.BoxSizer(wx.HORIZONTAL)
+        sizerCentre.Add(textCentre, flag=wx.ALL, border=5)
+        sizerCentre.Add(self.spinCentre, flag=wx.ALL, border=5)
         textBw = wx.StaticText(self, label='Bandwidth')
         self.spinBw = wx.SpinCtrl(self)
         self.spinBw.SetToolTipString('Bandwidth (kHz)')
         self.spinBw.SetRange(1, bw)
         self.spinBw.SetValue(bw / 10)
-
+        sizerBw = wx.BoxSizer(wx.HORIZONTAL)
+        sizerBw.Add(textBw, flag=wx.ALL, border=5)
+        sizerBw.Add(self.spinBw, flag=wx.ALL, border=5)
         buttonUpdate = wx.Button(self, label='Update')
         self.Bind(wx.EVT_BUTTON, self.__on_update, buttonUpdate)
+        sizerRange = wx.BoxSizer(wx.VERTICAL)
+        sizerRange.Add(textRange, flag=wx.ALL, border=5)
+        sizerRange.Add(sizerCentre, flag=wx.ALL, border=5)
+        sizerRange.Add(sizerBw, flag=wx.ALL, border=5)
+        sizerRange.Add(buttonUpdate, flag=wx.ALL, border=5)
 
         textOutput = wx.StaticText(self, label='Output')
-
         self.textRes = wx.StaticText(self)
         buttonRes = wx.Button(self, label='Change...')
         buttonRes.SetToolTipString('Change output resolution')
         self.Bind(wx.EVT_BUTTON, self.__on_imageres, buttonRes)
+        sizerRes = wx.BoxSizer(wx.HORIZONTAL)
+        sizerRes.Add(self.textRes, flag=wx.ALL, border=5)
+        sizerRes.Add(buttonRes, flag=wx.ALL, border=5)
+        sizerOutput = wx.BoxSizer(wx.VERTICAL)
+        sizerOutput.Add(textOutput, flag=wx.ALL, border=5)
+        sizerOutput.Add(sizerRes, flag=wx.ALL, border=5)
+
         self.__show_image_res()
 
         font = textPlot.GetFont()
         fontSize = font.GetPointSize()
         font.SetPointSize(fontSize + 4)
         textPlot.SetFont(font)
+        textMesh.SetFont(font)
+        textHeat.SetFont(font)
         textRange.SetFont(font)
         textOutput.SetFont(font)
 
@@ -646,35 +691,19 @@ class DialogExportGeo(wx.Dialog):
         self.__setup_plot()
 
         sizerGrid = wx.GridBagSizer(5, 5)
-        sizerGrid.Add(self.canvas, pos=(0, 0), span=(9, 6),
+        sizerGrid.Add(self.canvas, pos=(0, 0), span=(5, 6),
                       flag=wx.EXPAND | wx.ALL, border=5)
-        sizerGrid.Add(textPlot, pos=(0, 7),
-                      flag=wx.TOP | wx.BOTTOM, border=5)
-        sizerGrid.Add(self.choiceColour, pos=(1, 7),
-                      flag=wx.ALL, border=5)
-        sizerGrid.Add(self.colourBar, pos=(1, 8),
-                      flag=wx.ALL, border=5)
-        sizerGrid.Add(sizerCheck, pos=(2, 7), span=(1, 2),
-                      flag=wx.ALL, border=5)
-        sizerGrid.Add(textRange, pos=(3, 7),
-                      flag=wx.TOP | wx.BOTTOM, border=5)
-        sizerGrid.Add(textCentre, pos=(4, 7),
-                      flag=wx.ALL, border=5)
-        sizerGrid.Add(self.spinCentre, pos=(4, 8),
-                      flag=wx.ALL, border=5)
-        sizerGrid.Add(textBw, pos=(5, 7),
-                      flag=wx.ALL, border=5)
-        sizerGrid.Add(self.spinBw, pos=(5, 8),
-                      flag=wx.ALL, border=5)
-        sizerGrid.Add(buttonUpdate, pos=(6, 7),
-                      flag=wx.ALL | wx.ALIGN_CENTRE_VERTICAL, border=5)
-        sizerGrid.Add(textOutput, pos=(7, 7),
-                      flag=wx.TOP | wx.BOTTOM, border=5)
-        sizerGrid.Add(self.textRes, pos=(8, 7),
-                      flag=wx.ALL, border=5)
-        sizerGrid.Add(buttonRes, pos=(8, 8),
-                      flag=wx.ALL, border=5)
-        sizerGrid.Add(sizerButtons, pos=(9, 7), span=(1, 2),
+        sizerGrid.Add(sizerPlot, pos=(0, 7),
+                      flag=wx.EXPAND | wx.ALL, border=5)
+        sizerGrid.Add(sizerMesh, pos=(1, 7),
+                      flag=wx.EXPAND | wx.ALL, border=5)
+        sizerGrid.Add(sizerHeat, pos=(2, 7),
+                      flag=wx.EXPAND | wx.ALL, border=5)
+        sizerGrid.Add(sizerRange, pos=(3, 7),
+                      flag=wx.EXPAND | wx.ALL, border=5)
+        sizerGrid.Add(sizerOutput, pos=(4, 7),
+                      flag=wx.EXPAND | wx.ALL, border=5)
+        sizerGrid.Add(sizerButtons, pos=(5, 7), span=(1, 2),
                       flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
 
         self.SetSizerAndFit(sizerGrid)
@@ -684,12 +713,8 @@ class DialogExportGeo(wx.Dialog):
     def __setup_plot(self):
         self.axes.clear()
 
-        if self.plotHeat:
-            self.choiceColour.Show()
-            self.colourBar.Show()
-        else:
-            self.choiceColour.Hide()
-            self.colourBar.Hide()
+        self.choiceMapMesh.Enable(self.plotMesh)
+        self.choiceMapHeat.Enable(self.plotHeat)
 
         self.axes.set_title('Preview')
         self.axes.set_xlabel('Longitude ($^\circ$)')
@@ -701,7 +726,6 @@ class DialogExportGeo(wx.Dialog):
         self.axes.yaxis.set_major_formatter(formatter)
 
     def __draw_plot(self):
-        self.plot = None
         x = []
         y = []
         z = []
@@ -728,33 +752,43 @@ class DialogExportGeo(wx.Dialog):
             self.__draw_warning()
             return
 
-        xi = numpy.linspace(min(x), max(x), 500)
-        yi = numpy.linspace(min(y), max(y), 500)
-
-        try:
-            zi = mlab.griddata(x, y, z, xi, yi)
-        except:
-            self.__draw_warning()
-            return
-
         self.extent = (min(x), max(x), min(y), max(y))
         self.xyz = (x, y, z)
 
-        if self.plotHeat:
+        xi = numpy.linspace(min(x), max(x), self.IMAGE_SIZE)
+        yi = numpy.linspace(min(y), max(y), self.IMAGE_SIZE)
+
+        if self.plotMesh or self.plotCont:
+            try:
+                zi = mlab.griddata(x, y, z, xi, yi)
+            except:
+                self.__draw_warning()
+                return
+
+        if self.plotMesh:
             self.plot = self.axes.pcolormesh(xi, yi, zi, cmap=self.colourMap)
+            self.plot.set_zorder(1)
 
         if self.plotCont:
             contours = self.axes.contour(xi, yi, zi, linewidths=0.5,
                                          colors='k')
             self.axes.clabel(contours, inline=1, fontsize='x-small',
-                             gid='clabel')
+                             gid='clabel', zorder=3)
+
+        if self.plotHeat:
+            image = create_heatmap(x, y,
+                                   self.IMAGE_SIZE, self.IMAGE_SIZE / 10,
+                                   self.colourHeat)
+            heatMap = self.axes.imshow(image, extent=self.extent)
+            heatMap.set_zorder(2)
 
         if self.plotPoint:
             self.axes.plot(x, y, 'wo')
             for posX, posY, posZ in zip(x, y, z):
-                self.axes.annotate('{0:.2f}dB'.format(posZ), xy=(posX, posY),
-                                   xytext=(-5, 5), ha='right',
-                                   textcoords='offset points')
+                points = self.axes.annotate('{0:.2f}dB'.format(posZ), xy=(posX, posY),
+                                            xytext=(-5, 5), ha='right',
+                                            textcoords='offset points')
+                points.set_zorder(3)
 
         if matplotlib.__version__ >= '1.3':
             effect = patheffects.withStroke(linewidth=2, foreground="w",
@@ -793,8 +827,8 @@ class DialogExportGeo(wx.Dialog):
             self.axes.set_axis_off()
         self.canvas.draw()
 
-    def __on_heat(self, _event):
-        self.plotHeat = self.checkHeat.GetValue()
+    def __on_mesh(self, _event):
+        self.plotMesh = self.checkMesh.GetValue()
         self.__on_update(None)
 
     def __on_cont(self, _event):
@@ -805,12 +839,21 @@ class DialogExportGeo(wx.Dialog):
         self.plotPoint = self.checkPoint.GetValue()
         self.__on_update(None)
 
-    def __on_colour(self, _event):
-        self.colourMap = self.choiceColour.GetStringSelection()
-        self.colourBar.set_map(self.colourMap)
+    def __on_heat(self, _event):
+        self.plotHeat = self.checkHeat.GetValue()
+        self.__on_update(None)
+
+    def __on_colour_mesh(self, _event):
+        self.colourMesh = self.choiceMapMesh.GetStringSelection()
+        self.barMesh.set_map(self.colourMesh)
         if self.plot:
-            self.plot.set_cmap(self.colourMap)
+            self.plot.set_cmap(self.colourMesh)
             self.canvas.draw()
+
+    def __on_colour_heat(self, _event):
+        self.colourHeat = self.choiceMapHeat.GetStringSelection()
+        self.barHeat.set_map(self.colourHeat)
+        self.__on_update(None)
 
     def __show_image_res(self):
         self.textRes.SetLabel('{}dpi'.format(self.settings.exportDpi))

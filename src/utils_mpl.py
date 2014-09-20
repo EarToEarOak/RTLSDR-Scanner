@@ -23,12 +23,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import datetime
+import math
 import time
 
+from PIL import ImageDraw, ImageFilter, Image, ImageChops
 from matplotlib import cm
-from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.cm import ScalarMappable
+from matplotlib.colors import LinearSegmentedColormap, Normalize
 from matplotlib.dates import date2num, AutoDateLocator, AutoDateFormatter, \
     DateFormatter, MinuteLocator
+from matplotlib.image import pil_to_array
 
 
 def add_colours():
@@ -94,6 +98,39 @@ def set_date_ticks(axis, auto=True):
 
     axis.set_major_locator(timeLocator)
     axis.set_major_formatter(timeFormatter)
+
+
+def create_heatmap(xs, ys, imageSize, blobSize, cmap):
+    blob = Image.new('RGBA', (blobSize * 2, blobSize * 2), '#000000')
+    blob.putalpha(0)
+    colour = 255 / int(math.sqrt(len(xs)))
+    draw = ImageDraw.Draw(blob)
+    draw.ellipse((blobSize / 2, blobSize / 2, blobSize * 1.5, blobSize * 1.5),
+                 fill=(colour, colour, colour))
+    blob = blob.filter(ImageFilter.GaussianBlur(radius=blobSize / 2))
+    heat = Image.new('RGBA', (imageSize, imageSize), '#000000')
+    heat.putalpha(0)
+    xScale = float(imageSize - 1) / (max(xs) - min(xs))
+    yScale = float(imageSize - 1) / (min(ys) - max(ys))
+    xOff = min(xs)
+    yOff = max(ys)
+    for i in range(len(xs)):
+        xPos = int((xs[i] - xOff) * xScale)
+        yPos = int((ys[i] - yOff) * yScale)
+        blobLoc = Image.new('RGBA', (imageSize, imageSize), '#000000')
+        blobLoc.putalpha(0)
+        blobLoc.paste(blob, (xPos - blobSize, yPos - blobSize), blob)
+        heat = ImageChops.add(heat, blobLoc)
+
+    norm = Normalize(vmin=min(min(heat.getdata())),
+                     vmax=max(max(heat.getdata())))
+    sm = ScalarMappable(norm, cmap)
+    heatArray = pil_to_array(heat)
+    rgba = sm.to_rgba(heatArray[:, :, 0], bytes=True)
+    rgba[:, :, 3] = heatArray[:, :, 3]
+    coloured = Image.fromarray(rgba, 'RGBA')
+
+    return coloured
 
 
 if __name__ == '__main__':
