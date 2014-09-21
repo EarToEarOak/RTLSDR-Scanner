@@ -357,7 +357,8 @@ class Plotter(object):
         children = self.axes.get_children()
         for child in children:
             if child.get_gid() is not None:
-                if child.get_gid() == "plot" or child.get_gid() == "peak":
+                if child.get_gid() in ['plot', 'peak', 'peakText',
+                                       'peakShadow', 'peakThres']:
                     child.remove()
 
     def set_grid(self, on):
