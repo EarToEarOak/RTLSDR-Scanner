@@ -32,7 +32,7 @@
 !include "include\EnvVarUpdate.nsh"
 !include "include\fileassoc.nsh"
 
-!define INSTALLER_VERSION "16"
+!define INSTALLER_VERSION "17"
 
 !define PRODUCT_NAME "RTLSDR Scanner"
 !define PRODUCT_PUBLISHER "Ear to Ear Oak"
@@ -458,14 +458,11 @@ Function install_rtlsdr_scanner
 		Call error
 	${Else}
 		ZipDLL::extractall "$TEMP\rtlsdr_scanner.zip" "$TEMP"
-		CopyFiles "$TEMP\RTLSDR-Scanner-master\src\*.py" "$INSTDIR"
-		CopyFiles "$TEMP\RTLSDR-Scanner-master\src\version-timestamp" "$INSTDIR"
+		CopyFiles "$TEMP\RTLSDR-Scanner-master\src\*" "$INSTDIR"
 		CreateDirectory "$INSTDIR\res"
-		CopyFiles "$TEMP\RTLSDR-Scanner-master\res\*.png" "$INSTDIR\res"
-		CopyFiles "$TEMP\RTLSDR-Scanner-master\res\*.gif" "$INSTDIR\res"
+		CopyFiles "$TEMP\RTLSDR-Scanner-master\res\*" "$INSTDIR\res"
 		CreateDirectory "$INSTDIR\doc"
-		CopyFiles "$TEMP\RTLSDR-Scanner-master\doc\*.pdf" "$INSTDIR\doc"
-		CopyFiles "$TEMP\RTLSDR-Scanner-master\doc\*.rfs" "$INSTDIR\doc"
+		CopyFiles "$TEMP\RTLSDR-Scanner-master\doc\*" "$INSTDIR\doc"
 		CopyFiles "$TEMP\RTLSDR-Scanner-master\*.ico" "$INSTDIR"
 		RmDir /r "$TEMP\RTLSDR-Scanner-master"
 		${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR"
