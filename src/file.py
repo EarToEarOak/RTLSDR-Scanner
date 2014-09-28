@@ -46,7 +46,7 @@ from spectrum import sort_spectrum, create_mesh
 
 class File(object):
     class Types(object):
-        SAVE, PLOT, IMAGE, GEO, TRACK = range(5)
+        SAVE, PLOT, IMAGE, GEO, GMAP, TRACK = range(6)
 
     class SaveType(object):
         RFS = 0
@@ -59,6 +59,9 @@ class File(object):
 
     class GeoType(object):
         KMZ, CSV, BMP, EPS, GIF, JPEG, PDF, PNG, PPM, TIFF = range(10)
+
+    class GMapType(object):
+        HTML = 0
 
     class TrackType(object):
         GPX = 0
@@ -94,6 +97,9 @@ class File(object):
     GEO[GeoType.PPM] = 'Portable Pixmap image (*.ppm)|*.ppm'
     GEO[GeoType.TIFF] = 'Tagged Image File (*.tiff)|*.tiff'
 
+    GMAP = [''] * 1
+    GMAP[GMapType.HTML] = 'HTML Document (*.html)|*.html'
+
     TRACK = [''] * 1
     TRACK[TrackType.GPX] = 'GPX track (*.gpx)|*.gpx'
 
@@ -102,7 +108,8 @@ class File(object):
 
     @staticmethod
     def __get_types(type):
-        return [File.SAVE, File.PLOT, File.IMAGE, File.GEO, File.TRACK][type]
+        return [File.SAVE, File.PLOT, File.IMAGE,
+                File.GEO, File.GMAP, File.TRACK][type]
 
     @staticmethod
     def get_type_ext(index, type=Types.PLOT):

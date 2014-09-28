@@ -77,6 +77,20 @@ class RemoteControl(object):
         self.__send(command)
 
 
+def get_resdir():
+    scriptDir = os.path.dirname(os.path.realpath(sys.argv[0]))
+    if os.path.isdir(scriptDir + '/res'):
+        resDir = os.path.normpath(scriptDir + '/res')
+    else:
+        resDir = os.path.join(scriptDir + '/../res')
+
+    return resDir
+
+
+def get_resource_path(resource):
+    return os.path.join(get_resdir(), resource)
+
+
 def limit(value, minimum, maximum):
     return max(min(maximum, value), minimum)
 

@@ -36,7 +36,7 @@ import wx
 from wx.lib.masked.numctrl import NumCtrl
 
 from constants import F_MIN, F_MAX, MODE, DWELL, NFFT, DISPLAY, Warn, \
-    Cal, Mode, KML_PORT, APP_NAME
+    Cal, Mode, APP_NAME, LOCATION_PORT
 from devices import get_devices_rtl
 from dialogs_devices import DialogDevicesRTL, DialogDevicesGPS
 from dialogs_file import DialogImageSize, DialogExportSeq, DialogExportGeo, \
@@ -47,7 +47,7 @@ from dialogs_tools import DialogCompare, DialogAutoCal, DialogSats, DialogSmooth
 from events import EVENT_THREAD, Event, EventThread, post_event, Log
 from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
     export_map, extension_add, File, run_file, export_gpx
-from location import ThreadLocation, KmlServer
+from location import ThreadLocation, LocationServer
 from menus import MenuMain, PopMenuMain
 from misc import RemoteControl, calc_samples, calc_real_dwell, \
     get_version_timestamp, get_version_timestamp_repo, format_iso_time, limit
@@ -57,6 +57,7 @@ from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
 from spectrum import count_points, sort_spectrum, Extent
 from toolbars import Statusbar, NavigationToolbar
+from utils_google import create_gearth
 from utils_mpl import add_colours
 from utils_wx import load_icon
 from widgets import MultiButton
@@ -98,7 +99,7 @@ class FrameMain(wx.Frame):
         self.threadUpdate = None
         self.threadLocation = None
 
-        self.serverKml = None
+        self.serverLocation = None
 
         self.isNewScan = True
         self.isScanning = False
@@ -186,7 +187,7 @@ class FrameMain(wx.Frame):
         self.stepsTotal = 0
 
         self.__start_gps()
-        self.__start_kml()
+        self.__start_location_server()
 
     def __create_widgets(self):
         self.remoteControl = RemoteControl()
@@ -313,7 +314,8 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.__on_compare, self.menuMain.compare)
         self.Bind(wx.EVT_MENU, self.__on_smooth, self.menuMain.smooth)
         self.Bind(wx.EVT_MENU, self.__on_cal, self.menuMain.cal)
-        self.Bind(wx.EVT_MENU, self.__on_kml, self.menuMain.kml)
+        self.Bind(wx.EVT_MENU, self.__on_gearth, self.menuMain.gearth)
+        self.Bind(wx.EVT_MENU, self.__on_gmaps, self.menuMain.gmaps)
         self.Bind(wx.EVT_MENU, self.__on_sats, self.menuMain.sats)
         self.Bind(wx.EVT_MENU, self.__on_loc_clear, self.menuMain.locClear)
         self.Bind(wx.EVT_MENU, self.__on_log, self.menuMain.log)
@@ -557,7 +559,7 @@ class FrameMain(wx.Frame):
             return
         self.__scan_stop(False)
         self.__stop_gps(False)
-        self.__stop_kml()
+        self.__stop_location_server()
         self.__get_controls()
         self.settings.devicesRtl = self.devicesRtl
         self.settings.save()
@@ -655,28 +657,20 @@ class FrameMain(wx.Frame):
         self.dlgCal = DialogAutoCal(self, self.settings.calFreq, self.__auto_cal)
         self.dlgCal.ShowModal()
 
-    def __on_kml(self, _event):
+    def __on_gearth(self, _event):
         tempPath = tempfile.mkdtemp()
         tempFile = os.path.join(tempPath, 'RTLSDRScannerLink.kml')
         handle = open(tempFile, 'wb')
-        handle.write('<?xml version="1.0" encoding="UTF-8"?>\n'
-                     '<kml xmlns="http://www.opengis.net/kml/2.2">\n'
-                     '\t<NetworkLink>\n'
-                     '\t\t<name>{}</name>\n'
-                     '\t\t<flyToView>1</flyToView>\n'
-                     '\t\t<open>1</open>\n'
-                     '\t\t<Link>\n'
-                     '\t\t\t<href>http://localhost:{}</href>\n'
-                     '\t\t\t<refreshMode>onInterval</refreshMode>\n'
-                     '\t\t\t<refreshInterval>10</refreshInterval>\n'
-                     '\t\t</Link>\n'
-                     '\t</NetworkLink>\n'
-                     '</kml>\n'.format(APP_NAME, KML_PORT))
+        create_gearth(handle)
         handle.close()
 
         if not run_file(tempFile):
             wx.MessageBox('Error starting Google Earth', 'Error',
                           wx.OK | wx.ICON_ERROR)
+
+    def __on_gmaps(self, _event):
+        url = 'http://localhost:{}/rtlsdr_scan.html'.format(LOCATION_PORT)
+        webbrowser.open_new(url)
 
     def __on_sats(self, _event):
         if self.dlgSats is None:
@@ -1019,13 +1013,13 @@ class FrameMain(wx.Frame):
                 self.threadLocation.join()
         self.threadLocation = None
 
-    def __start_kml(self):
-        self.serverKml = KmlServer(self.locations, self.lastLocation,
-                                   self.lock)
+    def __start_location_server(self):
+        self.serverLocation = LocationServer(self.locations, self.lastLocation,
+                                             self.lock)
 
-    def __stop_kml(self):
-        if self.serverKml:
-            self.serverKml.close()
+    def __stop_location_server(self):
+        if self.serverLocation:
+            self.serverLocation.close()
 
     def __update_location(self, data):
         i = 0

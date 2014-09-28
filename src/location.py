@@ -25,19 +25,22 @@
 
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 import json
+import mimetypes
+import os
 import socket
 import threading
 import time
+import urllib
 from urlparse import urlparse
 
 import serial
 from serial.serialutil import SerialException
 
-from constants import KML_PORT, APP_NAME
+from constants import LOCATION_PORT, APP_NAME
 from devices import DeviceGPS
 from events import post_event, EventThread, Event
-from misc import format_iso_time, haversine, format_time, limit_to_ascii, limit
-from utils_wx import load_bitmap
+from misc import format_iso_time, haversine, format_time, limit_to_ascii, limit, \
+    get_resdir
 
 
 class ThreadLocation(threading.Thread):
@@ -325,23 +328,24 @@ class ThreadLocation(threading.Thread):
             self.notify.queue.clear()
 
 
-class KmlServer(object):
+class LocationServer(object):
     def __init__(self, locations, currentLoc, lock):
-        self.server = HTTPServer(('127.0.0.1', KML_PORT), KmlServerHandler)
+        self.server = HTTPServer(('127.0.0.1', LOCATION_PORT),
+                                 LocationServerHandler)
         self.server.locations = locations
         self.server.currentLoc = currentLoc
         self.server.lock = lock
-        self.thread = threading.Thread(target=self.__serve_kml)
+        self.thread = threading.Thread(target=self.__serve)
         self.thread.start()
 
-    def __serve_kml(self):
+    def __serve(self):
         self.server.serve_forever()
 
     def close(self):
         self.server.shutdown()
 
 
-class KmlServerHandler(BaseHTTPRequestHandler):
+class LocationServerHandler(BaseHTTPRequestHandler):
     def __create_lookat(self):
         if not len(self.server.locations):
             return ''
@@ -438,8 +442,8 @@ class KmlServerHandler(BaseHTTPRequestHandler):
                          '<kml xmlns="http://www.opengis.net/kml/2.2" '
                          'xmlns:gx="http://www.google.com/kml/ext/2.2">\n')
 
-        self.wfile.write('\t<Document>\n'
-                         '\t\t<name>{}</name>\n').format(APP_NAME)
+        self.wfile.write(('\t<Document>\n'
+                          '\t\t<name>{}</name>\n').format(APP_NAME))
 
         self.wfile.write(self.__create_lookat())
 
@@ -451,7 +455,7 @@ class KmlServerHandler(BaseHTTPRequestHandler):
                           '\t\t\t\t<hotSpot x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>\n'
                           '\t\t\t\t<scale>2</scale>\n'
                           '\t\t\t</IconStyle>\n'
-                          '\t\t</Style>\n').format(KML_PORT))
+                          '\t\t</Style>\n').format(LOCATION_PORT))
 
         self.wfile.write('\t\t<Style id="track">\n'
                          '\t\t\t<LineStyle>\n'
@@ -472,23 +476,60 @@ class KmlServerHandler(BaseHTTPRequestHandler):
         self.wfile.write('\t</Document>\n'
                          '</kml>\n')
 
-    def __send_png(self):
+    def __send_geojson(self):
         self.send_response(200)
-        self.send_header('Content-type', 'image/png')
+        self.send_header('Content-type',
+                         'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
 
-        filename = load_bitmap('crosshair', False)
-        f = open(filename, 'rb')
+        features = []
+        with self.server.lock:
+            for location in self.server.locations.values():
+                geometry = {'type': 'Point',
+                            'coordinates': location}
+                feature = {'type': 'Feature',
+                           'geometry': geometry}
+                features.append(feature)
+
+        location = self.server.currentLoc
+        if location[0] is not None:
+            geometry = {'type': 'Point',
+                        'coordinates': location}
+            feature = {'type': 'Feature',
+                       'geometry': geometry,
+                       'properties': {'isLast': True}}
+            features.append(feature)
+
+        data = {'Type': 'FeatureCollection',
+                'features': features}
+
+        self.wfile.write(json.dumps(data, indent=4))
+
+    def __send_file(self):
+        url = urlparse(self.path)
+        _dir, filename = os.path.split(url.path)
+        localFile = os.path.join(get_resdir(), filename)
+        if not os.path.exists(localFile):
+            self.send_error(404)
+            return
+
+        urlFile = urllib.pathname2url(localFile)
+        self.send_response(200)
+        self.send_header('Content-type', mimetypes.guess_type(urlFile))
+        self.end_headers()
+
+        f = open(localFile, 'rb')
         self.wfile.write(f.read())
         f.close()
 
     def do_GET(self):
-        if self.path == '/':
+        if self.path == '/kml':
             self.__send_kml()
-        elif self.path == '/crosshair.png':
-            self.__send_png()
+        elif self.path == '/gjson':
+            self.__send_geojson()
         else:
-            self.send_error(404)
+            self.__send_file()
 
     def log_message(self, *args, **kwargs):
         pass

@@ -114,8 +114,10 @@ class MenuMain(object):
         self.cal = tools.Append(wx.ID_ANY, "&Auto Calibration...",
                                 "Automatically calibrate to a known frequency")
         tools.AppendSeparator()
-        self.kml = tools.Append(wx.ID_ANY, "&Track in Google Earth",
-                                "Display recorded points in Google Earth")
+        self.gearth = tools.Append(wx.ID_ANY, "Track in Google &Earth",
+                               "Display recorded points in Google Earth")
+        self.gmaps = tools.Append(wx.ID_ANY, "Track in Google &Maps",
+                                  "Display recorded points in Google Maps")
         self.sats = tools.Append(wx.ID_ANY, "&GPS Satellites...",
                                  "Show satellite signal levels")
         tools.AppendSeparator()

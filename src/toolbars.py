@@ -36,6 +36,7 @@ from wx.animate import AnimationCtrl, Animation
 from constants import Display, PlotFunc
 from dialogs_toolbars import DialogSmoothPrefs, DialogPeakThreshold
 from events import Log
+from misc import get_resource_path
 from utils_mpl import get_colours
 from utils_wx import load_bitmap
 from widgets import Led
@@ -61,7 +62,7 @@ class Statusbar(wx.StatusBar):
         self.controls[2] = Led(self, label=self.TEXT_GPS)
         self.controls[3] = wx.Gauge(self, -1,
                                     style=wx.GA_HORIZONTAL | wx.GA_SMOOTH)
-        animation = Animation(load_bitmap('busy', False, 'gif'))
+        animation = Animation(get_resource_path('busy.gif'))
         busy = AnimationCtrl(self, anim=animation)
         busy.SetToolTipString('Updating plot')
         self.controls[4] = busy
