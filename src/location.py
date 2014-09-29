@@ -38,7 +38,7 @@ from serial.serialutil import SerialException
 
 from constants import LOCATION_PORT, APP_NAME
 from devices import DeviceGPS
-from events import post_event, EventThread, Event
+from events import post_event, EventThread, Event, Log
 from misc import format_iso_time, haversine, format_time, limit_to_ascii, limit, \
     get_resdir
 
@@ -329,12 +329,13 @@ class ThreadLocation(threading.Thread):
 
 
 class LocationServer(object):
-    def __init__(self, locations, currentLoc, lock):
+    def __init__(self, locations, currentLoc, lock, log):
         self.server = HTTPServer(('127.0.0.1', LOCATION_PORT),
                                  LocationServerHandler)
         self.server.locations = locations
         self.server.currentLoc = currentLoc
         self.server.lock = lock
+        self.server.log = log
         self.thread = threading.Thread(target=self.__serve)
         self.thread.start()
 
@@ -512,6 +513,8 @@ class LocationServerHandler(BaseHTTPRequestHandler):
         localFile = os.path.join(get_resdir(), filename)
         if not os.path.exists(localFile):
             self.send_error(404)
+            self.server.log.add('File not found: {}'.format(self.path),
+                                Log.WARN)
             return
 
         urlFile = urllib.pathname2url(localFile)

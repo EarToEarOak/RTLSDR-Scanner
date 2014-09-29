@@ -1015,7 +1015,7 @@ class FrameMain(wx.Frame):
 
     def __start_location_server(self):
         self.serverLocation = LocationServer(self.locations, self.lastLocation,
-                                             self.lock)
+                                             self.lock, self.log)
 
     def __stop_location_server(self):
         if self.serverLocation:
