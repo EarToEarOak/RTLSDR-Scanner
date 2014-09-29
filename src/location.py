@@ -519,7 +519,7 @@ class LocationServerHandler(BaseHTTPRequestHandler):
 
         urlFile = urllib.pathname2url(localFile)
         self.send_response(200)
-        self.send_header('Content-type', mimetypes.guess_type(urlFile))
+        self.send_header('Content-type', mimetypes.guess_type(urlFile)[0])
         self.end_headers()
 
         f = open(localFile, 'rb')
