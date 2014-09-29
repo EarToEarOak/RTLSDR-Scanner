@@ -35,7 +35,7 @@ from matplotlib.ticker import ScalarFormatter
 import numpy
 from numpy.ma.core import masked
 import wx
-from wx.lib.masked.numctrl import NumCtrl
+from wx.lib.masked.numctrl import NumCtrl, EVT_NUM
 
 from constants import SAMPLE_RATE, TUNER
 from events import Event
@@ -240,12 +240,12 @@ class DialogImageSize(wx.Dialog):
         textWidth = wx.StaticText(self, label="Width (inches)")
         self.ctrlWidth = NumCtrl(self, integerWidth=2, fractionWidth=1)
         self.ctrlWidth.SetValue(settings.exportWidth)
-        self.Bind(masked.EVT_NUM, self.__update_size, self.ctrlWidth)
+        self.Bind(EVT_NUM, self.__update_size, self.ctrlWidth)
 
         textHeight = wx.StaticText(self, label="Height (inches)")
         self.ctrlHeight = NumCtrl(self, integerWidth=2, fractionWidth=1)
         self.ctrlHeight.SetValue(settings.exportHeight)
-        self.Bind(masked.EVT_NUM, self.__update_size, self.ctrlHeight)
+        self.Bind(EVT_NUM, self.__update_size, self.ctrlHeight)
 
         textDpi = wx.StaticText(self, label="Dots per inch")
         self.spinDpi = wx.SpinCtrl(self)
