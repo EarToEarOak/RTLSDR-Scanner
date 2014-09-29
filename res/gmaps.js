@@ -239,6 +239,7 @@ Ext.application({
 			region : "east",
 			width : 200,
 			collapsible : true,
+			autoScroll: true,
 			items : [ layersPanel, infoPanel, settingsPanel, refreshPanel ]
 		});
 
