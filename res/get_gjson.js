@@ -37,6 +37,9 @@ function getLocations() {
 	xhr.ontimeout = function() {
 		self.postMessage('');
 	};
+	xhr.onerror = function() {
+		self.postMessage('');
+	};
 	xhr.send();
 }
 
