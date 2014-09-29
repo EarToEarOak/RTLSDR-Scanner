@@ -41,9 +41,10 @@ from devices import get_devices_rtl
 from dialogs_devices import DialogDevicesRTL, DialogDevicesGPS
 from dialogs_file import DialogImageSize, DialogExportSeq, DialogExportGeo, \
     DialogProperties, DialogSaveWarn
-from dialogs_help import DialogLog, DialogSysInfo, DialogAbout
+from dialogs_help import DialogSysInfo, DialogAbout
 from dialogs_prefs import DialogPrefs, DialogAdvPrefs, DialogFormatting
-from dialogs_tools import DialogCompare, DialogAutoCal, DialogSats, DialogSmooth
+from dialogs_tools import DialogCompare, DialogAutoCal, DialogSats, DialogSmooth, \
+    DialogLog
 from events import EVENT_THREAD, Event, EventThread, post_event, Log
 from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
     export_map, extension_add, File, run_file, export_gpx

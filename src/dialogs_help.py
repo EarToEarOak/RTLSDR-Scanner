@@ -25,16 +25,14 @@
 
 import multiprocessing
 import platform
-import textwrap
 
 from PIL import Image
 import matplotlib
 import numpy
 import serial
-from wx import grid
 import wx
 
-from misc import get_version_timestamp, format_time
+from misc import get_version_timestamp
 from utils_wx import load_bitmap
 
 
@@ -132,102 +130,6 @@ class DialogAbout(wx.Dialog):
 
         self.SetSizerAndFit(grid)
         self.Centre()
-
-
-class DialogLog(wx.Dialog):
-    def __init__(self, parent, log):
-        wx.Dialog.__init__(self, parent=parent, title="Log")
-
-        self.parent = parent
-        self.log = log
-
-        self.gridLog = grid.Grid(self)
-        self.gridLog.CreateGrid(log.MAX_ENTRIES, 3)
-        self.gridLog.SetRowLabelSize(0)
-        self.gridLog.SetColLabelValue(0, "Time")
-        self.gridLog.SetColLabelValue(1, "Level")
-        self.gridLog.SetColLabelValue(2, "Event")
-        self.gridLog.EnableEditing(False)
-
-        textFilter = wx.StaticText(self, label='Level')
-        self.choiceFilter = wx.Choice(self,
-                                      choices=['All'] + self.log.TEXT_LEVEL)
-        self.choiceFilter.SetSelection(0)
-        self.choiceFilter.SetToolTipString('Filter log level')
-        self.Bind(wx.EVT_CHOICE, self.__on_filter, self.choiceFilter)
-        sizerFilter = wx.BoxSizer()
-        sizerFilter.Add(textFilter, flag=wx.ALL, border=5)
-        sizerFilter.Add(self.choiceFilter, flag=wx.ALL, border=5)
-
-        buttonRefresh = wx.Button(self, wx.ID_ANY, label='Refresh')
-        buttonRefresh.SetToolTipString('Refresh the log')
-        buttonClose = wx.Button(self, wx.ID_CLOSE)
-        self.Bind(wx.EVT_BUTTON, self.__on_refresh, buttonRefresh)
-        self.Bind(wx.EVT_BUTTON, self.__on_close, buttonClose)
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.gridLog, 1, flag=wx.ALL | wx.EXPAND, border=5)
-        sizer.Add(sizerFilter, 0, flag=wx.ALL, border=5)
-        sizer.Add(buttonRefresh, 0, flag=wx.ALL, border=5)
-        sizer.Add(buttonClose, 0, flag=wx.ALL | wx.ALIGN_RIGHT, border=5)
-
-        self.sizer = sizer
-        self.__update_grid()
-        self.SetSizer(sizer)
-
-        self.Bind(wx.EVT_CLOSE, self.__on_close)
-
-    def __on_filter(self, _event):
-        selection = self.choiceFilter.GetSelection()
-        if selection == 0:
-            level = None
-        else:
-            level = selection - 1
-        self.__update_grid(level)
-
-    def __on_refresh(self, _event):
-        self.__update_grid()
-
-    def __on_close(self, _event):
-        self.Unbind(wx.EVT_CLOSE)
-        self.parent.dlgLog = None
-        self.Close()
-
-    def __update_grid(self, level=None):
-        self.gridLog.ClearGrid()
-
-        fontCell = self.gridLog.GetDefaultCellFont()
-        fontSize = fontCell.GetPointSize()
-        fontStyle = fontCell.GetStyle()
-        fontWeight = fontCell.GetWeight()
-        font = wx.Font(fontSize, wx.FONTFAMILY_MODERN, fontStyle,
-                       fontWeight)
-
-        i = 0
-        for event in self.log.get(level):
-            self.gridLog.SetCellValue(i, 0, format_time(event[0], True))
-            self.gridLog.SetCellValue(i, 1, self.log.TEXT_LEVEL[event[1]])
-            eventText = '\n'.join(textwrap.wrap(event[2], width=70))
-            self.gridLog.SetCellValue(i, 2, eventText)
-            self.gridLog.SetCellFont(i, 0, font)
-            self.gridLog.SetCellFont(i, 1, font)
-            self.gridLog.SetCellFont(i, 2, font)
-            self.gridLog.SetCellAlignment(i, 0, wx.ALIGN_LEFT, wx.ALIGN_CENTRE)
-            self.gridLog.SetCellAlignment(i, 1, wx.ALIGN_LEFT, wx.ALIGN_CENTRE)
-            i += 1
-
-        self.gridLog.AppendRows()
-        self.gridLog.SetCellValue(i, 0, '#' * 18)
-        self.gridLog.SetCellValue(i, 1, '#' * 5)
-        self.gridLog.SetCellValue(i, 2, '#' * 80)
-        self.gridLog.AutoSize()
-        self.gridLog.DeleteRows(i)
-
-        size = self.gridLog.GetBestSize()
-        size.width += wx.SystemSettings.GetMetric(wx.SYS_VSCROLL_X) + 10
-        size.height = 400
-        self.SetClientSize(size)
-        self.sizer.Layout()
 
 
 if __name__ == '__main__':
