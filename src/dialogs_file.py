@@ -601,6 +601,7 @@ class DialogExportGeo(wx.Dialog):
 
         textMesh = wx.StaticText(self, label='Mesh')
         self.checkMesh = wx.CheckBox(self, label='On')
+        self.checkMesh.SetToolTipString('Signal level mesh')
         self.checkMesh.SetValue(self.plotMesh)
         self.Bind(wx.EVT_CHECKBOX, self.__on_mesh, self.checkMesh)
         self.choiceMapMesh = wx.Choice(self, choices=colours)
@@ -618,6 +619,7 @@ class DialogExportGeo(wx.Dialog):
         colours = get_colours()
         textHeat = wx.StaticText(self, label='Heat map')
         self.checkHeat = wx.CheckBox(self, label='On')
+        self.checkHeat.SetToolTipString('GPS location heatmap')
         self.checkHeat.SetValue(self.plotHeat)
         self.Bind(wx.EVT_CHECKBOX, self.__on_heat, self.checkHeat)
         self.choiceMapHeat = wx.Choice(self, choices=colours)
