@@ -25,6 +25,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from ctypes import CDLL
 from ctypes.util import find_library
 import sys
 
@@ -44,6 +45,24 @@ def try_import(library):
 
     return True
 
+
+# https://github.com/roger-/pyrtlsdr/blob/master/rtlsdr/librtlsdr.py
+def find_rtlsdr_driver():
+    driver_files = ['..//rtlsdr.dll', '..//librtlsdr.so']
+    driver_files += ['rtlsdr//rtlsdr.dll', 'rtlsdr//librtlsdr.so']
+    driver_files += [find_library('rtlsdr'), find_library('librtlsdr')]
+
+    path = None
+    for driver in driver_files:
+        try:
+            CDLL(driver)
+            path = driver
+            break
+        except:
+            pass
+
+    return path
+
 if __name__ == '__main__':
 
     try:
@@ -60,8 +79,8 @@ if __name__ == '__main__':
 
     problem = False
 
-    if not find_library('rtlsdr') and not find_library('librtlsdr'):
-        print 'librtlsdr not found in path'
+    if not find_rtlsdr_driver():
+        print 'rtlsdr driver not found in path'
         print "Download from 'http://sdr.osmocom.org/trac/wiki/rtl-sdr'"
         print ''
     else:
@@ -90,5 +109,6 @@ if __name__ == '__main__':
             print 'Problems found, please install the libraries for Python {}.{}'.format(version[0], version[1])
         else:
             print 'No problems found'
+            print '\nUsing driver {}'.format(find_rtlsdr_driver())
 
     input('\nPress [Return]')
