@@ -858,8 +858,9 @@ class FrameMain(wx.Frame):
             self.status.set_gps("{}".format(arg2), level=Log.ERROR)
             self.status.error_gps()
             self.threadLocation = None
-            if not self.timerGpsRetry.IsRunning():
-                self.timerGpsRetry.Start(5000, True)
+            if self.settings.gpsRetry:
+                if not self.timerGpsRetry.IsRunning():
+                    self.timerGpsRetry.Start(20000, True)
         elif status == Event.LOC:
             self.__update_location(arg2)
         elif status == Event.LOC_SAT:

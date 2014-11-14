@@ -92,6 +92,7 @@ class Settings(object):
         self.alertLevel = -20
 
         self.gps = False
+        self.gpsRetry = False
 
         self.exportWidth = 8
         self.exportHeight = 4.5
@@ -238,6 +239,7 @@ class Settings(object):
         self.alert = self.cfg.ReadBool('alert', self.alert)
         self.alertLevel = self.cfg.ReadFloat('alertLevel', self.alertLevel)
         self.gps = self.cfg.ReadBool('gps', self.gps)
+        self.gpsRetry = self.cfg.ReadBool('gpsRetry', self.gpsRetry)
         self.exportWidth = self.cfg.ReadFloat('exportWidth', self.exportWidth)
         self.exportHeight = self.cfg.ReadFloat('exportHeight', self.exportHeight)
         self.exportDpi = self.cfg.ReadInt('exportDpi', self.exportDpi)
@@ -295,6 +297,7 @@ class Settings(object):
         self.cfg.WriteBool('alert', self.alert)
         self.cfg.WriteFloat('alertLevel', self.alertLevel)
         self.cfg.WriteBool('gps', self.gps)
+        self.cfg.WriteBool('gpsRetry', self.gpsRetry)
         self.cfg.WriteFloat('exportWidth', self.exportWidth)
         self.cfg.WriteFloat('exportHeight', self.exportHeight)
         self.cfg.WriteInt('exportDpi', self.exportDpi)

@@ -270,6 +270,12 @@ class DialogDevicesGPS(wx.Dialog):
         self.checkGps = wx.CheckBox(self, wx.ID_ANY, "Enable GPS")
         self.checkGps.SetToolTipString('Record GPS locations in scans')
         self.checkGps.SetValue(settings.gps)
+        self.Bind(wx.EVT_CHECKBOX, self.__on_check, self.checkGps)
+
+        self.checkGpsRetry = wx.CheckBox(self, wx.ID_ANY, "Retry after disconnection")
+        self.checkGpsRetry.SetToolTipString('Retry GPS if disconnected')
+        self.checkGpsRetry.SetValue(settings.gpsRetry)
+        self.checkGpsRetry.Enable(settings.gps)
 
         self.gridDev = grid.Grid(self)
         self.gridDev.CreateGrid(len(self.devices), 5)
@@ -301,6 +307,7 @@ class DialogDevicesGPS(wx.Dialog):
 
         self.devbox = wx.BoxSizer(wx.VERTICAL)
         self.devbox.Add(self.checkGps, 0, wx.ALL | wx.EXPAND, 10)
+        self.devbox.Add(self.checkGpsRetry, 0, wx.ALL | wx.EXPAND, 10)
         self.devbox.Add(self.gridDev, 1, wx.ALL | wx.EXPAND, 10)
         self.devbox.Add(sizerDevice, 0, wx.ALL | wx.EXPAND, 10)
         self.devbox.Add(sizerButtons, 0, wx.ALL | wx.EXPAND, 10)
@@ -383,6 +390,9 @@ class DialogDevicesGPS(wx.Dialog):
                                 device=device: self.__on_type(event, device))
         event.Skip()
 
+    def __on_check(self, _event):
+        self.checkGpsRetry.Enable(self.checkGps.GetValue())
+
     def __on_click(self, event):
         col = event.GetCol()
         index = event.GetRow()
@@ -454,6 +464,7 @@ class DialogDevicesGPS(wx.Dialog):
             return
 
         self.settings.gps = self.checkGps.GetValue()
+        self.settings.gpsRetry = self.checkGpsRetry.GetValue()
         self.settings.devicesGps = self.devices
         if len(self.devices) == 0:
             self.index = -1
