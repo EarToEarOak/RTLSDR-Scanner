@@ -23,6 +23,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import Queue
 from collections import OrderedDict
 import math
 import os.path
@@ -99,6 +100,8 @@ class FrameMain(wx.Frame):
         self.threadScan = None
         self.threadUpdate = None
         self.threadLocation = None
+
+        self.queueScan = Queue.Queue()
 
         self.serverLocation = None
 
@@ -779,13 +782,13 @@ class FrameMain(wx.Frame):
 
     def __on_event(self, event):
         status = event.data.get_status()
-        freq = event.data.get_arg1()
-        data = event.data.get_arg2()
+        arg1 = event.data.get_arg1()
+        arg2 = event.data.get_arg2()
         if status == Event.STARTING:
             self.status.set_general("Starting")
             self.isScanning = True
         elif status == Event.STEPS:
-            self.stepsTotal = (freq + 1) * 2
+            self.stepsTotal = (arg1 + 1) * 2
             self.steps = self.stepsTotal
             self.status.set_progress(0)
             self.status.show_progress()
@@ -794,14 +797,15 @@ class FrameMain(wx.Frame):
         elif status == Event.INFO:
             if self.threadScan is not None:
                 self.sdr = self.threadScan.get_sdr()
-                if data is not None:
-                    self.devicesRtl[self.settings.indexRtl].tuner = data
-                    self.scanInfo.tuner = data
+                if arg2 is not None:
+                    self.devicesRtl[self.settings.indexRtl].tuner = arg2
+                    self.scanInfo.tuner = arg2
         elif status == Event.DATA:
             self.__saved(False)
             cal = self.devicesRtl[self.settings.indexRtl].calibration
+            freq, scan = self.queueScan.get()
             self.pool.apply_async(anaylse_data,
-                                  (freq, data, cal,
+                                  (freq, scan, cal,
                                    self.settings.nfft,
                                    self.settings.overlap,
                                    self.settings.winFunc),
@@ -814,7 +818,7 @@ class FrameMain(wx.Frame):
             self.threadScan = None
         elif status == Event.ERROR:
             self.__cleanup()
-            self.status.set_general("Error: {}".format(data), level=Log.ERROR)
+            self.status.set_general("Error: {}".format(arg2), level=Log.ERROR)
             if self.dlgCal is not None:
                 self.dlgCal.Destroy()
                 self.dlgCal = None
@@ -826,14 +830,14 @@ class FrameMain(wx.Frame):
                 alert = None
             Thread(target=update_spectrum, name='Update',
                    args=(self, self.lock, self.settings.start,
-                         self.settings.stop, freq,
-                         data, offset, self.spectrum,
+                         self.settings.stop, arg1,
+                         arg2, offset, self.spectrum,
                          not self.settings.retainScans,
                          alert)).start()
         elif status == Event.LEVEL:
             wx.Bell()
         elif status == Event.UPDATED:
-            if data and self.settings.liveUpdate:
+            if arg2 and self.settings.liveUpdate:
                 self.__set_plot(self.spectrum,
                                 self.settings.annotate and
                                 self.settings.retainScans and
@@ -842,25 +846,25 @@ class FrameMain(wx.Frame):
         elif status == Event.DRAW:
             self.graph.draw()
         elif status == Event.VER_UPD:
-            self.__update_checked(True, freq, data)
+            self.__update_checked(True, arg1, arg2)
         elif status == Event.VER_NOUPD:
             self.__update_checked(False)
         elif status == Event.VER_UPDFAIL:
             self.__update_checked(failed=True)
         elif status == Event.LOC_WARN:
-            self.status.set_gps("{}".format(data), level=Log.WARN)
+            self.status.set_gps("{}".format(arg2), level=Log.WARN)
             self.status.warn_gps()
         elif status == Event.LOC_ERR:
-            self.status.set_gps("{}".format(data), level=Log.ERROR)
+            self.status.set_gps("{}".format(arg2), level=Log.ERROR)
             self.status.error_gps()
             self.threadLocation = None
             if not self.timerGpsRetry.IsRunning():
                 self.timerGpsRetry.Start(5000, True)
         elif status == Event.LOC:
-            self.__update_location(data)
+            self.__update_location(arg2)
         elif status == Event.LOC_SAT:
             if self.dlgSats is not None:
-                self.dlgSats.set_sats(data)
+                self.dlgSats.set_sats(arg2)
 
         wx.YieldIfNeeded()
 
@@ -928,7 +932,7 @@ class FrameMain(wx.Frame):
 
             self.stopAtEnd = False
             self.stopScan = False
-            self.threadScan = ThreadScan(self, self.sdr, self.settings,
+            self.threadScan = ThreadScan(self, self.queueScan, self.sdr, self.settings,
                                          self.settings.indexRtl, samples, isCal)
             self.filename = "Scan {0:.1f}-{1:.1f}MHz".format(self.settings.start,
                                                              self.settings.stop)

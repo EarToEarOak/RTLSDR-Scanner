@@ -37,10 +37,11 @@ import rtltcp
 
 
 class ThreadScan(threading.Thread):
-    def __init__(self, notify, sdr, settings, device, samples, isCal):
+    def __init__(self, notify, queue, sdr, settings, device, samples, isCal):
         threading.Thread.__init__(self)
         self.name = 'Scan'
         self.notify = notify
+        self.queue = queue
         self.sdr = sdr
         self.fstart = settings.start * 1e6
         self.fstop = settings.stop * 1e6
@@ -116,9 +117,9 @@ class ThreadScan(threading.Thread):
             try:
                 scan = self.rtl_scan(freq)
                 if len(scan):
+                    self.queue.put([freq, (timeStamp, scan)])
                     post_event(self.notify,
-                               EventThread(Event.DATA, freq,
-                                           (timeStamp, scan)))
+                               EventThread(Event.DATA))
             except IOError:
                 if self.sdr is not None:
                     self.rtl_close()

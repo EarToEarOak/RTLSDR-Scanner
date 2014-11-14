@@ -61,7 +61,8 @@ class Cli(object):
         self.spectrum = {}
         self.settings = Settings(load=False)
 
-        self.queue = Queue.Queue()
+        self.queueNotify = Queue.Queue()
+        self.queueScan = Queue.Queue()
 
         error = None
 
@@ -144,53 +145,54 @@ class Cli(object):
         samples = settings.dwell * SAMPLE_RATE
         samples = next_2_to_pow(int(samples))
         for sweep in range(0, sweeps):
-            print '\nSweep {}:'.format(sweep)
-            threadScan = ThreadScan(self.queue, None, settings, index, samples,
-                                    False)
+            print '\nSweep {}:'.format(sweep + 1)
+            threadScan = ThreadScan(self.queueNotify, self.queueScan, None,
+                                    settings, index, samples, False)
             while threadScan.isAlive() or self.steps > 0:
-                if not self.queue.empty():
-                    self.__process_event(self.queue, pool)
+                if not self.queueNotify.empty():
+                    self.__process_event(self.queueNotify, pool)
             print ""
         print ""
 
     def __process_event(self, queue, pool):
         event = queue.get()
         status = event.data.get_status()
-        freq = event.data.get_arg1()
-        data = event.data.get_arg2()
+        arg1 = event.data.get_arg1()
+        arg2 = event.data.get_arg2()
 
         if status == Event.STARTING:
             print "Starting"
         elif status == Event.STEPS:
-            self.stepsTotal = (freq + 1) * 2
+            self.stepsTotal = (arg1 + 1) * 2
             self.steps = self.stepsTotal
         elif status == Event.INFO:
-            if data != -1:
-                self.settings.devicesRtl[self.settings.indexRtl].tuner = data
+            if arg2 != -1:
+                self.settings.devicesRtl[self.settings.indexRtl].tuner = arg2
         elif status == Event.DATA:
             cal = self.settings.devicesRtl[self.settings.indexRtl].calibration
-            pool.apply_async(anaylse_data, (freq, data, cal,
+            freq, scan = self.queueScan.get()
+            pool.apply_async(anaylse_data, (freq, scan, cal,
                                             self.settings.nfft,
                                             self.settings.overlap,
                                             "Hamming"),
                              callback=self.__on_process_done)
             self.__progress()
         elif status == Event.ERROR:
-            print "Error: {}".format(data)
+            print "Error: {}".format(arg2)
             exit(1)
         elif status == Event.PROCESSED:
             offset = self.settings.devicesRtl[self.settings.indexRtl].offset
             Thread(target=update_spectrum, name='Update',
-                   args=(queue, self.lock, self.settings.start,
-                         self.settings.stop, freq,
-                         data, offset, self.spectrum, False,)).start()
+                   args=(self.queueNotify, self.lock, self.settings.start,
+                         self.settings.stop, arg1,
+                         arg2, offset, self.spectrum, False,)).start()
         elif status == Event.UPDATED:
             self.__progress()
 
     def __on_process_done(self, data):
         timeStamp, freq, scan = data
-        post_event(self.queue, EventThread(Event.PROCESSED, freq,
-                                           (timeStamp, scan)))
+        post_event(self.queueNotify, EventThread(Event.PROCESSED, freq,
+                                                 (timeStamp, scan)))
 
     def __progress(self):
         self.steps -= 1
