@@ -336,7 +336,7 @@ class LocationServer(object):
         self.server.currentLoc = currentLoc
         self.server.lock = lock
         self.server.log = log
-        self.thread = threading.Thread(target=self.__serve)
+        self.thread = threading.Thread(target=self.__serve, name='Location')
         self.thread.start()
 
     def __serve(self):
