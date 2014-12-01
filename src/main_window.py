@@ -41,14 +41,14 @@ from constants import F_MIN, F_MAX, MODE, DWELL, NFFT, DISPLAY, Warn, \
 from devices import get_devices_rtl
 from dialogs_devices import DialogDevicesRTL, DialogDevicesGPS
 from dialogs_file import DialogImageSize, DialogExportSeq, DialogExportGeo, \
-    DialogProperties, DialogSaveWarn
+    DialogProperties, DialogSaveWarn, DialogRestore
 from dialogs_help import DialogSysInfo, DialogAbout
 from dialogs_prefs import DialogPrefs, DialogAdvPrefs, DialogFormatting
 from dialogs_tools import DialogCompare, DialogAutoCal, DialogSats, DialogSmooth, \
     DialogLog
 from events import EVENT_THREAD, Event, EventThread, post_event, Log
 from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
-    export_map, extension_add, File, run_file, export_gpx
+    export_map, extension_add, File, run_file, export_gpx, Backups
 from location import ThreadLocation, LocationServer
 from menus import MenuMain, PopMenuMain
 from misc import RemoteControl, calc_samples, calc_real_dwell, \
@@ -136,6 +136,7 @@ class FrameMain(wx.Frame):
         self.scanInfo = ScanInfo()
         self.locations = OrderedDict()
         self.lastLocation = [None] * 4
+        self.backups = Backups()
 
         self.isSaved = True
 
@@ -290,6 +291,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.__on_new, self.menuMain.new)
         self.Bind(wx.EVT_MENU, self.__on_open, self.menuMain.open)
         self.Bind(wx.EVT_MENU, self.__on_merge, self.menuMain.merge)
+        self.Bind(wx.EVT_MENU, self.__on_backups, self.menuMain.restore)
         self.Bind(wx.EVT_MENU_RANGE, self.__on_file_history,
                   id=wx.ID_FILE1, id2=wx.ID_FILE9)
         self.Bind(wx.EVT_MENU, self.__on_save, self.menuMain.save)
@@ -400,6 +402,21 @@ class FrameMain(wx.Frame):
         if dlg.ShowModal() == wx.ID_OK:
             self.__merge(dlg.GetDirectory(), dlg.GetFilename())
         dlg.Destroy()
+
+    def __on_backups(self, _event):
+        dlg = DialogRestore(self, self.backups)
+        if dlg.ShowModal() == wx.ID_OPEN:
+            if self.__save_warn(Warn.OPEN):
+                return
+            data = dlg.get_restored()
+            self.scanInfo, spectrum, locations = data
+            self.spectrum.clear()
+            self.locations.clear()
+            self.spectrum.update(OrderedDict(sorted(spectrum.items())))
+            self.locations.update(OrderedDict(sorted(locations.items())))
+            self.__set_plot(self.spectrum, self.settings.annotate)
+            self.graph.scale_plot(True)
+            self.status.set_general("Finished")
 
     def __on_file_history(self, event):
         selection = event.GetId() - wx.ID_FILE1
@@ -558,6 +575,7 @@ class FrameMain(wx.Frame):
 
     def __on_exit(self, _event):
         self.Unbind(wx.EVT_CLOSE)
+        self.backups.close()
         if self.__save_warn(Warn.EXIT):
             self.Bind(wx.EVT_CLOSE, self.__on_exit)
             return
@@ -963,6 +981,8 @@ class FrameMain(wx.Frame):
                                      / (self.stepsTotal - 1))
             self.status.show_progress()
         else:
+            if self.settings.backup:
+                self.backups.save(self.scanInfo, self.spectrum, self.locations)
             self.status.hide_progress()
             self.__set_plot(self.spectrum, self.settings.annotate)
             if self.stopScan:
@@ -1219,8 +1239,6 @@ class FrameMain(wx.Frame):
         _scanInfo, spectrum, locations = open_plot(dirname, filename)
 
         if len(spectrum) > 0:
-            spectrum.update(self.spectrum)
-            locations.update(self.locations)
             self.spectrum.clear()
             self.locations.clear()
             self.spectrum.update(OrderedDict(sorted(spectrum.items())))

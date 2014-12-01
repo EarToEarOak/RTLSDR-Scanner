@@ -212,7 +212,10 @@ class DialogPrefs(wx.Dialog):
         self.checkSaved = wx.CheckBox(self, wx.ID_ANY,
                                       "Save warning")
         self.checkSaved.SetValue(settings.saveWarn)
-        self.checkSaved.SetToolTipString('Prompt to save scan on exit')
+        self.checkBackup = wx.CheckBox(self, wx.ID_ANY,
+                                       "Backup")
+        self.checkBackup.SetValue(settings.backup)
+        self.checkBackup.SetToolTipString('Backup data on each sweep')
         self.checkAlert = wx.CheckBox(self, wx.ID_ANY,
                                       "Level alert (dB)")
         self.checkAlert.SetValue(settings.alert)
@@ -285,19 +288,20 @@ class DialogPrefs(wx.Dialog):
 
         gengrid = wx.GridBagSizer(10, 10)
         gengrid.Add(self.checkSaved, pos=(0, 0))
-        gengrid.Add(self.checkAlert, pos=(1, 0), flag=wx.ALIGN_CENTRE)
-        gengrid.Add(self.spinLevel, pos=(1, 1))
-        gengrid.Add(textBackground, pos=(2, 0), flag=wx.ALIGN_CENTRE)
-        gengrid.Add(self.buttonBackground, pos=(2, 1))
-        gengrid.Add(textColour, pos=(3, 0))
-        gengrid.Add(self.choiceColour, pos=(3, 1))
-        gengrid.Add(self.colourBar, pos=(3, 2))
-        gengrid.Add(self.checkPoints, pos=(4, 0))
-        gengrid.Add(self.spinPoints, pos=(4, 1))
-        gengrid.Add(textDpi, pos=(5, 0))
-        gengrid.Add(self.spinDpi, pos=(5, 1))
-        gengrid.Add(self.checkTune, pos=(6, 0))
-        gengrid.Add(textPlugin, pos=(6, 1))
+        gengrid.Add(self.checkBackup, pos=(1, 0))
+        gengrid.Add(self.checkAlert, pos=(2, 0), flag=wx.ALIGN_CENTRE)
+        gengrid.Add(self.spinLevel, pos=(2, 1))
+        gengrid.Add(textBackground, pos=(3, 0), flag=wx.ALIGN_CENTRE)
+        gengrid.Add(self.buttonBackground, pos=(3, 1))
+        gengrid.Add(textColour, pos=(4, 0))
+        gengrid.Add(self.choiceColour, pos=(4, 1))
+        gengrid.Add(self.colourBar, pos=(4, 2))
+        gengrid.Add(self.checkPoints, pos=(5, 0))
+        gengrid.Add(self.spinPoints, pos=(5, 1))
+        gengrid.Add(textDpi, pos=(6, 0))
+        gengrid.Add(self.spinDpi, pos=(6, 1))
+        gengrid.Add(self.checkTune, pos=(7, 0))
+        gengrid.Add(textPlugin, pos=(7, 1))
         genbox = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "General"))
         genbox.Add(gengrid, 0, wx.ALL | wx.ALIGN_CENTRE_VERTICAL, 10)
 
@@ -359,6 +363,7 @@ class DialogPrefs(wx.Dialog):
 
     def __on_ok(self, _event):
         self.settings.saveWarn = self.checkSaved.GetValue()
+        self.settings.backup = self.checkBackup.GetValue()
         self.settings.alert = self.checkAlert.GetValue()
         self.settings.alertLevel = self.spinLevel.GetValue()
         self.settings.clickTune = self.checkTune.GetValue()

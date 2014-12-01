@@ -39,6 +39,8 @@ class MenuMain(object):
                                 "Open plot_line")
         self.merge = file.Append(wx.ID_ANY, "&Merge...",
                                  "Open and merge with current plot")
+        self.restore = file.Append(wx.ID_ANY, "&Backups...",
+                                   "Manage backups from crashes")
         recent = wx.Menu()
         settings.fileHistory.UseMenu(recent)
         settings.fileHistory.AddFilesToMenu()
@@ -153,6 +155,7 @@ class MenuMain(object):
         self.new.Enable(state)
         self.open.Enable(state)
         self.merge.Enable(state and len(spectrum))
+        self.restore.Enable(state)
         self.exportScan.Enable(state and len(spectrum))
         self.exportImage.Enable(state)
         self.exportSeq.Enable(state and len(spectrum))

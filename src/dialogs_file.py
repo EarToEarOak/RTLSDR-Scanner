@@ -24,6 +24,7 @@
 #
 
 import Queue
+import cPickle
 import os
 
 from PIL import Image
@@ -33,8 +34,9 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.ticker import ScalarFormatter
 import numpy
-from numpy.ma.core import masked
+from wx import grid
 import wx
+from wx.grid import GridCellDateTimeRenderer
 from wx.lib.masked.numctrl import NumCtrl, EVT_NUM
 
 from constants import SAMPLE_RATE, TUNER
@@ -46,6 +48,7 @@ from plot_line import Plotter
 from spectrum import Extent, sort_spectrum, count_points
 from utils_mpl import get_colours, create_heatmap
 from utils_wx import ValidatorCoord
+from widgets import TickCellRenderer
 
 
 class DialogProperties(wx.Dialog):
@@ -940,6 +943,105 @@ class DialogSaveWarn(wx.Dialog):
 
     def get_code(self):
         return self.code
+
+
+class DialogRestore(wx.Dialog):
+    COL_SEL, COL_TIME, COL_SIZE = range(3)
+
+    def __init__(self, parent, backups):
+        self.selected = 0
+        self.backups = backups
+        self.restored = None
+
+        wx.Dialog.__init__(self, parent=parent, title='Restore backups')
+
+        self.grid = grid.Grid(self)
+        self.grid.CreateGrid(1, 3)
+        self.grid.SetRowLabelSize(0)
+        self.grid.SetColLabelValue(self.COL_SEL, 'Selected')
+        self.grid.SetColLabelValue(self.COL_TIME, 'Time')
+        self.grid.SetColLabelValue(self.COL_SIZE, 'Size (k)')
+        self.grid.SetColFormatFloat(self.COL_SIZE, -1, 1)
+
+        self.__set_grid()
+        self.Bind(grid.EVT_GRID_CELL_LEFT_CLICK, self.__on_click)
+
+        buttonRest = wx.Button(self, wx.ID_OPEN, 'Restore')
+        buttonDel = wx.Button(self, wx.ID_DELETE, 'Delete')
+        buttonCancel = wx.Button(self, wx.ID_CANCEL, 'Close')
+
+        buttonRest.Bind(wx.EVT_BUTTON, self.__on_restore)
+        buttonDel.Bind(wx.EVT_BUTTON, self.__on_delete)
+
+        sizerButtons = wx.BoxSizer(wx.HORIZONTAL)
+        sizerButtons.Add(buttonRest)
+        sizerButtons.Add(buttonDel)
+        sizerButtons.Add(buttonCancel)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.grid, flag=wx.ALL | wx.EXPAND, border=5)
+        sizer.Add(sizerButtons, flag=wx.ALL, border=5)
+
+        self.SetSizerAndFit(sizer)
+
+    def __set_grid(self):
+        self.grid.DeleteRows(0, self.grid.GetNumberRows())
+        self.grid.AppendRows(len(self.backups.backups))
+
+        i = 0
+        for backup in self.backups.backups:
+            self.grid.SetCellRenderer(i, self.COL_SEL, TickCellRenderer())
+            self.grid.SetCellRenderer(i, self.COL_TIME,
+                                      GridCellDateTimeRenderer())
+            self.grid.SetReadOnly(i, self.COL_TIME, True)
+            self.grid.SetReadOnly(i, self.COL_SIZE, True)
+
+            self.grid.SetCellValue(i, self.COL_TIME,
+                                   str(backup[1].replace(microsecond=0)))
+            self.grid.SetCellValue(i, self.COL_SIZE, str(backup[2]))
+            i += 1
+
+        self.__select_row(0)
+
+        self.grid.AutoSize()
+
+    def __on_click(self, event):
+        col = event.GetCol()
+
+        if col == self.COL_SEL:
+            row = event.GetRow()
+            self.selected = row
+            self.__select_row(row)
+
+    def __on_restore(self, event):
+        try:
+            self.restored = self.backups.load(self.selected)
+        except (cPickle.UnpicklingError, AttributeError,
+                EOFError, ImportError, IndexError):
+            wx.MessageBox('The file could not be restored', 'Restore failed',
+                          wx.OK | wx.ICON_ERROR)
+            return
+
+        self.EndModal(event.GetId())
+
+    def __on_delete(self, _event):
+        dlg = wx.MessageDialog(self, 'Delete the selected backup?',
+                               'Delete backup',
+                               wx.OK | wx.CANCEL | wx.ICON_QUESTION)
+        if dlg.ShowModal() == wx.ID_OK:
+            self.backups.delete(self.selected)
+            self.__set_grid()
+
+    def __select_row(self, index):
+        self.grid.ClearSelection()
+        for i in range(0, self.grid.GetNumberRows()):
+            tick = "0"
+            if i == index:
+                tick = "1"
+            self.grid.SetCellValue(i, self.COL_SEL, tick)
+
+    def get_restored(self):
+        return self.restored
 
 
 if __name__ == '__main__':

@@ -34,6 +34,7 @@ class Settings(object):
         self.cfg = None
 
         self.saveWarn = True
+        self.backup = True
         self.fileHistory = wx.FileHistory(5)
 
         self.dirScans = "."
@@ -195,6 +196,7 @@ class Settings(object):
 
         self.display = self.cfg.ReadInt('display', self.display)
         self.saveWarn = self.cfg.ReadBool('saveWarn', self.saveWarn)
+        self.backup = self.cfg.ReadBool('backup', self.backup)
         self.fileHistory.Load(self.cfg)
         self.dirScans = self.cfg.Read('dirScans', self.dirScans)
         self.dirExport = self.cfg.Read('dirExport', self.dirExport)
@@ -253,6 +255,7 @@ class Settings(object):
         self.cfg.SetPath("/")
         self.cfg.WriteInt('display', self.display)
         self.cfg.WriteBool('saveWarn', self.saveWarn)
+        self.cfg.WriteBool('backup', self.backup)
         self.fileHistory.Save(self.cfg)
         self.cfg.Write('dirScans', self.dirScans)
         self.cfg.Write('dirExport', self.dirExport)

@@ -26,11 +26,13 @@
 import cPickle
 from collections import OrderedDict
 import datetime
+import glob
 import json
 import os
 import subprocess
 import sys
 import tempfile
+import threading
 import uuid
 import zipfile
 
@@ -193,6 +195,64 @@ class ScanInfo(object):
         settings.stop = self.stop
         settings.dwell = self.dwell
         settings.nfft = self.nfft
+
+
+class Backups(object):
+    PREFIX = 'rsba_'
+
+    def __init__(self):
+        self.thread = None
+        self.backup = None
+        self.tempFd, self.tempFile = tempfile.mkstemp(prefix=self.PREFIX)
+        self.backups = self.__get()
+
+    def __get(self):
+        files = []
+        tempDir = tempfile.gettempdir()
+        backups = glob.glob(tempDir + '/' + self.PREFIX + '*')
+        backups.remove(self.tempFile)
+
+        for backup in backups:
+            fTime = datetime.datetime.utcfromtimestamp(os.path.getmtime(backup))
+            fSize = os.path.getsize(backup)
+            files.append((backup, fTime, fSize))
+
+        files.sort(lambda x, y: cmp(x[1], y[1]), reverse=True)
+
+        return files
+
+    def __save(self, data):
+        handle = open(self.tempFile, 'wb')
+        cPickle.dump(data, handle)
+        handle.close()
+        self.thread = None
+
+    def set(self, backup):
+        self.backup = backup
+
+    def save(self, scanInfo, spectrum, location):
+        if self.thread is None:
+            data = scanInfo, spectrum, location
+            self.thread = threading.Thread(target=self.__save, args=(data,),
+                                           name='Backup')
+            self.thread.start()
+
+    def load(self, index):
+        backup = self.backups[index][0]
+        handle = open(backup, 'rb')
+        data = cPickle.load(handle)
+        handle.close()
+
+        return data
+
+    def delete(self, index):
+        backup = self.backups[index][0]
+        os.remove(backup)
+        self.backups = self.__get()
+
+    def close(self):
+        os.close(self.tempFd)
+        os.remove(self.tempFile)
 
 
 def run_file(runFile):
