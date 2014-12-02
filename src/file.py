@@ -201,15 +201,19 @@ class Backups(object):
     PREFIX = 'rsba_'
 
     def __init__(self):
+        self.homeDir = os.path.expanduser('~')
+        self.homeDir = os.path.join(self.homeDir, '.rtlsdr_scanner')
+        if not os.path.exists(self.homeDir):
+            os.mkdir(self.homeDir)
         self.thread = None
         self.backup = None
-        self.tempFd, self.tempFile = tempfile.mkstemp(prefix=self.PREFIX)
+        self.tempFd, self.tempFile = tempfile.mkstemp(prefix=self.PREFIX,
+                                                      dir=self.homeDir)
         self.backups = self.__get()
 
     def __get(self):
         files = []
-        tempDir = tempfile.gettempdir()
-        backups = glob.glob(tempDir + '/' + self.PREFIX + '*')
+        backups = glob.glob(self.homeDir + '/' + self.PREFIX + '*')
         backups.remove(self.tempFile)
 
         for backup in backups:
