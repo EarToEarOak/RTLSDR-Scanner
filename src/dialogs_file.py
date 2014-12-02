@@ -1017,7 +1017,7 @@ class DialogRestore(wx.Dialog):
         try:
             self.restored = self.backups.load(self.selected)
         except (cPickle.UnpicklingError, AttributeError,
-                EOFError, ImportError, IndexError):
+                EOFError, ImportError, IndexError, ValueError):
             wx.MessageBox('The file could not be restored', 'Restore failed',
                           wx.OK | wx.ICON_ERROR)
             return
