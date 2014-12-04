@@ -28,6 +28,7 @@ from collections import OrderedDict
 import math
 import os.path
 import tempfile
+import thread
 from threading import Thread
 import threading
 import time
@@ -846,12 +847,17 @@ class FrameMain(wx.Frame):
                 alert = self.settings.alertLevel
             else:
                 alert = None
-            Thread(target=update_spectrum, name='Update',
-                   args=(self, self.lock, self.settings.start,
-                         self.settings.stop, arg1,
-                         arg2, offset, self.spectrum,
-                         not self.settings.retainScans,
-                         alert)).start()
+            try:
+                Thread(target=update_spectrum, name='Update',
+                       args=(self, self.lock, self.settings.start,
+                             self.settings.stop, arg1,
+                             arg2, offset, self.spectrum,
+                             not self.settings.retainScans,
+                             alert)).start()
+            except thread.error:
+                self.__scan_stop(False)
+                wx.MessageBox('Out of memory', 'Error',
+                              wx.OK | wx.ICON_ERROR)
         elif status == Event.LEVEL:
             wx.Bell()
         elif status == Event.UPDATED:
