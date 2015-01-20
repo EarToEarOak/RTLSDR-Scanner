@@ -3,7 +3,7 @@
 #
 # http://eartoearoak.com/software/rtlsdr-scanner
 #
-# Copyright 2012 - 2014 Al Brown
+# Copyright 2012 - 2015 Al Brown
 #
 # A frequency scanning GUI for the OsmoSDR rtl-sdr library at
 # http://sdr.osmocom.org/trac/wiki/rtl-sdr
@@ -105,6 +105,9 @@ class MenuMain(object):
                                 "Stop scan immediately")
         self.stopEnd = scan.Append(wx.ID_ANY, "Stop at &end",
                                    "Complete current sweep before stopping")
+        scan.AppendSeparator()
+        self.sweepDelay = scan.Append(wx.ID_ANY, "Delay...",
+                                      "Delay between sweeps")
 
         tools = wx.Menu()
         self.compare = tools.Append(wx.ID_ANY, "&Compare...",
@@ -197,6 +200,9 @@ class PopMenuMain(object):
         self.stopEnd = self.menu.Append(wx.ID_ANY, "Stop at &end",
                                         "Complete current sweep "
                                         "before stopping")
+        self.menu.AppendSeparator()
+        self.sweepDelay = self.menu.Append(wx.ID_ANY, "Delay...",
+                                           "Delay between sweeps")
         self.menu.AppendSeparator()
         self.rangeLim = self.menu.Append(wx.ID_ANY,
                                          "Set range to current zoom",

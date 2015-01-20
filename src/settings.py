@@ -3,7 +3,7 @@
 #
 # http://eartoearoak.com/software/rtlsdr-scanner
 #
-# Copyright 2012 - 2014 Al Brown
+# Copyright 2012 - 2015 Al Brown
 #
 # A frequency scanning GUI for the OsmoSDR rtl-sdr library at
 # http://sdr.osmocom.org/trac/wiki/rtl-sdr
@@ -75,6 +75,7 @@ class Settings(object):
         self.mode = Mode.SINGLE
         self.dwell = 0.1
         self.nfft = 1024
+        self.scanDelay = 0
         self.overlap = 0.0
         self.winFunc = "Hamming"
 
@@ -228,6 +229,7 @@ class Settings(object):
         self.mode = self.cfg.ReadInt('mode', self.mode)
         self.dwell = self.cfg.ReadFloat('dwell', self.dwell)
         self.nfft = self.cfg.ReadInt('nfft', self.nfft)
+        self.scanDelay = self.cfg.ReadInt('scanDelay', self.scanDelay)
         self.overlap = self.cfg.ReadFloat('overlap', self.overlap)
         self.winFunc = self.cfg.Read('winFunc', self.winFunc)
         self.startOption = self.cfg.ReadInt('startOption', self.startOption)
@@ -287,6 +289,7 @@ class Settings(object):
         self.cfg.WriteInt('mode', self.mode)
         self.cfg.WriteFloat('dwell', self.dwell)
         self.cfg.WriteInt('nfft', self.nfft)
+        self.cfg.WriteInt('scanDelay', self.scanDelay)
         self.cfg.WriteFloat('overlap', self.overlap)
         self.cfg.Write("winFunc", self.winFunc)
         self.cfg.WriteInt('startOption', self.startOption)

@@ -3,7 +3,7 @@
 #
 # http://eartoearoak.com/software/rtlsdr-scanner
 #
-# Copyright 2012 - 2014 Al Brown
+# Copyright 2012 - 2015 Al Brown
 #
 # A frequency scanning GUI for the OsmoSDR rtl-sdr library at
 # http://sdr.osmocom.org/trac/wiki/rtl-sdr
@@ -45,9 +45,10 @@ from dialogs_file import DialogImageSize, DialogExportSeq, DialogExportGeo, \
     DialogProperties, DialogSaveWarn, DialogRestore
 from dialogs_help import DialogSysInfo, DialogAbout
 from dialogs_prefs import DialogPrefs, DialogAdvPrefs, DialogFormatting
+from dialogs_scan import DialogScanDelay
 from dialogs_tools import DialogCompare, DialogAutoCal, DialogSats, DialogSmooth, \
     DialogLog
-from events import EVENT_THREAD, Event, EventThread, post_event, Log
+from events import EVENT_THREAD, Event, EventThread, post_event, Log, EventTimer
 from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
     export_map, extension_add, File, run_file, export_gpx, Backups
 from location import ThreadLocation, LocationServer
@@ -111,6 +112,8 @@ class FrameMain(wx.Frame):
 
         self.stopAtEnd = False
         self.stopScan = False
+
+        self.scanDelayTimer = None
 
         self.dlgCal = None
         self.dlgSats = None
@@ -318,6 +321,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.__on_continue, self.menuMain.cont)
         self.Bind(wx.EVT_MENU, self.__on_stop, self.menuMain.stop)
         self.Bind(wx.EVT_MENU, self.__on_stop_end, self.menuMain.stopEnd)
+        self.Bind(wx.EVT_MENU, self.__on_scan_delay, self.menuMain.sweepDelay)
         self.Bind(wx.EVT_MENU, self.__on_compare, self.menuMain.compare)
         self.Bind(wx.EVT_MENU, self.__on_smooth, self.menuMain.smooth)
         self.Bind(wx.EVT_MENU, self.__on_cal, self.menuMain.cal)
@@ -347,6 +351,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.__on_continue, self.menuPopup.cont)
         self.Bind(wx.EVT_MENU, self.__on_stop, self.menuPopup.stop)
         self.Bind(wx.EVT_MENU, self.__on_stop_end, self.menuPopup.stopEnd)
+        self.Bind(wx.EVT_MENU, self.__on_scan_delay, self.menuPopup.sweepDelay)
         self.Bind(wx.EVT_MENU, self.__on_range_lim, self.menuPopup.rangeLim)
         self.Bind(wx.EVT_MENU, self.__on_points_lim, self.menuPopup.pointsLim)
         self.Bind(wx.EVT_MENU, self.__on_clear_select, self.menuPopup.clearSelect)
@@ -780,6 +785,11 @@ class FrameMain(wx.Frame):
     def __on_stop_end(self, _event):
         self.stopAtEnd = True
 
+    def __on_scan_delay(self, _event):
+        dlg = DialogScanDelay(self, self.settings)
+        dlg.ShowModal()
+        dlg.Destroy()
+
     def __on_range_lim(self, _event):
         xmin, xmax = self.graph.get_axes().get_xlim()
         xmin = int(xmin)
@@ -855,6 +865,7 @@ class FrameMain(wx.Frame):
                              not self.settings.retainScans,
                              alert)).start()
             except thread.error:
+                self.__cleanup()
                 self.__scan_stop(False)
                 wx.MessageBox('Out of memory', 'Error',
                               wx.OK | wx.ICON_ERROR)
@@ -869,6 +880,14 @@ class FrameMain(wx.Frame):
             self.__progress()
         elif status == Event.DRAW:
             self.graph.draw()
+        elif status == Event.DELAY_COUNT:
+            self.status.set_general('Delaying sweep', Log.INFO)
+            progress = (float(arg1 - arg2) / arg1) * 100.
+            self.status.set_progress(progress)
+            self.status.show_progress()
+        elif status == Event.DELAY_START:
+            self.status.hide_progress()
+            self.__scan_start()
         elif status == Event.VER_UPD:
             self.__update_checked(True, arg1, arg2)
         elif status == Event.VER_NOUPD:
@@ -935,11 +954,22 @@ class FrameMain(wx.Frame):
 
         return ((freq - peak) / freq) * 1e6
 
+    def __scan_delay(self):
+        if self.settings.scanDelay == 0:
+            self.__scan_start()
+        else:
+            if self.scanDelayTimer is not None:
+                self.scanDelayTimer.Stop()
+            self.scanDelayTimer = EventTimer(self, self.settings.scanDelay)
+
     def __scan_start(self, isCal=False):
         if self.isNewScan and self.__save_warn(Warn.SCAN):
             return False
 
         if not self.threadScan:
+            if self.scanDelayTimer is not None:
+                self.scanDelayTimer.Stop()
+                self.scanDelayTimer = None
             self.__set_control_state(False)
             samples = calc_samples(self.settings.dwell)
             if self.isNewScan:
@@ -1001,12 +1031,16 @@ class FrameMain(wx.Frame):
                 if self.settings.mode == Mode.CONTIN:
                     if self.dlgCal is None and not self.stopAtEnd:
                         self.__limit_spectrum()
-                        self.__scan_start()
+                        self.__scan_delay()
                     else:
                         self.status.set_general("Stopped")
                         self.__cleanup()
 
     def __cleanup(self):
+        if self.scanDelayTimer is not None:
+            self.scanDelayTimer.Stop()
+            self.scanDelayTimer = None
+
         if self.sdr is not None:
             self.sdr.close()
             self.sdr = None
