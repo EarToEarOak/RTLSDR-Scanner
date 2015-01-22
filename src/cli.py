@@ -3,7 +3,7 @@
 #
 # http://eartoearoak.com/software/rtlsdr-scanner
 #
-# Copyright 2012 - 2014 Al Brown
+# Copyright 2012 - 2015 Al Brown
 #
 # A frequency scanning GUI for the OsmoSDR rtl-sdr library at
 # http://sdr.osmocom.org/trac/wiki/rtl-sdr
@@ -28,6 +28,7 @@ import os
 import sys
 from threading import Thread
 import threading
+import time
 from urlparse import urlparse
 
 from constants import SAMPLE_RATE
@@ -112,6 +113,7 @@ class Cli(object):
         self.settings.start = start
         self.settings.stop = end
         self.settings.dwell = calc_real_dwell(dwell)
+        self.settings.scanDelay = args.delay
         self.settings.nfft = nfft
         self.settings.devicesRtl[index].gain = gain
         self.settings.devicesRtl[index].lo = lo
@@ -151,6 +153,9 @@ class Cli(object):
             while threadScan.isAlive() or self.steps > 0:
                 if not self.queueNotify.empty():
                     self.__process_event(self.queueNotify, pool)
+            if self.settings.scanDelay > 0:
+                print '\nDelaying {}s'.format(self.settings.scanDelay)
+                time.sleep(self.settings.scanDelay)
             print ""
         print ""
 

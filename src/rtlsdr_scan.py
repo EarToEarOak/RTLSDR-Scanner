@@ -4,7 +4,7 @@
 #
 # http://eartoearoak.com/software/rtlsdr-scanner
 #
-# Copyright 2012 - 2014 Al Brown
+# Copyright 2012 - 2015 Al Brown
 #
 # A frequency scanning GUI for the OsmoSDR rtl-sdr library at
 # http://sdr.osmocom.org/trac/wiki/rtl-sdr
@@ -71,12 +71,14 @@ def __arguments():
                         type=int)
     parser.add_argument("-e", "--end", help="End frequency (MHz)", type=int)
     parser.add_argument("-w", "--sweeps", help="Number of sweeps", type=int, default=1)
+    parser.add_argument("-p", "--delay", help="Delay between sweeps (s)",
+                        type=int, default=0)
     parser.add_argument("-g", "--gain", help="Gain (dB)", type=float, default=0)
     parser.add_argument("-d", "--dwell", help="Dwell time (seconds)",
                         type=float, default=0.1)
     parser.add_argument("-f", "--fft", help="FFT bins", type=int, default=1024)
-    parser.add_argument("-l", "--lo", help="Local oscillator offset", type=int,
-                        default=0)
+    parser.add_argument("-l", "--lo", help="Local oscillator offset",
+                        type=int,default=0)
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-i", "--index", help="Device index (from 0)", type=int,
                        default=0)
