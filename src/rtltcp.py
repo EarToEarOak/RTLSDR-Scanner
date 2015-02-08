@@ -3,7 +3,7 @@
 #
 # http://eartoearoak.com/software/rtlsdr-scanner
 #
-# Copyright 2012 - 2014 Al Brown
+# Copyright 2012 - 2015 Al Brown
 #
 # A frequency scanning GUI for the OsmoSDR rtl-sdr library at
 # http://sdr.osmocom.org/trac/wiki/rtl-sdr
@@ -193,3 +193,8 @@ class ThreadBuffer(threading.Thread):
 
     def abort(self):
         self.cancel = True
+
+
+if __name__ == '__main__':
+    print 'Please run rtlsdr_scan.py'
+    exit(1)
