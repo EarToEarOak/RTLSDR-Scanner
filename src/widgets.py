@@ -3,7 +3,7 @@
 #
 # http://eartoearoak.com/software/rtlsdr-scanner
 #
-# Copyright 2012 - 2014 Al Brown
+# Copyright 2012 - 2015 Al Brown
 #
 # A frequency scanning GUI for the OsmoSDR rtl-sdr library at
 # http://sdr.osmocom.org/trac/wiki/rtl-sdr
@@ -115,8 +115,8 @@ class MultiButton(wx.PyControl):
         width = event.GetEventObject().GetSize()[0]
         height = event.GetEventObject().GetSize()[1]
 
-        top = (height / 2) - (self.ARROW_SIZE / 4) - self.PADDING
-        bottom = top + self.ARROW_SIZE / 2 + self.PADDING * 2
+        top = 0
+        bottom = height
         right = width - self.PADDING
         left = right - self.ARROW_SIZE - self.PADDING * 3
 
@@ -163,6 +163,10 @@ class MultiButton(wx.PyControl):
         dc.DrawPolygon([(right, top),
                         (left, top),
                         (left + self.ARROW_SIZE / 2, bottom)])
+        left = right - (self.ARROW_SIZE * 2)
+        top = rect.height / 4
+        bottom = rect.height * 3 / 4
+        dc.DrawLine(left, top, left, bottom)
 
     def DoGetBestSize(self):
         label = max(self.options, key=len)
@@ -170,7 +174,7 @@ class MultiButton(wx.PyControl):
         dc = wx.ClientDC(self)
         dc.SetFont(font)
         textWidth, textHeight = dc.GetTextExtent(label)
-        width = textWidth + self.ARROW_SIZE + self.PADDING * 6
+        width = textWidth + self.ARROW_SIZE * 3 + self.PADDING * 6
         height = textHeight + self.PADDING * 2
 
         return wx.Size(width, height)
