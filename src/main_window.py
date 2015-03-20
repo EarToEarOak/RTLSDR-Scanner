@@ -1315,6 +1315,7 @@ class FrameMain(wx.Frame):
             self.__set_controls()
             self.__set_control_state(True)
             self.__set_plot(spectrum, self.settings.annotate)
+            self.graph.set_plot_title()
             self.graph.scale_plot(True)
             self.status.set_general("Finished")
             self.settings.fileHistory.AddFileToHistory(os.path.join(dirname,
