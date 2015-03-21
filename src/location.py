@@ -24,6 +24,7 @@
 #
 
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
+import io
 import json
 import mimetypes
 import os
@@ -52,6 +53,7 @@ class ThreadLocation(threading.Thread):
         self.raw = raw
         self.cancel = False
         self.comm = None
+        self.commIo = None
         self.sats = {}
         self.start()
 
@@ -109,6 +111,10 @@ class ThreadLocation(threading.Thread):
                                       stopbits=self.device.stops,
                                       xonxoff=self.device.soft,
                                       timeout=1)
+            buff = io.BufferedReader(self.comm, 1)
+            self.commIo = io.TextIOWrapper(buff,
+                                           newline='\r',
+                                           line_buffering=True)
         except SerialException as error:
             post_event(self.notify, EventThread(Event.LOC_ERR,
                                                 0, error.message))
@@ -122,7 +128,7 @@ class ThreadLocation(threading.Thread):
     def __serial_read(self):
         data = True
         while data and not self.cancel:
-            data = self.comm.readline()
+            data = self.commIo.readline()
             yield data
             if self.raw:
                 data = limit_to_ascii(data)
