@@ -194,7 +194,7 @@ class Cli(object):
                     self.__process_event(self.queueNotify, pool)
                 if not self.queueLocation.empty():
                     self.__process_event(self.queueLocation, pool)
-            if self.settings.scanDelay > 0:
+            if self.settings.scanDelay > 0 and sweep < sweeps - 1:
                 print '\nDelaying {}s'.format(self.settings.scanDelay)
                 time.sleep(self.settings.scanDelay)
             print ""
