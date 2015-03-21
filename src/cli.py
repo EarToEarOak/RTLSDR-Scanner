@@ -24,6 +24,7 @@
 #
 
 import Queue
+from collections import OrderedDict
 import os
 import sys
 from threading import Thread
@@ -35,6 +36,7 @@ from constants import SAMPLE_RATE
 from devices import DeviceRTL, get_devices_rtl
 from events import Event, post_event, EventThread
 from file import save_plot, export_plot, ScanInfo, File
+from location import ThreadLocation
 from misc import nearest, calc_real_dwell, next_2_to_pow
 from scan import ThreadScan, anaylse_data, update_spectrum
 from settings import Settings
@@ -59,11 +61,15 @@ class Cli(object):
         self.stepsTotal = 0
         self.steps = 0
 
-        self.spectrum = {}
+        self.spectrum = OrderedDict()
+        self.locations = OrderedDict()
         self.settings = Settings(load=False)
 
         self.queueNotify = Queue.Queue()
         self.queueScan = Queue.Queue()
+        self.queueLocation = Queue.Queue()
+
+        self.threadLocation = None
 
         error = None
 
@@ -101,14 +107,23 @@ class Cli(object):
                 self.settings.devicesRtl.append(device)
                 index = len(self.settings.devicesRtl) - 1
 
-        if error is not None:
-            print "Error: {}".format(error)
-            exit(1)
+        if args.conf is not None:
+            if os.path.exists(args.conf):
+                error = self.settings.load_conf(args.conf)
+            else:
+                error = 'Cannot find {}'.format(args.conf)
 
         if end - 1 < start:
             end = start + 1
         if remote is None:
-            gain = nearest(gain, self.settings.devicesRtl[index].gains)
+            if len(self.settings.devicesRtl):
+                gain = nearest(gain, self.settings.devicesRtl[index].gains)
+            else:
+                error = 'No devices found'
+
+        if error is not None:
+            print "Error: {}".format(error)
+            exit(1)
 
         self.settings.start = start
         self.settings.stop = end
@@ -129,6 +144,13 @@ class Cli(object):
         else:
             print self.settings.devicesRtl[index].name
 
+        if len(self.settings.devicesGps):
+            self.threadLocation = ThreadLocation(self.queueLocation,
+                                                 self.settings.devicesGps[0])
+            if not self.__gps_wait():
+                self.__gps_stop()
+                exit(1)
+
         self.__scan(sweeps, self.settings, index, pool)
 
         fullName = os.path.join(directory, filename)
@@ -136,16 +158,33 @@ class Cli(object):
             scanInfo = ScanInfo()
             scanInfo.set_from_settings(self.settings)
 
-            save_plot(fullName, scanInfo, self.spectrum, {})
+            save_plot(fullName, scanInfo, self.spectrum, self.locations)
         else:
             exportType = File.get_type_index(ext)
             export_plot(fullName, exportType, self.spectrum)
 
+        self.__gps_stop()
         print "Done"
+
+    def __gps_wait(self):
+        print '\nWaiting for GPS: '
+
+        while True:
+            if not self.queueLocation.empty():
+                    status = self.__process_event(self.queueLocation, None)
+                    if status == Event.LOC:
+                        return True
+                    elif status == Event.LOC_ERR:
+                        return False
+
+    def __gps_stop(self):
+        if self.threadLocation and self.threadLocation.isAlive():
+            self.threadLocation.stop()
 
     def __scan(self, sweeps, settings, index, pool):
         samples = settings.dwell * SAMPLE_RATE
         samples = next_2_to_pow(int(samples))
+
         for sweep in range(0, sweeps):
             print '\nSweep {}:'.format(sweep + 1)
             threadScan = ThreadScan(self.queueNotify, self.queueScan, None,
@@ -153,6 +192,8 @@ class Cli(object):
             while threadScan.isAlive() or self.steps > 0:
                 if not self.queueNotify.empty():
                     self.__process_event(self.queueNotify, pool)
+                if not self.queueLocation.empty():
+                    self.__process_event(self.queueLocation, pool)
             if self.settings.scanDelay > 0:
                 print '\nDelaying {}s'.format(self.settings.scanDelay)
                 time.sleep(self.settings.scanDelay)
@@ -193,6 +234,15 @@ class Cli(object):
                          arg2, offset, self.spectrum, False,)).start()
         elif status == Event.UPDATED:
             self.__progress()
+        elif status == Event.LOC:
+            if len(self.spectrum) > 0:
+                self.locations[max(self.spectrum)] = (arg2[0],
+                                                      arg2[1],
+                                                      arg2[2])
+        elif status == Event.LOC_ERR:
+            print '{}'.format(arg2)
+
+        return status
 
     def __on_process_done(self, data):
         timeStamp, freq, scan = data

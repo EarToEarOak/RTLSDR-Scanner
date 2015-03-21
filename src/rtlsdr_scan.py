@@ -70,7 +70,8 @@ def __arguments():
     parser.add_argument("-s", "--start", help="Start frequency (MHz)",
                         type=int)
     parser.add_argument("-e", "--end", help="End frequency (MHz)", type=int)
-    parser.add_argument("-w", "--sweeps", help="Number of sweeps", type=int, default=1)
+    parser.add_argument("-w", "--sweeps", help="Number of sweeps", type=int,
+                        default=1)
     parser.add_argument("-p", "--delay", help="Delay between sweeps (s)",
                         type=int, default=0)
     parser.add_argument("-g", "--gain", help="Gain (dB)", type=float, default=0)
@@ -78,7 +79,9 @@ def __arguments():
                         type=float, default=0.1)
     parser.add_argument("-f", "--fft", help="FFT bins", type=int, default=1024)
     parser.add_argument("-l", "--lo", help="Local oscillator offset",
-                        type=int,default=0)
+                        type=int, default=0)
+    parser.add_argument("-c", "--conf", help="Load a config file",
+                        default=None)
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-i", "--index", help="Device index (from 0)", type=int,
                        default=0)

@@ -23,6 +23,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import ConfigParser
+
 import wx
 
 from constants import Display, Mode, PlotFunc
@@ -252,6 +254,38 @@ class Settings(object):
         self.indexGps = self.cfg.ReadInt('indexGps', self.indexGps)
         self.__load_devices_rtl()
         self.__load_devices_gps()
+
+    def load_conf(self, filename):
+        config = ConfigParser.SafeConfigParser()
+        try:
+            config.read(filename)
+
+            if config.has_section('gps'):
+                device = DeviceGPS()
+                if config.has_option('gps', 'port'):
+                    device.resource = config.get('gps', 'port')
+                else:
+                    return '"Port" not found in config'
+
+                if config.has_option('gps', 'baud'):
+                    baud = config.getint('gps', 'baud')
+                    if baud in DeviceGPS.BAUDS:
+                        device.baud = baud
+                    else:
+                        return 'Unknown baud: {}'.format(baud)
+                else:
+                    return '"Baud" not found in config'
+
+                device.type = DeviceGPS.NMEA_SERIAL
+                device.soft = True
+                self.devicesGps.append(device)
+
+        except ConfigParser.Error as e:
+            return e
+        except ValueError as e:
+            return e
+
+        return None
 
     def save(self):
         self.cfg.SetPath("/")
