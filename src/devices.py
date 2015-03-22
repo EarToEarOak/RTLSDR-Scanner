@@ -52,8 +52,8 @@ class DeviceGPS(object):
 
     def get_serial_desc(self):
         port = self.resource.split('/')
-        return '{} {}-{}{}{}'.format(port[0], self.baud, self.bytes,
-                                     self.parity, self.stops)
+        return '{} {}-{}{}{:g}'.format(port[0], self.baud, self.bytes,
+                                       self.parity, self.stops)
 
 
 class DeviceRTL(object):

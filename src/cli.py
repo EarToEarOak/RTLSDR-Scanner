@@ -167,7 +167,7 @@ class Cli(object):
         print "Done"
 
     def __gps_wait(self):
-        print '\nWaiting for GPS: '
+        print '\nWaiting for GPS: {}'.format(self.settings.devicesGps[0].get_serial_desc())
 
         while True:
             if not self.queueLocation.empty():

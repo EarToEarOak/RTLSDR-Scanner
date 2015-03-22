@@ -25,6 +25,7 @@
 
 import ConfigParser
 
+import serial
 import wx
 
 from constants import Display, Mode, PlotFunc
@@ -272,12 +273,37 @@ class Settings(object):
                     if baud in DeviceGPS.BAUDS:
                         device.baud = baud
                     else:
-                        return 'Unknown baud: {}'.format(baud)
-                else:
-                    return '"Baud" not found in config'
+                        return 'Baud "{}" should be one of:\n  {}'.format(baud,
+                                                                          DeviceGPS.BAUDS)
+
+                if config.has_option('gps', 'bits'):
+                    bits = config.getint('gps', 'bits')
+                    if bits in DeviceGPS.BYTES:
+                        device.bytes = bits
+                    else:
+                        return 'Bits "{}" should be one of:\n  {}'.format(bits,
+                                                                          DeviceGPS.BYTES)
+
+                if config.has_option('gps', 'parity'):
+                    parity = config.get('gps', 'parity')
+                    if parity in DeviceGPS.PARITIES:
+                        device.parity = parity
+                    else:
+                        return 'Parity "{}" should be one of:\n  {}'.format(parity,
+                                                                            DeviceGPS.PARITIES)
+
+                if config.has_option('gps', 'stops'):
+                    stops = config.getfloat('gps', 'stops')
+                    if stops in DeviceGPS.STOPS:
+                        device.stops = stops
+                    else:
+                        return 'Stops "{}" should be one of:\n  {}'.format(stops,
+                                                                           DeviceGPS.STOPS)
+
+                if config.has_option('gps', 'soft'):
+                    device.soft = config.getboolean('gps', 'soft')
 
                 device.type = DeviceGPS.NMEA_SERIAL
-                device.soft = True
                 self.devicesGps.append(device)
 
         except ConfigParser.Error as e:
