@@ -31,8 +31,6 @@ import serial
 class DeviceGPS(object):
     NMEA_SERIAL, GPSD, GPSD_OLD, NMEA_TCP = range(4)
     TYPE = ['NMEA (Serial)', 'GPSd', 'GPSd (Legacy)', 'NMEA (Server)']
-    BAUDS = [50, 75, 110, 134, 150, 200, 300, 600, 1200, 1800, 2400, 4800,
-             9600, 19200, 38400, 57600, 115200]
     BYTES = [serial.FIVEBITS, serial.SIXBITS, serial.SEVENBITS,
              serial.EIGHTBITS]
     PARITIES = [serial.PARITY_NONE, serial.PARITY_EVEN, serial.PARITY_ODD,
@@ -49,6 +47,12 @@ class DeviceGPS(object):
         self.parity = serial.PARITY_NONE
         self.stops = serial.STOPBITS_ONE
         self.soft = False
+
+    def get_bauds(self):
+        if self.type == DeviceGPS.NMEA_SERIAL:
+            return serial.Serial.BAUDRATES
+
+        return None
 
     def get_serial_desc(self):
         port = self.resource.split('/')

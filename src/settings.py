@@ -263,6 +263,8 @@ class Settings(object):
 
             if config.has_section('gps'):
                 device = DeviceGPS()
+                device.type = DeviceGPS.NMEA_SERIAL
+
                 if config.has_option('gps', 'port'):
                     device.resource = config.get('gps', 'port')
                 else:
@@ -270,11 +272,11 @@ class Settings(object):
 
                 if config.has_option('gps', 'baud'):
                     baud = config.getint('gps', 'baud')
-                    if baud in DeviceGPS.BAUDS:
+                    if baud in device.get_bauds():
                         device.baud = baud
                     else:
                         return 'Baud "{}" should be one of:\n  {}'.format(baud,
-                                                                          DeviceGPS.BAUDS)
+                                                                          device.get_bauds())
 
                 if config.has_option('gps', 'bits'):
                     bits = config.getint('gps', 'bits')
@@ -303,7 +305,6 @@ class Settings(object):
                 if config.has_option('gps', 'soft'):
                     device.soft = config.getboolean('gps', 'soft')
 
-                device.type = DeviceGPS.NMEA_SERIAL
                 self.devicesGps.append(device)
 
         except ConfigParser.Error as e:

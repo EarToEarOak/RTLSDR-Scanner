@@ -497,8 +497,8 @@ class DialogGPSSerial(wx.Dialog):
 
         textBaud = wx.StaticText(self, label='Baud rate')
         self.choiceBaud = wx.Choice(self,
-                                    choices=[str(baud) for baud in DeviceGPS.BAUDS])
-        self.choiceBaud.SetSelection(DeviceGPS.BAUDS.index(device.baud))
+                                    choices=[str(baud) for baud in device.get_bauds()])
+        self.choiceBaud.SetSelection(device.get_bauds().index(device.baud))
         textByte = wx.StaticText(self, label='Byte size')
         self.choiceBytes = wx.Choice(self,
                                      choices=[str(byte) for byte in DeviceGPS.BYTES])
@@ -544,7 +544,7 @@ class DialogGPSSerial(wx.Dialog):
 
     def __on_ok(self, _event):
         self.device.resource = self.ports[self.choicePort.GetSelection()]
-        self.device.baud = DeviceGPS.BAUDS[self.choiceBaud.GetSelection()]
+        self.device.baud = self.device.get_bauds()[self.choiceBaud.GetSelection()]
         self.device.bytes = DeviceGPS.BYTES[self.choiceBytes.GetSelection()]
         self.device.parity = DeviceGPS.PARITIES[self.choiceParity.GetSelection()]
         self.device.stops = DeviceGPS.STOPS[self.choiceStops.GetSelection()]
