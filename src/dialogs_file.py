@@ -583,6 +583,9 @@ class DialogExportGeo(wx.Dialog):
         self.figure.set_size_inches((6, 6))
         self.canvas = FigureCanvas(self, -1, self.figure)
         self.axes = self.figure.add_subplot(111)
+        if matplotlib.__version__ >= '1.2':
+            self.figure.tight_layout()
+        self.figure.subplots_adjust(left=0, right=1, top=1, bottom=0)
 
         textPlot = wx.StaticText(self, label='Plot')
         self.checkAxes = wx.CheckBox(self, label='Axes')
@@ -721,7 +724,6 @@ class DialogExportGeo(wx.Dialog):
         self.choiceMapMesh.Enable(self.plotMesh)
         self.choiceMapHeat.Enable(self.plotHeat)
 
-        self.axes.set_title('Preview')
         self.axes.set_xlabel('Longitude ($^\circ$)')
         self.axes.set_ylabel('Latitude ($^\circ$)')
         self.axes.set_xlim(auto=True)
@@ -877,7 +879,6 @@ class DialogExportGeo(wx.Dialog):
         height = self.extent[3] - self.extent[2]
         self.figure.set_size_inches((6, 6. * width / height))
         self.figure.set_dpi(self.settings.exportDpi)
-        self.axes.set_title('')
         self.figure.patch.set_alpha(0)
         self.axes.axesPatch.set_alpha(0)
         canvas = FigureCanvasAgg(self.figure)
