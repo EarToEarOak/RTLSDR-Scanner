@@ -167,6 +167,7 @@ class MenuMain(object):
         self.page.Enable(state)
         self.preview.Enable(state)
         self.printer.Enable(state)
+        self.properties.Enable(len(spectrum))
         self.start.Enable(state)
         self.cont.Enable(state and len(spectrum))
         self.stop.Enable(not state)
