@@ -94,7 +94,7 @@ class RtlSdrScanner(wx.App):
 
 class FrameMain(wx.Frame):
     def __init__(self, title, pool):
-
+        wx.Frame.__init__(self, None, title=title)
         self.pool = pool
         self.lock = threading.Lock()
 
@@ -162,8 +162,6 @@ class FrameMain(wx.Frame):
         self.printConfig = wx.PrintDialogData(self.pageConfig.GetPrintData())
         self.printConfig.EnableSelection(False)
         self.printConfig.EnablePageNumbers(False)
-
-        wx.Frame.__init__(self, None, title=title)
 
         self.timerGpsRetry = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.__on_gps_retry, self.timerGpsRetry)
@@ -317,6 +315,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.__on_reset, self.menuMain.reset)
         self.Bind(wx.EVT_MENU, self.__on_clear_select, self.menuMain.clearSelect)
         self.Bind(wx.EVT_MENU, self.__on_show_measure, self.menuMain.showMeasure)
+        self.Bind(wx.EVT_MENU, self.__on_fullscreen, self.menuMain.fullScreen)
         self.Bind(wx.EVT_MENU, self.__on_start, self.menuMain.start)
         self.Bind(wx.EVT_MENU, self.__on_continue, self.menuMain.cont)
         self.Bind(wx.EVT_MENU, self.__on_stop, self.menuMain.stop)
@@ -356,6 +355,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.__on_points_lim, self.menuPopup.pointsLim)
         self.Bind(wx.EVT_MENU, self.__on_clear_select, self.menuPopup.clearSelect)
         self.Bind(wx.EVT_MENU, self.__on_show_measure, self.menuPopup.showMeasure)
+        self.Bind(wx.EVT_MENU, self.__on_fullscreen, self.menuPopup.fullScreen)
 
         self.Bind(wx.EVT_CONTEXT_MENU, self.__on_popup_menu)
 
@@ -679,6 +679,18 @@ class FrameMain(wx.Frame):
         self.menuPopup.showMeasure.Check(show)
         self.settings.showMeasure = show
         self.graph.show_measure_table(show)
+        self.Layout()
+
+    def __on_fullscreen(self, _event):
+        full = not self.IsFullScreen()
+
+        self.menuMain.fullScreen = full
+        self.menuPopup.fullScreen = full
+
+        self.toolbar.Show(not full)
+        self.graph.hide_toolbar(full)
+        self.graph.show_measure_table(not full)
+        self.ShowFullScreen(full)
         self.Layout()
 
     def __on_cal(self, _event):

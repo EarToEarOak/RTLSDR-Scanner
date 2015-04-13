@@ -95,6 +95,10 @@ class MenuMain(object):
                                        "Show measurements window",
                                        kind=wx.ITEM_CHECK)
         self.showMeasure.Check(settings.showMeasure)
+        view.AppendSeparator()
+        self.fullScreen = view.Append(wx.ID_ANY, "Full screen\tF11",
+                                      "Toggle full screen",
+                                      kind=wx.ITEM_CHECK)
 
         scan = wx.Menu()
         self.start = scan.Append(wx.ID_ANY, "&Start",
@@ -225,6 +229,11 @@ class PopMenuMain(object):
                                             "Show measurements window",
                                             kind=wx.ITEM_CHECK)
         self.showMeasure.Check(settings.showMeasure)
+
+        self.menu.AppendSeparator()
+        self.fullScreen = self.menu.Append(wx.ID_ANY, "Full screen\tF11",
+                                           "Toggle full screen",
+                                           kind=wx.ITEM_CHECK)
 
     def set_state(self, state, spectrum):
         self.start.Enable(state)

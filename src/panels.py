@@ -94,6 +94,7 @@ class PanelGraph(wx.Panel):
         wx.Panel.__init__(self, panel)
 
         self.figure = matplotlib.figure.Figure(facecolor='white')
+        self.figure.set_size_inches(0, 0)
         self.canvas = FigureCanvas(self, -1, self.figure)
         self.canvas.SetToolTip(self.toolTip)
 
@@ -378,6 +379,9 @@ class PanelGraph(wx.Panel):
 
     def set_grid(self, on):
         self.plot.set_grid(on)
+
+    def hide_toolbar(self, hide):
+        self.toolbar.Show(not hide)
 
     def hide_measure(self):
         if self.plot is not None:
