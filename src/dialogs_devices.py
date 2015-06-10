@@ -286,6 +286,11 @@ class DialogDevicesGPS(wx.Dialog):
         self.gridDev.SetColLabelValue(self.COL_TYPE, "Type")
         self.gridDev.SetColLabelValue(self.COL_TEST, "Test")
 
+        try:
+            self.gridDev.ShowScrollbars(wx.SHOW_SB_NEVER, wx.SHOW_SB_NEVER)
+        except AttributeError:
+            pass
+
         self.__set_dev_grid()
 
         sizerDevice = wx.BoxSizer(wx.HORIZONTAL)
@@ -350,6 +355,11 @@ class DialogDevicesGPS(wx.Dialog):
         self.index = self.index
 
         self.gridDev.AutoSize()
+        font = self.gridDev.GetFont()
+        dc = wx.WindowDC(self.gridDev)
+        dc.SetFont(font)
+        width, _height = dc.GetTextExtent(max(DeviceGPS.TYPE, key=len))
+        self.gridDev.SetColSize(self.COL_TYPE, width * 1.5)
 
         self.gridDev.Bind(grid.EVT_GRID_EDITOR_CREATED, self.__on_create)
         self.Bind(grid.EVT_GRID_CELL_LEFT_CLICK, self.__on_click)
