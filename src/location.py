@@ -24,7 +24,6 @@
 #
 
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
-import io
 import json
 import mimetypes
 import os
@@ -44,24 +43,28 @@ from misc import format_iso_time, haversine, format_time, limit_to_ascii, limit,
     get_resdir
 
 
+TIMEOUT = 15
+
+
 class ThreadLocation(threading.Thread):
     def __init__(self, notify, device, raw=False):
         threading.Thread.__init__(self)
         self.name = 'Location'
-        self.notify = notify
-        self.device = device
-        self.raw = raw
-        self.cancel = False
-        self.comm = None
-        self.commIo = None
-        self.sats = {}
+        self._notify = notify
+        self._device = device
+        self._raw = raw
+        self._cancel = False
+        self._comm = None
+        self._timeout = None
+        self._sats = {}
+
         self.start()
 
     def __tcp_connect(self, defaultPort):
-        self.comm = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.comm.settimeout(5)
-        self.comm.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-        url = urlparse('//' + self.device.resource)
+        self._comm = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._comm.settimeout(5)
+        self._comm.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        url = urlparse('//' + self._device.resource)
         if url.hostname is not None:
             host = url.hostname
         else:
@@ -70,85 +73,102 @@ class ThreadLocation(threading.Thread):
             port = url.port
         else:
             port = defaultPort
-        if self.raw:
-            text = 'Opening "{}"'.format(self.device.resource)
-            post_event(self.notify, EventThread(Event.LOC_RAW, 0, text))
+        if self._raw:
+            text = 'Opening "{}"'.format(self._device.resource)
+            post_event(self._notify, EventThread(Event.LOC_RAW, 0, text))
         try:
-            self.comm.connect((host, port))
+            self._comm.connect((host, port))
         except socket.error as error:
-            post_event(self.notify, EventThread(Event.LOC_ERR,
-                                                0, error))
+            post_event(self._notify, EventThread(Event.LOC_ERR,
+                                                 0, error))
 
     def __tcp_read(self):
         buf = ''
         data = True
-        while data and not self.cancel:
+        while data and not self._cancel:
             try:
-                data = self.comm.recv(1024)
+                data = self._comm.recv(1024)
             except socket.timeout as error:
-                post_event(self.notify, EventThread(Event.LOC_ERR,
-                                                    0, error))
+                post_event(self._notify, EventThread(Event.LOC_ERR,
+                                                     0, error))
                 return
             buf += data
             while buf.find('\n') != -1:
                 line, buf = buf.split('\n', 1)
                 yield line
-                if self.raw:
+                if self._raw:
                     line = limit_to_ascii(line)
-                    post_event(self.notify, EventThread(Event.LOC_RAW,
-                                                        0, line))
+                    post_event(self._notify, EventThread(Event.LOC_RAW,
+                                                         0, line))
         return
 
+    def __serial_timeout(self):
+        self.stop()
+        post_event(self._notify, EventThread(Event.LOC_ERR,
+                                             0, 'GPS timed out'))
+
     def __serial_connect(self):
-        if self.raw:
-            text = 'Opening "{}"'.format(self.device.resource)
-            post_event(self.notify, EventThread(Event.LOC_RAW, 0, text))
+        self._timeout = Timeout(self.__serial_timeout)
+        if self._raw:
+            text = 'Opening "{}"'.format(self._device.resource)
+            post_event(self._notify, EventThread(Event.LOC_RAW, 0, text))
         try:
-            self.comm = serial.Serial(self.device.resource,
-                                      baudrate=self.device.baud,
-                                      bytesize=self.device.bytes,
-                                      parity=self.device.parity,
-                                      stopbits=self.device.stops,
-                                      xonxoff=self.device.soft,
-                                      timeout=1)
-            buff = io.BufferedReader(self.comm, 1)
-            self.commIo = io.TextIOWrapper(buff,
-                                           newline='\r',
-                                           line_buffering=True)
+            self._comm = serial.Serial(self._device.resource,
+                                       baudrate=self._device.baud,
+                                       bytesize=self._device.bytes,
+                                       parity=self._device.parity,
+                                       stopbits=self._device.stops,
+                                       xonxoff=self._device.soft,
+                                       timeout=0)
+
         except SerialException as error:
-            post_event(self.notify, EventThread(Event.LOC_ERR,
-                                                0, error.message))
+            post_event(self._notify, EventThread(Event.LOC_ERR,
+                                                 0, error.message))
             return False
         except OSError as error:
-            post_event(self.notify, EventThread(Event.LOC_ERR,
-                                                0, error))
+            post_event(self._notify, EventThread(Event.LOC_ERR,
+                                                 0, error))
             return False
+        except ValueError as error:
+            post_event(self._notify, EventThread(Event.LOC_ERR,
+                                                 0, error))
+            return False
+
         return True
 
     def __serial_read(self):
-        data = True
-        while data and not self.cancel:
-            data = self.commIo.readline()
-            yield data
-            if self.raw:
-                data = limit_to_ascii(data)
-                post_event(self.notify, EventThread(Event.LOC_RAW,
-                                                    0, data))
-        return
+        isSentence = False
+        sentence = ''
+        while not self._cancel:
+            data = self._comm.read(1)
+            if data:
+                self._timeout.reset()
+                if data == '$':
+                    isSentence = True
+                    continue
+                if data == '\r' or data == '\n':
+                    isSentence = False
+                    if sentence:
+                        yield sentence
+                        sentence = ''
+                if isSentence:
+                    sentence += data
+            else:
+                time.sleep(0.1)
 
     def __gpsd_open(self):
         self.__tcp_connect(2947)
 
         try:
-            if self.device.type == DeviceGPS.GPSD:
-                self.comm.sendall('?WATCH={"enable": true,"json": true}')
+            if self._device.type == DeviceGPS.GPSD:
+                self._comm.sendall('?WATCH={"enable": true,"json": true}')
             else:
-                self.comm.sendall('w')
+                self._comm.sendall('w')
 
         except IOError as error:
-            post_event(self.notify, EventThread(Event.LOC_ERR,
-                                                0, error))
-            self.comm.close()
+            post_event(self._notify, EventThread(Event.LOC_ERR,
+                                                 0, error))
+            self._comm.close()
             return False
 
         return True
@@ -188,51 +208,49 @@ class ThreadLocation(threading.Thread):
                 self.__post_location(lat, lon, alt)
 
     def __gpsd_close(self):
-        if self.device.type == DeviceGPS.GPSD:
-            self.comm.sendall('?WATCH={"enable": false}')
+        if self._device.type == DeviceGPS.GPSD:
+            self._comm.sendall('?WATCH={"enable": false}')
         else:
-            self.comm.sendall('W')
-        self.comm.close()
+            self._comm.sendall('W')
+        self._comm.close()
 
     def __gpsd_sats(self, satData):
         sats = {}
         for sat in satData:
             sats[sat['PRN']] = [sat['ss'], sat['used']]
 
-        post_event(self.notify,
+        post_event(self._notify,
                    EventThread(Event.LOC_SAT, None, sats))
 
     def __nmea_open(self):
-        if self.device.type == DeviceGPS.NMEA_SERIAL:
+        if self._device.type == DeviceGPS.NMEA_SERIAL:
             return self.__serial_connect()
         else:
             self.__tcp_connect(10110)
             return True
 
     def __nmea_read(self):
-        if self.device.type == DeviceGPS.NMEA_SERIAL:
+        if self._device.type == DeviceGPS.NMEA_SERIAL:
             comm = self.__serial_read()
         else:
             comm = self.__tcp_read()
 
         for resp in comm:
-            resp = resp.replace('\n', '')
-            resp = resp.replace('\r', '')
-            resp = resp[1::]
-            resp = resp.split('*')
-            if len(resp) == 2:
-                checksum = self.__nmea_checksum(resp[0])
-                if checksum == resp[1]:
-                    data = resp[0].split(',')
-                    if data[0] == 'GPGGA':
-                        self.__nmea_global_fix(data)
-                    elif data[0] == 'GPGSV':
-                        self.__nmea_sats(data)
-                else:
-                    error = 'Invalid checksum {}, should be {}'.format(resp[1],
-                                                                       checksum)
-                    post_event(self.notify, EventThread(Event.LOC_WARN,
-                                                        0, error))
+            nmea = resp.split('*')
+            if len(nmea) == 2:
+                data = nmea[0].split(',')
+                if data[0] in ['GPGGA', 'GPGSV']:
+                    checksum = self.__nmea_checksum(nmea[0])
+                    if checksum == nmea[1]:
+                        if data[0] == 'GPGGA':
+                            self.__nmea_global_fix(data)
+                        elif data[0] == 'GPGSV':
+                            self.__nmea_sats(data)
+                    else:
+                        error = 'Invalid checksum {}, should be {}'.format(resp[1],
+                                                                           checksum)
+                        post_event(self._notify, EventThread(Event.LOC_WARN,
+                                                             0, error))
 
     def __nmea_checksum(self, data):
         checksum = 0
@@ -257,7 +275,7 @@ class ThreadLocation(threading.Thread):
         viewed = int(data[3])
 
         if message == 1:
-            self.sats.clear()
+            self._sats.clear()
 
         blocks = (len(data) - 4) / 4
         for i in range(0, blocks):
@@ -269,11 +287,11 @@ class ThreadLocation(threading.Thread):
                 used = False
             else:
                 level = int(level)
-            self.sats[sat] = [level, used]
+            self._sats[sat] = [level, used]
 
-        if message == messages and len(self.sats) == viewed:
-            post_event(self.notify,
-                       EventThread(Event.LOC_SAT, None, self.sats))
+        if message == messages and len(self._sats) == viewed:
+            post_event(self._notify,
+                       EventThread(Event.LOC_SAT, None, self._sats))
 
     def __nmea_coord(self, coord, orient):
         pos = None
@@ -301,37 +319,40 @@ class ThreadLocation(threading.Thread):
         return pos
 
     def __nmea_close(self):
-        self.comm.close()
+        if self._timeout is not None:
+            self._timeout.cancel()
+        if self._comm is not None:
+            self._comm.close()
 
     def __post_location(self, lat, lon, alt):
         utc = time.time()
-        post_event(self.notify,
+        post_event(self._notify,
                    EventThread(Event.LOC, 0, [lat, lon, alt, utc]))
 
     def run(self):
-        if self.device.type in [DeviceGPS.NMEA_SERIAL, DeviceGPS.NMEA_TCP]:
+        if self._device.type in [DeviceGPS.NMEA_SERIAL, DeviceGPS.NMEA_TCP]:
             if not self.__nmea_open():
                 return
         else:
             if not self.__gpsd_open():
                 return
 
-        if self.device.type in [DeviceGPS.NMEA_SERIAL, DeviceGPS.NMEA_TCP]:
+        if self._device.type in [DeviceGPS.NMEA_SERIAL, DeviceGPS.NMEA_TCP]:
             self.__nmea_read()
-        elif self.device.type == DeviceGPS.GPSD:
+        elif self._device.type == DeviceGPS.GPSD:
             self.__gpsd_read()
-        elif self.device.type == DeviceGPS.GPSD_OLD:
+        elif self._device.type == DeviceGPS.GPSD_OLD:
             self.__gpsd_old_read()
 
-        if self.device.type in [DeviceGPS.NMEA_SERIAL, DeviceGPS.NMEA_TCP]:
+        if self._device.type in [DeviceGPS.NMEA_SERIAL, DeviceGPS.NMEA_TCP]:
             self.__nmea_close()
         else:
             self.__gpsd_close()
 
     def stop(self):
-        self.cancel = True
-        if self.raw:
-            self.notify.queue.clear()
+        self._cancel = True
+        if self._raw:
+            self._notify.queue.clear()
 
 
 class LocationServer(object):
@@ -542,6 +563,33 @@ class LocationServerHandler(BaseHTTPRequestHandler):
 
     def log_message(self, *args, **kwargs):
         pass
+
+
+class Timeout(threading.Thread):
+    def __init__(self, callback):
+        threading.Thread.__init__(self)
+        self.name = 'GPS Timeout'
+
+        self._callback = callback
+        self._done = threading.Event()
+        self._reset = True
+
+        self.start()
+
+    def run(self):
+        while self._reset:
+            self._reset = False
+            self._done.wait(TIMEOUT)
+
+        if not self._done.isSet():
+            self._callback()
+
+    def reset(self):
+        self._reset = True
+        self._done.clear()
+
+    def cancel(self):
+        self._done.set()
 
 
 if __name__ == '__main__':
