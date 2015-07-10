@@ -332,6 +332,7 @@ class ThreadLocation(threading.Thread):
     def run(self):
         if self._device.type in [DeviceGPS.NMEA_SERIAL, DeviceGPS.NMEA_TCP]:
             if not self.__nmea_open():
+                self.__nmea_close()
                 return
         else:
             if not self.__gpsd_open():

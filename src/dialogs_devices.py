@@ -494,16 +494,16 @@ class DialogDevicesGPS(wx.Dialog):
 class DialogGPSSerial(wx.Dialog):
     def __init__(self, parent, device):
         self.device = device
-        self.ports = get_serial_ports()
+        ports = get_serial_ports()
+        ports.append(device.resource)
+        self.ports = list(set(ports))
 
         wx.Dialog.__init__(self, parent=parent, title='Serial port settings')
 
         textPort = wx.StaticText(self, label='Port')
-        self.choicePort = wx.Choice(self, choices=self.ports)
-        sel = 0
-        if device.resource in self.ports:
-            sel = self.ports.index(device.resource)
-        self.choicePort.SetSelection(sel)
+        self.comboPort = wx.ComboBox(self, choices=self.ports,
+                                     style=wx.TE_PROCESS_ENTER)
+        self.comboPort.SetSelection(self.ports.index(device.resource))
 
         textBaud = wx.StaticText(self, label='Baud rate')
         self.choiceBaud = wx.Choice(self,
@@ -534,7 +534,7 @@ class DialogGPSSerial(wx.Dialog):
 
         grid = wx.GridBagSizer(10, 10)
         grid.Add(textPort, pos=(0, 0), flag=wx.ALL)
-        grid.Add(self.choicePort, pos=(0, 1), flag=wx.ALL)
+        grid.Add(self.comboPort, pos=(0, 1), flag=wx.ALL)
         grid.Add(textBaud, pos=(1, 0), flag=wx.ALL)
         grid.Add(self.choiceBaud, pos=(1, 1), flag=wx.ALL)
         grid.Add(textByte, pos=(2, 0), flag=wx.ALL)
@@ -553,7 +553,7 @@ class DialogGPSSerial(wx.Dialog):
         self.SetSizerAndFit(box)
 
     def __on_ok(self, _event):
-        self.device.resource = self.ports[self.choicePort.GetSelection()]
+        self.device.resource = self.comboPort.GetValue()
         self.device.baud = self.device.get_bauds()[self.choiceBaud.GetSelection()]
         self.device.bytes = DeviceGPS.BYTES[self.choiceBytes.GetSelection()]
         self.device.parity = DeviceGPS.PARITIES[self.choiceParity.GetSelection()]
