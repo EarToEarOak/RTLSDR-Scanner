@@ -197,6 +197,7 @@ class Cli(object):
             if self.settings.scanDelay > 0 and sweep < sweeps - 1:
                 print '\nDelaying {}s'.format(self.settings.scanDelay)
                 time.sleep(self.settings.scanDelay)
+            threadScan.rtl_close()
             print ""
         print ""
 
