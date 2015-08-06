@@ -23,15 +23,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import sys
 import wx
 
-try:
-    import visvis as vv
-    from visvis.core.line import Line
-    app = vv.use('wx')
-    vvPresent = True
-except ImportError:
-    vvPresent = False
+vvPresent = False
+if not hasattr(sys, 'frozen'):
+    try:
+        import visvis as vv
+        from visvis.core.line import Line
+        app = vv.use('wx')
+        vvPresent = True
+    except ImportError:
+        pass
 
 
 class PlotterPreview(object):

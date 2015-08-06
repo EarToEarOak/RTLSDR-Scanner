@@ -77,12 +77,21 @@ class RemoteControl(object):
         self.__send(command)
 
 
-def get_resdir():
-    scriptDir = os.path.dirname(os.path.realpath(sys.argv[0]))
-    if os.path.isdir(scriptDir + '/res'):
-        resDir = os.path.normpath(scriptDir + '/res')
+def get_script_dir():
+    if not hasattr(sys, 'frozen'):
+        scriptDir = os.path.dirname(os.path.realpath(sys.argv[0]))
     else:
-        resDir = os.path.join(scriptDir + '/../res')
+        scriptDir = sys._MEIPASS
+
+    return scriptDir
+
+
+def get_resdir():
+    scriptDir = get_script_dir()
+    if os.path.isdir(os.path.join(scriptDir, 'res')):
+        resDir = os.path.join(scriptDir, 'res')
+    else:
+        resDir = os.path.join(scriptDir, '..', 'res')
 
     return resDir
 
@@ -187,16 +196,16 @@ def format_iso_time(timeStamp):
 
 
 def set_version_timestamp():
-    scriptDir = os.path.dirname(os.path.realpath(sys.argv[0]))
+    scriptDir = get_script_dir()
     timeStamp = str(int(time.time()))
-    f = open(scriptDir + '/' + TIMESTAMP_FILE, 'w')
+    f = open(os.path.join(scriptDir, TIMESTAMP_FILE), 'w')
     f.write(timeStamp)
     f.close()
 
 
 def get_version_timestamp(asSeconds=False):
-    scriptDir = os.path.dirname(os.path.realpath(sys.argv[0]))
-    f = open(scriptDir + '/' + TIMESTAMP_FILE, 'r')
+    scriptDir = get_script_dir()
+    f = open(os.path.join(scriptDir, TIMESTAMP_FILE), 'r')
     timeStamp = int(f.readline())
     f.close()
     if asSeconds:

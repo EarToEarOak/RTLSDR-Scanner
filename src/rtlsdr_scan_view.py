@@ -26,16 +26,16 @@
 
 import argparse
 from os.path import os
-
+import sys
 import wx
 
 from file import File, open_plot
 from settings import Settings
 from spectrum import sort_spectrum
-import visvis as vv
 
-
-app = vv.use('wx')
+if not hasattr(sys, 'frozen'):
+    import visvis as vv
+    app = vv.use('wx')
 
 
 class MainWindow(wx.Frame):

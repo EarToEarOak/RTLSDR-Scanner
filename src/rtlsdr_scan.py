@@ -23,7 +23,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-import signal
 
 try:
     input = raw_input
@@ -41,21 +40,27 @@ except ImportError as error:
     input('\nError importing libraries\nPress [Return] to exit')
     exit(1)
 
-try:
-    import visvis as vv
-    vv.use('wx')
-except ImportError:
-    pass
-
 import argparse
 import multiprocessing
 import os.path
+import signal
+import sys
 
 from cli import Cli
 from constants import APP_NAME
 from file import File
 from main_window import FrameMain, RtlSdrScanner
 from misc import set_version_timestamp
+from multiproc import _Popen
+
+if not hasattr(sys, 'frozen'):
+    try:
+        import visvis as vv
+        vv.use('wx')
+    except ImportError:
+        pass
+
+multiprocessing.forking.Popen = _Popen
 
 
 def __init_worker():

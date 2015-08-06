@@ -24,11 +24,10 @@
 #
 
 import os
-import sys
 
 import wx
 
-from misc import get_resdir
+from misc import get_resdir, get_script_dir
 
 
 class ValidatorCoord(wx.PyValidator):
@@ -79,11 +78,11 @@ def load_bitmap(name):
 
 def load_icon(name):
     name += '.ico'
-    scriptDir = os.path.dirname(os.path.realpath(sys.argv[0]))
-    if os.path.isfile(scriptDir + '/' + name):
-        iconFile = os.path.normpath(scriptDir + '/' + name)
+    scriptDir = get_script_dir()
+    if os.path.isfile(os.path.join(scriptDir, name)):
+        iconFile = os.path.join(scriptDir, name)
     else:
-        iconFile = os.path.normpath(scriptDir + '/../' + name)
+        iconFile = os.path.join(scriptDir,  '..',  name)
 
     return wx.Icon(iconFile, wx.BITMAP_TYPE_ICO)
 

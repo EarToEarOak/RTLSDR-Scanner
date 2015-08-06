@@ -25,6 +25,7 @@
 
 import multiprocessing
 import platform
+import sys
 
 from PIL import Image
 import matplotlib
@@ -63,12 +64,13 @@ class DialogSysInfo(wx.Dialog):
             imageType = 'PIL'
             imageVer = Image.VERSION
 
-
-        try:
-            import visvis as vv
-            visvisVer = vv.__version__
-        except ImportError:
-            visvisVer = 'Not installed'
+        visvisVer = 'Not installed'
+        if not hasattr(sys, 'frozen'):
+            try:
+                import visvis as vv
+                visvisVer = vv.__version__
+            except ImportError:
+                pass
 
         versions = ('Hardware:\n'
                     '\tProcessor: {}, {} cores\n\n'

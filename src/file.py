@@ -214,7 +214,8 @@ class Backups(object):
     def __get(self):
         files = []
         backups = glob.glob(self.homeDir + '/' + self.PREFIX + '*')
-        backups.remove(self.tempFile)
+        if self.tempFile in backups:
+            backups.remove(self.tempFile)
 
         for backup in backups:
             fTime = datetime.datetime.utcfromtimestamp(os.path.getmtime(backup))
