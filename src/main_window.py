@@ -1106,7 +1106,7 @@ class FrameMain(wx.Frame):
             i += 1
         self.status.pulse_gps()
         if data[2] is None:
-            gpsStatus = '{:.5f}, {:.5f}, {:.1f}'.format(data[0], data[1])
+            gpsStatus = '{:.5f}, {:.5f}'.format(data[0], data[1])
         else:
             gpsStatus = '{:.5f}, {:.5f}, {:.1f}m'.format(data[0], data[1], data[2])
 

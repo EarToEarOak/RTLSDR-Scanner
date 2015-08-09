@@ -3,7 +3,7 @@
 #
 # http://eartoearoak.com/software/rtlsdr-scanner
 #
-# Copyright 2012, 2013 Al Brown
+# Copyright 2012, 2015 Al Brown
 #
 # A frequency scanning GUI for the OsmoSDR rtl-sdr library at
 # http://sdr.osmocom.org/trac/wiki/rtl-sdr
@@ -46,7 +46,7 @@ def create_version():
     strings.append(versioninfo.StringStruct('FileDescription',
                                             'Spectrum Analyser'))
     strings.append(versioninfo.StringStruct('LegalCopyright',
-                                            'Copyright 2012-2015 Al Brown'))
+                                            'Copyright 2012 - 2015 Al Brown'))
     table = versioninfo.StringTable('040904B0', strings)
     sInfo = versioninfo.StringFileInfo([table])
     var = versioninfo.VarStruct('Translation', [2057, 1200])
