@@ -24,7 +24,11 @@
 #
 
 import sys
+
 import wx
+
+from events import post_event, EventThread, Event
+
 
 vvPresent = False
 if not hasattr(sys, 'frozen'):
@@ -75,7 +79,7 @@ class PlotterPreview(object):
         pass
 
     def redraw_plot(self):
-        pass
+        post_event(self.notify, EventThread(Event.DRAW))
 
     def get_axes(self):
         return None
