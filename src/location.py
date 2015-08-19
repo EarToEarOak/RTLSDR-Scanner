@@ -95,7 +95,9 @@ class ThreadLocation(threading.Thread):
             buf += data
             while buf.find('\n') != -1:
                 line, buf = buf.split('\n', 1)
-                yield line
+                pos = line.find('$')
+                if pos != -1 and pos + 1 < len(line):
+                    yield line[pos + 1:]
                 if self._raw:
                     line = limit_to_ascii(line)
                     post_event(self._notify, EventThread(Event.LOC_RAW,
