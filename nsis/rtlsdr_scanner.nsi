@@ -32,7 +32,7 @@
 !include "include\EnvVarUpdate.nsh"
 !include "include\fileassoc.nsh"
 
-!define INSTALLER_VERSION "17"
+!define INSTALLER_VERSION "18"
 
 !define PRODUCT_NAME "RTLSDR Scanner"
 !define PRODUCT_PUBLISHER "Ear to Ear Oak"
@@ -133,51 +133,50 @@ SectionGroup "/e" "Dependencies" SEC_DEP
 	SectionEnd
 	SectionGroup "/e" "Python" SEC_PYDEP
 		Section "Python 2.7.8" SEC_PYTHON
-			StrCpy $UriPath "http://www.python.org/ftp/python/2.7.8"
-			StrCpy $UriFile "python-2.7.8.msi"
+			StrCpy $UriPath "http://www.python.org/ftp/python/2.7.10"
+			StrCpy $UriFile "python-2.7.10.msi"
 			Call install_msi
 			Call set_installer_path
-			Call install_setuptools
 		SectionEnd
 		Section "Add Python to PATH"
 			Call set_python_path
 		SectionEnd
 		Section "dateutil" SEC_DATEUTIL
 			StrCpy $UriFile "python-dateutil"
-			Call install_easy
+			Call install_pip
 		SectionEnd
 		Section "matplotlib 1.3.1"
 			StrCpy $UriPath "http://downloads.sourceforge.net/project/matplotlib/matplotlib/matplotlib-1.3.1"
 			StrCpy $UriFile "matplotlib-1.3.1.win32-py2.7.exe"
 			Call install_exe
 		SectionEnd
-		Section "numpy 1.8.1"
-			StrCpy $UriPath "http://downloads.sourceforge.net/project/numpy/NumPy/1.8.1"
-			StrCpy $UriFile "numpy-1.8.1-win32-superpack-python2.7.exe"
+		Section "numpy 1.9.2"
+			StrCpy $UriPath "http://downloads.sourceforge.net/project/numpy/NumPy/1.9.2"
+			StrCpy $UriFile "numpy-1.9.2-win32-superpack-python2.7.exe"
 			Call install_exe
 		SectionEnd
 		Section "Pillow" SEC_PILLOW
-			StrCpy $UriFile "Pillow"
-			Call install_easy
+			StrCpy $UriFile "pillow"
+			Call install_pip
 		SectionEnd
 		Section "pyparsing" SEC_PYPARSING
 			StrCpy $UriFile "pyparsing"
-			Call install_easy
+			Call install_pip
 		SectionEnd
 		Section "pyrtlsdr" SEC_PYRTLSDR
 			Call install_pyrtlsdr
 		SectionEnd
 		Section "PySerial" SEC_PYSERIAL
 			StrCpy $UriFile "pyserial"
-			Call install_easy
+			Call install_pip
 		SectionEnd
 		Section "visvis (Optional)" SEC_VISVIS
 			StrCpy $UriFile "visvis"
-			Call install_easy
+			Call install_pip
 		SectionEnd
 		Section "wxPython 3"
-			StrCpy $UriPath "http://downloads.sourceforge.net/wxpython/3.0.0.0"
-			StrCpy $UriFile "wxPython3.0-win32-3.0.0.0-py27.exe"
+			StrCpy $UriPath "http://downloads.sourceforge.net/wxpython/3.0.2.0"
+			StrCpy $UriFile "wxPython3.0-win32-3.0.2.0-py27.exe"
 			Call install_exe
 		SectionEnd
 	SectionGroupEnd
@@ -424,31 +423,16 @@ Function install_exe
 	${EndIf}
 FunctionEnd
 
-Function install_setuptools
-	inetc::get "https://bootstrap.pypa.io/ez_setup.py" "$TEMP\ez_setup.py"  /end
-	Pop $R0
-	${If} $R0 != "OK"
-		StrCpy $ErrorMessage "setuptools download failed: $R0"
-		Call error
-	${Else}
-		ClearErrors
-		ExecWait "python $TEMP\ez_setup.py"
-		${If} ${Errors}
-			StrCpy $ErrorMessage "Failed to install setuptools"
-			Call error
-		${EndIf}
-	${EndIf}
-FunctionEnd
-
-Function install_easy
+Function install_pip
 	Call get_python_path
 	ClearErrors
-	ExecWait '"$PythonPath\Scripts\easy_install" $UriFile'
+	ExecWait '"$PythonPath\python.exe" -m pip install --upgrade $UriFile'
 	${If} ${Errors}
 		StrCpy $ErrorMessage "Failed to install $UriFile"
 		Call error
 	${EndIf}
 FunctionEnd
+
 
 Function install_rtlsdr_scanner
 	inetc::get "https://github.com/EarToEarOak/RTLSDR-Scanner/archive/master.zip" "$TEMP\rtlsdr_scanner.zip" /end
