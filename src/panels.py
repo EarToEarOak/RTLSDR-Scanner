@@ -241,9 +241,7 @@ class PanelGraph(wx.Panel):
             if os.name == 'nt':
                 threading.Thread(target=self.__draw_canvas, name='Draw').start()
             else:
-                with self.lockDraw:
-                    self.canvas.draw()
-                self.status.set_busy(False)
+                self.__draw_canvas()
 
     def __on_timer(self, _event):
         self.timer.Stop()
@@ -263,9 +261,7 @@ class PanelGraph(wx.Panel):
             self.__draw_select()
             self.draw_measure()
             axes = self.plot.get_axes()
-            if axes is None:
-                self.canvas.draw()
-            else:
+            if axes is not None:
                 self.canvas.blit(axes.bbox)
 
     def __draw_select(self):
