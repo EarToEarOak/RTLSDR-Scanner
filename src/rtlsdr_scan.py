@@ -41,7 +41,6 @@ except ImportError as error:
     exit(1)
 
 import argparse
-import multiprocessing
 import os.path
 import signal
 import sys
@@ -51,7 +50,6 @@ from constants import APP_NAME
 from file import File
 from main_window import FrameMain, RtlSdrScanner
 from misc import set_version_timestamp
-from multiproc import _Popen
 
 if not hasattr(sys, 'frozen'):
     try:
@@ -59,8 +57,6 @@ if not hasattr(sys, 'frozen'):
         vv.use('wx')
     except ImportError:
         pass
-
-multiprocessing.forking.Popen = _Popen
 
 
 def __init_worker():
@@ -121,24 +117,22 @@ def __arguments():
 
 
 if __name__ == '__main__':
-    multiprocessing.freeze_support()
-    pool = multiprocessing.Pool(initializer=__init_worker)
     print APP_NAME + "\n"
     if 'rtlsdr_update_timestamp'in os.environ:
         set_version_timestamp()
 
     isGui, args = __arguments()
     if isGui:
-        app = RtlSdrScanner(pool)
+        app = RtlSdrScanner()
         app.SetClassName(APP_NAME)
         wx.Locale().Init2()
-        frame = FrameMain(APP_NAME, pool)
+        frame = FrameMain(APP_NAME)
         if args.file is not None:
             frame.open(os.path.abspath(args.dirname), args.filename)
         app.MainLoop()
     else:
         try:
-            Cli(pool, args)
+            Cli(args)
         except KeyboardInterrupt:
             print '\nAborted'
             exit(1)

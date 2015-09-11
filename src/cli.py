@@ -38,12 +38,12 @@ from events import Event, post_event, EventThread
 from file import save_plot, export_plot, ScanInfo, File
 from location import ThreadLocation
 from misc import nearest, calc_real_dwell, next_2_to_pow
-from scan import ThreadScan, anaylse_data, update_spectrum
+from scan import ThreadScan, update_spectrum, ThreadProcess
 from settings import Settings
 
 
 class Cli(object):
-    def __init__(self, pool, args):
+    def __init__(self, args):
         start = args.start
         end = args.end
         sweeps = args.sweeps
@@ -151,7 +151,7 @@ class Cli(object):
                 self.__gps_stop()
                 exit(1)
 
-        self.__scan(sweeps, self.settings, index, pool)
+        self.__scan(sweeps, self.settings, index)
 
         fullName = os.path.join(directory, filename)
         if ext == ".rfs":
@@ -181,7 +181,7 @@ class Cli(object):
         if self.threadLocation and self.threadLocation.isAlive():
             self.threadLocation.stop()
 
-    def __scan(self, sweeps, settings, index, pool):
+    def __scan(self, sweeps, settings, index):
         samples = settings.dwell * SAMPLE_RATE
         samples = next_2_to_pow(int(samples))
 
@@ -191,9 +191,9 @@ class Cli(object):
                                     settings, index, samples, False)
             while threadScan.isAlive() or self.steps > 0:
                 if not self.queueNotify.empty():
-                    self.__process_event(self.queueNotify, pool)
+                    self.__process_event(self.queueNotify)
                 if not self.queueLocation.empty():
-                    self.__process_event(self.queueLocation, pool)
+                    self.__process_event(self.queueLocation)
             if self.settings.scanDelay > 0 and sweep < sweeps - 1:
                 print '\nDelaying {}s'.format(self.settings.scanDelay)
                 time.sleep(self.settings.scanDelay)
@@ -201,7 +201,7 @@ class Cli(object):
             print ""
         print ""
 
-    def __process_event(self, queue, pool):
+    def __process_event(self, queue):
         event = queue.get()
         status = event.data.get_status()
         arg1 = event.data.get_arg1()
@@ -218,11 +218,12 @@ class Cli(object):
         elif status == Event.DATA:
             cal = self.settings.devicesRtl[self.settings.indexRtl].calibration
             freq, scan = self.queueScan.get()
-            pool.apply_async(anaylse_data, (freq, scan, cal,
-                                            self.settings.nfft,
-                                            self.settings.overlap,
-                                            "Hamming"),
-                             callback=self.__on_process_done)
+            process = ThreadProcess(self.queueNotify,
+                                    freq, scan, cal,
+                                    self.settings.nfft,
+                                    self.settings.overlap,
+                                    self.settings.winFunc)
+            process.start()
             self.__progress()
         elif status == Event.ERROR:
             print "Error: {}".format(arg2)
@@ -230,9 +231,14 @@ class Cli(object):
         elif status == Event.PROCESSED:
             offset = self.settings.devicesRtl[self.settings.indexRtl].offset
             Thread(target=update_spectrum, name='Update',
-                   args=(self.queueNotify, self.lock, self.settings.start,
-                         self.settings.stop, arg1,
-                         arg2, offset, self.spectrum, False,)).start()
+                   args=(self.queueNotify, self.lock,
+                         self.settings.start,
+                         self.settings.stop,
+                         arg1,
+                         offset,
+                         self.spectrum,
+                         not self.settings.retainScans,
+                         False)).start()
         elif status == Event.UPDATED:
             self.__progress()
         elif status == Event.LOC:
@@ -245,11 +251,6 @@ class Cli(object):
             exit(1)
 
         return status
-
-    def __on_process_done(self, data):
-        timeStamp, freq, scan = data
-        post_event(self.queueNotify, EventThread(Event.PROCESSED, freq,
-                                                 (timeStamp, scan)))
 
     def __progress(self):
         self.steps -= 1

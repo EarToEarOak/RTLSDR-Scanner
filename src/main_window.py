@@ -57,7 +57,7 @@ from misc import RemoteControl, calc_samples, calc_real_dwell, \
     get_version_timestamp, get_version_timestamp_repo, format_iso_time, limit
 from panels import PanelGraph
 from printer import PrintOut
-from scan import ThreadScan, anaylse_data, update_spectrum
+from scan import ThreadScan, update_spectrum, ThreadProcess
 from settings import Settings
 from spectrum import count_points, sort_spectrum, Extent
 from toolbars import Statusbar, NavigationToolbar
@@ -82,9 +82,7 @@ class DropTarget(wx.FileDropTarget):
 
 
 class RtlSdrScanner(wx.App):
-    def __init__(self, pool):
-        self.pool = pool
-
+    def __init__(self):
         try:
             wx.Dialog.EnableLayoutAdaptation(True)
         except AttributeError:
@@ -93,9 +91,8 @@ class RtlSdrScanner(wx.App):
 
 
 class FrameMain(wx.Frame):
-    def __init__(self, title, pool):
+    def __init__(self, title):
         wx.Frame.__init__(self, None, title=title)
-        self.pool = pool
         self.lock = threading.Lock()
 
         self.sdr = None
@@ -845,12 +842,11 @@ class FrameMain(wx.Frame):
             self.__saved(False)
             cal = self.devicesRtl[self.settings.indexRtl].calibration
             freq, scan = self.queueScan.get()
-            self.pool.apply_async(anaylse_data,
-                                  (freq, scan, cal,
-                                   self.settings.nfft,
-                                   self.settings.overlap,
-                                   self.settings.winFunc),
-                                  callback=self.__on_process_done)
+            process = ThreadProcess(self, freq, scan, cal,
+                                    self.settings.nfft,
+                                    self.settings.overlap,
+                                    self.settings.winFunc)
+            process.start()
             self.__progress()
         elif status == Event.STOPPED:
             self.__cleanup()
@@ -871,9 +867,12 @@ class FrameMain(wx.Frame):
                 alert = None
             try:
                 Thread(target=update_spectrum, name='Update',
-                       args=(self, self.lock, self.settings.start,
-                             self.settings.stop, arg1,
-                             arg2, offset, self.spectrum,
+                       args=(self, self.lock,
+                             self.settings.start,
+                             self.settings.stop,
+                             arg1,
+                             offset,
+                             self.spectrum,
                              not self.settings.retainScans,
                              alert)).start()
             except thread.error:
@@ -923,11 +922,6 @@ class FrameMain(wx.Frame):
                 self.dlgSats.set_sats(arg2)
 
         wx.YieldIfNeeded()
-
-    def __on_process_done(self, data):
-        timeStamp, freq, scan = data
-        post_event(self, EventThread(Event.PROCESSED, freq,
-                                     (timeStamp, scan)))
 
     def __auto_cal(self, status):
         freq = self.dlgCal.get_arg1()

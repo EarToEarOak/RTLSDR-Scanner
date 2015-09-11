@@ -162,26 +162,39 @@ class ThreadScan(threading.Thread):
         return self.sdr
 
 
-def anaylse_data(freq, data, cal, nfft, overlap, winFunc):
-    spectrum = {}
-    timeStamp = data[0]
-    samples = data[1]
-    pos = WINFUNC[::2].index(winFunc)
-    function = WINFUNC[1::2][pos]
-    powers, freqs = matplotlib.mlab.psd(samples,
-                                        NFFT=nfft,
-                                        noverlap=int((nfft) * overlap),
-                                        Fs=SAMPLE_RATE / 1e6,
-                                        window=function(nfft))
-    for freqPsd, pwr in itertools.izip(freqs, powers):
-        xr = freqPsd + (freq / 1e6)
-        xr = xr + (xr * cal / 1e6)
-        spectrum[xr] = pwr
+class ThreadProcess(threading.Thread):
+    def __init__(self, notify, freq, scan, cal, nfft, overlap, winFunc):
+        threading.Thread.__init__(self)
+        self.name = 'ThreadProcess'
+        self.notify = notify
+        self.freq = freq
+        self.scan = scan
+        self.cal = cal
+        self.nfft = nfft
+        self.overlap = overlap
+        self.winFunc = winFunc
+        self.window = matplotlib.numpy.hamming(nfft)
 
-    return (timeStamp, freq, spectrum)
+    def run(self):
+        spectrum = {}
+        timeStamp = self.scan[0]
+        samples = self.scan[1]
+        pos = WINFUNC[::2].index(self.winFunc)
+        function = WINFUNC[1::2][pos]
+
+        powers, freqs = matplotlib.mlab.psd(samples,
+                                            NFFT=self.nfft,
+                                            Fs=SAMPLE_RATE / 1e6,
+                                            window=function(self.nfft))
+        for freqPsd, pwr in itertools.izip(freqs, powers):
+            xr = freqPsd + (self.freq / 1e6)
+            xr = xr + (xr * self.cal / 1e6)
+            spectrum[xr] = pwr
+        post_event(self.notify, EventThread(Event.PROCESSED,
+                                            (timeStamp, self.freq, spectrum)))
 
 
-def update_spectrum(notify, lock, start, stop, freqCentre, data, offset,
+def update_spectrum(notify, lock, start, stop, data, offset,
                     spectrum, average, alertLevel=None):
     with lock:
         updated = False
@@ -192,7 +205,9 @@ def update_spectrum(notify, lock, start, stop, freqCentre, data, offset,
                 timeStamp = data[0]
         else:
             timeStamp = data[0]
-        scan = data[1]
+
+        freqCentre = data[1]
+        scan = data[2]
 
         upperStart = freqCentre + offset
         upperEnd = freqCentre + offset + BANDWIDTH / 2
