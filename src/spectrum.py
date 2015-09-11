@@ -51,6 +51,9 @@ class Extent(object):
         self.tPeak = None
 
     def __calc_extent(self, spectrum):
+        self.tMin = min(spectrum)
+        self.tMax = max(spectrum)
+
         for timeStamp in spectrum:
             points = spectrum[timeStamp].items()
             if len(points) > 0:
@@ -62,12 +65,10 @@ class Extent(object):
                 self.fMax = max(self.fMax, fMax)
                 self.lMin = min(self.lMin, lMin)
                 self.lMax = max(self.lMax, lMax)
-        self.tMin = min(spectrum)
-        self.tMax = max(spectrum)
-        self.tPeak = self.tMax
-        if len(spectrum[self.tMax]) > 0:
-            self.fPeak, self.lPeak = max(spectrum[self.tMax].items(),
-                                         key=lambda(_f, l): l)
+
+                if timeStamp == self.tMax:
+                    self.fPeak, self.lPeak = max(points,
+                                                 key=lambda(_f, l): l)
 
     def get_f(self):
         if self.fMin == self.fMax:
