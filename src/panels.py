@@ -72,6 +72,7 @@ class PanelGraph(wx.Panel):
         self.annotate = None
 
         self.lockDraw = threading.Lock()
+        self.isDrawing = False
 
         self.toolTip = wx.ToolTip('')
 
@@ -250,9 +251,12 @@ class PanelGraph(wx.Panel):
     def __draw_canvas(self):
         with self.lockDraw:
             try:
+                self.isDrawing = True
                 self.canvas.draw()
             except wx.PyDeadObjectError:
                 pass
+
+        self.isDrawing = False
         wx.CallAfter(self.status.set_busy, False)
 
     def __draw_overlay(self):
@@ -343,7 +347,7 @@ class PanelGraph(wx.Panel):
                 self.isLimited = isLimited
                 self.limit = limit
 
-        if self.plot.get_plot_thread() is None:
+        if self.plot.get_plot_thread() is None and not self.isDrawing:
             self.timer.Stop()
             self.measureTable.set_selected(self.spectrum, self.selectStart,
                                            self.selectEnd)
@@ -880,6 +884,9 @@ class PanelMeasure(wx.Panel):
         self.measure = None
 
     def set_selected(self, spectrum, start, end):
+        if start is None:
+            return
+
         self.measure = Measure(spectrum, start, end)
         if not self.measure.is_valid():
             self.clear_measurement()
