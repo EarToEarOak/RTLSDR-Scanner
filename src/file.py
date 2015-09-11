@@ -43,7 +43,7 @@ import wx
 
 from constants import APP_NAME
 from misc import format_iso_time
-from spectrum import sort_spectrum, create_mesh
+from spectrum import create_mesh, sort_spectrum
 
 
 class File(object):
@@ -373,6 +373,8 @@ def open_plot(dirname, filename):
     scanInfo.lon = lon
     scanInfo.desc = desc
 
+    spectrum = sort_spectrum(spectrum)
+
     return scanInfo, spectrum, location
 
 
@@ -400,7 +402,6 @@ def save_plot(filename, scanInfo, spectrum, location):
 
 
 def export_plot(filename, exportType, spectrum):
-    spectrum = sort_spectrum(spectrum)
     handle = open(filename, 'wb')
     if exportType == File.PlotType.CSV:
         export_csv(handle, spectrum)

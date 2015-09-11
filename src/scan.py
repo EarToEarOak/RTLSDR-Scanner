@@ -34,6 +34,7 @@ import rtlsdr
 from constants import SAMPLE_RATE, BANDWIDTH, WINFUNC
 from events import EventThread, Event, post_event
 import rtltcp
+from collections import OrderedDict
 
 
 class ThreadScan(threading.Thread):
@@ -215,7 +216,7 @@ def update_spectrum(notify, lock, start, stop, data, offset,
         lowerEnd = freqCentre - offset
 
         if timeStamp not in spectrum:
-            spectrum[timeStamp] = {}
+            spectrum[timeStamp] = OrderedDict()
 
         for freq in scan:
             if start <= freq < stop:
@@ -232,6 +233,9 @@ def update_spectrum(notify, lock, start, stop, data, offset,
                     else:
                         spectrum[timeStamp][freq] = power
                         updated = True
+
+        if updated:
+            spectrum[timeStamp] = OrderedDict(sorted(spectrum[timeStamp].items()))
 
     post_event(notify, EventThread(Event.UPDATED, None, updated))
 

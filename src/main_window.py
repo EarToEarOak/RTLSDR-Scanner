@@ -59,7 +59,7 @@ from panels import PanelGraph
 from printer import PrintOut
 from scan import ThreadScan, update_spectrum, ThreadProcess
 from settings import Settings
-from spectrum import count_points, sort_spectrum, Extent
+from spectrum import count_points, Extent
 from toolbars import Statusbar, NavigationToolbar
 from utils_google import create_gearth
 from utils_mpl import add_colours
@@ -1131,7 +1131,6 @@ class FrameMain(wx.Frame):
         if len(spectrum) > 0:
             total = count_points(spectrum)
             if total > 0:
-                spectrum = sort_spectrum(spectrum)
                 extent = Extent(spectrum)
                 self.graph.set_plot(spectrum,
                                     self.settings.pointsLimit,

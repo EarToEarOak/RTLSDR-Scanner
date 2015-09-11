@@ -45,7 +45,7 @@ from file import export_image, File
 from misc import format_time
 from panels import PanelColourBar
 from plot_line import Plotter
-from spectrum import Extent, sort_spectrum, count_points
+from spectrum import Extent, count_points
 from utils_mpl import get_colours, create_heatmap
 from utils_wx import ValidatorCoord
 from widgets import TickCellRenderer
@@ -524,7 +524,7 @@ class DialogExportSeq(wx.Dialog):
             if start <= timeStamp <= end:
                 sweeps[timeStamp] = sweep
 
-        self.sweeps = sort_spectrum(sweeps)
+        self.sweeps = sweeps
 
     def __draw_plot(self):
         start, end = self.__get_range()

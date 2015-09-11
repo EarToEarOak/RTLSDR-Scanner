@@ -39,7 +39,7 @@ from file import File, open_plot
 from misc import format_precision, format_time
 from panels import PanelGraphCompare, PanelLine
 from plot_line import Plotter
-from spectrum import Extent, sort_spectrum, smooth_spectrum
+from spectrum import Extent, smooth_spectrum
 from utils_wx import close_modeless
 from widgets import SatLevel
 
@@ -197,7 +197,7 @@ class DialogSmooth(wx.Dialog):
     POLL = 250
 
     def __init__(self, parent, spectrum, settings):
-        self.spectrum = sort_spectrum(spectrum)
+        self.spectrum = spectrum
         self.settings = settings
         self.smoothed = None
 
