@@ -71,7 +71,6 @@ class PanelGraph(wx.Panel):
         self.extent = None
         self.annotate = None
 
-        self.lockDraw = threading.Lock()
         self.isDrawing = False
 
         self.toolTip = wx.ToolTip('')
@@ -249,12 +248,11 @@ class PanelGraph(wx.Panel):
         self.set_plot(None, None, None, None, self.annotate)
 
     def __draw_canvas(self):
-        with self.lockDraw:
-            try:
-                self.isDrawing = True
-                self.canvas.draw()
-            except wx.PyDeadObjectError:
-                pass
+        try:
+            self.isDrawing = True
+            self.canvas.draw()
+        except wx.PyDeadObjectError:
+            pass
 
         self.isDrawing = False
         wx.CallAfter(self.status.set_busy, False)
@@ -397,8 +395,7 @@ class PanelGraph(wx.Panel):
         else:
             self.measure = measure
             self.show = show
-            with self.lockDraw:
-                self.__draw_overlay()
+            self.__draw_overlay()
 
     def get_figure(self):
         return self.figure
