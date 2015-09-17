@@ -171,7 +171,7 @@ class Cli(object):
 
         while True:
             if not self.queueLocation.empty():
-                    status = self.__process_event(self.queueLocation, None)
+                    status = self.__process_event(self.queueLocation)
                     if status == Event.LOC:
                         return True
                     elif status == Event.LOC_ERR:
