@@ -978,6 +978,7 @@ class FrameMain(wx.Frame):
                 self.scanDelayTimer = None
             self.__set_control_state(False)
             samples = calc_samples(self.settings.dwell)
+            self.scanInfo.set_from_settings(self.settings)
             if self.isNewScan:
                 self.spectrum.clear()
                 self.locations.clear()
@@ -985,7 +986,6 @@ class FrameMain(wx.Frame):
 
                 self.isNewScan = False
                 self.status.set_info('', level=None)
-                self.scanInfo.set_from_settings(self.settings)
                 self.scanInfo.time = format_iso_time(time.time())
                 self.scanInfo.lat = None
                 self.scanInfo.lon = None
