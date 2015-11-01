@@ -207,6 +207,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.varId = None
         self.smoothId = None
         self.diffId = None
+        self.deltaId = None
 
         self.colourId = None
 
@@ -338,6 +339,15 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
         self.__set_func()
         self.panel.redraw_plot()
 
+    def __on_check_delta(self, event):
+        check = event.Checked()
+        if check:
+            self.settings.plotFunc = PlotFunc.DELTA
+        else:
+            self.settings.plotFunc = PlotFunc.NONE
+        self.__set_func()
+        self.panel.redraw_plot()
+
     def __on_set_smooth(self, _event):
         dlg = DialogSmoothPrefs(self, self.settings)
         if dlg.ShowModal() == wx.ID_OK:
@@ -441,7 +451,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
 
     def __set_func(self):
         buttons = [self.avgId, self.minId, self.maxId,
-                   self.varId, self.smoothId, self.diffId]
+                   self.varId, self.smoothId, self.diffId, self.deltaId]
 
         for button in buttons:
             self.__toggle_tool(button, False)
@@ -454,7 +464,7 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
             self.__enable_tool(self.peaksId, True)
         elif self.settings.plotFunc in [PlotFunc.AVG, PlotFunc.MIN,
                                         PlotFunc.MAX, PlotFunc.SMOOTH,
-                                        PlotFunc.DIFF]:
+                                        PlotFunc.DIFF, PlotFunc.DELTA]:
             self.__enable_tool(self.peakId, True)
             self.__enable_tool(self.peaksId, False)
             self.__toggle_tool(self.peaksId, False)
@@ -522,6 +532,10 @@ class NavigationToolbar(NavigationToolbar2WxAgg):
             self.__add_check_tool('diff', 'Differentiate spectrum',
                                   self.__on_check_diff,
                                   toolId=self.diffId)
+            self.deltaId = wx.NewId()
+            self.__add_check_tool('delta', 'Delta from first sweep',
+                                  self.__on_check_delta,
+                                  toolId=self.deltaId)
 
             self.__add_spacer()
             self.__add_colourmap()

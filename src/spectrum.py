@@ -310,6 +310,20 @@ def diff_spectrum(spectrum):
     return data
 
 
+def delta_spectrum(spectrum):
+    data = OrderedDict()
+    if len(spectrum) > 1:
+        _t, baseline = spectrum.items()[0]
+        for timeStamp, sweep in spectrum.items()[1:]:
+            delta = [(freq, sweep[freq] - baseline.get(freq, 0))
+                     for freq in sweep.keys()]
+            data[timeStamp] = OrderedDict(delta)
+    else:
+        data = spectrum
+
+    return data
+
+
 def smooth_spectrum(spectrum, winFunc, ratio):
     data = OrderedDict()
     for timeStamp, sweep in spectrum.items():

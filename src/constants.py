@@ -108,7 +108,7 @@ class Plot(object):
 
 
 class PlotFunc(object):
-    NONE, AVG, MIN, MAX, VAR, SMOOTH, DIFF = range(7)
+    NONE, AVG, MIN, MAX, VAR, SMOOTH, DIFF, DELTA = range(8)
 
 
 class Markers(object):

@@ -42,7 +42,7 @@ from constants import Markers, PlotFunc
 from events import EventThread, Event, post_event
 from misc import format_precision
 from spectrum import Measure, Extent, smooth_spectrum, \
-    diff_spectrum, get_peaks
+    diff_spectrum, delta_spectrum, get_peaks
 from utils_mpl import get_colours
 
 
@@ -453,6 +453,8 @@ class ThreadPlot(threading.Thread):
                 peakF, peakL = self.__plot_smooth()
             elif self.settings.plotFunc == PlotFunc.DIFF:
                 peakF, peakL = self.__plot_diff()
+            elif self.settings.plotFunc == PlotFunc.DELTA:
+                peakF, peakL = self.__plot_delta()
 
             self.__clear_markers()
 
@@ -584,6 +586,12 @@ class ThreadPlot(threading.Thread):
 
     def __plot_diff(self):
         data = diff_spectrum(self.data)
+        self.extent = Extent(data)
+        self.parent.extent = self.extent
+        return self.__plot_all(data)
+
+    def __plot_delta(self):
+        data = delta_spectrum(self.data)
         self.extent = Extent(data)
         self.parent.extent = self.extent
         return self.__plot_all(data)

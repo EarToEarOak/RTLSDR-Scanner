@@ -46,7 +46,7 @@ Windows 64 bit modules can be found [here](http://www.lfd.uci.edu/~gohlke/python
 
 ## Usage ##
 
-`rtlsdr_scan [file]`
+`python rtlsdr_scan.py [file]`
 
     file - optional saved scan file to load
 
