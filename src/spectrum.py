@@ -291,7 +291,7 @@ def create_mesh(spectrum, mplTime):
 
 def sort_spectrum(spectrum):
     newSpectrum = OrderedDict()
-    for timeStamp in reversed(sorted(spectrum)):
+    for timeStamp in sorted(spectrum):
         newPoints = OrderedDict()
         points = sorted(spectrum[timeStamp].items())
         for point in points:

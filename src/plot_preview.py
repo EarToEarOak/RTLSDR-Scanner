@@ -166,11 +166,10 @@ class DialogPreview(wx.Dialog):
 
         total = len(spectrum)
         count = 0.
-        alpha = 1
         for _time, sweep in spectrum.items():
             if self.settings.fadeScans:
-                alpha = (total - count) / total
-            vv.plot(sweep.keys(), sweep.values(), lw=1, alpha=alpha)
+                alpha = (count + 1) / total
+            vv.plot(sweep.keys(), sweep.values(), lw=1., alpha=alpha)
             count += 1
 
     def set_title(self, title):

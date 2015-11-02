@@ -474,7 +474,7 @@ class ThreadPlot(threading.Thread):
         count = 0.0
         for timeStamp in spectrum:
             if self.settings.fadeScans:
-                alpha = (total - count) / total
+                alpha = (count + 1) / total
             else:
                 alpha = 1
 

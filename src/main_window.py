@@ -659,7 +659,7 @@ class FrameMain(wx.Frame):
             if not self.__on_new(None):
                 self.spectrum.clear()
                 spectrum = dlg.get_spectrum()
-                self.spectrum.update(OrderedDict(sorted(spectrum.items())))
+                self.spectrum.update(spectrum.items())
                 self.__set_plot(self.spectrum, False)
                 self.graph.update_measure()
                 self.graph.redraw_plot()
@@ -1021,6 +1021,7 @@ class FrameMain(wx.Frame):
         if self.steps > 0 and not self.stopScan:
             self.status.set_progress((self.stepsTotal - self.steps) * 100.0
                                      / (self.stepsTotal - 1))
+            self.__limit_spectrum()
             self.status.show_progress()
         else:
             if self.settings.backup:
@@ -1036,7 +1037,6 @@ class FrameMain(wx.Frame):
             else:
                 if self.settings.mode == Mode.CONTIN:
                     if self.dlgCal is None and not self.stopAtEnd:
-                        self.__limit_spectrum()
                         self.__scan_delay()
                     else:
                         self.status.set_general("Stopped")
@@ -1059,15 +1059,15 @@ class FrameMain(wx.Frame):
         self.stopScan = True
         self.isScanning = False
 
-    def __remove_last(self, data):
-        while len(data) >= self.settings.retainMax:
+    def __remove_first(self, data):
+        while len(data) > self.settings.retainMax:
             timeStamp = min(data)
             del data[timeStamp]
 
     def __limit_spectrum(self):
         with self.lock:
-            self.__remove_last(self.spectrum)
-            self.__remove_last(self.locations)
+            self.__remove_first(self.spectrum)
+            self.__remove_first(self.locations)
 
     def __start_gps(self):
         if self.settings.gps and len(self.settings.devicesGps):

@@ -333,7 +333,7 @@ class ThreadPlot(threading.Thread):
         c = numpy.ma.masked_all((height, width))
         self.parent.clear_plots()
         j = height
-        for ys in spectrum:
+        for ys in reversed(spectrum):
             j -= 1
             _xs, zs = split_spectrum(spectrum[ys])
             for i in range(len(zs)):
