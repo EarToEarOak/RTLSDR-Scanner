@@ -110,6 +110,11 @@ class MenuMain(object):
         self.stopEnd = scan.Append(wx.ID_ANY, "Stop at &end",
                                    "Complete current sweep before stopping")
         scan.AppendSeparator()
+        self.sweepClear = scan.Append(wx.ID_ANY, "Clear all sweeps",
+                                      "Clear all sweeps")
+        self.sweepRemain = scan.Append(wx.ID_ANY, "Clear all but first sweep",
+                                       "Clear all but first sweep")
+        scan.AppendSeparator()
         self.sweepDelay = scan.Append(wx.ID_ANY, "Delay...",
                                       "Delay between sweeps")
 
@@ -188,6 +193,9 @@ class MenuMain(object):
             self.stopEnd.Enable(not state)
         else:
             self.stopEnd.Enable(False)
+
+        self.sweepClear.Enable(state and len(spectrum))
+        self.sweepRemain.Enable(state and len(spectrum))
 
 
 class PopMenuMain(object):

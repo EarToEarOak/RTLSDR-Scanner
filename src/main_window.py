@@ -317,6 +317,8 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.__on_continue, self.menuMain.cont)
         self.Bind(wx.EVT_MENU, self.__on_stop, self.menuMain.stop)
         self.Bind(wx.EVT_MENU, self.__on_stop_end, self.menuMain.stopEnd)
+        self.Bind(wx.EVT_MENU, self.__on_new, self.menuMain.sweepClear)
+        self.Bind(wx.EVT_MENU, self.__on_sweep_remain, self.menuMain.sweepRemain)
         self.Bind(wx.EVT_MENU, self.__on_scan_delay, self.menuMain.sweepDelay)
         self.Bind(wx.EVT_MENU, self.__on_compare, self.menuMain.compare)
         self.Bind(wx.EVT_MENU, self.__on_smooth, self.menuMain.smooth)
@@ -794,6 +796,18 @@ class FrameMain(wx.Frame):
     def __on_stop_end(self, _event):
         self.stopAtEnd = True
 
+    def __on_sweep_remain(self, _event):
+        if self.__save_warn(Warn.NEW):
+            return True
+
+        with self.lock:
+            self.__remove_last(self.spectrum)
+            self.__remove_last(self.locations)
+
+        self.__saved(False)
+        self.__set_plot(self.spectrum, False)
+        self.__set_control_state(True)
+
     def __on_scan_delay(self, _event):
         dlg = DialogScanDelay(self, self.settings)
         dlg.ShowModal()
@@ -1062,6 +1076,11 @@ class FrameMain(wx.Frame):
     def __remove_first(self, data):
         while len(data) > self.settings.retainMax:
             timeStamp = min(data)
+            del data[timeStamp]
+
+    def __remove_last(self, data):
+        while len(data) > 1:
+            timeStamp = max(data)
             del data[timeStamp]
 
     def __limit_spectrum(self):
