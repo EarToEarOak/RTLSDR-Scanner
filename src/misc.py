@@ -164,7 +164,7 @@ def format_precision(settings, freq=None, level=None,
     if level is not None:
         prec = settings.precisionLevel
         width = 4 + prec
-        textLevel = '{:.{prec}f}'.format(level, width=width, prec=prec)
+        textLevel = '{:{width}.{prec}f}'.format(level, width=width, prec=prec)
         if fancyUnits:
             textLevel += r" $\mathsf{{dB/\sqrt{{Hz}}}}$"
         elif units:

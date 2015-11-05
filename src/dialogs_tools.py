@@ -143,9 +143,14 @@ class DialogCompare(wx.Dialog):
         close_modeless()
 
     def __on_cursor(self, locs):
-        self.textLoc1.SetLabel(self.__format_loc(locs['x1'], locs['y1']))
-        self.textLoc2.SetLabel(self.__format_loc(locs['x2'], locs['y2']))
-        self.textLocDiff.SetLabel(self.__format_loc(locs['x3'], locs['y3']))
+        if locs is None:
+            self.textLoc1.SetLabel('')
+            self.textLoc2.SetLabel('')
+            self.textLocDiff.SetLabel('')
+        else:
+            self.textLoc1.SetLabel(self.__format_loc(locs['x1'], locs['y1']))
+            self.textLoc2.SetLabel(self.__format_loc(locs['x2'], locs['y2']))
+            self.textLocDiff.SetLabel(self.__format_loc(locs['x3'], locs['y3']))
 
     def __on_load_plot(self, event):
         dlg = wx.FileDialog(self, "Open a scan", self.dirname, self.filename,
@@ -190,7 +195,7 @@ class DialogCompare(wx.Dialog):
 
         freq, level = format_precision(self.settings, x, y, units=False)
 
-        return '{} MHz\n{}    dB/Hz'.format(freq, level)
+        return '{} MHz\n{}     dB/Hz'.format(freq, level)
 
 
 class DialogSmooth(wx.Dialog):

@@ -115,7 +115,7 @@ class PanelGraph(wx.Panel):
 
         self.canvas.mpl_connect('button_press_event', self.__on_press)
         self.canvas.mpl_connect('figure_enter_event', self.__on_enter)
-        self.canvas.mpl_connect('figure_leave_event', self.__on_leave)
+        self.canvas.mpl_connect('axes_leave_event', self.__on_leave)
         self.canvas.mpl_connect('motion_notify_event', self.__on_motion)
         self.canvas.mpl_connect('draw_event', self.__on_draw)
         self.canvas.mpl_connect('idle_event', self.__on_idle)
@@ -152,12 +152,14 @@ class PanelGraph(wx.Panel):
 
     def __on_leave(self, _event):
         self.toolTip.Enable(True)
+        self.status.set_info('', level=None)
 
     def __on_motion(self, event):
         xpos = event.xdata
         ypos = event.ydata
         text = ""
-        if xpos is None or ypos is None or self.spectrum is None:
+        if (xpos is None or ypos is None or self.spectrum is None or
+                event.inaxes != self.plot.get_axes()):
             return
 
         if self.settings.display == Display.PLOT:
@@ -488,6 +490,7 @@ class PanelGraphCompare(wx.Panel):
         vbox.Fit(self)
 
         self.canvas.mpl_connect('motion_notify_event', self.__on_motion)
+        self.canvas.mpl_connect('axes_leave_event', self.__on_leave)
 
     def __on_motion(self, event):
         xpos = event.xdata
@@ -513,6 +516,9 @@ class PanelGraphCompare(wx.Panel):
             locs['y3'] = self.spectrumDiff[locs['x3']]
 
         self.callback(locs)
+
+    def __on_leave(self, event):
+        self.callback(None)
 
     def __relim(self):
         self.axesScan.relim()
