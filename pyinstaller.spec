@@ -25,7 +25,8 @@
 
 import platform
 
-import PyInstaller.utils.versioninfo
+from PyInstaller.utils.win32 import versioninfo
+from PyInstaller import compat
 
 
 def create_version():
@@ -58,19 +59,14 @@ def create_version():
     f.close()
 
 
-def build():
-    excludes = ['pyside', 'qt', 'scipy']
-    extension = ''
-    system = platform.system().lower()
+def build(version=None):
     architecture, _null = platform.architecture()
-    if system == 'windows':
-        extension = '.exe'
-    filename = 'rtlsdr_scan-' + system + '-' + architecture.lower() + extension
+    filename = 'rtlsdr_scan-' + system + '-' + architecture.lower()
 
-    a = Analysis(['src/rtlsdr_scan.py'])
-    for exclude in excludes:
-        a.binaries = [x for x in a.binaries
-                      if not x[0].lower().startswith(exclude)]
+    excludes = ['pyside', 'qt', 'scipy']
+    a = Analysis(['src/rtlsdr_scan.py'],
+                excludes=excludes)
+
     a.datas += Tree('res', prefix='res')
     a.datas += [('version-timestamp', 'src/version-timestamp', 'DATA')]
     a.datas += [('rtlsdr_scan.ico', 'rtlsdr_scan.ico', 'DATA')]
@@ -84,10 +80,14 @@ def build():
               a.datas,
               name=os.path.join('dist', filename),
               icon='rtlsdr_scan.ico',
-              version='version.txt',
+              version=version,
               upx=True)
 
 
-create_version()
-build()
-os.remove('version.txt')
+system = platform.system().lower()
+if system == 'windows':
+    create_version()
+    build('version.txt')
+    os.remove('version.txt')
+else:
+    build()
