@@ -66,6 +66,8 @@ from utils_mpl import add_colours
 from utils_wx import load_icon
 from widgets import MultiButton
 
+from wx.lib.agw import aui
+
 
 class DropTarget(wx.FileDropTarget):
     def __init__(self, window):
@@ -119,8 +121,10 @@ class FrameMain(wx.Frame):
         self.menuMain = None
         self.menuPopup = None
 
+        self._mgr = None
         self.graph = None
-        self.toolbar = None
+        self.toolbar1 = None
+        self.toolbar2 = None
         self.canvas = None
 
         self.buttonStart = None
@@ -176,10 +180,23 @@ class FrameMain(wx.Frame):
         self.__set_control_state(True)
         self.Show()
 
-        displaySize = wx.DisplaySize()
-        toolbarSize = self.toolbar.GetBestSize()
-        self.SetClientSize((toolbarSize[0] + 10, displaySize[1] / 2))
-        self.SetMinSize((displaySize[0] / 4, displaySize[1] / 4))
+        toolSize1 = self.toolbar1.GetMinSize()
+        toolSize2 = self.toolbar2.GetMinSize()
+        width, height = wx.DisplaySize()
+
+        if width < toolSize1[0] + toolSize2[0] + 50:
+            self._mgr.GetPane(self.toolbar2).Layer(1)
+
+        minWidth = max(toolSize1[0], toolSize2[0]) + 25
+        minWidth = max(minWidth, 640)
+        minHeight = 400
+
+        try:
+            self.SetMinClientSize((minWidth, minHeight))
+        except AttributeError:
+            self.SetMinSize((minWidth, minHeight))
+        self.SetSize((max(minWidth, width / 1.5),
+                      max(minHeight, height / 1.5)))
 
         self.Connect(-1, -1, EVENT_THREAD, self.__on_event)
 
@@ -199,26 +216,27 @@ class FrameMain(wx.Frame):
         self.graph = PanelGraph(self, self,
                                 self.settings, self.status,
                                 self.remoteControl)
-        self.toolbar = wx.Panel(self)
 
-        self.buttonStart = MultiButton(self.toolbar,
+        self.toolbar1 = wx.Panel(self)
+
+        self.buttonStart = MultiButton(self.toolbar1,
                                        ['Start', 'Continue'],
                                        ['Start new scan', 'Continue scanning'])
         self.buttonStart.SetSelected(self.settings.startOption)
-        self.buttonStop = MultiButton(self.toolbar,
+        self.buttonStop = MultiButton(self.toolbar1,
                                       ['Stop', 'Stop at end'],
                                       ['Stop scan', 'Stop scan at end'])
         self.buttonStop.SetSelected(self.settings.stopOption)
         self.Bind(wx.EVT_BUTTON, self.__on_start, self.buttonStart)
         self.Bind(wx.EVT_BUTTON, self.__on_stop, self.buttonStop)
 
-        textRange = wx.StaticText(self.toolbar, label="Range (MHz)",
+        textRange = wx.StaticText(self.toolbar1, label="Range (MHz)",
                                   style=wx.ALIGN_CENTER)
-        textStart = wx.StaticText(self.toolbar, label="Start")
-        textStop = wx.StaticText(self.toolbar, label="Stop")
+        textStart = wx.StaticText(self.toolbar1, label="Start")
+        textStop = wx.StaticText(self.toolbar1, label="Stop")
 
-        self.spinCtrlStart = wx.SpinCtrl(self.toolbar)
-        self.spinCtrlStop = wx.SpinCtrl(self.toolbar)
+        self.spinCtrlStart = wx.SpinCtrl(self.toolbar1)
+        self.spinCtrlStop = wx.SpinCtrl(self.toolbar1)
         self.spinCtrlStart.SetToolTipString('Start frequency')
         self.spinCtrlStop.SetToolTipString('Stop frequency')
         self.spinCtrlStart.SetRange(F_MIN, F_MAX - 1)
@@ -226,63 +244,89 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_SPINCTRL, self.__on_spin, self.spinCtrlStart)
         self.Bind(wx.EVT_SPINCTRL, self.__on_spin, self.spinCtrlStop)
 
-        textGain = wx.StaticText(self.toolbar, label="Gain (dB)")
-        self.controlGain = wx.Choice(self.toolbar, choices=[''])
+        textGain = wx.StaticText(self.toolbar1, label="Gain (dB)")
+        self.controlGain = wx.Choice(self.toolbar1, choices=[''])
 
-        textMode = wx.StaticText(self.toolbar, label="Mode")
-        self.choiceMode = wx.Choice(self.toolbar, choices=MODE[::2])
+        grid1 = wx.GridBagSizer(5, 5)
+        grid1.Add(self.buttonStart, pos=(0, 0), span=(3, 1),
+                  flag=wx.ALIGN_CENTER)
+        grid1.Add(self.buttonStop, pos=(0, 1), span=(3, 1),
+                  flag=wx.ALIGN_CENTER)
+        grid1.Add((20, 1), pos=(0, 2))
+        grid1.Add(textRange, pos=(0, 3), span=(1, 4), flag=wx.ALIGN_CENTER)
+        grid1.Add(textStart, pos=(1, 3), flag=wx.ALIGN_CENTER)
+        grid1.Add(self.spinCtrlStart, pos=(1, 4))
+        grid1.Add(textStop, pos=(1, 5), flag=wx.ALIGN_CENTER)
+        grid1.Add(self.spinCtrlStop, pos=(1, 6))
+        grid1.Add(textGain, pos=(0, 7), flag=wx.ALIGN_CENTER)
+        grid1.Add(self.controlGain, pos=(1, 7), flag=wx.ALIGN_CENTER)
+        grid1.AddGrowableCol(2)
+
+        self.toolbar1.SetSizerAndFit(grid1)
+        self.toolbar1.Layout()
+        toolSize1 = self.toolbar1.GetMinSize()
+
+        self.toolbar2 = wx.Window(self)
+
+        textMode = wx.StaticText(self.toolbar2, label="Mode")
+        self.choiceMode = wx.Choice(self.toolbar2, choices=MODE[::2])
         self.choiceMode.SetToolTipString('Scanning mode')
 
-        textDwell = wx.StaticText(self.toolbar, label="Dwell")
-        self.choiceDwell = wx.Choice(self.toolbar, choices=DWELL[::2])
+        textDwell = wx.StaticText(self.toolbar2, label="Dwell")
+        self.choiceDwell = wx.Choice(self.toolbar2, choices=DWELL[::2])
         self.choiceDwell.SetToolTipString('Scan time per step')
 
-        textNfft = wx.StaticText(self.toolbar, label="FFT size")
-        self.choiceNfft = wx.Choice(self.toolbar, choices=map(str, NFFT))
+        textNfft = wx.StaticText(self.toolbar2, label="FFT size")
+        self.choiceNfft = wx.Choice(self.toolbar2, choices=map(str, NFFT))
         self.choiceNfft.SetToolTipString('Higher values for greater'
                                          'precision')
 
-        textDisplay = wx.StaticText(self.toolbar, label="Display")
-        self.choiceDisplay = wx.Choice(self.toolbar, choices=DISPLAY[::2])
+        textDisplay = wx.StaticText(self.toolbar2, label="Display")
+        self.choiceDisplay = wx.Choice(self.toolbar2, choices=DISPLAY[::2])
         self.Bind(wx.EVT_CHOICE, self.__on_choice, self.choiceDisplay)
         self.choiceDisplay.SetToolTipString('Spectrogram available in'
                                             'continuous mode')
 
-        grid = wx.GridBagSizer(5, 5)
-        grid.Add(self.buttonStart, pos=(0, 0), span=(3, 1),
-                 flag=wx.ALIGN_CENTER)
-        grid.Add(self.buttonStop, pos=(0, 1), span=(3, 1),
-                 flag=wx.ALIGN_CENTER)
-        grid.Add((20, 1), pos=(0, 2))
-        grid.Add(textRange, pos=(0, 3), span=(1, 4), flag=wx.ALIGN_CENTER)
-        grid.Add(textStart, pos=(1, 3), flag=wx.ALIGN_CENTER)
-        grid.Add(self.spinCtrlStart, pos=(1, 4))
-        grid.Add(textStop, pos=(1, 5), flag=wx.ALIGN_CENTER)
-        grid.Add(self.spinCtrlStop, pos=(1, 6))
-        grid.Add(textGain, pos=(0, 7), flag=wx.ALIGN_CENTER)
-        grid.Add(self.controlGain, pos=(1, 7), flag=wx.ALIGN_CENTER)
-        grid.Add((20, 1), pos=(0, 8))
-        grid.Add(textMode, pos=(0, 9), flag=wx.ALIGN_CENTER)
-        grid.Add(self.choiceMode, pos=(1, 9), flag=wx.ALIGN_CENTER)
-        grid.Add(textDwell, pos=(0, 10), flag=wx.ALIGN_CENTER)
-        grid.Add(self.choiceDwell, pos=(1, 10), flag=wx.ALIGN_CENTER)
-        grid.Add(textNfft, pos=(0, 11), flag=wx.ALIGN_CENTER)
-        grid.Add(self.choiceNfft, pos=(1, 11), flag=wx.ALIGN_CENTER)
-        grid.Add((20, 1), pos=(0, 12))
-        grid.Add(textDisplay, pos=(0, 13), flag=wx.ALIGN_CENTER)
-        grid.Add(self.choiceDisplay, pos=(1, 13), flag=wx.ALIGN_CENTER)
+        grid2 = wx.GridBagSizer(5, 5)
+        grid2.Add(textMode, pos=(0, 0), flag=wx.ALIGN_CENTER)
+        grid2.Add(self.choiceMode, pos=(1, 0), flag=wx.ALIGN_CENTER)
+        grid2.Add(textDwell, pos=(0, 1), flag=wx.ALIGN_CENTER)
+        grid2.Add(self.choiceDwell, pos=(1, 1), flag=wx.ALIGN_CENTER)
+        grid2.Add(textNfft, pos=(0, 2), flag=wx.ALIGN_CENTER)
+        grid2.Add(self.choiceNfft, pos=(1, 2), flag=wx.ALIGN_CENTER)
+        grid2.Add((20, 1), pos=(0, 3))
+        grid2.Add(textDisplay, pos=(0, 4), flag=wx.ALIGN_CENTER)
+        grid2.Add(self.choiceDisplay, pos=(1, 4), flag=wx.ALIGN_CENTER)
+        grid2.AddGrowableCol(3)
+
+        self.toolbar2.SetSizerAndFit(grid2)
+        self.toolbar2.Layout()
+        toolSize2 = self.toolbar2.GetMinSize()
 
         self.__set_controls()
         self.__set_gain_control()
 
-        self.toolbar.SetSizer(grid)
-        self.toolbar.Layout()
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.graph, 1, wx.EXPAND)
-        sizer.Add(self.toolbar, 0, wx.EXPAND)
-        self.SetSizer(sizer)
-        self.Layout()
+        self._mgr = aui.AuiManager(self)
+        self._mgr.AddPane(self.graph, aui.AuiPaneInfo().
+                          Centre().
+                          CentrePane())
+        self._mgr.AddPane(self.toolbar1, aui.AuiPaneInfo().
+                          Bottom().
+                          LeftDockable(False).
+                          RightDockable(False).
+                          NotebookDockable(False).
+                          Gripper().
+                          CaptionVisible(False).
+                          MinSize(toolSize1))
+        self._mgr.AddPane(self.toolbar2, aui.AuiPaneInfo().
+                          Bottom().
+                          LeftDockable(False).
+                          RightDockable(False).
+                          NotebookDockable(False).
+                          Gripper().
+                          CaptionVisible(False).
+                          MinSize(toolSize2))
+        self._mgr.Update()
 
     def __create_menu(self):
         self.menuMain = MenuMain(self, self.settings)
@@ -686,7 +730,9 @@ class FrameMain(wx.Frame):
         self.menuMain.fullScreen = full
         self.menuPopup.fullScreen = full
 
-        self.toolbar.Show(not full)
+        self._mgr.GetPane(self.toolbar1).Show(not full)
+        self._mgr.GetPane(self.toolbar2).Show(not full)
+        self._mgr.Update()
         self.graph.hide_toolbar(full)
         self.graph.show_measure_table(not full)
         self.ShowFullScreen(full)
@@ -1193,12 +1239,12 @@ class FrameMain(wx.Frame):
             device = self.devicesRtl[self.settings.indexRtl]
             if device.isDevice:
                 gains = device.get_gains_str()
-                self.controlGain = wx.Choice(self.toolbar,
+                self.controlGain = wx.Choice(self.toolbar1,
                                              choices=gains)
                 gain = device.get_closest_gain_str(device.gain)
                 self.controlGain.SetStringSelection(gain)
             else:
-                self.controlGain = NumCtrl(self.toolbar, integerWidth=3,
+                self.controlGain = NumCtrl(self.toolbar1, integerWidth=3,
                                            fractionWidth=1)
                 font = self.controlGain.GetFont()
                 dc = wx.WindowDC(self.controlGain)
