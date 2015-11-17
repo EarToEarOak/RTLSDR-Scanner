@@ -42,8 +42,6 @@ class MultiButton(wx.PyControl):
         self.selected = selected
         self.isOverArrow = False
 
-        self.__set_text()
-
         self.menu = wx.Menu()
         for option in options:
             item = self.menu.Append(wx.ID_ANY, option)
@@ -136,7 +134,6 @@ class MultiButton(wx.PyControl):
         renderer.DrawPushButton(self, dc, rect, flags)
 
         dc.SetFont(self.GetFont())
-        dc.Clear()
 
         if self.IsEnabled():
             colour = self.GetForegroundColour()
