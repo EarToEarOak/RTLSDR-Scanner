@@ -363,6 +363,8 @@ class PanelGraph(wx.Panel):
 
             self.status.set_busy(True)
             self.plot.set_plot(self.spectrum, self.extent, annotate)
+            if self.settings.display == Display.PREVIEW:
+                self.status.set_busy(False)
 
         else:
             self.timer.Start(200, oneShot=True)
