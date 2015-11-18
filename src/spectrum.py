@@ -336,8 +336,8 @@ def smooth_sweep(sweep, winFunc, ratio):
     pos = WINFUNC[::2].index(winFunc)
     function = WINFUNC[1::2][pos]
     length = len(sweep) / ratio
-    if length < 2:
-        length = 2
+    if length < 3:
+        length = 3
     window = function(length)
 
     data = numpy.array([x[1] for x in sweep.items()])
