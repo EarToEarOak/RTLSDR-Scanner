@@ -174,30 +174,12 @@ class FrameMain(wx.Frame):
         self.SetStatusBar(self.status)
 
         add_colours()
-        self.__create_widgets()
+        self.__create_toolbars()
         self.__create_menu()
         self.__create_popup_menu()
         self.__set_control_state(True)
+        self.__set_size()
         self.Show()
-
-        toolSize1 = self.toolbar1.GetMinSize()
-        toolSize2 = self.toolbar2.GetMinSize()
-        width, height = wx.DisplaySize()
-
-        if width < toolSize1[0] + toolSize2[0] + 50:
-            self._mgr.GetPane(self.toolbar2).Layer(1)
-            self._mgr.Update()
-
-        minWidth = max(toolSize1[0], toolSize2[0]) + 25
-        minWidth = max(minWidth, 640)
-        minHeight = 400
-
-        try:
-            self.SetMinClientSize((minWidth, minHeight))
-        except AttributeError:
-            self.SetMinSize((minWidth, minHeight))
-        self.SetSize((max(minWidth, width / 1.5),
-                      max(minHeight, height / 1.5)))
 
         self.Connect(-1, -1, EVENT_THREAD, self.__on_event)
 
@@ -211,7 +193,7 @@ class FrameMain(wx.Frame):
         self.__start_gps()
         self.__start_location_server()
 
-    def __create_widgets(self):
+    def __create_toolbars(self):
         self.remoteControl = RemoteControl()
 
         self.graph = PanelGraph(self, self,
@@ -317,7 +299,10 @@ class FrameMain(wx.Frame):
                           RightDockable(False).
                           NotebookDockable(False).
                           Gripper().
-                          CaptionVisible(False).
+                          Caption('Scan').
+                          CaptionVisible(left=True).
+                          CloseButton(False).
+                          MinimizeButton(True).
                           MinSize(toolSize1))
         self._mgr.AddPane(self.toolbar2, aui.AuiPaneInfo().
                           Bottom().
@@ -325,7 +310,10 @@ class FrameMain(wx.Frame):
                           RightDockable(False).
                           NotebookDockable(False).
                           Gripper().
-                          CaptionVisible(False).
+                          Caption('Analysis').
+                          CaptionVisible(left=True).
+                          CloseButton(False).
+                          MinimizeButton(True).
                           MinSize(toolSize2))
         self._mgr.Update()
 
@@ -1204,6 +1192,37 @@ class FrameMain(wx.Frame):
                                     extent, annotate)
         else:
             self.graph.clear_plots()
+
+    def __set_size(self):
+        width, height = wx.DisplaySize()
+        widthFrame = wx.SystemSettings.GetMetric(wx.SYS_FRAMESIZE_X)
+
+        art = self._mgr.GetArtProvider()
+        widthBorder = (art.GetMetric(aui.AUI_DOCKART_SASH_SIZE) +
+                       art.GetMetric(aui.AUI_DOCKART_CAPTION_SIZE) +
+                       art.GetMetric(aui.AUI_DOCKART_GRIPPER_SIZE) +
+                       art.GetMetric(aui.AUI_DOCKART_PANE_BORDER_SIZE))
+
+        toolSize1 = self.toolbar1.GetMinSize()
+        toolSize2 = self.toolbar2.GetMinSize()
+
+        if width < (toolSize1[0] + toolSize2[0] +
+                    (widthBorder * 2) +
+                    (widthFrame * 2)):
+            self._mgr.GetPane(self.toolbar2).Layer(1)
+            self._mgr.Update()
+
+        minWidth = max(toolSize1[0], toolSize2[0]) + widthBorder
+        minWidth = max(minWidth, 640)
+        minHeight = 400
+
+        try:
+            self.SetMinClientSize((minWidth, minHeight))
+        except AttributeError:
+            self.SetMinSize((minWidth + (widthFrame * 2),
+                             minHeight + (widthFrame * 2)))
+        self.SetSize((max(minWidth + (widthFrame * 2), width / 1.5),
+                      max(minHeight + (widthFrame * 2), height / 1.5)))
 
     def __set_control_state(self, state):
         hasDevices = len(self.devicesRtl) > 0
