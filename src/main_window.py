@@ -186,6 +186,7 @@ class FrameMain(wx.Frame):
 
         if width < toolSize1[0] + toolSize2[0] + 50:
             self._mgr.GetPane(self.toolbar2).Layer(1)
+            self._mgr.Update()
 
         minWidth = max(toolSize1[0], toolSize2[0]) + 25
         minWidth = max(minWidth, 640)
