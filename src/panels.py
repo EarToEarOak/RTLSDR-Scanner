@@ -155,14 +155,21 @@ class PanelGraph(wx.Panel):
         self.status.set_info('', level=None)
 
     def __on_motion(self, event):
+        axes = self.plot.get_axes()
+        axesBar = self.plot.get_axes_bar()
         xpos = event.xdata
         ypos = event.ydata
         text = ""
-        if (xpos is None or ypos is None or self.spectrum is None or
-                event.inaxes != self.plot.get_axes()):
-            return
 
-        if self.settings.display == Display.PLOT:
+        if (xpos is None or ypos is None or
+                self.spectrum is None or event.inaxes is None):
+            spectrum = None
+        elif event.inaxes == axesBar:
+            spectrum = None
+            level = self.plot.get_bar().norm.inverse(ypos)
+            text = "{}".format(format_precision(self.settings,
+                                                level=level))
+        elif self.settings.display == Display.PLOT:
             timeStamp = max(self.spectrum)
             spectrum = self.spectrum[timeStamp]
         elif self.settings.display == Display.SPECT:
@@ -175,8 +182,8 @@ class PanelGraph(wx.Panel):
                 spectrum = self.spectrum[nearest]
         elif self.settings.display == Display.SURFACE:
             spectrum = None
-            coords = self.plot.get_axes().format_coord(event.xdata,
-                                                       event.ydata)
+            coords = axes.format_coord(event.xdata,
+                                       event.ydata)
             match = re.match('x=([-|0-9|\.]+).*y=([0-9|\:]+).*z=([-|0-9|\.]+)',
                              coords)
             if match is not None and match.lastindex == 3:
@@ -196,29 +203,28 @@ class PanelGraph(wx.Panel):
             else:
                 text = format_precision(self.settings, xpos)
 
-        self.status.set_info(text, level=None)
+            markers = find_artists(self.figure, 'peak')
+            markers.extend(find_artists(self.figure, 'peakThres'))
+            hit = False
+            for marker in markers:
+                if isinstance(marker, Line2D):
+                    location = marker.get_path().vertices[0]
+                    markX, markY = axes.transData.transform(location)
+                    dist = abs(math.hypot(event.x - markX, event.y - markY))
+                    if dist <= 5:
+                        if self.settings.display == Display.PLOT:
+                            tip = "{}, {}".format(*format_precision(self.settings,
+                                                                    location[0],
+                                                                    location[1]))
+                        else:
+                            tip = "{}".format(format_precision(self.settings,
+                                                               location[0]))
+                        self.toolTip.SetTip(tip)
+                        hit = True
+                        break
+            self.toolTip.Enable(hit)
 
-        axes = self.figure.get_axes()[0]
-        markers = find_artists(self.figure, 'peak')
-        markers.extend(find_artists(self.figure, 'peakThres'))
-        hit = False
-        for marker in markers:
-            if isinstance(marker, Line2D):
-                location = marker.get_path().vertices[0]
-                markX, markY = axes.transData.transform(location)
-                dist = abs(math.hypot(event.x - markX, event.y - markY))
-                if dist <= 5:
-                    if self.settings.display == Display.PLOT:
-                        tip = "{}, {}".format(*format_precision(self.settings,
-                                                                location[0],
-                                                                location[1]))
-                    else:
-                        tip = "{}".format(format_precision(self.settings,
-                                                           location[0]))
-                    self.toolTip.SetTip(tip)
-                    hit = True
-                    break
-        self.toolTip.Enable(hit)
+        self.status.set_info(text, level=None)
 
     def __on_size(self, event):
         ppi = wx.ScreenDC().GetPPI()

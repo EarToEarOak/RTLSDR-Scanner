@@ -244,6 +244,9 @@ class Spectrogram(object):
     def get_axes_bar(self):
         return self.barBase.ax
 
+    def get_bar(self):
+        return self.barBase
+
     def get_plot_thread(self):
         return self.threadPlot
 

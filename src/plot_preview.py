@@ -87,6 +87,9 @@ class PlotterPreview(object):
     def get_axes_bar(self):
         return None
 
+    def get_bar(self):
+        return None
+
     def get_plot_thread(self):
         return None
 
