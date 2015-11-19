@@ -243,11 +243,8 @@ class FrameMain(wx.Frame):
         grid1.Add(self.spinCtrlStop, pos=(1, 6))
         grid1.Add(textGain, pos=(0, 7), flag=wx.ALIGN_CENTER)
         grid1.Add(self.controlGain, pos=(1, 7), flag=wx.ALIGN_CENTER)
+        grid1.Add((5, 1), pos=(0, 8))
         grid1.AddGrowableCol(2)
-
-        self.toolbar1.SetSizerAndFit(grid1)
-        self.toolbar1.Layout()
-        toolSize1 = self.toolbar1.GetMinSize()
 
         self.toolbar2 = wx.Window(self)
 
@@ -280,8 +277,12 @@ class FrameMain(wx.Frame):
         grid2.Add((20, 1), pos=(0, 3))
         grid2.Add(textDisplay, pos=(0, 4), flag=wx.ALIGN_CENTER)
         grid2.Add(self.choiceDisplay, pos=(1, 4), flag=wx.ALIGN_CENTER)
+        grid2.Add((5, 1), pos=(0, 5))
         grid2.AddGrowableCol(3)
 
+        self.toolbar1.SetSizerAndFit(grid1)
+        self.toolbar1.Layout()
+        toolSize1 = self.toolbar1.GetMinSize()
         self.toolbar2.SetSizerAndFit(grid2)
         self.toolbar2.Layout()
         toolSize2 = self.toolbar2.GetMinSize()
@@ -294,7 +295,9 @@ class FrameMain(wx.Frame):
                           Centre().
                           CentrePane())
         self._mgr.AddPane(self.toolbar1, aui.AuiPaneInfo().
+                          ToolbarPane().
                           Bottom().
+                          Layer(1).
                           LeftDockable(False).
                           RightDockable(False).
                           NotebookDockable(False).
@@ -305,7 +308,9 @@ class FrameMain(wx.Frame):
                           MinimizeButton(True).
                           MinSize(toolSize1))
         self._mgr.AddPane(self.toolbar2, aui.AuiPaneInfo().
+                          ToolbarPane().
                           Bottom().
+                          Layer(2).
                           LeftDockable(False).
                           RightDockable(False).
                           NotebookDockable(False).
@@ -1206,11 +1211,15 @@ class FrameMain(wx.Frame):
         toolSize1 = self.toolbar1.GetMinSize()
         toolSize2 = self.toolbar2.GetMinSize()
 
-        if width < (toolSize1[0] + toolSize2[0] +
-                    (widthBorder * 2) +
-                    (widthFrame * 2)):
-            self._mgr.GetPane(self.toolbar2).Layer(1)
-            self._mgr.Update()
+        paneTool1 = self._mgr.GetPane(self.toolbar1)
+        paneTool2 = self._mgr.GetPane(self.toolbar2)
+        if width >= (toolSize1[0] + toolSize2[0] +
+                     (widthBorder * 2) +
+                     (widthFrame * 2)):
+            paneTool1.ToolbarPane()
+            paneTool2.ToolbarPane()
+            paneTool2.Layer(1)
+        self._mgr.Update()
 
         minWidth = max(toolSize1[0], toolSize2[0]) + widthBorder
         minWidth = max(minWidth, 640)
