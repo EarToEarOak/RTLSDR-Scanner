@@ -58,6 +58,10 @@ def create_version():
     f.write(vvi.__unicode__())
     f.close()
 
+    print 'Version: {}.{}.{}.{}'.format (vvi.ffi.fileVersionMS >> 16,
+                                         vvi.ffi.fileVersionMS & 0xffff,
+                                         vvi.ffi.fileVersionLS >> 16,
+                                         vvi.ffi.fileVersionLS & 0xFFFF)
 
 def build(version=None):
     architecture, _null = platform.architecture()
