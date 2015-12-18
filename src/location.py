@@ -27,6 +27,7 @@ from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 import json
 import mimetypes
 import os
+import select
 import socket
 import threading
 import time
@@ -57,6 +58,7 @@ class ThreadLocation(threading.Thread):
         self._comm = None
         self._timeout = None
         self._sats = {}
+        self._send = None
 
         self.start()
 
@@ -82,26 +84,40 @@ class ThreadLocation(threading.Thread):
             post_event(self._notify, EventThread(Event.LOC_ERR,
                                                  0, error))
 
-    def __tcp_read(self):
+    def __tcp_read(self, isGpsd=False):
         buf = ''
         data = True
+
         while data and not self._cancel:
-            try:
-                data = self._comm.recv(1024)
-            except socket.timeout as error:
+            reads, writes, errors = select.select([self._comm],
+                                                  [self._comm],
+                                                  [self._comm],
+                                                  0.1)
+            for read in reads:
+                data = read.recv(64)
+                buf += data
+                while buf.find('\n') != -1:
+                    line, buf = buf.split('\n', 1)
+                    if not isGpsd:
+                        pos = line.find('$')
+                        if pos != -1 and pos + 1 < len(line):
+                            yield line[pos + 1:]
+                    else:
+                        yield line
+                    if self._raw:
+                        line = limit_to_ascii(line)
+                        post_event(self._notify, EventThread(Event.LOC_RAW,
+                                                             0, line))
+
+            for write in writes:
+                if self._send is not None:
+                    write.sendall(self._send)
+                    self._send = None
+
+            for _error in errors:
                 post_event(self._notify, EventThread(Event.LOC_ERR,
-                                                     0, error))
-                return
-            buf += data
-            while buf.find('\n') != -1:
-                line, buf = buf.split('\n', 1)
-                pos = line.find('$')
-                if pos != -1 and pos + 1 < len(line):
-                    yield line[pos + 1:]
-                if self._raw:
-                    line = limit_to_ascii(line)
-                    post_event(self._notify, EventThread(Event.LOC_RAW,
-                                                         0, line))
+                                                     0,
+                                                     'Connection dropped'))
         return
 
     def __serial_timeout(self):
@@ -167,9 +183,9 @@ class ThreadLocation(threading.Thread):
 
         try:
             if self._device.type == DeviceGPS.GPSD:
-                self._comm.sendall('?WATCH={"enable": true,"json": true}')
+                self._send = '?WATCH={"enable": true,"json": true}'
             else:
-                self._comm.sendall('w')
+                self._send = 'w'
 
         except IOError as error:
             post_event(self._notify, EventThread(Event.LOC_ERR,
@@ -180,7 +196,7 @@ class ThreadLocation(threading.Thread):
         return True
 
     def __gpsd_read(self):
-        for resp in self.__tcp_read():
+        for resp in self.__tcp_read(True):
             data = json.loads(resp)
             if data['class'] == 'TPV':
                 if data['mode'] in [2, 3]:
@@ -198,7 +214,7 @@ class ThreadLocation(threading.Thread):
                 self.__gpsd_sats(data['satellites'])
 
     def __gpsd_old_read(self):
-        for resp in self.__tcp_read():
+        for resp in self.__tcp_read(True):
             data = resp.split(' ')
             if len(data) == 15 and data[0] == 'GPSD,O=GGA':
                 try:
@@ -215,10 +231,11 @@ class ThreadLocation(threading.Thread):
 
     def __gpsd_close(self):
         if self._device.type == DeviceGPS.GPSD:
-            self._comm.sendall('?WATCH={"enable": false}')
+            self._send = '?WATCH={"enable": false}'
         else:
-            self._comm.sendall('W')
-        self._comm.close()
+            self._send = 'W'
+        if self._comm is not None:
+            self._comm.close()
 
     def __gpsd_sats(self, satData):
         sats = {}
@@ -336,25 +353,31 @@ class ThreadLocation(threading.Thread):
                    EventThread(Event.LOC, 0, [lat, lon, alt, utc]))
 
     def run(self):
+        conn = True
+
         if self._device.type in [DeviceGPS.NMEA_SERIAL, DeviceGPS.NMEA_TCP]:
             if not self.__nmea_open():
                 self.__nmea_close()
-                return
+                conn = False
         else:
             if not self.__gpsd_open():
-                return
+                conn = False
 
-        if self._device.type in [DeviceGPS.NMEA_SERIAL, DeviceGPS.NMEA_TCP]:
-            self.__nmea_read()
-        elif self._device.type == DeviceGPS.GPSD:
-            self.__gpsd_read()
-        elif self._device.type == DeviceGPS.GPSD_OLD:
-            self.__gpsd_old_read()
+        if conn:
+            if self._device.type in [DeviceGPS.NMEA_SERIAL, DeviceGPS.NMEA_TCP]:
+                self.__nmea_read()
+            elif self._device.type == DeviceGPS.GPSD:
+                self.__gpsd_read()
+            elif self._device.type == DeviceGPS.GPSD_OLD:
+                self.__gpsd_old_read()
 
-        if self._device.type in [DeviceGPS.NMEA_SERIAL, DeviceGPS.NMEA_TCP]:
-            self.__nmea_close()
-        else:
-            self.__gpsd_close()
+            if self._device.type in [DeviceGPS.NMEA_SERIAL, DeviceGPS.NMEA_TCP]:
+                self.__nmea_close()
+            else:
+                self.__gpsd_close()
+
+        if self._raw:
+            post_event(self._notify, EventThread(Event.LOC_RAW, 0, 'Stopped'))
 
     def stop(self):
         self._cancel = True
