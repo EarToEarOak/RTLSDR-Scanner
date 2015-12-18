@@ -362,6 +362,10 @@ class SatLevel(wx.PyControl):
         self.sats = OrderedDict(sorted(sats.items()))
         self.Refresh()
 
+    def clear_sats(self):
+        self.sats = None
+        self.Refresh()
+
 
 class TickCellRenderer(PyGridCellRenderer):
     SIZE = 5
