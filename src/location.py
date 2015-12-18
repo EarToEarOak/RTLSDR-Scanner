@@ -152,6 +152,10 @@ class ThreadLocation(threading.Thread):
                     isSentence = False
                     if sentence:
                         yield sentence
+                        if self._raw:
+                            line = limit_to_ascii(sentence)
+                            post_event(self._notify, EventThread(Event.LOC_RAW,
+                                                                 0, line))
                         sentence = ''
                 if isSentence:
                     sentence += data
