@@ -101,7 +101,7 @@ class ThreadLocation(threading.Thread):
                     if not isGpsd:
                         pos = line.find('$')
                         if pos != -1 and pos + 1 < len(line):
-                            yield line[pos + 1:]
+                            yield line[pos + 1:].rstrip('\r\n')
                     else:
                         yield line
                     if self._raw:
