@@ -641,6 +641,10 @@ class DialogGPSTest(wx.Dialog):
             self.threadLocation.join()
         self.threadLocation = None
         self.satLevel.clear_sats()
+        self.textLat.SetValue('')
+        self.textLon.SetValue('')
+        self.textAlt.SetValue('')
+        self.textSats.SetValue('')
         self.buttonStart.Enable()
         self.buttonStop.Disable()
 
