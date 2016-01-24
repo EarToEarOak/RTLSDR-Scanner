@@ -215,7 +215,7 @@ class DialogPrefs(wx.Dialog):
         self.checkBackup = wx.CheckBox(self, wx.ID_ANY,
                                        "Backup")
         self.checkBackup.SetValue(settings.backup)
-        self.checkBackup.SetToolTipString('Backup data on each sweep')
+        self.checkBackup.SetToolTipString('Backup data after crash')
         self.checkAlert = wx.CheckBox(self, wx.ID_ANY,
                                       "Level alert (dB)")
         self.checkAlert.SetValue(settings.alert)
