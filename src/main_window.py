@@ -1088,13 +1088,21 @@ class FrameMain(wx.Frame):
             elif self.settings.mode == Mode.SINGLE:
                 self.status.set_general("Finished")
                 self.__cleanup()
-            else:
-                if self.settings.mode == Mode.CONTIN:
-                    if self.dlgCal is None and not self.stopAtEnd:
-                        self.__scan_delay()
-                    else:
-                        self.status.set_general("Stopped")
-                        self.__cleanup()
+            elif self.settings.mode == Mode.CONTIN:
+                self.__progress_next()
+            elif self.settings.mode == Mode.MAX:
+                if len(self.spectrum) < self.settings.retainMax:
+                    self.__progress_next()
+                else:
+                    self.status.set_general("Finished")
+                    self.__cleanup()
+
+    def __progress_next(self):
+        if self.dlgCal is None and not self.stopAtEnd:
+            self.__scan_delay()
+        else:
+            self.status.set_general("Stopped")
+            self.__cleanup()
 
     def __cleanup(self):
         if self.scanDelayTimer is not None:

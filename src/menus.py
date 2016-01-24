@@ -188,12 +188,7 @@ class MenuMain(object):
         self.smooth.Enable(state)
         self.cal.Enable(state)
         self.locClear.Enable(state and len(locations))
-
-        if self.settings.mode == Mode.CONTIN:
-            self.stopEnd.Enable(not state)
-        else:
-            self.stopEnd.Enable(False)
-
+        self.stopEnd.Enable(not state)
         self.sweepClear.Enable(state and len(spectrum))
         self.sweepRemain.Enable(state and len(spectrum))
 
@@ -247,10 +242,7 @@ class PopMenuMain(object):
         self.start.Enable(state)
         self.cont.Enable(state and len(spectrum))
         self.stop.Enable(not state)
-        if self.settings.mode == Mode.CONTIN:
-            self.stopEnd.Enable(not state)
-        else:
-            self.stopEnd.Enable(False)
+        self.stopEnd.Enable(not state)
         self.rangeLim.Enable(state)
 
 

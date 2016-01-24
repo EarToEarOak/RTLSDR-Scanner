@@ -38,7 +38,8 @@ LOCATION_PORT = 7786
 TIMESTAMP_FILE = 'version-timestamp'
 
 MODE = ["Single", 0,
-        "Continuous", 1]
+        "Continuous", 1,
+        "Maximum", 2]
 
 NFFT = [16,
         32,
@@ -99,7 +100,7 @@ class Display(object):
 
 
 class Mode(object):
-    SINGLE, CONTIN = range(2)
+    SINGLE, CONTIN, MAX = range(3)
 
 
 class Plot(object):
