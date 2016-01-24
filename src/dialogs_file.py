@@ -969,14 +969,17 @@ class DialogRestore(wx.Dialog):
 
         buttonRest = wx.Button(self, wx.ID_OPEN, 'Restore')
         buttonDel = wx.Button(self, wx.ID_DELETE, 'Delete')
+        buttonDelAll = wx.Button(self, wx.ID_DELETE, 'Delete all')
         buttonCancel = wx.Button(self, wx.ID_CANCEL, 'Close')
 
         buttonRest.Bind(wx.EVT_BUTTON, self.__on_restore)
         buttonDel.Bind(wx.EVT_BUTTON, self.__on_delete)
+        buttonDelAll.Bind(wx.EVT_BUTTON, self.__on_delete_all)
 
         sizerButtons = wx.BoxSizer(wx.HORIZONTAL)
         sizerButtons.Add(buttonRest)
         sizerButtons.Add(buttonDel)
+        sizerButtons.Add(buttonDelAll)
         sizerButtons.Add(buttonCancel)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -1032,6 +1035,15 @@ class DialogRestore(wx.Dialog):
         if dlg.ShowModal() == wx.ID_OK:
             self.backups.delete(self.selected)
             self.__set_grid()
+
+    def __on_delete_all(self, _event):
+        dlg = wx.MessageDialog(self, 'Delete all the backups?',
+                               'Delete all backups',
+                               wx.OK | wx.CANCEL | wx.ICON_QUESTION)
+        if dlg.ShowModal() == wx.ID_OK:
+            for i in range(0, self.grid.GetNumberRows()):
+                self.backups.delete(i)
+        self.__set_grid()
 
     def __select_row(self, index):
         self.grid.ClearSelection()
