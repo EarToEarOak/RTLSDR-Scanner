@@ -220,13 +220,16 @@ class Backups(object):
         for backup in backups:
             fTime = datetime.datetime.utcfromtimestamp(os.path.getmtime(backup))
             fSize = os.path.getsize(backup)
-            files.append((backup, fTime, fSize))
-
+            if fSize:
+                files.append((backup, fTime, fSize))
+            else:
+                os.remove(backup)
         files.sort(lambda x, y: cmp(x[1], y[1]), reverse=True)
 
         return files
 
     def __save(self, data):
+        print len(data[1])
         handle = open(self.tempFile, 'wb')
         cPickle.dump(data, handle)
         handle.close()
