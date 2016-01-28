@@ -32,7 +32,7 @@
 !include "include\EnvVarUpdate.nsh"
 !include "include\fileassoc.nsh"
 
-!define INSTALLER_VERSION "18"
+!define INSTALLER_VERSION "19"
 
 !define PRODUCT_NAME "RTLSDR Scanner"
 !define PRODUCT_PUBLISHER "Ear to Ear Oak"
@@ -132,35 +132,26 @@ SectionGroup "/e" "Dependencies" SEC_DEP
 		ExecWait 'vcredist_x86.exe /quiet /norestart'
 	SectionEnd
 	SectionGroup "/e" "Python" SEC_PYDEP
-		Section "Python 2.7.8" SEC_PYTHON
-			StrCpy $UriPath "http://www.python.org/ftp/python/2.7.10"
-			StrCpy $UriFile "python-2.7.10.msi"
+		Section "Python 2.7.11" SEC_PYTHON
+			StrCpy $UriPath "http://www.python.org/ftp/python/2.7.11"
+			StrCpy $UriFile "python-2.7.11.msi"
 			Call install_msi
 			Call set_installer_path
 		SectionEnd
 		Section "Add Python to PATH"
 			Call set_python_path
 		SectionEnd
-		Section "dateutil" SEC_DATEUTIL
-			StrCpy $UriFile "python-dateutil"
-			Call install_pip
-		SectionEnd
-		Section "matplotlib 1.3.1"
-			StrCpy $UriPath "http://downloads.sourceforge.net/project/matplotlib/matplotlib/matplotlib-1.3.1"
-			StrCpy $UriFile "matplotlib-1.3.1.win32-py2.7.exe"
-			Call install_exe
-		SectionEnd
-		Section "numpy 1.9.2"
-			StrCpy $UriPath "http://downloads.sourceforge.net/project/numpy/NumPy/1.9.2"
-			StrCpy $UriFile "numpy-1.9.2-win32-superpack-python2.7.exe"
-			Call install_exe
-		SectionEnd
-		Section "Pillow" SEC_PILLOW
+        Section "numpy"
+            StrCpy $UriPath "http://downloads.sourceforge.net/project/numpy/NumPy/1.10.2"
+            StrCpy $UriFile "numpy-1.10.2-win32-superpack-python2.7.exe"
+            Call install_exe
+        SectionEnd
+        Section "matplotlib"
+            StrCpy $UriFile "matplotlib<2"
+            Call install_pip
+        SectionEnd
+        Section "Pillow" SEC_PILLOW
 			StrCpy $UriFile "pillow"
-			Call install_pip
-		SectionEnd
-		Section "pyparsing" SEC_PYPARSING
-			StrCpy $UriFile "pyparsing"
 			Call install_pip
 		SectionEnd
 		Section "pyrtlsdr" SEC_PYRTLSDR
@@ -329,9 +320,7 @@ Function page_type_end
 	    StrCpy $Type ${TYPE_UPDATE}
 		!insertmacro UnselectSection ${SEC_DEP}
 		!insertmacro SelectSection ${SEC_RTLSDR}
-		!insertmacro SelectSection ${SEC_DATEUTIL}
 		!insertmacro SelectSection ${SEC_PILLOW}
-		!insertmacro SelectSection ${SEC_PYPARSING}
 		!insertmacro SelectSection ${SEC_PYRTLSDR}
 		!insertmacro SelectSection ${SEC_PYSERIAL}
 		!insertmacro SelectSection ${SEC_VISVIS}
@@ -426,7 +415,7 @@ FunctionEnd
 Function install_pip
 	Call get_python_path
 	ClearErrors
-	ExecWait '"$PythonPath\python.exe" -m pip install --upgrade $UriFile'
+	ExecWait '"$PythonPath\python.exe" -m pip install "$UriFile"'
 	${If} ${Errors}
 		StrCpy $ErrorMessage "Failed to install $UriFile"
 		Call error
