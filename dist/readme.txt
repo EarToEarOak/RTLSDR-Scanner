@@ -4,10 +4,7 @@ RTLSDR-Scanner
 http://eartoearoak.com/software/rtlsdr-scanner
 
 
-A Windows installer can be found at:
-	http://sourceforge.net/projects/rtlsdrscanner/files/
-
-Alternatively stand-alone executables for Windows are hosted on GitHub:
+Stand-alone executables and an installer for Windows are hosted on GitHub:
 	https://github.com/EarToEarOak/RTLSDR-Scanner/releases
 
 
