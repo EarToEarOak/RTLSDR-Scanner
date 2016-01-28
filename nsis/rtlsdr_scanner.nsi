@@ -67,7 +67,7 @@ Page custom page_error page_error_end
 !define UPDATE_PROBLEM '"There was a problem checking for an updated installer"'
 !define UPDATE_NONE '"You are using an up to date installer"'
 !define UPDATE_FOUND '"An updated installer is available at: $\r$\n$\r$\n\
-http://sourceforge.net/projects/rtlsdrscanner/files/latest/download $\r$\n$\r$\n\
+https://github.com/EarToEarOak/RTLSDR-Scanner/releases $\r$\n$\r$\n\
 Updating is highly recommended"'
 !define INFO '"This will install RTLSDR Scanner and its Python dependencies $\r$\n$\r$\n\
 When asked it is recommended to use the default options for all software $\r$\n$\r$\n\

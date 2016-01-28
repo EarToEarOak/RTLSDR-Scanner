@@ -27,8 +27,6 @@ Installation instructions are found [here](http://eartoearoak.com/software/rtlsd
 
 Windows executables for x86 and amd64 platforms are available on [GitHub](https://github.com/EarToEarOak/RTLSDR-Scanner/releases).
 
-A Windows installer can be found on [SourceForge](http://sourceforge.net/projects/rtlsdrscanner).
-
 ## Requirements ##
 
 - [Python 2.7](http://www.python.org) or greater
