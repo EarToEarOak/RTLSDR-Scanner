@@ -25,7 +25,6 @@
 
 import ConfigParser
 
-import serial
 import wx
 
 from constants import Display, Mode, PlotFunc

@@ -34,7 +34,7 @@ from urlparse import urlparse
 
 from constants import SAMPLE_RATE
 from devices import DeviceRTL, get_devices_rtl
-from events import Event, post_event, EventThread
+from events import Event
 from file import save_plot, export_plot, ScanInfo, File
 from location import ThreadLocation
 from misc import nearest, calc_real_dwell, next_2_to_pow
@@ -171,11 +171,11 @@ class Cli(object):
 
         while True:
             if not self.queueLocation.empty():
-                    status = self.__process_event(self.queueLocation)
-                    if status == Event.LOC:
-                        return True
-                    elif status == Event.LOC_ERR:
-                        return False
+                status = self.__process_event(self.queueLocation)
+                if status == Event.LOC:
+                    return True
+                elif status == Event.LOC_ERR:
+                    return False
 
     def __gps_stop(self):
         if self.threadLocation and self.threadLocation.isAlive():
