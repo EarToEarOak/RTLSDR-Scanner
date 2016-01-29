@@ -327,7 +327,8 @@ def delta_spectrum(spectrum):
 def smooth_spectrum(spectrum, winFunc, ratio):
     data = OrderedDict()
     for timeStamp, sweep in spectrum.items():
-        data[timeStamp] = smooth_sweep(sweep, winFunc, ratio)
+        if len(sweep):
+            data[timeStamp] = smooth_sweep(sweep, winFunc, ratio)
 
     return data
 
