@@ -37,7 +37,7 @@ import webbrowser
 import wx
 from wx.lib.masked.numctrl import NumCtrl
 
-from constants import F_MIN, F_MAX, MODE, DWELL, NFFT, DISPLAY, Warn, \
+from constants import F_MIN, F_MAX, MODE, NFFT, DISPLAY, Warn, \
     Cal, Mode, APP_NAME, LOCATION_PORT
 from devices import get_devices_rtl
 from dialogs_devices import DialogDevicesRTL, DialogDevicesGPS
@@ -53,7 +53,7 @@ from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
     export_map, extension_add, File, run_file, export_gpx, Backups
 from location import ThreadLocation, LocationServer
 from menus import MenuMain, PopMenuMain
-from misc import RemoteControl, calc_samples, calc_real_dwell, \
+from misc import RemoteControl, calc_samples, get_dwells, calc_real_dwell, \
     get_version_timestamp, get_version_timestamp_repo, format_iso_time, limit
 from panels import PanelGraph
 from printer import PrintOut
@@ -253,7 +253,7 @@ class FrameMain(wx.Frame):
         self.choiceMode.SetToolTipString('Scanning mode')
 
         textDwell = wx.StaticText(self.toolbar2, label="Dwell")
-        self.choiceDwell = wx.Choice(self.toolbar2, choices=DWELL[::2])
+        self.choiceDwell = wx.Choice(self.toolbar2, choices=get_dwells()[::2])
         self.choiceDwell.SetToolTipString('Scan time per step')
 
         textNfft = wx.StaticText(self.toolbar2, label="FFT size")
@@ -1261,10 +1261,11 @@ class FrameMain(wx.Frame):
         self.spinCtrlStop.SetValue(self.settings.stop)
         self.choiceMode.SetSelection(MODE[1::2].index(self.settings.mode))
         dwell = calc_real_dwell(self.settings.dwell)
+        dwells = get_dwells()
         try:
-            sel = DWELL[1::2].index(dwell)
+            sel = dwells[1::2].index(dwell)
         except ValueError:
-            sel = DWELL[1::2][len(DWELL) / 4]
+            sel = dwells[1::2][len(dwells) / 4]
         self.choiceDwell.SetSelection(sel)
         self.choiceNfft.SetSelection(NFFT.index(self.settings.nfft))
         self.choiceDisplay.SetSelection(DISPLAY[1::2].index(self.settings.display))
@@ -1299,7 +1300,7 @@ class FrameMain(wx.Frame):
         self.settings.startOption = self.buttonStart.GetSelected()
         self.settings.stopOption = self.buttonStop.GetSelected()
         self.settings.mode = MODE[1::2][self.choiceMode.GetSelection()]
-        self.settings.dwell = DWELL[1::2][self.choiceDwell.GetSelection()]
+        self.settings.dwell = get_dwells()[1::2][self.choiceDwell.GetSelection()]
         self.settings.nfft = NFFT[self.choiceNfft.GetSelection()]
         self.settings.display = DISPLAY[1::2][self.choiceDisplay.GetSelection()]
 

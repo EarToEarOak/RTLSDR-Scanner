@@ -128,6 +128,25 @@ def calc_samples(dwell):
     return samples
 
 
+def get_dwells():
+    dwells = ["8 ms", 0.008,
+              "16 ms", 0.016,
+              "32 ms", 0.032,
+              "65 ms", 0.065,
+              "131 ms", 0.131,
+              "262 ms", 0.262,
+              "524 ms", 0.524,
+              "1 s", 1.048,
+              "2 s", 2.097,
+              "4 s", 4.194,
+              "8 s", 8.388]
+
+    if sys.platform == 'linux' or sys.platform == "linux2":
+        del dwells[-4:]
+
+    return dwells
+
+
 def calc_real_dwell(dwell):
     samples = calc_samples(dwell)
     dwellReal = samples / SAMPLE_RATE

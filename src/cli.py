@@ -37,7 +37,7 @@ from devices import DeviceRTL, get_devices_rtl
 from events import Event
 from file import save_plot, export_plot, ScanInfo, File
 from location import ThreadLocation
-from misc import nearest, calc_real_dwell, next_2_to_pow
+from misc import nearest, calc_real_dwell, next_2_to_pow, get_dwells
 from scan import ThreadScan, update_spectrum, ThreadProcess
 from settings import Settings
 
@@ -77,6 +77,8 @@ class Cli(object):
             error = "Start should be lower than end"
         elif dwell <= 0:
             error = "Dwell should be positive"
+        elif dwell > max(get_dwells()[1::2]):
+            error = "Dwell should equal lower than {}s".format(max(get_dwells()[1::2]))
         elif nfft <= 0:
             error = "FFT bins should be positive"
         elif ext != ".rfs" and File.get_type_index(ext) == -1:
@@ -107,19 +109,19 @@ class Cli(object):
                 self.settings.devicesRtl.append(device)
                 index = len(self.settings.devicesRtl) - 1
 
-        if args.conf is not None:
-            if os.path.exists(args.conf):
-                error = self.settings.load_conf(args.conf)
-            else:
-                error = 'Cannot find {}'.format(args.conf)
+            if args.conf is not None:
+                if os.path.exists(args.conf):
+                    error = self.settings.load_conf(args.conf)
+                else:
+                    error = 'Cannot find {}'.format(args.conf)
 
-        if end - 1 < start:
-            end = start + 1
-        if remote is None:
-            if len(self.settings.devicesRtl):
-                gain = nearest(gain, self.settings.devicesRtl[index].gains)
-            else:
-                error = 'No devices found'
+            if end - 1 < start:
+                end = start + 1
+            if remote is None:
+                if len(self.settings.devicesRtl):
+                    gain = nearest(gain, self.settings.devicesRtl[index].gains)
+                else:
+                    error = 'No devices found'
 
         if error is not None:
             print "Error: {}".format(error)
