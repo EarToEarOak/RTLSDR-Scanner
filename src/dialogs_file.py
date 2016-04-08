@@ -755,10 +755,6 @@ class DialogExportGeo(wx.Dialog):
                 y.append(location[0])
                 z.append(peak)
 
-        if len(x) == 0:
-            self.__draw_warning()
-            return
-
         self.extent = (min(x), max(x), min(y), max(y))
         self.xyz = (x, y, z)
 
@@ -766,11 +762,7 @@ class DialogExportGeo(wx.Dialog):
         yi = numpy.linspace(min(y), max(y), self.IMAGE_SIZE)
 
         if self.plotMesh or self.plotCont:
-            try:
-                zi = mlab.griddata(x, y, z, xi, yi)
-            except:
-                self.__draw_warning()
-                return
+            zi = mlab.griddata(x, y, z, xi, yi)
 
         if self.plotMesh:
             self.plot = self.axes.pcolormesh(xi, yi, zi, cmap=self.colourMap)
