@@ -733,15 +733,12 @@ class DialogExportGeo(wx.Dialog):
         self.axes.yaxis.set_major_formatter(formatter)
 
     def __draw_plot(self):
-        x = []
-        y = []
-        z = []
-
         freqCentre = self.spinCentre.GetValue()
         freqBw = self.spinBw.GetValue()
         freqMin = (freqCentre - freqBw) / 1000.
         freqMax = (freqCentre + freqBw) / 1000.
 
+        coords = {}
         for timeStamp in self.spectrum:
             spectrum = self.spectrum[timeStamp]
             sweep = [yv for xv, yv in spectrum.items() if freqMin <= xv <= freqMax]
@@ -751,9 +748,21 @@ class DialogExportGeo(wx.Dialog):
                     location = self.location[timeStamp]
                 except KeyError:
                     continue
-                x.append(location[1])
-                y.append(location[0])
-                z.append(peak)
+
+                coord = tuple(location[0:2])
+                if coord not in coords:
+                    coords[coord] = peak
+                else:
+                    coords[coord] = (coords[coord] + peak) / 2
+
+        x = []
+        y = []
+        z = []
+
+        for coord, peak in coords.iteritems():
+            x.append(coord[0])
+            y.append(coord[1])
+            z.append(peak)
 
         self.extent = (min(x), max(x), min(y), max(y))
         self.xyz = (x, y, z)
