@@ -229,7 +229,6 @@ class Backups(object):
         return files
 
     def __save(self, data):
-        print len(data[1])
         handle = open(self.tempFile, 'wb')
         cPickle.dump(data, handle)
         handle.close()
