@@ -185,7 +185,7 @@ class MenuMain(object):
         self.devicesRtl.Enable(state)
         self.devicesGps.Enable(state)
         self.reset.Enable(state)
-        self.smooth.Enable(state)
+        self.smooth.Enable(state and len(spectrum))
         self.cal.Enable(state)
         self.locClear.Enable(state and len(locations))
         self.stopEnd.Enable(not state)

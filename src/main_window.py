@@ -703,6 +703,7 @@ class FrameMain(wx.Frame):
                 self.__set_plot(self.spectrum, False)
                 self.graph.update_measure()
                 self.graph.redraw_plot()
+                self.filename += ' - smoothed'
                 self.__saved(False)
             else:
                 self.__saved(saved)

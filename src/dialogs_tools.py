@@ -206,7 +206,9 @@ class DialogSmooth(wx.Dialog):
         self.settings = settings
         self.smoothed = None
 
-        wx.Dialog.__init__(self, parent=parent, title='Smooth Spectrum')
+        wx.Dialog.__init__(self, parent=parent, title='Smooth Spectrum',
+                           style=wx.RESIZE_BORDER | wx.CAPTION | wx.SYSTEM_MENU |
+                           wx.MAXIMIZE_BOX | wx.MINIMIZE_BOX | wx.CLOSE_BOX)
 
         self.queue = Queue.Queue()
         self.timer = wx.Timer(self)
@@ -243,18 +245,19 @@ class DialogSmooth(wx.Dialog):
         sizerGrid = wx.GridBagSizer(5, 5)
         sizerGrid.Add(self.canvas, pos=(0, 0), span=(10, 6),
                       flag=wx.EXPAND | wx.ALL, border=5)
-        sizerGrid.Add(textFunc, pos=(0, 6),
+        sizerGrid.Add(textFunc, pos=(1, 6), border=5)
+        sizerGrid.Add(self.choiceFunc, pos=(2, 6), span=(1, 2),
                       flag=wx.ALL, border=5)
-        sizerGrid.Add(self.choiceFunc, pos=(1, 6), span=(1, 2),
-                      flag=wx.EXPAND | wx.ALL, border=5)
-        sizerGrid.Add(textRatio, pos=(2, 6),
+        sizerGrid.Add(textRatio, pos=(3, 6),
                       flag=wx.ALL, border=5)
-        sizerGrid.Add(self.slideRatio, pos=(3, 6), span=(1, 2),
-                      flag=wx.EXPAND | wx.ALL, border=5)
-        sizerGrid.Add(buttonSmooth, pos=(4, 6), span=(1, 2),
-                      flag=wx.ALL | wx.ALIGN_CENTRE, border=5)
-        sizerGrid.Add(sizerButtons, pos=(10, 6), span=(1, 2),
+        sizerGrid.Add(self.slideRatio, pos=(4, 6), span=(1, 2),
+                      flag=wx.ALL, border=5)
+        sizerGrid.Add(buttonSmooth, pos=(5, 6), span=(1, 2),
+                      flag=wx.ALL, border=5)
+        sizerGrid.Add(sizerButtons, pos=(11, 6), span=(1, 2),
                       flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
+        sizerGrid.AddGrowableCol(0)
+        sizerGrid.AddGrowableRow(0)
 
         self.SetSizerAndFit(sizerGrid)
 
