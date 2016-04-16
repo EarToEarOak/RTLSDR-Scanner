@@ -388,6 +388,11 @@ class PanelGraph(wx.Panel):
     def set_grid(self, on):
         self.plot.set_grid(on)
 
+    def set_selected(self, start, end):
+        self.selectStart = start
+        self.selectEnd = end
+        self.__draw_select()
+
     def hide_toolbar(self, hide):
         self.toolbar.Show(not hide)
 
@@ -418,6 +423,9 @@ class PanelGraph(wx.Panel):
 
     def get_toolbar(self):
         return self.toolbar
+
+    def get_mouse_select(self):
+        return self.mouseSelect
 
     def scale_plot(self, force=False):
         self.plot.scale_plot(force)
@@ -654,6 +662,7 @@ class PanelMeasure(wx.Panel):
     def __init__(self, graph, settings):
         wx.Panel.__init__(self, graph)
 
+        self.spectrum = None
         self.graph = graph
         self.settings = settings
 
@@ -672,7 +681,7 @@ class PanelMeasure(wx.Panel):
 
         self.grid = wxGrid.Grid(self)
         self.grid.CreateGrid(3, 19)
-        self.grid.EnableEditing(False)
+        self.grid.EnableEditing(True)
         self.grid.EnableDragGridSize(False)
         self.grid.SetColLabelSize(1)
         self.grid.SetRowLabelSize(1)
@@ -683,10 +692,14 @@ class PanelMeasure(wx.Panel):
         self.grid.SetColSize(15, 1)
         self.grid.SetMargins(0, wx.SystemSettings_GetMetric(wx.SYS_HSCROLL_Y))
 
-        for x in xrange(self.grid.GetNumberRows()):
+        for x in range(self.grid.GetNumberRows()):
             self.grid.SetRowLabelValue(x, '')
-        for y in xrange(self.grid.GetNumberCols()):
+        for y in range(self.grid.GetNumberCols()):
             self.grid.SetColLabelValue(y, '')
+
+        for row in range(self.grid.GetNumberRows()):
+            for col in range(self.grid.GetNumberCols()):
+                    self.grid.SetReadOnly(row, col, True)
 
         self.locsDesc = {'F Start': (0, 0),
                          'F End': (1, 0),
@@ -710,6 +723,9 @@ class PanelMeasure(wx.Panel):
                           Measure.HBW: (0, 12),
                           Measure.OBW: (0, 16)}
         self.__set_check_editor()
+
+        self.locsFreq = [(0, 1), (1, 1)]
+        self.__set_freq_editor()
 
         colour = self.grid.GetBackgroundColour()
         self.grid.SetCellTextColour(2, 3, colour)
@@ -780,6 +796,7 @@ class PanelMeasure(wx.Panel):
 
         self.Bind(wxGrid.EVT_GRID_CELL_RIGHT_CLICK, self.__on_popup_menu)
         self.Bind(wxGrid.EVT_GRID_CELL_LEFT_CLICK, self.__on_cell_click)
+        self.Bind(wxGrid.EVT_GRID_CELL_CHANGED, self.__on_cell_change)
 
         box = wx.BoxSizer(wx.VERTICAL)
         box.Add(self.grid, 0, wx.EXPAND | wx.TOP | wx.LEFT | wx.RIGHT,
@@ -800,6 +817,12 @@ class PanelMeasure(wx.Panel):
             self.grid.SetCellAlignment(row, col, wx.ALIGN_RIGHT, wx.ALIGN_CENTRE)
             self.grid.SetCellRenderer(row, col, CheckBoxCellRenderer(self))
 
+    def __set_freq_editor(self):
+        for (row, col) in self.locsFreq:
+            self.grid.SetReadOnly(row, col, False)
+            self.grid.SetCellAlignment(row, col, wx.ALIGN_RIGHT, wx.ALIGN_CENTRE)
+            self.grid.SetCellEditor(row, col, wxGrid.GridCellFloatEditor(precision=4))
+
     def __set_check_value(self, cell, value):
         (row, col) = self.locsCheck[cell]
         self.grid.SetCellValue(row, col, value)
@@ -811,10 +834,10 @@ class PanelMeasure(wx.Panel):
         except TypeError:
             pass
 
-    def __set_check_read_only(self, cell, readOnly):
+    def __set_check_enable(self, cell, enable):
         (row, col) = self.locsCheck[cell]
         renderer = self.grid.GetCellRenderer(row, col)
-        renderer.Enable(not readOnly)
+        renderer.Enable(not enable)
 
     def __get_checks(self):
         checks = {}
@@ -841,7 +864,7 @@ class PanelMeasure(wx.Panel):
         col = event.GetCol()
 
         if (row, col) in self.locsCheck.values():
-            if not self.grid.IsReadOnly(row, col) and self.measure is not None:
+            if self.grid.GetCellRenderer(row, col).enabled and self.measure is not None:
                 check = self.grid.GetCellValue(row, col)
                 if check == '1':
                     check = '0'
@@ -859,7 +882,6 @@ class PanelMeasure(wx.Panel):
                     col = self.selected[1]
                     self.grid.SetGridCursor(row, col)
                 self.update_measure()
-
         elif (row, col) in self.locsMeasure.itervalues():
             self.selected = (row, col)
             self.grid.SetGridCursor(row, col)
@@ -868,6 +890,37 @@ class PanelMeasure(wx.Panel):
             row = self.selected[0]
             col = self.selected[1]
             self.grid.SetGridCursor(row, col)
+
+    def __on_cell_change(self, event):
+        row = event.GetRow()
+        col = event.GetCol()
+
+        if (row, col) in self.locsFreq:
+            start = None
+            end = None
+
+            try:
+                start = float(self.grid.GetCellValue(self.locsFreq[0][0], self.locsFreq[0][1]))
+            except ValueError:
+                pass
+            try:
+                end = float(self.grid.GetCellValue(self.locsFreq[1][0], self.locsFreq[1][1]))
+            except ValueError:
+                pass
+
+            if start is None and end is None:
+                return
+            elif start is None and end is not None:
+                start = end - 1
+            elif start is not None and end is None:
+                end = start + 1
+            if start > end:
+                swap = start
+                start = end
+                end = swap
+
+            self.graph.set_selected(start, end)
+            self.set_selected(self.spectrum, start, end)
 
     def __on_popup_menu(self, _event):
         if self.selected:
@@ -895,6 +948,7 @@ class PanelMeasure(wx.Panel):
         self.measure = None
 
     def set_selected(self, spectrum, start, end):
+        self.spectrum = spectrum
         if start is None:
             return
 
@@ -1003,13 +1057,13 @@ class PanelMeasure(wx.Panel):
 
     def set_type(self, display):
         for cell in self.locsCheck:
-            self.__set_check_read_only(cell, True)
+            self.__set_check_enable(cell, True)
         if display == Display.PLOT:
             for cell in self.locsCheck:
-                self.__set_check_read_only(cell, False)
+                self.__set_check_enable(cell, False)
         elif display == Display.SPECT:
-            self.__set_check_read_only(Measure.HBW, False)
-            self.__set_check_read_only(Measure.OBW, False)
+            self.__set_check_enable(Measure.HBW, False)
+            self.__set_check_enable(Measure.OBW, False)
 
         self.grid.Refresh()
 
