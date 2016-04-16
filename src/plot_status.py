@@ -24,6 +24,7 @@
 #
 import threading
 
+from matplotlib.font_manager import FontProperties
 from matplotlib.table import Table
 
 from events import post_event, EventThread, Event
@@ -115,7 +116,7 @@ class ThreadPlot(threading.Thread):
     def run(self):
         self.parent.clear_plots()
         if self.data is None:
-            length, tMin, tMax, fMin, fMax, lMin, lMax, peakF, peakL, peakT = ('',) * 10
+            length, tMin, tMax, fMin, fMax, lMin, lMax, peakF, peakL, peakT = ('-',) * 10
         else:
             length = len(self.data)
             tMin = format_time(self.extent.tMin, True)
@@ -136,7 +137,7 @@ class ThreadPlot(threading.Thread):
             peakT = format_time(peak[2], True)
 
         text = [['Sweeps', '', length],
-                ['Extents', '', ''],
+                ['Extent', '', ''],
                 ['', 'Start', tMin],
                 ['', 'End', tMax],
                 ['', 'Min frequency', fMin],
@@ -154,10 +155,14 @@ class ThreadPlot(threading.Thread):
 
         rows = len(text)
         cols = len(text[0])
+        fontProperties = FontProperties()
+        fontProperties.set_weight('semibold')
         for row in xrange(rows):
             for col in xrange(cols):
+                fp = fontProperties if col == 0 else None
                 table.add_cell(row, col,
                                text=text[row][col],
+                               fontproperties=fp,
                                width=1.0 / cols, height=1.0 / rows)
 
         if self.settings.grid:
@@ -166,7 +171,7 @@ class ThreadPlot(threading.Thread):
             colour = 'w'
         set_table_colour(table, colour)
 
-        for i in range(3):
+        for i in range(2):
             table.auto_set_column_width(i)
 
         self.axes.add_table(table)
