@@ -64,11 +64,10 @@ class Extent(object):
                 self.fMin = min(self.fMin, fMin)
                 self.fMax = max(self.fMax, fMax)
                 self.lMin = min(self.lMin, lMin)
-                self.lMax = max(self.lMax, lMax)
-
-                if timeStamp == self.tMax:
-                    self.fPeak, self.lPeak = max(points,
-                                                 key=lambda(_f, l): l)
+                if(lMax >= self.lMax):
+                    self.lMax = lMax
+                    self.fPeak, self.lPeak = max(points, key=lambda(_f, l): l)
+                    self.tPeak = timeStamp
 
     def get_f(self):
         if self.fMin == self.fMax:
