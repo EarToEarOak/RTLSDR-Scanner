@@ -796,7 +796,8 @@ class PanelMeasure(wx.Panel):
 
         self.Bind(wxGrid.EVT_GRID_CELL_RIGHT_CLICK, self.__on_popup_menu)
         self.Bind(wxGrid.EVT_GRID_CELL_LEFT_CLICK, self.__on_cell_click)
-        self.Bind(wxGrid.EVT_GRID_CELL_CHANGED, self.__on_cell_change)
+        if wx.VERSION >= (3, 0, 0, 0):
+            self.Bind(wxGrid.EVT_GRID_CELL_CHANGED, self.__on_cell_change)
 
         box = wx.BoxSizer(wx.VERTICAL)
         box.Add(self.grid, 0, wx.EXPAND | wx.TOP | wx.LEFT | wx.RIGHT,
