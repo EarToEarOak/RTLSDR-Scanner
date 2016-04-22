@@ -489,7 +489,7 @@ class DialogExportSeq(wx.Dialog):
     def __on_ok(self, _event):
         self.isExporting = True
         extent = Extent(self.spectrum)
-        dlgProgress = wx.ProgressDialog('Exporting', '', len(self.sweeps) - 1,
+        dlgProgress = wx.ProgressDialog('Exporting', '', len(self.sweeps),
                                         style=wx.PD_AUTO_HIDE |
                                         wx.PD_CAN_ABORT |
                                         wx.PD_REMAINING_TIME)
