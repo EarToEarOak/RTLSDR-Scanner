@@ -111,29 +111,28 @@ class ThreadScan(threading.Thread):
         timeStamp = math.floor(time.time())
         while freq <= self.__f_stop():
             if self.cancel:
-                post_event(self.notify,
-                           EventThread(Event.STOPPED))
+                post_event(self.notify, EventThread(Event.STOPPED))
                 self.rtl_close()
                 return
             try:
                 scan = self.rtl_scan(freq)
                 if len(scan):
                     self.queue.put([freq, (timeStamp, scan)])
-                    post_event(self.notify,
-                               EventThread(Event.DATA))
-            except IOError:
-                if self.sdr is not None:
-                    self.rtl_close()
-                self.__rtl_setup()
-            except (TypeError, AttributeError) as error:
-                if self.notify:
-                    post_event(self.notify,
-                               EventThread(Event.ERROR,
-                                           0, error.message))
+                    post_event(self.notify, EventThread(Event.DATA))
+                else:
+                    post_event(self.notify, EventThread(Event.ERROR, 0,
+                                                        'No samples returned'))
+                    return
+            except (AttributeError, MemoryError, TypeError) as error:
+                post_event(self.notify, EventThread(Event.ERROR,
+                                                    0, error.message))
                 return
-            except WindowsError:
+            except (IOError, WindowsError) as error:
                 if self.sdr is not None:
                     self.rtl_close()
+                post_event(self.notify, EventThread(Event.ERROR,
+                                                    0, error.message))
+                return
 
             freq += self.__f_step()
 
@@ -147,12 +146,7 @@ class ThreadScan(threading.Thread):
 
     def rtl_scan(self, freq):
         self.sdr.set_center_freq(freq + self.lo)
-        try:
-            capture = self.sdr.read_samples(self.samples)
-        except MemoryError as error:
-            post_event(self.notify, EventThread(Event.ERROR,
-                                                0, error))
-            capture = []
+        capture = self.sdr.read_samples(self.samples)
 
         return capture
 

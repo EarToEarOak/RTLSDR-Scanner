@@ -914,6 +914,8 @@ class FrameMain(wx.Frame):
             if self.dlgCal is not None:
                 self.dlgCal.Destroy()
                 self.dlgCal = None
+            wx.MessageBox(arg2, 'Error',
+                          wx.OK | wx.ICON_ERROR)
         elif status == Event.PROCESSED:
             offset = self.settings.devicesRtl[self.settings.indexRtl].offset
             if self.settings.alert:
