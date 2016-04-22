@@ -32,7 +32,7 @@
 !include "include\EnvVarUpdate.nsh"
 !include "include\fileassoc.nsh"
 
-!define INSTALLER_VERSION "19"
+!define INSTALLER_VERSION "20"
 
 !define PRODUCT_NAME "RTLSDR Scanner"
 !define PRODUCT_PUBLISHER "Ear to Ear Oak"
@@ -155,7 +155,8 @@ SectionGroup "/e" "Dependencies" SEC_DEP
 			Call install_pip
 		SectionEnd
 		Section "pyrtlsdr" SEC_PYRTLSDR
-			Call install_pyrtlsdr
+            StrCpy $UriFile "pyrtlsdr"
+            Call install_pip
 		SectionEnd
 		Section "PySerial" SEC_PYSERIAL
 			StrCpy $UriFile "pyserial"
@@ -452,20 +453,6 @@ Function install_rtlsdr
 		ZipDLL::extractall "$TEMP\rtlsdr.zip" "$TEMP"
 		CopyFiles "$TEMP\rtl-sdr-release\x32\*.dll" "$INSTDIR"
 		RmDir /r "$TEMP\rtl-sdr-release"
-	${EndIf}
-FunctionEnd
-
-Function install_pyrtlsdr
-	inetc::get "https://github.com/roger-/pyrtlsdr/archive/master.zip" "$TEMP\pyrtlsdr.zip" /end
-	Pop $R0
-	${If} $R0 != "OK"
-		StrCpy $ErrorMessage "pyrtlsdr download failed: $R0"
-		Call error
-	${Else}
-		ZipDLL::extractall "$TEMP\pyrtlsdr.zip" "$TEMP"
-		SetOutPath "$TEMP\pyrtlsdr-master"
-		ExecWait "python $TEMP\pyrtlsdr-master\setup.py install"
-		RmDir /r "$TEMP\pyrtlsdr-master"
 	${EndIf}
 FunctionEnd
 
