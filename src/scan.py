@@ -127,7 +127,7 @@ class ThreadScan(threading.Thread):
                 post_event(self.notify, EventThread(Event.ERROR,
                                                     0, error.message))
                 return
-            except (IOError, WindowsError) as error:
+            except (IOError, OSError) as error:
                 if self.sdr is not None:
                     self.rtl_close()
                 post_event(self.notify, EventThread(Event.ERROR,
