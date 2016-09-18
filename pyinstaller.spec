@@ -47,7 +47,7 @@ def create_version():
     strings.append(versioninfo.StringStruct('FileDescription',
                                             'Spectrum Analyser'))
     strings.append(versioninfo.StringStruct('LegalCopyright',
-                                            'Copyright 2012 - 2015 Al Brown'))
+                                            'Copyright 2012 - 2016 Al Brown'))
     table = versioninfo.StringTable('040904B0', strings)
     sInfo = versioninfo.StringFileInfo([table])
     var = versioninfo.VarStruct('Translation', [2057, 1200])
@@ -67,7 +67,7 @@ def build(version=None):
     architecture, _null = platform.architecture()
     filename = 'rtlsdr_scan-' + system + '-' + architecture.lower()
 
-    excludes = ['pyside', 'qt', 'scipy']
+    excludes = ['PySide', 'qt', 'scipy']
     a = Analysis(['src/rtlsdr_scan.py'],
                 excludes=excludes)
 
