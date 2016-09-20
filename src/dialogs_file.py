@@ -787,7 +787,7 @@ class DialogExportGeo(wx.Dialog):
             image = create_heatmap(x, y,
                                    self.IMAGE_SIZE, self.IMAGE_SIZE / 10,
                                    self.colourHeat)
-            heatMap = self.axes.imshow(image, extent=self.extent)
+            heatMap = self.axes.imshow(image, aspect='auto', extent=self.extent)
             heatMap.set_zorder(2)
 
         if self.plotPoint:
