@@ -760,8 +760,8 @@ class DialogExportGeo(wx.Dialog):
         z = []
 
         for coord, peak in coords.iteritems():
-            x.append(coord[0])
-            y.append(coord[1])
+            x.append(coord[1])
+            y.append(coord[0])
             z.append(peak)
 
         self.extent = (min(x), max(x), min(y), max(y))
