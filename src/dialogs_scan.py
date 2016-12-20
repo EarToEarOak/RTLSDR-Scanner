@@ -32,7 +32,7 @@ class DialogScanDelay(wx.Dialog):
 
         self.settings = settings
 
-        textDelay = wx.StaticText(self, label='Scan spinDelay (s)')
+        textDelay = wx.StaticText(self, label='Scan delay (s)')
         self.spinDelay = wx.SpinCtrl(self, value=str(settings.scanDelay),
                                      min=0, max=86400)
 
