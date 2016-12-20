@@ -48,7 +48,7 @@ from spectrum import create_mesh, sort_spectrum
 
 class File(object):
     class Types(object):
-        SAVE, PLOT, IMAGE, GEO, GMAP, TRACK = range(6)
+        SAVE, PLOT, IMAGE, GEO, GMAP, TRACK, CONT = range(7)
 
     class SaveType(object):
         RFS = 0
@@ -105,13 +105,16 @@ class File(object):
     TRACK = [''] * 1
     TRACK[TrackType.GPX] = 'GPX track (*.gpx)|*.gpx'
 
+    CONT = [''] * 1
+    CONT[PlotType.CSV] = PLOT[PlotType.CSV]
+
     HEADER = APP_NAME
     VERSION = 9
 
     @staticmethod
     def __get_types(type):
         return [File.SAVE, File.PLOT, File.IMAGE,
-                File.GEO, File.GMAP, File.TRACK][type]
+                File.GEO, File.GMAP, File.TRACK, File.CONT][type]
 
     @staticmethod
     def get_type_ext(index, type=Types.PLOT):
@@ -416,6 +419,16 @@ def export_plot(filename, exportType, spectrum):
     handle.close()
 
 
+def export_cont(handle, filename, spectrum):
+    if handle is None and filename is not None:
+        handle = open(filename, 'wb')
+        export_csv(handle, None)
+    else:
+        export_csv(handle, spectrum, False)
+
+    return handle
+
+
 def export_image(filename, format, figure, settings):
     oldSize = figure.get_size_inches()
     oldDpi = figure.get_dpi()
@@ -449,11 +462,13 @@ def export_map(filename, exportType, bounds, image, xyz):
         export_map_image(filename, exportType, image)
 
 
-def export_csv(handle, spectrum):
-    handle.write(u"Time (UTC), Frequency (MHz),Level (dB/Hz)\n")
-    for plot in spectrum.iteritems():
-        for freq, pwr in plot[1].iteritems():
-            handle.write("{}, {}, {}\n".format(plot[0], freq, pwr))
+def export_csv(handle, spectrum, header=True):
+    if header:
+        handle.write(u"Time (UTC), Frequency (MHz),Level (dB/Hz)\n")
+    if spectrum is not None:
+        for plot in spectrum.iteritems():
+            for freq, pwr in plot[1].iteritems():
+                handle.write("{}, {}, {}\n".format(plot[0], freq, pwr))
 
 
 def export_plt(handle, spectrum):

@@ -49,7 +49,7 @@ from dialogs_scan import DialogScanDelay
 from dialogs_tools import DialogCompare, DialogAutoCal, DialogSats, DialogSmooth, \
     DialogLog
 from events import EVENT_THREAD, Event, EventThread, post_event, Log, EventTimer
-from file import save_plot, export_plot, open_plot, ScanInfo, export_image, \
+from file import save_plot, export_plot, export_cont, open_plot, ScanInfo, export_image, \
     export_map, extension_add, File, run_file, export_gpx, Backups
 from location import ThreadLocation, LocationServer
 from menus import MenuMain, PopMenuMain
@@ -150,6 +150,8 @@ class FrameMain(wx.Frame):
         self.settings.indexRtl = limit(self.settings.indexRtl,
                                        0, len(self.devicesRtl) - 1)
         self.filename = ""
+        self.exportCont = None
+
         self.oldCal = 0
 
         self.remoteControl = None
@@ -337,6 +339,7 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.__on_export_image_seq, self.menuMain.exportSeq)
         self.Bind(wx.EVT_MENU, self.__on_export_geo, self.menuMain.exportGeo)
         self.Bind(wx.EVT_MENU, self.__on_export_track, self.menuMain.exportTrack)
+        self.Bind(wx.EVT_MENU, self.__on_export_cont, self.menuMain.exportCont)
         self.Bind(wx.EVT_MENU, self.__on_page, self.menuMain.page)
         self.Bind(wx.EVT_MENU, self.__on_preview, self.menuMain.preview)
         self.Bind(wx.EVT_MENU, self.__on_print, self.menuMain.printer)
@@ -583,6 +586,27 @@ class FrameMain(wx.Frame):
             export_gpx(fullName, self.locations, self.GetName())
             self.status.set_general("Finished")
         dlg.Destroy()
+
+    def __on_export_cont(self, _event):
+        if self.exportCont is None:
+            dlg = wx.FileDialog(self, 'Continuous export',
+                                self.settings.dirExport, '',
+                                File.get_type_filters(File.Types.CONT),
+                                wx.SAVE | wx.OVERWRITE_PROMPT)
+            if dlg.ShowModal() == wx.ID_OK:
+                fileName = dlg.GetFilename()
+                dirName = dlg.GetDirectory()
+                self.settings.dirExport = dirName
+                fileName = extension_add(fileName, dlg.GetFilterIndex(),
+                                         File.Types.CONT)
+                fullName = os.path.join(dirName, fileName)
+                self.exportCont = export_cont(self.exportCont, fullName, None)
+                self.status.set_general('Continuous export started')
+            dlg.Destroy()
+        else:
+            self.exportCont.close()
+            self.exportCont = None
+            self.status.set_general('Continuous export stopped')
 
     def __on_page(self, _event):
         dlg = wx.PageSetupDialog(self, self.pageConfig)
@@ -1085,6 +1109,11 @@ class FrameMain(wx.Frame):
                 self.backups.save(self.scanInfo, self.spectrum, self.locations)
             self.status.hide_progress()
             self.__set_plot(self.spectrum, self.settings.annotate)
+            if self.exportCont is not None:
+                last = next(reversed(self.spectrum))
+                sweep = OrderedDict({last: self.spectrum[last]})
+                export_cont(self.exportCont, None, sweep)
+
             if self.stopScan:
                 self.status.set_general("Stopped")
                 self.__cleanup()

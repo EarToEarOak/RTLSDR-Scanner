@@ -58,6 +58,12 @@ class MenuMain(object):
                                      "Export maps")
         self.exportTrack = file.Append(wx.ID_ANY, "Export GPS track...",
                                        "Export GPS data")
+
+        file.AppendSeparator()
+        self.exportCont = file.Append(wx.ID_ANY, "Continuous export...",
+                                      'Continually export data at the end of each sweep',
+                                      kind=wx.ITEM_CHECK)
+
         file.AppendSeparator()
         self.page = file.Append(wx.ID_ANY, "Page setup...",
                                 "Page setup")
@@ -173,6 +179,7 @@ class MenuMain(object):
         self.exportSeq.Enable(state and len(spectrum))
         self.exportGeo.Enable(state and len(spectrum) and len(locations) > 4)
         self.exportTrack.Enable(state and len(locations))
+        self.exportCont.Enable(state)
         self.page.Enable(state)
         self.preview.Enable(state)
         self.printer.Enable(state)
