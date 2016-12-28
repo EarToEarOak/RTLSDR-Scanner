@@ -32,7 +32,7 @@
 !include "include\EnvVarUpdate.nsh"
 !include "include\fileassoc.nsh"
 
-!define INSTALLER_VERSION "20"
+!define INSTALLER_VERSION "21"
 
 !define PRODUCT_NAME "RTLSDR Scanner"
 !define PRODUCT_PUBLISHER "Ear to Ear Oak"
@@ -132,20 +132,15 @@ SectionGroup "/e" "Dependencies" SEC_DEP
 		ExecWait 'vcredist_x86.exe /quiet /norestart'
 	SectionEnd
 	SectionGroup "/e" "Python" SEC_PYDEP
-		Section "Python 2.7.11" SEC_PYTHON
-			StrCpy $UriPath "http://www.python.org/ftp/python/2.7.11"
-			StrCpy $UriFile "python-2.7.11.msi"
+		Section "Python 2.7.12" SEC_PYTHON
+			StrCpy $UriPath "http://www.python.org/ftp/python/2.7.12"
+			StrCpy $UriFile "python-2.7.12.msi"
 			Call install_msi
 			Call set_installer_path
 		SectionEnd
 		Section "Add Python to PATH"
 			Call set_python_path
 		SectionEnd
-        Section "numpy"
-            StrCpy $UriPath "http://downloads.sourceforge.net/project/numpy/NumPy/1.10.2"
-            StrCpy $UriFile "numpy-1.10.2-win32-superpack-python2.7.exe"
-            Call install_exe
-        SectionEnd
         Section "matplotlib"
             StrCpy $UriFile "matplotlib<2"
             Call install_pip
