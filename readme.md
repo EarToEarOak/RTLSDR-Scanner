@@ -15,10 +15,10 @@ Tested on:
 
 - Windows 7 (x86 and x64)
 - Windows 8.1 (x64)
-- Windows XP (x86)
 - Ubuntu 12.04 (x86)
 - Ubuntu 12.10 (x64)
 - Ubuntu 13.04 (x64)
+- Ubuntu 14.04 (x64)
 - OS X Snow Leopard
 - OS X Mountain Lion
 
@@ -29,11 +29,11 @@ Windows executables for x86 and amd64 platforms are available on [GitHub](https:
 
 ## Requirements ##
 
-- [Python 2.7](http://www.python.org) or greater
+- [Python 2.7.x](http://www.python.org)
 - [wxPython](http://www.wxpython.org/)
 - [matplotlib](http://matplotlib.org/)
 - [numpy](http://www.numpy.org/)
-- [Pillow](https://pypi.python.org/pypi/Pillow/2.4.0)
+- [Pillow](https://pypi.python.org/pypi/Pillow)
 - [rtlsdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)
 - [pyrtlsdr](https://github.com/roger-/pyrtlsdr)
 - [pyserial](https://pypi.python.org/pypi/pyserial)
