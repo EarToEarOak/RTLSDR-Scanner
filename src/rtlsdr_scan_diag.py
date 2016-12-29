@@ -106,7 +106,8 @@ if __name__ == '__main__':
                 print ''
 
         if problem:
-            print 'Problems found, please install the libraries for Python {}.{}'.format(version[0], version[1])
+            print '\nProblems found, please install the libraries for Python {}.{}'.format(version[0], version[1])
+            print 'Further instructions can be found at http://eartoearoak.com/software/rtlsdr-scanner/rtlsdr-scanner-installation'
         else:
             print 'No problems found'
             print '\nUsing driver {}'.format(find_rtlsdr_driver())
