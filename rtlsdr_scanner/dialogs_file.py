@@ -39,16 +39,16 @@ import wx
 from wx.grid import GridCellDateTimeRenderer
 from wx.lib.masked.numctrl import NumCtrl, EVT_NUM
 
-from constants import SAMPLE_RATE, TUNER
-from events import Event
-from file import export_image, File
-from misc import format_time
-from panels import PanelColourBar
-from plot_line import Plotter
-from spectrum import Extent, count_points
-from utils_mpl import get_colours, create_heatmap
-from utils_wx import ValidatorCoord
-from widgets import TickCellRenderer
+from rtlsdr_scanner.constants import SAMPLE_RATE, TUNER
+from rtlsdr_scanner.events import Event
+from rtlsdr_scanner.file import export_image, File
+from rtlsdr_scanner.misc import format_time
+from rtlsdr_scanner.panels import PanelColourBar
+from rtlsdr_scanner.plot_line import Plotter
+from rtlsdr_scanner.spectrum import Extent, count_points
+from rtlsdr_scanner.utils_mpl import get_colours, create_heatmap
+from rtlsdr_scanner.utils_wx import ValidatorCoord
+from rtlsdr_scanner.widgets import TickCellRenderer
 
 
 class DialogProperties(wx.Dialog):

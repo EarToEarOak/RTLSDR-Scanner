@@ -30,7 +30,7 @@ import threading
 
 import numpy
 
-from events import post_event, EventThread, Event
+from rtlsdr_scanner.events import post_event, EventThread, Event
 
 
 class RtlTcpCmd(object):

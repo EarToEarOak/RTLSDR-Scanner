@@ -22,7 +22,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from constants import APP_NAME, LOCATION_PORT
+from rtlsdr_scanner.constants import APP_NAME, LOCATION_PORT
 
 
 def create_gearth(handle):

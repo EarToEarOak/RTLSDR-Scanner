@@ -27,8 +27,8 @@ import time
 
 from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 
-from events import post_event, EventThread, Event
-from utils_mpl import utc_to_mpl, set_date_ticks
+from rtlsdr_scanner.events import post_event, EventThread, Event
+from rtlsdr_scanner.utils_mpl import utc_to_mpl, set_date_ticks
 
 
 class PlotterTime(object):

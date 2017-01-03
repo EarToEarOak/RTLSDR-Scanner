@@ -37,11 +37,11 @@ from urlparse import urlparse
 import serial
 from serial.serialutil import SerialException
 
-from constants import LOCATION_PORT, APP_NAME
-from devices import DeviceGPS
-from events import post_event, EventThread, Event, Log
-from misc import format_iso_time, haversine, format_time, limit_to_ascii, limit, \
-    get_resdir
+from rtlsdr_scanner.constants import LOCATION_PORT, APP_NAME
+from rtlsdr_scanner.devices import DeviceGPS
+from rtlsdr_scanner.events import post_event, EventThread, Event, Log
+from rtlsdr_scanner.misc import format_iso_time, haversine, format_time, \
+    limit_to_ascii, limit, get_resdir
 
 
 TIMEOUT = 15

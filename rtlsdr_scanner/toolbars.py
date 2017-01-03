@@ -33,13 +33,13 @@ from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
 import wx
 from wx.animate import AnimationCtrl, Animation
 
-from constants import Display, PlotFunc
-from dialogs_toolbars import DialogSmoothPrefs, DialogPeakThreshold
-from events import Log
-from misc import get_resource_path
-from utils_mpl import get_colours
-from utils_wx import load_bitmap
-from widgets import Led
+from rtlsdr_scanner.constants import Display, PlotFunc
+from rtlsdr_scanner.dialogs_toolbars import DialogSmoothPrefs, DialogPeakThreshold
+from rtlsdr_scanner.events import Log
+from rtlsdr_scanner.misc import get_resource_path
+from rtlsdr_scanner.utils_mpl import get_colours
+from rtlsdr_scanner.utils_wx import load_bitmap
+from rtlsdr_scanner.widgets import Led
 
 
 class Statusbar(wx.StatusBar):

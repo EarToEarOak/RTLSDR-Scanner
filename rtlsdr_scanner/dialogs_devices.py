@@ -30,13 +30,13 @@ from urlparse import urlparse
 from wx import grid
 import wx
 
-from constants import TUNER
-from widgets import TickCellRenderer, SatLevel
-from devices import DeviceRTL, DeviceGPS
-from dialogs_prefs import DialogOffset
-from events import Event
-from location import ThreadLocation
-from misc import nearest, limit, get_serial_ports
+from rtlsdr_scanner.constants import TUNER
+from rtlsdr_scanner.widgets import TickCellRenderer, SatLevel
+from rtlsdr_scanner.devices import DeviceRTL, DeviceGPS
+from rtlsdr_scanner.dialogs_prefs import DialogOffset
+from rtlsdr_scanner.events import Event
+from rtlsdr_scanner.location import ThreadLocation
+from rtlsdr_scanner.misc import nearest, limit, get_serial_ports
 
 
 class DialogDevicesRTL(wx.Dialog):

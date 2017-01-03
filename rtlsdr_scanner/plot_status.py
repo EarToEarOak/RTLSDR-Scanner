@@ -27,9 +27,9 @@ import threading
 from matplotlib.font_manager import FontProperties
 from matplotlib.table import Table
 
-from events import post_event, EventThread, Event
-from misc import format_time, format_precision
-from utils_mpl import find_artists, set_table_colour
+from rtlsdr_scanner.events import post_event, EventThread, Event
+from rtlsdr_scanner.misc import format_time, format_precision
+from rtlsdr_scanner.utils_mpl import find_artists, set_table_colour
 
 
 class PlotterStatus(object):

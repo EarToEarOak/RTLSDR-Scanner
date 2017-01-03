@@ -23,6 +23,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from collections import OrderedDict
 import itertools
 import math
 import threading
@@ -31,10 +32,8 @@ import time
 import matplotlib
 import rtlsdr
 
-from constants import SAMPLE_RATE, BANDWIDTH, WINFUNC
-from events import EventThread, Event, post_event
-import rtltcp
-from collections import OrderedDict
+from rtlsdr_scanner.constants import SAMPLE_RATE, BANDWIDTH, WINFUNC
+from rtlsdr_scanner.events import EventThread, Event, post_event
 
 
 class ThreadScan(threading.Thread):

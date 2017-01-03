@@ -27,7 +27,7 @@ import os
 
 import wx
 
-from misc import get_resdir, get_script_dir
+from rtlsdr_scanner.misc import get_resdir, get_script_dir
 
 
 class ValidatorCoord(wx.PyValidator):
@@ -82,7 +82,7 @@ def load_icon(name):
     if os.path.isfile(os.path.join(scriptDir, name)):
         iconFile = os.path.join(scriptDir, name)
     else:
-        iconFile = os.path.join(scriptDir,  '..',  name)
+        iconFile = os.path.join(scriptDir, '..', name)
 
     return wx.Icon(iconFile, wx.BITMAP_TYPE_ICO)
 

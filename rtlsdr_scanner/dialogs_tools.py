@@ -33,15 +33,15 @@ from wx import grid
 import wx
 from wx.lib import masked
 
-from constants import F_MIN, F_MAX, Cal, WINFUNC, PlotFunc
-from events import Event
-from file import File, open_plot
-from misc import format_precision, format_time
-from panels import PanelGraphCompare, PanelLine
-from plot_line import Plotter
-from spectrum import Extent, smooth_spectrum
-from utils_wx import close_modeless
-from widgets import SatLevel
+from rtlsdr_scanner.constants import F_MIN, F_MAX, Cal, WINFUNC, PlotFunc
+from rtlsdr_scanner.events import Event
+from rtlsdr_scanner.file import File, open_plot
+from rtlsdr_scanner.misc import format_precision, format_time
+from rtlsdr_scanner.panels import PanelGraphCompare, PanelLine
+from rtlsdr_scanner.plot_line import Plotter
+from rtlsdr_scanner.spectrum import Extent, smooth_spectrum
+from rtlsdr_scanner.utils_wx import close_modeless
+from rtlsdr_scanner.widgets import SatLevel
 
 
 class DialogCompare(wx.Dialog):

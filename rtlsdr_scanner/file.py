@@ -41,9 +41,9 @@ import matplotlib
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 import wx
 
-from constants import APP_NAME
-from misc import format_iso_time
-from spectrum import create_mesh, sort_spectrum
+from rtlsdr_scanner.constants import APP_NAME
+from rtlsdr_scanner.misc import format_iso_time
+from rtlsdr_scanner.spectrum import create_mesh, sort_spectrum
 
 
 class File(object):

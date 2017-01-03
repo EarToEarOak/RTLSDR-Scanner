@@ -24,8 +24,6 @@
 #
 import wx
 
-from constants import Mode
-
 
 class MenuMain(object):
     def __init__(self, parent, settings):

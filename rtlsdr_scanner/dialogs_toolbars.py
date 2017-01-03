@@ -26,7 +26,7 @@
 import wx
 from wx.lib.masked.numctrl import NumCtrl
 
-from constants import WINFUNC
+from rtlsdr_scanner.constants import WINFUNC
 
 
 class DialogSmoothPrefs(wx.Dialog):

@@ -32,14 +32,14 @@ import threading
 import time
 from urlparse import urlparse
 
-from constants import SAMPLE_RATE
-from devices import DeviceRTL, get_devices_rtl
-from events import Event
-from file import save_plot, export_plot, ScanInfo, File
-from location import ThreadLocation
-from misc import nearest, calc_real_dwell, next_2_to_pow, get_dwells
-from scan import ThreadScan, update_spectrum, ThreadProcess
-from settings import Settings
+from rtlsdr_scanner.constants import SAMPLE_RATE
+from rtlsdr_scanner.devices import DeviceRTL, get_devices_rtl
+from rtlsdr_scanner.events import Event
+from rtlsdr_scanner.file import save_plot, export_plot, ScanInfo, File
+from rtlsdr_scanner.location import ThreadLocation
+from rtlsdr_scanner.misc import nearest, calc_real_dwell, next_2_to_pow, get_dwells
+from rtlsdr_scanner.scan import ThreadScan, update_spectrum, ThreadProcess
+from rtlsdr_scanner.settings import Settings
 
 
 class Cli(object):

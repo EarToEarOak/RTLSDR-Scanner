@@ -33,10 +33,10 @@ import wx
 from wx.lib.agw.cubecolourdialog import CubeColourDialog
 from wx.lib.masked.numctrl import NumCtrl
 
-from constants import F_MIN, F_MAX, SAMPLE_RATE, BANDWIDTH, WINFUNC
-from panels import PanelColourBar
-from rtltcp import RtlTcp
-from utils_mpl import get_colours
+from rtlsdr_scanner.constants import F_MIN, F_MAX, SAMPLE_RATE, BANDWIDTH, WINFUNC
+from rtlsdr_scanner.panels import PanelColourBar
+from rtlsdr_scanner.rtltcp import RtlTcp
+from rtlsdr_scanner.utils_mpl import get_colours
 
 
 class DialogOffset(wx.Dialog):

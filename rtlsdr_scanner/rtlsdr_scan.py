@@ -45,11 +45,11 @@ import os.path
 import signal
 import sys
 
-from cli import Cli
-from constants import APP_NAME
-from file import File
-from main_window import FrameMain, RtlSdrScanner
-from misc import set_version_timestamp
+from rtlsdr_scanner.cli import Cli
+from rtlsdr_scanner.constants import APP_NAME
+from rtlsdr_scanner.file import File
+from rtlsdr_scanner.main_window import FrameMain, RtlSdrScanner
+from rtlsdr_scanner.misc import set_version_timestamp
 
 if not hasattr(sys, 'frozen'):
     try:

@@ -36,7 +36,7 @@ import urllib
 
 import serial.tools.list_ports
 
-from constants import SAMPLE_RATE, TIMESTAMP_FILE
+from rtlsdr_scanner.constants import SAMPLE_RATE, TIMESTAMP_FILE
 
 
 class RemoteControl(object):
