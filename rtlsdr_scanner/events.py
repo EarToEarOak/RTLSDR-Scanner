@@ -36,8 +36,7 @@ class Event(object):
     STARTING, STEPS, INFO, DATA, STOPPED, ERROR, FINISHED, PROCESSED, \
         CAL, LEVEL, UPDATED, DRAW, \
         DELAY_COUNT, DELAY_START, \
-        VER_UPD, VER_NOUPD, VER_UPDFAIL, \
-        LOC, LOC_RAW, LOC_WARN, LOC_ERR, LOC_SAT = range(22)
+        LOC, LOC_RAW, LOC_WARN, LOC_ERR, LOC_SAT = range(19)
 
 
 class Status(object):

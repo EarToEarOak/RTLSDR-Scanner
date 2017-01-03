@@ -49,7 +49,6 @@ from rtlsdr_scanner.cli import Cli
 from rtlsdr_scanner.constants import APP_NAME
 from rtlsdr_scanner.file import File
 from rtlsdr_scanner.main_window import FrameMain, RtlSdrScanner
-from rtlsdr_scanner.misc import set_version_timestamp
 
 if not hasattr(sys, 'frozen'):
     try:
@@ -118,8 +117,6 @@ def __arguments():
 
 if __name__ == '__main__':
     print APP_NAME + "\n"
-    if 'rtlsdr_update_timestamp'in os.environ:
-        set_version_timestamp()
 
     isGui, args = __arguments()
     if isGui:

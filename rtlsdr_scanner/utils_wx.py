@@ -26,8 +26,7 @@
 import os
 
 import wx
-
-from rtlsdr_scanner.misc import get_resdir, get_script_dir
+from rtlsdr_scanner.misc import get_resource
 
 
 class ValidatorCoord(wx.PyValidator):
@@ -71,20 +70,15 @@ class ValidatorCoord(wx.PyValidator):
 
 
 def load_bitmap(name):
-    filename = get_resdir() + '/' + name + '.png'
+    filename = get_resource(name + '.png')
 
     return wx.Bitmap(filename, wx.BITMAP_TYPE_PNG)
 
 
 def load_icon(name):
-    name += '.ico'
-    scriptDir = get_script_dir()
-    if os.path.isfile(os.path.join(scriptDir, name)):
-        iconFile = os.path.join(scriptDir, name)
-    else:
-        iconFile = os.path.join(scriptDir, '..', name)
+    filename = get_resource(name + '.ico')
 
-    return wx.Icon(iconFile, wx.BITMAP_TYPE_ICO)
+    return wx.Icon(filename, wx.BITMAP_TYPE_ICO)
 
 
 def close_modeless():

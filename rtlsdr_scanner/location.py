@@ -41,7 +41,7 @@ from rtlsdr_scanner.constants import LOCATION_PORT, APP_NAME
 from rtlsdr_scanner.devices import DeviceGPS
 from rtlsdr_scanner.events import post_event, EventThread, Event, Log
 from rtlsdr_scanner.misc import format_iso_time, haversine, format_time, \
-    limit_to_ascii, limit, get_resdir
+    limit_to_ascii, limit, get_resource
 
 
 TIMEOUT = 15
@@ -567,8 +567,8 @@ class LocationServerHandler(BaseHTTPRequestHandler):
     def __send_file(self):
         url = urlparse(self.path)
         _dir, filename = os.path.split(url.path)
-        localFile = os.path.join(get_resdir(), filename)
-        if not os.path.exists(localFile):
+        localFile = get_resource(filename)
+        if os.path.isdir(localFile) or not os.path.exists(localFile):
             self.send_error(404)
             self.server.log.add('File not found: {}'.format(self.path),
                                 Log.WARN)

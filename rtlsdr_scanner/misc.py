@@ -28,15 +28,15 @@ import json
 from math import radians, sin, cos, asin, sqrt
 import math
 import os
+import pkg_resources
 import socket
 import sys
 from threading import Thread
 import time
-import urllib
 
 import serial.tools.list_ports
 
-from rtlsdr_scanner.constants import SAMPLE_RATE, TIMESTAMP_FILE
+from rtlsdr_scanner.constants import SAMPLE_RATE
 
 
 class RemoteControl(object):
@@ -77,27 +77,12 @@ class RemoteControl(object):
         self.__send(command)
 
 
-def get_script_dir():
+def get_resource(resource):
     if not hasattr(sys, 'frozen'):
-        scriptDir = os.path.dirname(os.path.realpath(sys.argv[0]))
+        return pkg_resources.resource_filename('rtlsdr_scanner.res',
+                                               resource)
     else:
-        scriptDir = sys._MEIPASS
-
-    return scriptDir
-
-
-def get_resdir():
-    scriptDir = get_script_dir()
-    if os.path.isdir(os.path.join(scriptDir, 'res')):
-        resDir = os.path.join(scriptDir, 'res')
-    else:
-        resDir = os.path.join(scriptDir, '..', 'res')
-
-    return resDir
-
-
-def get_resource_path(resource):
-    return os.path.join(get_resdir(), resource)
+        return os.path.join(sys._MEIPASS, 'res', resource)
 
 
 def limit(value, minimum, maximum):
@@ -212,32 +197,6 @@ def format_time(timeStamp, withDate=False):
 def format_iso_time(timeStamp):
     dt = datetime.datetime.utcfromtimestamp(timeStamp)
     return dt.isoformat() + 'Z'
-
-
-def set_version_timestamp():
-    scriptDir = get_script_dir()
-    timeStamp = str(int(time.time()))
-    f = open(os.path.join(scriptDir, TIMESTAMP_FILE), 'w')
-    f.write(timeStamp)
-    f.close()
-
-
-def get_version_timestamp(asSeconds=False):
-    scriptDir = get_script_dir()
-    f = open(os.path.join(scriptDir, TIMESTAMP_FILE), 'r')
-    timeStamp = int(f.readline())
-    f.close()
-    if asSeconds:
-        return timeStamp
-    else:
-        return format_time(timeStamp, True)
-
-
-def get_version_timestamp_repo():
-    f = urllib.urlopen('https://raw.github.com/EarToEarOak/RTLSDR-Scanner/master/src/version-timestamp')
-    timeStamp = int(f.readline())
-    f.close()
-    return timeStamp
 
 
 def get_serial_ports():

@@ -54,7 +54,7 @@ from rtlsdr_scanner.file import save_plot, export_plot, export_cont, open_plot, 
 from location import ThreadLocation, LocationServer
 from menus import MenuMain, PopMenuMain
 from misc import RemoteControl, calc_samples, get_dwells, calc_real_dwell, \
-    get_version_timestamp, get_version_timestamp_repo, format_iso_time, limit
+    format_iso_time, limit
 from rtlsdr_scanner.panels import PanelGraph
 from rtlsdr_scanner.printer import PrintOut
 from rtlsdr_scanner.scan import ThreadScan, update_spectrum, ThreadProcess
@@ -99,7 +99,6 @@ class FrameMain(wx.Frame):
 
         self.sdr = None
         self.threadScan = None
-        self.threadUpdate = None
         self.threadLocation = None
 
         self.queueScan = Queue.Queue()
@@ -370,7 +369,6 @@ class FrameMain(wx.Frame):
         self.Bind(wx.EVT_MENU, self.__on_loc_clear, self.menuMain.locClear)
         self.Bind(wx.EVT_MENU, self.__on_log, self.menuMain.log)
         self.Bind(wx.EVT_MENU, self.__on_help, self.menuMain.helpLink)
-        self.Bind(wx.EVT_MENU, self.__on_update, self.menuMain.update)
         self.Bind(wx.EVT_MENU, self.__on_sys_info, self.menuMain.sys)
         self.Bind(wx.EVT_MENU, self.__on_about, self.menuMain.about)
 
@@ -797,12 +795,6 @@ class FrameMain(wx.Frame):
     def __on_help(self, _event):
         webbrowser.open("http://eartoearoak.com/software/rtlsdr-scanner")
 
-    def __on_update(self, _event):
-        if self.threadUpdate is None:
-            self.status.set_general("Checking for updates", level=None)
-            self.threadUpdate = Thread(target=self.__update_check)
-            self.threadUpdate.start()
-
     def __on_sys_info(self, _event):
         dlg = DialogSysInfo(self)
         dlg.ShowModal()
@@ -980,12 +972,6 @@ class FrameMain(wx.Frame):
         elif status == Event.DELAY_START:
             self.status.hide_progress()
             self.__scan_start()
-        elif status == Event.VER_UPD:
-            self.__update_checked(True, arg1, arg2)
-        elif status == Event.VER_NOUPD:
-            self.__update_checked(False)
-        elif status == Event.VER_UPDFAIL:
-            self.__update_checked(failed=True)
         elif status == Event.LOC_WARN:
             self.status.set_gps("{}".format(arg2), level=Log.WARN)
             self.status.warn_gps()
@@ -1362,42 +1348,6 @@ class FrameMain(wx.Frame):
                 return True
 
         return False
-
-    def __update_check(self):
-        local = get_version_timestamp(True)
-        try:
-            remote = get_version_timestamp_repo()
-        except IOError:
-            post_event(self, EventThread(Event.VER_UPDFAIL))
-            return
-
-        if remote > local:
-            post_event(self, EventThread(Event.VER_UPD, local, remote))
-        else:
-            post_event(self, EventThread(Event.VER_NOUPD))
-
-    def __update_checked(self, updateFound=False, local=None, remote=None,
-                         failed=False):
-        self.threadUpdate = None
-        self.status.set_general("", level=None)
-        if failed:
-            icon = wx.ICON_ERROR
-            message = "Update check failed"
-        else:
-            icon = wx.ICON_INFORMATION
-            if updateFound:
-                message = "Update found\n\n"
-                message += "Local: " + time.strftime('%c',
-                                                     time.localtime(local))
-                message += "\nRemote: " + time.strftime('%c',
-                                                        time.localtime(remote))
-            else:
-                message = "No updates found"
-
-        dlg = wx.MessageDialog(self, message, "Update",
-                               wx.OK | icon)
-        dlg.ShowModal()
-        dlg.Destroy()
 
     def __refresh_devices(self):
         self.settings.devicesRtl = get_devices_rtl(self.devicesRtl, self.status)

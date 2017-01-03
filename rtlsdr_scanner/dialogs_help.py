@@ -33,8 +33,8 @@ import numpy
 import serial
 import wx
 
-from rtlsdr_scanner.misc import get_version_timestamp
 from rtlsdr_scanner.utils_wx import load_bitmap
+from rtlsdr_scanner.constants import VERSION
 
 
 class DialogSysInfo(wx.Dialog):
@@ -114,8 +114,8 @@ class DialogAbout(wx.Dialog):
         textLink = wx.HyperlinkCtrl(self, wx.ID_ANY,
                                     label="http://eartoearoak.com/software/rtlsdr-scanner",
                                     url="http://eartoearoak.com/software/rtlsdr-scanner")
-        textTimestamp = wx.StaticText(self,
-                                      label="Updated: " + get_version_timestamp())
+        textVersion = wx.StaticText(self,
+                                    label='v' + '.'.join([str(x) for x in VERSION]))
         buttonOk = wx.Button(self, wx.ID_OK)
 
         grid = wx.GridBagSizer(10, 10)
@@ -125,7 +125,7 @@ class DialogAbout(wx.Dialog):
                  flag=wx.ALIGN_CENTRE | wx.ALL, border=10)
         grid.Add(textLink, pos=(1, 1), span=(1, 2),
                  flag=wx.ALIGN_CENTRE | wx.ALL, border=10)
-        grid.Add(textTimestamp, pos=(2, 1), span=(1, 2),
+        grid.Add(textVersion, pos=(2, 1), span=(1, 2),
                  flag=wx.ALIGN_CENTRE | wx.ALL, border=10)
         grid.Add(buttonOk, pos=(3, 2),
                  flag=wx.ALIGN_RIGHT | wx.ALL, border=10)

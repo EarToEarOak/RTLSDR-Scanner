@@ -149,9 +149,6 @@ class MenuMain(object):
         self.helpLink = help.Append(wx.ID_HELP, "&Help...",
                                     "Link to help")
         help.AppendSeparator()
-        self.update = help.Append(wx.ID_ANY, "&Check for updates...",
-                                  "Check for updates to the program")
-        help.AppendSeparator()
         self.sys = help.Append(wx.ID_ANY, "&System information...",
                                "Displays system information")
         help.AppendSeparator()

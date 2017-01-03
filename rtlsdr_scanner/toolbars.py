@@ -36,7 +36,7 @@ from wx.animate import AnimationCtrl, Animation
 from rtlsdr_scanner.constants import Display, PlotFunc
 from rtlsdr_scanner.dialogs_toolbars import DialogSmoothPrefs, DialogPeakThreshold
 from rtlsdr_scanner.events import Log
-from rtlsdr_scanner.misc import get_resource_path
+from rtlsdr_scanner.misc import get_resource
 from rtlsdr_scanner.utils_mpl import get_colours
 from rtlsdr_scanner.utils_wx import load_bitmap
 from rtlsdr_scanner.widgets import Led
@@ -62,7 +62,7 @@ class Statusbar(wx.StatusBar):
         self.controls[2] = Led(self, label=self.TEXT_GPS)
         self.controls[3] = wx.Gauge(self, -1,
                                     style=wx.GA_HORIZONTAL | wx.GA_SMOOTH)
-        animation = Animation(get_resource_path('busy.gif'))
+        animation = Animation(get_resource('busy.gif'))
         busy = AnimationCtrl(self, anim=animation)
         busy.SetToolTipString('Updating plot')
         self.controls[4] = busy
