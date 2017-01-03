@@ -23,23 +23,24 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import sys
+import os
 import platform
 
-from PyInstaller.utils.win32 import versioninfo
 from PyInstaller import compat
+from PyInstaller.utils.win32 import versioninfo
+import pkg_resources
 
 
 def create_version():
-    f = open('src/version-timestamp', 'r')
-    timeStamp = int(f.read())
-    f.close()
+    search = os.path.join(os.getcwd(), 'rtlsdr_scanner')
+    sys.path.append(search)
+    from constants import VERSION
 
-    version = (1, 0, 0, 0)
-    ffi = versioninfo.FixedFileInfo(filevers=version,
-                                    prodvers=version,
-                                    date=(0, timeStamp))
-    ffi.fileVersionLS = timeStamp
-    ffi.productVersionLS = timeStamp
+    version = VERSION
+    version.append(0)
+    ffi = versioninfo.FixedFileInfo(filevers=VERSION,
+                                    prodvers=VERSION)
 
     strings = []
     strings.append(versioninfo.StringStruct('ProductName',
@@ -47,7 +48,7 @@ def create_version():
     strings.append(versioninfo.StringStruct('FileDescription',
                                             'Spectrum Analyser'))
     strings.append(versioninfo.StringStruct('LegalCopyright',
-                                            'Copyright 2012 - 2016 Al Brown'))
+                                            'Copyright 2012 - 2017 Al Brown'))
     table = versioninfo.StringTable('040904B0', strings)
     sInfo = versioninfo.StringFileInfo([table])
     var = versioninfo.VarStruct('Translation', [2057, 1200])
@@ -68,12 +69,10 @@ def build(version=None):
     filename = 'rtlsdr_scan-' + system + '-' + architecture.lower()
 
     excludes = ['PySide', 'qt', 'scipy']
-    a = Analysis(['src/rtlsdr_scan.py'],
+    a = Analysis(['rtlsdr_scanner/__main__.py'],
                 excludes=excludes)
 
-    a.datas += Tree('res', prefix='res')
-    a.datas += [('version-timestamp', 'src/version-timestamp', 'DATA')]
-    a.datas += [('rtlsdr_scan.ico', 'rtlsdr_scan.ico', 'DATA')]
+    a.datas += Tree('rtlsdr_scanner/res', prefix='res')
 
     pyz = PYZ(a.pure)
 
@@ -83,7 +82,7 @@ def build(version=None):
               a.zipfiles,
               a.datas,
               name=os.path.join('dist', filename),
-              icon='rtlsdr_scan.ico',
+              icon='rtlsdr_scanner/res/rtlsdr_scan.ico',
               version=version,
               upx=True)
 
