@@ -42,5 +42,5 @@ setup(name='rtlsdr_scanner',
       author_email='al [at] eartoearok.com',
       license='GPLv3',
       packages=find_packages(),
-      package_data={'rtlsdr_scanner.res': '*'},
+      package_data={'rtlsdr_scanner.res': ['*']},
       install_requires=['numpy', 'matplotlib<2', 'Pillow', 'pyrtlsdr', 'pyserial', 'visvis'])
