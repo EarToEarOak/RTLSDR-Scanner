@@ -3,7 +3,7 @@
 ;
 ; http://eartoearoak.com/software/rtlsdr-scanner
 ;
-; Copyright 2012 - 2015 Al Brown
+; Copyright 2012 - 2017 Al Brown
 ;
 ; A frequency scanning GUI for the OsmoSDR rtl-sdr library at
 ; http://sdr.osmocom.org/trac/wiki/rtl-sdr
@@ -32,7 +32,7 @@
 !include "include\EnvVarUpdate.nsh"
 !include "include\fileassoc.nsh"
 
-!define INSTALLER_VERSION "21"
+!define INSTALLER_VERSION "22"
 
 !define PRODUCT_NAME "RTLSDR Scanner"
 !define PRODUCT_PUBLISHER "Ear to Ear Oak"
@@ -42,6 +42,7 @@
 
 !define SETTINGS_KEY "Software\rtlsdr-scanner"
 !define SETTINGS_INSTDIR "InstDir"
+!define SETTINGS_INSTVER "InstVer"
 
 !define MUI_ABORTWARNING
 !define MUI_ICON "rtlsdr_scan.ico"
@@ -71,10 +72,8 @@ https://github.com/EarToEarOak/RTLSDR-Scanner/releases $\r$\n$\r$\n\
 Updating is highly recommended"'
 !define INFO '"This will install RTLSDR Scanner and its Python dependencies $\r$\n$\r$\n\
 When asked it is recommended to use the default options for all software $\r$\n$\r$\n\
-It will add the new installation of Python to the path, potentially causing problems $\r$\n\
-to previous Python installs $\r$\n$\r$\n\
 You can update to the latest versions of RTLSDR-Scanner, $\r$\n\
-the rtlsdr driver and pyrtlsdr by running this installer again"'
+the rtlsdr driver and dependencies by running this installer again"'
 
 !define FILE_CLASS "RTLSDRScanner.Scan"
 !define FILE_TYPE "rfs"
@@ -95,7 +94,6 @@ Var Radio1
 Var Radio2
 Var UpdateText
 Var UpdateNext
-Var InstSize
 
 Var ErrorLog
 Var ErrorMessage
@@ -105,23 +103,9 @@ Var PythonPath
 Var UriPath
 Var UriFile
 
-Section -UninstPrevious
-	Call uninstall
-SectionEnd
 
 Section "RTLSDR Scanner (Required)" SEC_SCAN
-	SetOutPath "$INSTDIR"
-	SetOverwrite ifnewer
-	File "license.txt"
-	Call install_rtlsdr_scanner
-	CopyFiles "$ExePath" "$InstDir\"
-	CreateDirectory "$SMPROGRAMS\RTLSDR Scanner"
-	CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\Setup.lnk" "$INSTDIR\$EXEFILE"
-
-	${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
-	IntFmt $InstSize "0x%08X" $0
 SectionEnd
-
 
 SectionGroup "/e" "Dependencies" SEC_DEP
 	Section "RTLSDR Driver" SEC_RTLSDR
@@ -138,29 +122,6 @@ SectionGroup "/e" "Dependencies" SEC_DEP
 			Call install_msi
 			Call set_installer_path
 		SectionEnd
-		Section "Add Python to PATH"
-			Call set_python_path
-		SectionEnd
-        Section "matplotlib"
-            StrCpy $UriFile "matplotlib<2"
-            Call install_pip
-        SectionEnd
-        Section "Pillow" SEC_PILLOW
-			StrCpy $UriFile "pillow"
-			Call install_pip
-		SectionEnd
-		Section "pyrtlsdr" SEC_PYRTLSDR
-            StrCpy $UriFile "pyrtlsdr"
-            Call install_pip
-		SectionEnd
-		Section "PySerial" SEC_PYSERIAL
-			StrCpy $UriFile "pyserial"
-			Call install_pip
-		SectionEnd
-		Section "visvis (Optional)" SEC_VISVIS
-			StrCpy $UriFile "visvis"
-			Call install_pip
-		SectionEnd
 		Section "wxPython 3"
 			StrCpy $UriPath "http://downloads.sourceforge.net/wxpython/3.0.2.0"
 			StrCpy $UriFile "wxPython3.0-win32-3.0.2.0-py27.exe"
@@ -169,27 +130,32 @@ SectionGroup "/e" "Dependencies" SEC_DEP
 	SectionGroupEnd
 SectionGroupEnd
 
+Section -Install
+    SetOutPath "$INSTDIR"
+    SetOverwrite ifnewer
+    File "..\rtlsdr_scanner\res\rtlsdr_scan.ico"
+    File "..\doc\Manual.pdf"
+    File "..\doc\BBCR2.rfs"
+    File "license.txt"
+    Call install_rtlsdr_scanner
+    CopyFiles "$ExePath" "$InstDir\"
+    CreateDirectory "$SMPROGRAMS\RTLSDR Scanner"
+    CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\Setup.lnk" "$INSTDIR\$EXEFILE"
+SectionEnd
+
 Section -AdditionalIcons
 	SetOutPath "$INSTDIR"
 	WriteIniStr "$INSTDIR\${PRODUCT_NAME}.url" "InternetShortcut" "URL" "${PRODUCT_WEB_SITE}"
-	Call get_python_path
-	CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\RTLSDR Scanner.lnk" '"$PythonPath\python.exe"' '"$INSTDIR\rtlsdr_scan.py"' "$INSTDIR\rtlsdr_scan.ico" 0
+	
 	CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\Website.lnk" "$INSTDIR\${PRODUCT_NAME}.url"
 	CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\Uninstall.lnk" "$INSTDIR\uninst.exe"
 	CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\Manual.lnk" "$INSTDIR\doc\Manual.pdf"
 	CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\Example.lnk" "$INSTDIR\doc\BBCR2.rfs"
 SectionEnd
 
-
 Section -Post
 	WriteRegStr HKCU "${SETTINGS_KEY}" "${SETTINGS_INSTDIR}" "$INSTDIR"
-
-	Call get_python_path
-	!insertmacro APP_ASSOCIATE "${FILE_TYPE}" "${FILE_CLASS}" "${FILE_DESC}" "$INSTDIR\rtlsdr_scan.ico,0" "Open with RTLSDR Scanner" '"$PythonPath\python.exe" "$INSTDIR\rtlsdr_scan.py" "%1"'
-
-	DetailPrint "Compiling sources"
-	Call get_python_path
-	ExecWait '"$PythonPath\python.exe" -m compileall -l "$INSTDIR"'
+    WriteRegDWORD HKCU "${SETTINGS_KEY}" "${SETTINGS_INSTVER}" ${INSTALLER_VERSION}
 
 	WriteUninstaller "$INSTDIR\uninst.exe"
 	WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayName" "$(^Name)"
@@ -197,23 +163,22 @@ Section -Post
 	WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "URLInfoAbout" "${PRODUCT_WEB_SITE}"
 	WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
 	WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayIcon" "$INSTDIR\rtlsdr_scan.ico"
-	WriteRegDWORD ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "EstimatedSize" "$InstSize"
 SectionEnd
-
 
 Section Uninstall
 	!insertmacro APP_UNASSOCIATE "${FILE_TYPE}" "${FILE_CLASS}"
+    
+    StrCpy $UriFile "rtlsdr_scanner"
+    Call un.install_pip
 
-	Delete "$INSTDIR\*.pyc"
-	Delete "$INSTDIR\*.py"
-	Delete "$INSTDIR\${PRODUCT_NAME}.url"
 	Delete "$INSTDIR\rtlsdr_scan.ico"
-	Delete "$INSTDIR\uninst.exe"
-	Delete "$INSTDIR\license.txt"
-	Delete "$INSTDIR\version-timestamp"
-	Delete "$INSTDIR\res\*"
-	Delete "$INSTDIR\doc\*"
-	Delete "$INSTDIR\*.dll"
+    Delete "$INSTDIR\Manual.pdf"
+	Delete "$INSTDIR\BBCR2.rfs"
+    Delete "$INSTDIR\license.txt"
+    Delete "$INSTDIR\${PRODUCT_NAME}.url"
+    Delete "$INSTDIR\*.dll"
+    Delete "$INSTDIR\uninst.exe"
+    RMDir "$INSTDIR"
 
 	DeleteRegKey HKCU "${SETTINGS_KEY}/${SETTINGS_INSTDIR}"
 
@@ -221,14 +186,14 @@ Section Uninstall
 	Delete "$SMPROGRAMS\RTLSDR Scanner\Website.lnk"
 	Delete "$SMPROGRAMS\RTLSDR Scanner\Setup.lnk"
 	Delete "$SMPROGRAMS\RTLSDR Scanner\RTLSDR Scanner.lnk"
+    Delete "$SMPROGRAMS\RTLSDR Scanner\RTLSDR Example.lnk"
 
 	RMDir "$SMPROGRAMS\RTLSDR Scanner"
 
-	RMDir "$INSTDIR\res"
-	RMDir "$INSTDIR\doc"
-	RMDir "$INSTDIR"
-
 	DeleteRegKey ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}"
+    
+    ${un.EnvVarUpdate} $0 "PATH" "R" "HKLM" "$INSTDIR"
+    
 	SetAutoClose true
 SectionEnd
 
@@ -238,18 +203,23 @@ SectionEnd
 !insertmacro MUI_DESCRIPTION_TEXT ${SEC_MSVC} "Microsoft Visual C++ Redistributable"
 !insertmacro MUI_DESCRIPTION_TEXT ${SEC_DEP} "Dependencies"
 !insertmacro MUI_DESCRIPTION_TEXT ${SEC_PYDEP} "Python dependencies"
-!insertmacro MUI_DESCRIPTION_TEXT ${SEC_PYRTLSDR} "Latest Python wrapper for the rtlsdr driver"
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 
 Function .onInit
+    ReadRegDWORD $0 HKCU "${SETTINGS_KEY}" "${SETTINGS_INSTVER}"
+    ${If} $0 == ""
+        MessageBox MB_ICONEXCLAMATION|MB_OKCANCEL "The previous version needs to be uninstalled first.$\r$\nCancelling this will exit the installer." IDOK ok IDCANCEL cancel
+        cancel:
+            abort
+        ok:
+            Call uninstall
+    ${EndIf}
+
 	ReadRegStr $0 HKCU "${SETTINGS_KEY}" "${SETTINGS_INSTDIR}"
 	${If} $0 == ""
     	StrCpy $Type ${TYPE_FULL}
 	${EndIf}
-	IntOp $0 ${SF_SELECTED} | ${SF_RO}
-	IntOp $0 $0 | ${SF_BOLD}
-	SectionSetFlags ${SEC_SCAN} $0
 FunctionEnd
 
 Function page_update
@@ -294,7 +264,7 @@ Function page_type
 	Pop $0
 	${NSD_CreateRadioButton} 20% 40% 100% 10u ${TYPE_UPDATE}
 	Pop $Radio2
-	${NSD_CreateLabel} 20% 50% 100% 10u "Update the scanner, the rtlsdr library and pyrtlsdr wrapper."
+	${NSD_CreateLabel} 20% 50% 100% 10u "Update the scanner and dependencies."
 	Pop $0
 	${NSD_CreateLabel} 20% 60% 100% 10u "Select this if the dependencies are already installed."
 	Pop $0
@@ -316,11 +286,17 @@ Function page_type_end
 	    StrCpy $Type ${TYPE_UPDATE}
 		!insertmacro UnselectSection ${SEC_DEP}
 		!insertmacro SelectSection ${SEC_RTLSDR}
-		!insertmacro SelectSection ${SEC_PILLOW}
-		!insertmacro SelectSection ${SEC_PYRTLSDR}
-		!insertmacro SelectSection ${SEC_PYSERIAL}
-		!insertmacro SelectSection ${SEC_VISVIS}
 	${EndIf}
+
+    IntOp $0 ${SF_SELECTED} | ${SF_RO}
+    IntOp $0 $0 | ${SF_BOLD}
+    SectionSetFlags ${SEC_SCAN} $0
+    
+    Call has_python
+    ${If} $0 == ""
+        IntOp $0 ${SF_SELECTED} | ${SF_RO}
+        SectionSetFlags ${SEC_PYTHON} $0
+    ${EndIf}
 FunctionEnd
 
 Function page_error
@@ -411,31 +387,24 @@ FunctionEnd
 Function install_pip
 	Call get_python_path
 	ClearErrors
-	ExecWait '"$PythonPath\python.exe" -m pip install "$UriFile"'
+	ExecWait '"$PythonPath\python.exe" -m pip install -U "$UriFile"'
 	${If} ${Errors}
 		StrCpy $ErrorMessage "Failed to install $UriFile"
 		Call error
 	${EndIf}
 FunctionEnd
 
-
 Function install_rtlsdr_scanner
-	inetc::get "https://github.com/EarToEarOak/RTLSDR-Scanner/archive/master.zip" "$TEMP\rtlsdr_scanner.zip" /end
-	Pop $R0
-	${If} $R0 != "OK"
-		StrCpy $ErrorMessage "RTLSDR Scanner download failed: $R0"
-		Call error
-	${Else}
-		ZipDLL::extractall "$TEMP\rtlsdr_scanner.zip" "$TEMP"
-		CopyFiles "$TEMP\RTLSDR-Scanner-master\src\*" "$INSTDIR"
-		CreateDirectory "$INSTDIR\res"
-		CopyFiles "$TEMP\RTLSDR-Scanner-master\res\*" "$INSTDIR\res"
-		CreateDirectory "$INSTDIR\doc"
-		CopyFiles "$TEMP\RTLSDR-Scanner-master\doc\*" "$INSTDIR\doc"
-		CopyFiles "$TEMP\RTLSDR-Scanner-master\*.ico" "$INSTDIR"
-		RmDir /r "$TEMP\RTLSDR-Scanner-master"
-		${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR"
-	${EndIf}
+    StrCpy $UriFile "rtlsdr_scanner"
+    Call install_pip
+    ${IfNot} ${Errors}
+        Call get_python_path
+        CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\RTLSDR Scanner.lnk" '"$PythonPath\python.exe"' '-m rtlsdr_scanner' "$INSTDIR\rtlsdr_scan.ico" 0
+        ${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR"
+        Call get_python_path
+        !insertmacro APP_ASSOCIATE "${FILE_TYPE}" "${FILE_CLASS}" "${FILE_DESC}" "$INSTDIR\rtlsdr_scan.ico,0" "Open with RTLSDR Scanner" '"$PythonPath\python.exe" "-m rtlsdr_scanner" "%1"'
+        
+    ${EndIf}
 FunctionEnd
 
 Function install_rtlsdr
@@ -451,12 +420,18 @@ Function install_rtlsdr
 	${EndIf}
 FunctionEnd
 
-Function uninstall
-	ReadRegStr $0 HKCU "${SETTINGS_KEY}" "${SETTINGS_INSTDIR}"
-	${If} $0 != ""
-		DetailPrint "Removing previous version"
-		ExecWait '"$0\Uninstall.exe /S"'
-	${EndIf}
+Function has_python
+    ClearErrors
+    ReadRegStr $R0 HKLM Software\Python\PythonCore\2.7\InstallPath ""
+    ${IfNot} ${Errors}
+        ${If} ${FileExists} "$R0\python.exe"
+            StrCpy $0 $R0
+        ${Else}
+            StrCpy $0 ""
+        ${EndIf}
+    ${Else}
+        StrCpy $0 ""
+    ${Endif}
 FunctionEnd
 
 Function get_python_path
@@ -478,19 +453,40 @@ Function set_installer_path
 	SetEnv::SetEnvVar "PATH" $R0
 FunctionEnd
 
-Function set_python_path
-	Call get_python_path
-	${EnvVarUpdate} $PythonPath "PATH" "A" "HKLM" $PythonPath
-FunctionEnd
-
 Function error
 	StrCpy $ErrorLog "$ErrorLog$\r$\n$ErrorMessage"
+FunctionEnd
+
+Function uninstall
+    ReadRegStr $0 ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString"
+    ${If} $0 != ""
+        DetailPrint "Removing previous version"
+        ExecWait '"$0" _?=$INSTDIR'
+    ${EndIf}
 FunctionEnd
 
 Function un.onInit
 	MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 "Are you sure you want to completely uninstall $(^Name)?" IDYES end
 	Abort
 	end:
+FunctionEnd
+
+Function un.install_pip
+    Call un.get_python_path
+    ClearErrors
+    ExecWait '"$PythonPath\python.exe" -m pip uninstall "$UriFile"'
+FunctionEnd
+
+Function un.get_python_path
+    ClearErrors
+    ReadRegStr $R0 HKLM Software\Python\PythonCore\2.7\InstallPath ""
+    ${If} ${Errors}
+        StrCpy $ErrorMessage "Cannot find Python - aborting"
+        MessageBox MB_OK|MB_ICONEXCLAMATION $ErrorMessage
+        Abort $ErrorMessage"
+    ${Else}
+        StrCpy $PythonPath $R0
+    ${EndIf}"
 FunctionEnd
 
 Function un.onUninstSuccess
