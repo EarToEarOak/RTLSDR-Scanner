@@ -25,7 +25,7 @@
 
 from setuptools import setup, find_packages
 
-from rtlsdr_scanner.constants import VERSION
+from rtlsdr_scanner.version import VERSION
 
 
 setup(name='rtlsdr_scanner',

@@ -35,10 +35,9 @@ import pkg_resources
 def create_version():
     search = os.path.join(os.getcwd(), 'rtlsdr_scanner')
     sys.path.append(search)
-    from constants import VERSION
+    from version import VERSION
 
     version = VERSION
-    version.append(0)
     ffi = versioninfo.FixedFileInfo(filevers=VERSION,
                                     prodvers=VERSION)
 

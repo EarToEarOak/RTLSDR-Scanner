@@ -34,7 +34,7 @@ import serial
 import wx
 
 from rtlsdr_scanner.utils_wx import load_bitmap
-from rtlsdr_scanner.constants import VERSION
+from rtlsdr_scanner.version import VERSION
 
 
 class DialogSysInfo(wx.Dialog):

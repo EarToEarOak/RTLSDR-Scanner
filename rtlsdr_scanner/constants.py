@@ -22,11 +22,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+
 import numpy
 
 
 APP_NAME = 'RTLSDR Scanner'
-VERSION = [1, 1, 0]
 
 F_MIN = 0
 F_MAX = 9999
