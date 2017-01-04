@@ -168,7 +168,7 @@ SectionEnd
 Section Uninstall
 	!insertmacro APP_UNASSOCIATE "${FILE_TYPE}" "${FILE_CLASS}"
     
-    StrCpy $UriFile "rtlsdr_scanner"
+    StrCpy $UriFile "rtlsdr-scanner"
     Call un.install_pip
 
 	Delete "$INSTDIR\rtlsdr_scan.ico"
@@ -395,7 +395,7 @@ Function install_pip
 FunctionEnd
 
 Function install_rtlsdr_scanner
-    StrCpy $UriFile "rtlsdr_scanner"
+    StrCpy $UriFile "rtlsdr-scanner"
     Call install_pip
     ${IfNot} ${Errors}
         Call get_python_path
