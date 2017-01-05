@@ -28,6 +28,7 @@
 !include "Sections.nsh"
 !include "MUI.nsh"
 !include "nsDialogs.nsh"
+!include "WinVer.nsh"
 !include "include\nsDialogs_createTextMultiline.nsh"
 !include "include\EnvVarUpdate.nsh"
 !include "include\fileassoc.nsh"
@@ -115,7 +116,7 @@ SectionGroup "/e" "Dependencies" SEC_DEP
 		File vcredist_x86.exe
 		ExecWait 'vcredist_x86.exe /quiet /norestart'
 	SectionEnd
-	SectionGroup "/e" "Python" SEC_PYDEP
+	SectionGroup "/e" "Python 2.7" SEC_PYDEP
 		Section "Python 2.7.12" SEC_PYTHON
 			StrCpy $UriPath "http://www.python.org/ftp/python/2.7.12"
 			StrCpy $UriFile "python-2.7.12.msi"
@@ -141,6 +142,11 @@ Section -Install
     CopyFiles "$ExePath" "$InstDir\"
     CreateDirectory "$SMPROGRAMS\RTLSDR Scanner"
     CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\Setup.lnk" "$INSTDIR\$EXEFILE"
+    
+    ${If} ${IsWinXP}
+        StrCpy $UriFile "pyserial==2.7"
+        Call install_pip
+    ${EndIf}
 SectionEnd
 
 Section -AdditionalIcons
@@ -149,8 +155,8 @@ Section -AdditionalIcons
 	
 	CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\Website.lnk" "$INSTDIR\${PRODUCT_NAME}.url"
 	CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\Uninstall.lnk" "$INSTDIR\uninst.exe"
-	CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\Manual.lnk" "$INSTDIR\doc\Manual.pdf"
-	CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\Example.lnk" "$INSTDIR\doc\BBCR2.rfs"
+	CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\Manual.lnk" "$INSTDIR\Manual.pdf"
+	CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\Example.lnk" "$INSTDIR\BBCR2.rfs"
 SectionEnd
 
 Section -Post
@@ -402,8 +408,7 @@ Function install_rtlsdr_scanner
         CreateShortCut "$SMPROGRAMS\RTLSDR Scanner\RTLSDR Scanner.lnk" '"$PythonPath\python.exe"' '-m rtlsdr_scanner' "$INSTDIR\rtlsdr_scan.ico" 0
         ${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR"
         Call get_python_path
-        !insertmacro APP_ASSOCIATE "${FILE_TYPE}" "${FILE_CLASS}" "${FILE_DESC}" "$INSTDIR\rtlsdr_scan.ico,0" "Open with RTLSDR Scanner" '"$PythonPath\python.exe" "-m rtlsdr_scanner" "%1"'
-        
+        !insertmacro APP_ASSOCIATE "${FILE_TYPE}" "${FILE_CLASS}" "${FILE_DESC}" "$INSTDIR\rtlsdr_scan.ico,0" "Open with RTLSDR Scanner" '"$PythonPath\python.exe" -m rtlsdr_scanner "%1"'
     ${EndIf}
 FunctionEnd
 
@@ -438,7 +443,7 @@ Function get_python_path
 	ClearErrors
 	ReadRegStr $R0 HKLM Software\Python\PythonCore\2.7\InstallPath ""
 	${If} ${Errors}
-		StrCpy $ErrorMessage "Cannot find Python - aborting"
+		StrCpy $ErrorMessage "Cannot find Python 2.7 - aborting"
 		MessageBox MB_OK|MB_ICONEXCLAMATION $ErrorMessage
 		Abort $ErrorMessage"
 	${Else}
@@ -474,14 +479,14 @@ FunctionEnd
 Function un.install_pip
     Call un.get_python_path
     ClearErrors
-    ExecWait '"$PythonPath\python.exe" -m pip uninstall "$UriFile"'
+    ExecWait '"$PythonPath\python.exe" -m pip uninstall -y "$UriFile"'
 FunctionEnd
 
 Function un.get_python_path
     ClearErrors
     ReadRegStr $R0 HKLM Software\Python\PythonCore\2.7\InstallPath ""
     ${If} ${Errors}
-        StrCpy $ErrorMessage "Cannot find Python - aborting"
+        StrCpy $ErrorMessage "Cannot find Python 2.7 - aborting"
         MessageBox MB_OK|MB_ICONEXCLAMATION $ErrorMessage
         Abort $ErrorMessage"
     ${Else}
