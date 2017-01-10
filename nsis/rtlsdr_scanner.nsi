@@ -71,8 +71,7 @@ Page custom page_error page_error_end
 !define UPDATE_FOUND '"An updated installer is available at: $\r$\n$\r$\n\
 https://github.com/EarToEarOak/RTLSDR-Scanner/releases $\r$\n$\r$\n\
 Updating is highly recommended"'
-!define INFO '"This will install RTLSDR Scanner and its Python dependencies $\r$\n$\r$\n\
-When asked it is recommended to use the default options for all software $\r$\n$\r$\n\
+!define INFO '"This will install RTLSDR Scanner and its dependencies $\r$\n$\r$\n\
 You can update to the latest versions of RTLSDR-Scanner, $\r$\n\
 the rtlsdr driver and dependencies by running this installer again"'
 
@@ -103,6 +102,7 @@ Var PythonPath
 
 Var UriPath
 Var UriFile
+Var Switches
 
 
 Section "RTLSDR Scanner (Required)" SEC_SCAN
@@ -120,12 +120,13 @@ SectionGroup "/e" "Dependencies" SEC_DEP
 		Section "Python 2.7.12" SEC_PYTHON
 			StrCpy $UriPath "http://www.python.org/ftp/python/2.7.12"
 			StrCpy $UriFile "python-2.7.12.msi"
+            StrCpy $Switches "/qb ALLUSERS=1"
 			Call install_msi
-			Call set_installer_path
 		SectionEnd
-		Section "wxPython 3"
+		Section "wxPython 3" SEC_WX
 			StrCpy $UriPath "http://downloads.sourceforge.net/wxpython/3.0.2.0"
 			StrCpy $UriFile "wxPython3.0-win32-3.0.2.0-py27.exe"
+            StrCpy $Switches "/silent"
 			Call install_exe
 		SectionEnd
 	SectionGroupEnd
@@ -302,6 +303,7 @@ Function page_type_end
     ${If} $0 == ""
         IntOp $0 ${SF_SELECTED} | ${SF_RO}
         SectionSetFlags ${SEC_PYTHON} $0
+        SectionSetFlags ${SEC_WX} $0
     ${EndIf}
 FunctionEnd
 
@@ -365,7 +367,7 @@ Function install_msi
 		${EndIf}
 	${EndIf}
 	ClearErrors
-	ExecWait '"msiexec" /i "$TEMP\$UriFile"'
+	ExecWait '"msiexec" /i "$TEMP\$UriFile"  $Switches'
 	${If} ${Errors}
 		StrCpy $ErrorMessage "Failed to install $UriFile"
 		Call error
@@ -383,7 +385,7 @@ Function install_exe
 	    ${EndIf}
 	${EndIf}
 	ClearErrors
-	ExecWait "$TEMP\$UriFile"
+	ExecWait "$TEMP\$UriFile  $Switches"
 	${If} ${Errors}
 		StrCpy $ErrorMessage "Failed to install $UriFile"
 		Call error
@@ -449,13 +451,6 @@ Function get_python_path
 	${Else}
 		StrCpy $PythonPath $R0
 	${EndIf}"
-FunctionEnd
-
-Function set_installer_path
-	Call get_python_path
-	ReadEnvStr $R0 "PATH"
-	StrCpy $R0 "$R0;$PythonPath"
-	SetEnv::SetEnvVar "PATH" $R0
 FunctionEnd
 
 Function error
