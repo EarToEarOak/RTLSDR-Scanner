@@ -76,9 +76,9 @@ def load_bitmap(name):
 
 
 def load_icon(name):
-    filename = get_resource(name + '.ico')
+    filename = get_resource(name + '.png')
 
-    return wx.Icon(filename, wx.BITMAP_TYPE_ICO)
+    return wx.Icon(filename, wx.BITMAP_TYPE_PNG)
 
 
 def close_modeless():

@@ -186,7 +186,7 @@ class FrameMain(wx.Frame):
 
         self.SetDropTarget(DropTarget(self))
 
-        self.SetIcon(load_icon('rtlsdr_scan'))
+        self.SetIcon(load_icon('icon'))
 
         self.steps = 0
         self.stepsTotal = 0
