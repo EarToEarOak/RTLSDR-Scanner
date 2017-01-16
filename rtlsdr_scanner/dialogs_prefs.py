@@ -54,9 +54,9 @@ class DialogOffset(wx.Dialog):
         self.canvas = FigureCanvas(self, -1, figure)
 
         textHelp = wx.StaticText(self,
-            label="Remove the aerial and press refresh, "
-            "adjust the offset so the shaded areas overlay the flattest parts "
-            "of the plot_line.")
+                                 label="Remove the aerial and press refresh, "
+                                 "adjust the offset so the shaded areas overlay the flattest parts "
+                                 "of the plot_line.")
 
         textFreq = wx.StaticText(self, label="Test frequency (MHz)")
         self.spinFreq = wx.SpinCtrl(self)

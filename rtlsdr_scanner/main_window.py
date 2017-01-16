@@ -48,7 +48,7 @@ from rtlsdr_scanner.dialogs_prefs import DialogPrefs, DialogAdvPrefs, DialogForm
 from rtlsdr_scanner.dialogs_scan import DialogScanDelay
 from rtlsdr_scanner.dialogs_tools import DialogCompare, DialogAutoCal, DialogSats, DialogSmooth, \
     DialogLog
-from rtlsdr_scanner.events import EVENT_THREAD, Event, EventThread, post_event, Log, EventTimer
+from rtlsdr_scanner.events import EVENT_THREAD, Event, Log, EventTimer
 from rtlsdr_scanner.file import save_plot, export_plot, export_cont, open_plot, ScanInfo, export_image, \
     export_map, extension_add, File, run_file, export_gpx, Backups
 from location import ThreadLocation, LocationServer
