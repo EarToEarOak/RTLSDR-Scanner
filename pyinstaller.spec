@@ -36,9 +36,9 @@ def create_version():
     search = os.path.join(os.getcwd(), 'rtlsdr_scanner')
     sys.path.append(search)
     from version import VERSION
+    version = VERSION
     version.append(0)
 
-    version = VERSION
     ffi = versioninfo.FixedFileInfo(filevers=VERSION,
                                     prodvers=VERSION)
 
