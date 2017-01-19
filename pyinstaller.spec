@@ -23,10 +23,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import sys
 import os
 import platform
+import sys
 
+from PIL import Image
 from PyInstaller import compat
 from PyInstaller.utils.win32 import versioninfo
 import pkg_resources
@@ -76,15 +77,20 @@ def build(version=None):
 
     pyz = PYZ(a.pure)
 
+    image = Image.open('rtlsdr_scanner/res/icon.png')
+    image.save('icon.ico')
+
     exe = EXE(pyz,
               a.scripts + [('O', '', 'OPTION')],
               a.binaries,
               a.zipfiles,
               a.datas,
               name=os.path.join('dist', filename),
-              icon='rtlsdr_scanner/res/rtlsdr_scan.ico',
+              icon='icon.ico',
               version=version,
               upx=True)
+
+    os.remove('icon.ico')
 
 
 system = platform.system().lower()
