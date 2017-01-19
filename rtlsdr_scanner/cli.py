@@ -219,9 +219,10 @@ class Cli(object):
                 self.settings.devicesRtl[self.settings.indexRtl].tuner = arg2
         elif status == Event.DATA:
             cal = self.settings.devicesRtl[self.settings.indexRtl].calibration
+            levelOff = self.settings.devicesRtl[self.settings.indexRtl].levelOff
             freq, scan = self.queueScan.get()
             process = ThreadProcess(self.queueNotify,
-                                    freq, scan, cal,
+                                    freq, scan, cal, levelOff,
                                     self.settings.nfft,
                                     self.settings.overlap,
                                     self.settings.winFunc)

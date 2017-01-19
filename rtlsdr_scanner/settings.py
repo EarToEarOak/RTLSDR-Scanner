@@ -137,6 +137,7 @@ class Settings(object):
             device.lo = self.cfg.ReadFloat('lo', 0)
             device.offset = self.cfg.ReadFloat('offset', 250e3)
             device.tuner = self.cfg.ReadInt('tuner', 0)
+            device.levelOff = self.cfg.ReadFloat('levelOff', 0)
             self.devicesRtl.append(device)
             self.cfg.SetPath("/DevicesRTL")
             group = self.cfg.GetNextGroup(group[2])
@@ -179,6 +180,7 @@ class Settings(object):
                 self.cfg.WriteFloat('calibration', device.calibration)
                 self.cfg.WriteFloat('offset', device.offset)
                 self.cfg.WriteInt('tuner', device.tuner)
+                self.cfg.WriteFloat('levelOff', device.levelOff)
 
     def __save_devices_gps(self):
         self.cfg.DeleteGroup('/DevicesGPS')

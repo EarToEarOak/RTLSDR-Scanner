@@ -912,8 +912,9 @@ class FrameMain(wx.Frame):
         elif status == Event.DATA:
             self.__saved(False)
             cal = self.devicesRtl[self.settings.indexRtl].calibration
+            levelOff = self.devicesRtl[self.settings.indexRtl].levelOff
             freq, scan = self.queueScan.get()
-            process = ThreadProcess(self, freq, scan, cal,
+            process = ThreadProcess(self, freq, scan, cal, levelOff,
                                     self.settings.nfft,
                                     self.settings.overlap,
                                     self.settings.winFunc)

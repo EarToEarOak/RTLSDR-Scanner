@@ -157,13 +157,14 @@ class ThreadScan(threading.Thread):
 
 
 class ThreadProcess(threading.Thread):
-    def __init__(self, notify, freq, scan, cal, nfft, overlap, winFunc):
+    def __init__(self, notify, freq, scan, cal, levelOff, nfft, overlap, winFunc):
         threading.Thread.__init__(self)
         self.name = 'ThreadProcess'
         self.notify = notify
         self.freq = freq
         self.scan = scan
         self.cal = cal
+        self.levelOff = math.pow(10, levelOff / 10.0)
         self.nfft = nfft
         self.overlap = overlap
         self.winFunc = winFunc
@@ -183,7 +184,7 @@ class ThreadProcess(threading.Thread):
         for freqPsd, pwr in itertools.izip(freqs, powers):
             xr = freqPsd + (self.freq / 1e6)
             xr = xr + (xr * self.cal / 1e6)
-            spectrum[xr] = pwr
+            spectrum[xr] = pwr * self.levelOff
         post_event(self.notify, EventThread(Event.PROCESSED,
                                             (timeStamp, self.freq, spectrum)))
 

@@ -40,8 +40,9 @@ from rtlsdr_scanner.misc import nearest, limit, get_serial_ports
 
 
 class DialogDevicesRTL(wx.Dialog):
+    COLS = 10
     COL_SEL, COL_DEV, COL_TUN, COL_SER, COL_IND, \
-        COL_GAIN, COL_CAL, COL_LO, COL_OFF = range(9)
+        COL_GAIN, COL_CAL, COL_LEVOFF, COL_LO, COL_OFF = range(COLS)
 
     def __init__(self, parent, devices, settings):
         self.devices = copy.copy(devices)
@@ -51,7 +52,7 @@ class DialogDevicesRTL(wx.Dialog):
         wx.Dialog.__init__(self, parent=parent, title="Radio Devices")
 
         self.gridDev = grid.Grid(self)
-        self.gridDev.CreateGrid(len(self.devices), 9)
+        self.gridDev.CreateGrid(len(self.devices), self.COLS)
         self.gridDev.SetRowLabelSize(0)
         self.gridDev.SetColLabelValue(self.COL_SEL, "Selected")
         self.gridDev.SetColLabelValue(self.COL_DEV, "Device")
@@ -59,13 +60,24 @@ class DialogDevicesRTL(wx.Dialog):
         self.gridDev.SetColLabelValue(self.COL_SER, "Serial Number")
         self.gridDev.SetColLabelValue(self.COL_IND, "Index")
         self.gridDev.SetColLabelValue(self.COL_GAIN, "Gain\n(dB)")
-        self.gridDev.SetColLabelValue(self.COL_CAL, "Calibration\n(ppm)")
+        self.gridDev.SetColLabelValue(self.COL_CAL, "Frequency\nCalibration\n(ppm)")
+        self.gridDev.SetColLabelValue(self.COL_LEVOFF, "Level\nOffset\n(dB)")
         self.gridDev.SetColLabelValue(self.COL_LO, "LO\n(MHz)")
         self.gridDev.SetColLabelValue(self.COL_OFF, "Band Offset\n(kHz)")
         self.gridDev.SetColFormatFloat(self.COL_GAIN, -1, 1)
         self.gridDev.SetColFormatFloat(self.COL_CAL, -1, 3)
+        self.gridDev.SetColFormatFloat(self.COL_LEVOFF, -1, 2)
         self.gridDev.SetColFormatFloat(self.COL_LO, -1, 3)
         self.gridDev.SetColFormatFloat(self.COL_OFF, -1, 0)
+
+        dc = wx.ScreenDC()
+        dc.SetFont(self.gridDev.GetLabelFont())
+        maxHeight = 0
+        for i in range(self.COLS - 1):
+            _w, h, _hl = dc.GetMultiLineTextExtent(self.gridDev.GetColLabelValue(i))
+            if h > maxHeight:
+                maxHeight = h
+        self.gridDev.SetColLabelSize(maxHeight * 1.25)
 
         self.__set_dev_grid()
         self.Bind(grid.EVT_GRID_CELL_LEFT_CLICK, self.__on_click)
@@ -117,6 +129,8 @@ class DialogDevicesRTL(wx.Dialog):
                 self.gridDev.SetCellEditor(i, self.COL_GAIN, cell)
             self.gridDev.SetCellEditor(i, self.COL_CAL,
                                        grid.GridCellFloatEditor(-1, 3))
+            self.gridDev.SetCellEditor(i, self.COL_LEVOFF,
+                                       grid.GridCellFloatEditor(-1, 3))
             self.gridDev.SetCellEditor(i, self.COL_LO,
                                        grid.GridCellFloatEditor(-1, 3))
             if device.isDevice:
@@ -140,6 +154,7 @@ class DialogDevicesRTL(wx.Dialog):
 
             self.gridDev.SetCellValue(i, self.COL_TUN, TUNER[device.tuner])
             self.gridDev.SetCellValue(i, self.COL_CAL, str(device.calibration))
+            self.gridDev.SetCellValue(i, self.COL_LEVOFF, str(device.levelOff))
             self.gridDev.SetCellValue(i, self.COL_LO, str(device.lo))
             self.gridDev.SetCellValue(i, self.COL_OFF, str(device.offset / 1e3))
             i += 1
@@ -168,6 +183,7 @@ class DialogDevicesRTL(wx.Dialog):
                     device.port = 1234
             device.gain = float(self.gridDev.GetCellValue(i, self.COL_GAIN))
             device.calibration = float(self.gridDev.GetCellValue(i, self.COL_CAL))
+            device.levelOff = float(self.gridDev.GetCellValue(i, self.COL_LEVOFF))
             device.lo = float(self.gridDev.GetCellValue(i, self.COL_LO))
             device.offset = float(self.gridDev.GetCellValue(i, self.COL_OFF)) * 1e3
             i += 1

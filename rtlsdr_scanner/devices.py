@@ -74,6 +74,7 @@ class DeviceRTL(object):
         self.lo = 0
         self.offset = 250e3
         self.tuner = 0
+        self.levelOff = 0
 
     def set(self, device):
         self.gain = device.gain
@@ -81,6 +82,7 @@ class DeviceRTL(object):
         self.lo = device.lo
         self.offset = device.offset
         self.tuner = device.tuner
+        self.levelOff = device.levelOff
 
     def get_gains_str(self):
         gainsStr = []
