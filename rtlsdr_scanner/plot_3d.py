@@ -66,7 +66,7 @@ class Plotter3d(object):
 
         self.axes.set_xlabel("Frequency (MHz)")
         self.axes.set_ylabel('Time')
-        self.axes.set_zlabel('Level ($\mathsf{dB/\sqrt{Hz}}$)')
+        self.axes.set_zlabel('Level (dB/Hz)')
         colour = hex2color(self.settings.background)
         colour += (1,)
         self.axes.w_xaxis.set_pane_color(colour)

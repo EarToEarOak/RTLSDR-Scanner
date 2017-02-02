@@ -484,8 +484,8 @@ class PanelGraphCompare(wx.Panel):
 
         self.axesScan.set_title("Level Comparison")
         self.axesScan.set_xlabel("Frequency (MHz)")
-        self.axesScan.set_ylabel('Level ($\mathsf{dB/\sqrt{Hz}}$)')
-        self.axesDiff.set_ylabel('Difference ($\mathsf{dB/\sqrt{Hz}}$)')
+        self.axesScan.set_ylabel('Level (dB/Hz)')
+        self.axesDiff.set_ylabel('Difference (dB/Hz)')
 
         self.canvas = FigureCanvas(self, -1, figure)
 

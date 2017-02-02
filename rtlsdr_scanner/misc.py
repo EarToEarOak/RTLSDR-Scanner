@@ -170,7 +170,7 @@ def format_precision(settings, freq=None, level=None,
         width = 4 + prec
         textLevel = '{:{width}.{prec}f}'.format(level, width=width, prec=prec)
         if fancyUnits:
-            textLevel += r" $\mathsf{{dB/\sqrt{{Hz}}}}$"
+            textLevel += r" dB/Hz"
         elif units:
             textLevel += " dB/Hz"
 

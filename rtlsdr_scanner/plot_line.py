@@ -75,7 +75,7 @@ class Plotter(object):
         self.axes = self.figure.add_subplot(gs[0],
                                             axisbg=self.settings.background)
         self.axes.set_xlabel("Frequency (MHz)")
-        self.axes.set_ylabel('Level ($\mathsf{dB/\sqrt{Hz}}$)')
+        self.axes.set_ylabel('Level (dB/Hz)')
         self.axes.xaxis.set_major_formatter(formatter)
         self.axes.yaxis.set_major_formatter(formatter)
         self.axes.xaxis.set_minor_locator(AutoMinorLocator(10))
