@@ -34,6 +34,7 @@ import rtlsdr
 
 from rtlsdr_scanner.constants import SAMPLE_RATE, BANDWIDTH, WINFUNC
 from rtlsdr_scanner.events import EventThread, Event, post_event
+from rtlsdr_scanner.rtltcp import RtlTcp
 
 
 class ThreadScan(threading.Thread):
@@ -89,7 +90,7 @@ class ThreadScan(threading.Thread):
                                                     0, error.message))
         else:
             try:
-                self.sdr = rtltcp.RtlTcp(self.server, self.port, self.notify)
+                self.sdr = RtlTcp(self.server, self.port, self.notify)
                 self.sdr.set_sample_rate(SAMPLE_RATE)
                 self.sdr.set_manual_gain_enabled(1)
                 self.sdr.set_gain(self.gain)
