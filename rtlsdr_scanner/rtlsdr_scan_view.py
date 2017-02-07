@@ -67,7 +67,10 @@ class MainWindow(wx.Frame):
         self.Show()
 
         if args.file is not None:
-            self.__open(*os.path.split(args.file))
+            if os.path.exists(args.file):
+                self.__open(*os.path.split(args.file))
+            else:
+                wx.MessageBox('File not found', 'Error', wx.OK | wx.ICON_ERROR)
 
     def __on_open(self, _event):
         dlg = wx.FileDialog(self, "Open a scan", self.directory,
