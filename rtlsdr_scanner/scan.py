@@ -82,7 +82,6 @@ class ThreadScan(threading.Thread):
             try:
                 self.sdr = rtlsdr.RtlSdr(self.indexRtl)
                 self.sdr.set_sample_rate(SAMPLE_RATE)
-                self.sdr.set_manual_gain_enabled(1)
                 self.sdr.set_gain(self.gain)
                 tuner = self.sdr.get_tuner_type()
             except IOError as error:
@@ -92,7 +91,6 @@ class ThreadScan(threading.Thread):
             try:
                 self.sdr = RtlTcp(self.server, self.port, self.notify)
                 self.sdr.set_sample_rate(SAMPLE_RATE)
-                self.sdr.set_manual_gain_enabled(1)
                 self.sdr.set_gain(self.gain)
                 tuner = self.sdr.get_tuner_type()
             except IOError as error:
