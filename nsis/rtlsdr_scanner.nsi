@@ -135,7 +135,7 @@ SectionGroupEnd
 Section -Install
     SetOutPath "$INSTDIR"
     SetOverwrite ifnewer
-    File "..\rtlsdr_scanner\res\rtlsdr_scan.ico"
+    File "rtlsdr_scan.ico"
     File "..\doc\Manual.pdf"
     File "..\doc\BBCR2.rfs"
     File "license.txt"
