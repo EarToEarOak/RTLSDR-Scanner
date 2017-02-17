@@ -417,7 +417,7 @@ Function install_rtlsdr_scanner
 FunctionEnd
 
 Function install_rtlsdr
-	inetc::get "http://sdr.osmocom.org/trac/raw-attachment/wiki/rtl-sdr/RelWithDebInfo.zip" "$TEMP\rtlsdr.zip" /end
+	inetc::get "http://osmocom.org/attachments/download/2242/RelWithDebInfo.zip" "$TEMP\rtlsdr.zip" /end
 	Pop $R0
 	${If} $R0 != "OK"
 		StrCpy $ErrorMessage "rtlsdr download failed: $R0"
