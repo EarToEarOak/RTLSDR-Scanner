@@ -214,8 +214,10 @@ SectionEnd
 
 
 Function .onInit
-    ReadRegDWORD $0 HKCU "${SETTINGS_KEY}" "${SETTINGS_INSTVER}"
-    ${If} $0 == ""
+    ReadRegStr $0 HKCU "${SETTINGS_KEY}" "${SETTINGS_INSTDIR}"
+    ReadRegDWORD $1 HKCU "${SETTINGS_KEY}" "${SETTINGS_INSTVER}"
+    ${IfNot} $0 == ""    
+    ${AndIf} $1 == ""
         MessageBox MB_ICONEXCLAMATION|MB_OKCANCEL "The previous version needs to be uninstalled first.$\r$\nCancelling this will exit the installer." IDOK ok IDCANCEL cancel
         cancel:
             abort
