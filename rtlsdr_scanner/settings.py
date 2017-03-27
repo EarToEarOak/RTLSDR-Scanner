@@ -257,29 +257,54 @@ class Settings(object):
         self.__load_devices_rtl()
         self.__load_devices_gps()
 
+    def __check_conf_serial(self, device):
+        if device.type not in range(len(DeviceGPS.TYPE)):
+            return 'Type "{}" should be between 0 and {}'.format(device.type,
+                                                                 len(DeviceGPS.TYPE) - 1)
+
+        if device.type == 0:
+            if device.baud not in device.get_bauds():
+                return 'Baud "{}" should be one of:\n  {}'.format(device.baud,
+                                                                  device.get_bauds())
+            if device.bytes not in DeviceGPS.BYTES:
+                return 'Bits "{}" should be one of:\n  {}'.format(device.bytes,
+                                                                  DeviceGPS.BYTES)
+            if device.parity not in DeviceGPS.PARITIES:
+                return 'Parity "{}" should be one of:\n  {}'.format(device.parity,
+                                                                    DeviceGPS.PARITIES)
+            if device.stops not in DeviceGPS.STOPS:
+                return 'Stops "{}" should be one of:\n  {}'.format(device.stops,
+                                                                   DeviceGPS.STOPS)
+
     def load_conf(self, filename):
         config = ConfigParser.SafeConfigParser()
         try:
             config.read(filename)
             sections = config.sections()
-            if config.has_section('DevicesGPS'):
-                if len (sections) > 1:
-                    device = DeviceGPS()
-                    device.name = sections[1].split('/')[1]
-                    device.type = config.getint(sections[1], 'type')
-                    device.resource = config.get(sections[1],'resource')
-                    device.baud = config.getint(sections[1],'baud')
-                    device.bytes = config.getint(sections[1],'bytes')
-                    device.parity = config.get(sections[1],'parity')
-                    device.stops = config.getint(sections[1],'stops')
-                    device.soft = config.getboolean(sections[1],'soft')
-                    self.devicesGps.append(device)
-        except ConfigParser.Error as e:
-            return e
-        except ValueError as e:
-            return e
+            if len(sections):
+                device = DeviceGPS()
+                device.name = sections[0]
+                device.type = config.getint(sections[0], 'type')
+                device.resource = config.get(sections[0], 'resource')
+                if device.type == DeviceGPS.NMEA_SERIAL:
+                    if config.has_option(sections[0], 'baud'):
+                        device.baud = config.getint(sections[0], 'baud')
+                    if config.has_option(sections[0], 'bits'):
+                        device.bytes = config.getint(sections[0], 'bits')
+                    if config.has_option(sections[0], 'parity'):
+                        device.parity = config.get(sections[0], 'parity')
+                    if config.has_option(sections[0], 'stops'):
+                        device.stops = config.getint(sections[0], 'stops')
+                    if config.has_option(sections[0], 'soft'):
+                        device.soft = config.getboolean(sections[0], 'soft')
 
-        return None
+                self.devicesGps.append(device)
+                return self.__check_conf_serial(device)
+
+        except ConfigParser.Error as e:
+            return e.message
+        except ValueError as e:
+            return e.message
 
     def save(self):
         self.cfg.SetPath("/")

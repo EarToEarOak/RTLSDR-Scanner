@@ -110,9 +110,10 @@ class Cli(object):
                 index = len(self.settings.devicesRtl) - 1
 
             if args.conf is not None:
-                print 'GPS configuration file provided.\n The first configuration will be used.'
                 if os.path.exists(args.conf):
                     error = self.settings.load_conf(args.conf)
+                    if error is not None:
+                        error = 'GPS configuration - ' + error
                 else:
                     error = 'Cannot find {}'.format(args.conf)
 
@@ -148,6 +149,7 @@ class Cli(object):
             print self.settings.devicesRtl[index].name
 
         if len(self.settings.devicesGps):
+            print 'Using GPS configuration \'{}\''.format(self.settings.devicesGps[0].name)
             self.threadLocation = ThreadLocation(self.queueLocation,
                                                  self.settings.devicesGps[0])
             if not self.__gps_wait():
@@ -170,7 +172,7 @@ class Cli(object):
         print "Done"
 
     def __gps_wait(self):
-        print '\nWaiting for GPS fix: {}'.format(self.settings.devicesGps[0].get_serial_desc())
+        print '\nWaiting for GPS fix: {}'.format(self.settings.devicesGps[0].get_desc())
 
         while True:
             if not self.queueLocation.empty():
