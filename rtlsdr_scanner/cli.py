@@ -110,6 +110,7 @@ class Cli(object):
                 index = len(self.settings.devicesRtl) - 1
 
             if args.conf is not None:
+                print 'GPS configuration file provided.\n The first configuration will be used.'
                 if os.path.exists(args.conf):
                     error = self.settings.load_conf(args.conf)
                 else:
