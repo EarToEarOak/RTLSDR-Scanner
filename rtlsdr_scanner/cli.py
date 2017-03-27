@@ -253,7 +253,7 @@ class Cli(object):
                                                       arg2[1],
                                                       arg2[2])
         elif status == Event.LOC_ERR:
-            print '{}'.format(arg2)
+            print 'Error: {}'.format(arg2)
             exit(1)
 
         return status
