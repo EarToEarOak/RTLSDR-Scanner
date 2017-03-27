@@ -183,7 +183,7 @@ class ThreadLocation(threading.Thread):
 
         try:
             if self._device.type == DeviceGPS.GPSD:
-                self._send = '?WATCH={"enable": true,"json": true}'
+                self._send = '?WATCH={"enable": true,"json": true}\n'
             else:
                 self._send = 'w'
 
@@ -231,7 +231,7 @@ class ThreadLocation(threading.Thread):
 
     def __gpsd_close(self):
         if self._device.type == DeviceGPS.GPSD:
-            self._send = '?WATCH={"enable": false}'
+            self._send = '?WATCH={"enable": false}\n'
         else:
             self._send = 'W'
         if self._comm is not None:
