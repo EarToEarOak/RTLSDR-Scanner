@@ -59,6 +59,12 @@ class DeviceGPS(object):
         return '{} {}-{}{}{:g}'.format(port[0], self.baud, self.bytes,
                                        self.parity, self.stops)
 
+    def get_desc(self):
+        if self.type == DeviceGPS.NMEA_SERIAL:
+            return self.get_serial_desc()
+
+        return self.resource
+
 
 class DeviceRTL(object):
     def __init__(self):

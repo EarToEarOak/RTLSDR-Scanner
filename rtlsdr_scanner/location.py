@@ -83,6 +83,9 @@ class ThreadLocation(threading.Thread):
         except socket.error as error:
             post_event(self._notify, EventThread(Event.LOC_ERR,
                                                  0, error))
+            return False
+
+        return True
 
     def __tcp_read(self, isGpsd=False):
         buf = ''
@@ -179,7 +182,8 @@ class ThreadLocation(threading.Thread):
                 time.sleep(0.1)
 
     def __gpsd_open(self):
-        self.__tcp_connect(2947)
+        if not self.__tcp_connect(2947):
+            return False
 
         try:
             if self._device.type == DeviceGPS.GPSD:
@@ -249,8 +253,7 @@ class ThreadLocation(threading.Thread):
         if self._device.type == DeviceGPS.NMEA_SERIAL:
             return self.__serial_connect()
         else:
-            self.__tcp_connect(10110)
-            return True
+            return self.__tcp_connect(10110)
 
     def __nmea_read(self):
         if self._device.type == DeviceGPS.NMEA_SERIAL:
