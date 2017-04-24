@@ -58,7 +58,7 @@ class RtlTcp(object):
     def __get_header(self):
         header = self.threadBuffer.get_header()
         if len(header) == 12:
-            if header.startswith('RTL'):
+            if header.startswith('RTL0'):
                 self.tuner = ((ord(header[4]) << 24) |
                               (ord(header[5]) << 16) |
                               (ord(header[6]) << 8) |
