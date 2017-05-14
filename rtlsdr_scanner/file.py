@@ -226,7 +226,10 @@ class Backups(object):
             if fSize:
                 files.append((backup, fTime, fSize))
             else:
-                os.remove(backup)
+                try:
+                    os.remove(backup)
+                except:
+                    pass
         files.sort(lambda x, y: cmp(x[1], y[1]), reverse=True)
 
         return files
