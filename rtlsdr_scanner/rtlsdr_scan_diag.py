@@ -63,8 +63,8 @@ def find_rtlsdr_driver():
 
     return path
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
     try:
         input = raw_input
     except:

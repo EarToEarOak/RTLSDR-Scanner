@@ -133,7 +133,7 @@ class MenuMain(object):
                                 "Automatically calibrate to a known frequency")
         tools.AppendSeparator()
         self.gearth = tools.Append(wx.ID_ANY, "Track in Google &Earth",
-                               "Display recorded points in Google Earth")
+                                   "Display recorded points in Google Earth")
         self.gmaps = tools.Append(wx.ID_ANY, "Track in Google &Maps",
                                   "Display recorded points in Google Maps")
         self.sats = tools.Append(wx.ID_ANY, "&GPS Satellites...",

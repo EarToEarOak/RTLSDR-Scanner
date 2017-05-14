@@ -39,6 +39,7 @@ from matplotlib.dates import num2epoch
 from matplotlib.lines import Line2D
 from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
 import wx
+import wx.grid as wxGrid
 
 from rtlsdr_scanner.constants import Display
 from rtlsdr_scanner.misc import format_precision
@@ -54,7 +55,6 @@ from rtlsdr_scanner.toolbars import NavigationToolbar, NavigationToolbarCompare
 from rtlsdr_scanner.utils_mpl import find_artists
 from rtlsdr_scanner.utils_wx import close_modeless
 from rtlsdr_scanner.widgets import GridToolTips, CheckBoxCellRenderer
-import wx.grid as wxGrid
 
 
 class PanelGraph(wx.Panel):

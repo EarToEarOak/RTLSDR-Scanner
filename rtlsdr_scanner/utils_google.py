@@ -40,6 +40,7 @@ def create_gearth(handle):
                  '\t</NetworkLink>\n'
                  '</kml>\n'.format(APP_NAME, LOCATION_PORT))
 
+
 if __name__ == '__main__':
     print 'Please run rtlsdr_scan.py'
     exit(1)

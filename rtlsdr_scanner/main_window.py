@@ -35,8 +35,13 @@ import time
 import webbrowser
 
 import wx
+from wx.lib.agw import aui
 from wx.lib.masked.numctrl import NumCtrl
 
+from location import ThreadLocation, LocationServer
+from menus import MenuMain, PopMenuMain
+from misc import RemoteControl, calc_samples, get_dwells, calc_real_dwell, \
+    format_iso_time, limit
 from rtlsdr_scanner.constants import F_MIN, F_MAX, MODE, NFFT, DISPLAY, Warn, \
     Cal, Mode, APP_NAME, LOCATION_PORT
 from rtlsdr_scanner.devices import get_devices_rtl
@@ -51,10 +56,6 @@ from rtlsdr_scanner.dialogs_tools import DialogCompare, DialogAutoCal, DialogSat
 from rtlsdr_scanner.events import EVENT_THREAD, Event, Log, EventTimer
 from rtlsdr_scanner.file import save_plot, export_plot, export_cont, open_plot, ScanInfo, export_image, \
     export_map, extension_add, File, run_file, export_gpx, Backups
-from location import ThreadLocation, LocationServer
-from menus import MenuMain, PopMenuMain
-from misc import RemoteControl, calc_samples, get_dwells, calc_real_dwell, \
-    format_iso_time, limit
 from rtlsdr_scanner.panels import PanelGraph
 from rtlsdr_scanner.printer import PrintOut
 from rtlsdr_scanner.scan import ThreadScan, update_spectrum, ThreadProcess
@@ -65,8 +66,6 @@ from rtlsdr_scanner.utils_google import create_gearth
 from rtlsdr_scanner.utils_mpl import add_colours
 from rtlsdr_scanner.utils_wx import load_icon
 from rtlsdr_scanner.widgets import MultiButton
-
-from wx.lib.agw import aui
 
 
 class DropTarget(wx.FileDropTarget):

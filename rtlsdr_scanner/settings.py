@@ -27,8 +27,8 @@ import ConfigParser
 
 import wx
 
-from constants import Display, Mode, PlotFunc
-from devices import DeviceRTL, format_device_rtl_name, DeviceGPS
+from rtlsdr_scanner.constants import Display, Mode, PlotFunc
+from rtlsdr_scanner.devices import DeviceRTL, format_device_rtl_name, DeviceGPS
 
 
 class Settings(object):
