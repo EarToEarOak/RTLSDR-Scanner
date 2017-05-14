@@ -965,13 +965,13 @@ class DialogRestore(wx.Dialog):
         self.grid.SetColLabelValue(self.COL_SIZE, 'Size (k)')
         self.grid.SetColFormatFloat(self.COL_SIZE, -1, 1)
 
-        self.__set_grid()
         self.Bind(grid.EVT_GRID_CELL_LEFT_CLICK, self.__on_click)
 
         buttonRest = wx.Button(self, wx.ID_OPEN, 'Restore')
         buttonDel = wx.Button(self, wx.ID_DELETE, 'Delete')
         buttonDelAll = wx.Button(self, wx.ID_DELETE, 'Delete all')
         buttonCancel = wx.Button(self, wx.ID_CANCEL, 'Close')
+        self._buttonsBackup = [buttonRest, buttonDel, buttonDelAll]
 
         buttonRest.Bind(wx.EVT_BUTTON, self.__on_restore)
         buttonDel.Bind(wx.EVT_BUTTON, self.__on_delete)
@@ -987,10 +987,13 @@ class DialogRestore(wx.Dialog):
         sizer.Add(self.grid, flag=wx.ALL | wx.EXPAND, border=5)
         sizer.Add(sizerButtons, flag=wx.ALL, border=5)
 
+        self.__update()
+
         self.SetSizerAndFit(sizer)
 
-    def __set_grid(self):
-        self.grid.DeleteRows(0, self.grid.GetNumberRows())
+    def __update(self):
+        if self.grid.GetNumberRows():
+            self.grid.DeleteRows(0, self.grid.GetNumberRows())
         self.grid.AppendRows(len(self.backups.backups))
 
         i = 0
@@ -1009,6 +1012,9 @@ class DialogRestore(wx.Dialog):
         self.__select_row(0)
 
         self.grid.AutoSize()
+
+        for button in self._buttonsBackup:
+            button.Enable(len(self.backups.backups))
 
     def __on_click(self, event):
         col = event.GetCol()
@@ -1035,16 +1041,16 @@ class DialogRestore(wx.Dialog):
                                wx.OK | wx.CANCEL | wx.ICON_QUESTION)
         if dlg.ShowModal() == wx.ID_OK:
             self.backups.delete(self.selected)
-            self.__set_grid()
+            self.__update()
 
     def __on_delete_all(self, _event):
         dlg = wx.MessageDialog(self, 'Delete all the backups?',
                                'Delete all backups',
                                wx.OK | wx.CANCEL | wx.ICON_QUESTION)
         if dlg.ShowModal() == wx.ID_OK:
-            for i in range(0, self.grid.GetNumberRows()):
+            for i in range(len(self.backups.backups)):
                 self.backups.delete(i)
-        self.__set_grid()
+        self.__update()
 
     def __select_row(self, index):
         self.grid.ClearSelection()
