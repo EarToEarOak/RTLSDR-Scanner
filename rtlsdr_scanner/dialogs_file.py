@@ -886,7 +886,7 @@ class DialogExportGeo(wx.Dialog):
         self.figure.set_size_inches((6, 6. * width / height))
         self.figure.set_dpi(self.settings.exportDpi)
         self.figure.patch.set_alpha(0)
-        self.axes.axesPatch.set_alpha(0)
+        self.axes.patch.set_alpha(0)
         canvas = FigureCanvasAgg(self.figure)
         canvas.draw()
 
