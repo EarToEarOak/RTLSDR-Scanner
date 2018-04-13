@@ -30,6 +30,7 @@ import os
 from PIL import Image
 from matplotlib import mlab, patheffects
 import matplotlib
+import matplotlib.tri
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.ticker import ScalarFormatter
@@ -52,6 +53,7 @@ from rtlsdr_scanner.widgets import TickCellRenderer
 
 
 class DialogProperties(wx.Dialog):
+
     def __init__(self, parent, scanInfo):
         wx.Dialog.__init__(self, parent, title="Scan Properties")
 
@@ -235,6 +237,7 @@ class DialogProperties(wx.Dialog):
 
 
 class DialogImageSize(wx.Dialog):
+
     def __init__(self, parent, settings, onlyDpi=False):
         wx.Dialog.__init__(self, parent=parent, title='Image settings')
 
@@ -490,8 +493,8 @@ class DialogExportSeq(wx.Dialog):
         self.isExporting = True
         extent = Extent(self.spectrum)
         dlgProgress = wx.ProgressDialog('Exporting', '', len(self.sweeps),
-                                        style=wx.PD_AUTO_HIDE |
-                                        wx.PD_CAN_ABORT |
+                                        style=wx.PD_AUTO_HIDE | 
+                                        wx.PD_CAN_ABORT | 
                                         wx.PD_REMAINING_TIME)
 
         try:
@@ -767,24 +770,23 @@ class DialogExportGeo(wx.Dialog):
         self.extent = (min(x), max(x), min(y), max(y))
         self.xyz = (x, y, z)
 
-        xi = numpy.linspace(min(x), max(x), self.IMAGE_SIZE)
-        yi = numpy.linspace(min(y), max(y), self.IMAGE_SIZE)
+        xi, yi = numpy.meshgrid(numpy.linspace(min(x), max(x), self.IMAGE_SIZE),
+                                numpy.linspace(min(y), max(y), self.IMAGE_SIZE))
 
         if self.plotMesh or self.plotCont:
-            try:
-                zi = mlab.griddata(x, y, z, xi, yi)
-            except RuntimeError:
-                zi = mlab.griddata(x, y, z, xi, yi, interp='linear')
-
+            triangle = matplotlib.tri.Triangulation(x, y)
+            interp = matplotlib.tri.CubicTriInterpolator(triangle, z, kind='geom')
+            zi = interp(xi, yi)
+            
         if self.plotMesh:
             self.plot = self.axes.pcolormesh(xi, yi, zi, cmap=self.colourMap)
             self.plot.set_zorder(1)
-
+ 
         if self.plotCont:
             contours = self.axes.contour(xi, yi, zi, linewidths=0.5,
                                          colors='k')
             self.axes.clabel(contours, inline=1, fontsize='x-small',
-                             gid='clabel', zorder=3)
+                            gid='clabel', zorder=3)
 
         if self.plotHeat:
             image = create_heatmap(x, y,
@@ -903,6 +905,7 @@ class DialogExportGeo(wx.Dialog):
 
 
 class DialogSaveWarn(wx.Dialog):
+
     def __init__(self, parent, warnType):
         self.code = -1
 
