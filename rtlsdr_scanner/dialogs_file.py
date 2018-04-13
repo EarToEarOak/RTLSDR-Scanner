@@ -771,7 +771,10 @@ class DialogExportGeo(wx.Dialog):
         yi = numpy.linspace(min(y), max(y), self.IMAGE_SIZE)
 
         if self.plotMesh or self.plotCont:
-            zi = mlab.griddata(x, y, z, xi, yi)
+            try:
+                zi = mlab.griddata(x, y, z, xi, yi)
+            except RuntimeError:
+                zi = mlab.griddata(x, y, z, xi, yi, interp='linear')
 
         if self.plotMesh:
             self.plot = self.axes.pcolormesh(xi, yi, zi, cmap=self.colourMap)
