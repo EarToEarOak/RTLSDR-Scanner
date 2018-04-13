@@ -31,6 +31,7 @@ import threading
 
 from matplotlib import cm
 import matplotlib
+import matplotlib.animation
 from matplotlib.backends.backend_wxagg import \
     FigureCanvasWxAgg as FigureCanvas
 from matplotlib.colorbar import ColorbarBase
@@ -58,6 +59,7 @@ from rtlsdr_scanner.widgets import GridToolTips, CheckBoxCellRenderer
 
 
 class PanelGraph(wx.Panel):
+
     def __init__(self, panel, notify, settings, status, remoteControl):
         self.panel = panel
         self.notify = notify
@@ -118,12 +120,12 @@ class PanelGraph(wx.Panel):
         self.canvas.mpl_connect('axes_leave_event', self.__on_leave)
         self.canvas.mpl_connect('motion_notify_event', self.__on_motion)
         self.canvas.mpl_connect('draw_event', self.__on_draw)
-        self.canvas.mpl_connect('idle_event', self.__on_idle)
+        self.Bind (wx.EVT_IDLE, self.__on_idle)
         self.Bind(wx.EVT_SIZE, self.__on_size)
 
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.__on_timer, self.timer)
-
+  
     def __set_fonts(self):
         axes = self.plot.get_axes()
         if axes is not None:
@@ -449,6 +451,7 @@ class PanelGraph(wx.Panel):
 
 
 class PanelGraphCompare(wx.Panel):
+
     def __init__(self, parent, callback):
         self.callback = callback
 
@@ -615,6 +618,7 @@ class PanelGraphCompare(wx.Panel):
 
 
 class PanelColourBar(wx.Panel):
+
     def __init__(self, parent, colourMap):
         wx.Panel.__init__(self, parent)
         dpi = wx.ScreenDC().GetPPI()[0]
@@ -636,6 +640,7 @@ class PanelColourBar(wx.Panel):
 
 
 class PanelLine(wx.Panel):
+
     def __init__(self, parent, colour):
         self.colour = colour
 
@@ -659,6 +664,7 @@ class PanelLine(wx.Panel):
 
 
 class PanelMeasure(wx.Panel):
+
     def __init__(self, graph, settings):
         wx.Panel.__init__(self, graph)
 
