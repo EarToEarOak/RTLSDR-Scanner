@@ -33,11 +33,11 @@
 !include "include\EnvVarUpdate.nsh"
 !include "include\fileassoc.nsh"
 
-!define INSTALLER_VERSION "23"
+!define INSTALLER_VERSION "24"
 
 !define PRODUCT_NAME "RTLSDR Scanner"
 !define PRODUCT_PUBLISHER "Ear to Ear Oak"
-!define PRODUCT_WEB_SITE "http://eartoearoak.com/software/rtlsdr-scanner"
+!define PRODUCT_WEB_SITE "https://eartoearoak.com/software/rtlsdr-scanner"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
 !define PRODUCT_UNINST_ROOT_KEY "HKLM"
 
@@ -118,8 +118,8 @@ SectionGroup "/e" "Dependencies" SEC_DEP
 	SectionEnd
 	SectionGroup "/e" "Python 2.7" SEC_PYDEP
 		Section "Python 2.7.12" SEC_PYTHON
-			StrCpy $UriPath "http://www.python.org/ftp/python/2.7.12"
-			StrCpy $UriFile "python-2.7.12.msi"
+			StrCpy $UriPath "http://www.python.org/ftp/python/2.7.14"
+			StrCpy $UriFile "python-2.7.14.msi"
             StrCpy $Switches "/qb ALLUSERS=1"
 			Call install_msi
 		SectionEnd
